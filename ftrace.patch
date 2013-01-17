@@ -1,0 +1,269 @@
+diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
+index 642928c..697cba2 100644
+--- a/include/linux/ftrace_event.h
++++ b/include/linux/ftrace_event.h
+@@ -162,6 +162,7 @@ struct ftrace_event_class {
+ #ifdef CONFIG_PERF_EVENTS
+ 	void			*perf_probe;
+ #endif
++	void			*ktap_probe; /* for ktap */
+ 	int			(*reg)(struct ftrace_event_call *event,
+ 				       enum trace_reg type, void *data);
+ 	int			(*define_fields)(struct ftrace_event_call *);
+@@ -226,6 +227,9 @@ struct ftrace_event_call {
+ 	int				perf_refcount;
+ 	struct hlist_head __percpu	*perf_events;
+ #endif
++	int				ktap_refcount;
++	struct hlist_head		ktap_callback_list;
++	void (*ktap_do_trace)(struct ftrace_event_call *, const char *, ...);
+ };
+ 
+ #define __TRACE_EVENT_FLAGS(name, value)				\
+@@ -268,6 +272,9 @@ extern void trace_remove_event_call(struct ftrace_event_call *call);
+ 
+ #define is_signed_type(type)	(((type)(-1)) < 0)
+ 
++typedef void (*ftrace_call_func)(struct ftrace_event_call * call, void *data);
++void ftrace_on_event_call(char *buf, ftrace_call_func actor, void *data);
++
+ int trace_set_clr_event(const char *system, const char *event, int set);
+ 
+ /*
+diff --git a/include/trace/events/scsi.h b/include/trace/events/scsi.h
+index db6c935..6a763f4 100644
+--- a/include/trace/events/scsi.h
++++ b/include/trace/events/scsi.h
+@@ -195,8 +195,10 @@
+ 		scsi_prot_op_name(SCSI_PROT_READ_PASS),		\
+ 		scsi_prot_op_name(SCSI_PROT_WRITE_PASS))
+ 
++/* todo: fix this for ktap */
+ const char *scsi_trace_parse_cdb(struct trace_seq*, unsigned char*, int);
+-#define __parse_cdb(cdb, len) scsi_trace_parse_cdb(p, cdb, len)
++//#define __parse_cdb(cdb, len) scsi_trace_parse_cdb(p, cdb, len)
++#define __parse_cdb(cdb, len) "N/A"
+ 
+ TRACE_EVENT(scsi_dispatch_cmd_start,
+ 
+diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
+index a763888..57c58bb 100644
+--- a/include/trace/ftrace.h
++++ b/include/trace/ftrace.h
+@@ -486,6 +486,14 @@ static inline notrace int ftrace_get_offsets_##call(			\
+ #define _TRACE_PERF_INIT(call)
+ #endif /* CONFIG_PERF_EVENTS */
+ 
++
++#define _TRACE_KTAP_PROTO(call, proto)					\
++	static notrace void						\
++	ktap_trace_##call(void *__data, proto);
++
++#define _TRACE_KTAP_INIT(call)						\
++	.ktap_probe		= ktap_trace_##call,
++
+ #undef __entry
+ #define __entry entry
+ 
+@@ -581,6 +589,7 @@ static inline void ftrace_test_probe_##call(void)			\
+ #undef DECLARE_EVENT_CLASS
+ #define DECLARE_EVENT_CLASS(call, proto, args, tstruct, assign, print)	\
+ _TRACE_PERF_PROTO(call, PARAMS(proto));					\
++_TRACE_KTAP_PROTO(call, PARAMS(proto));					\
+ static const char print_fmt_##call[] = print;				\
+ static struct ftrace_event_class __used event_class_##call = {		\
+ 	.system			= __stringify(TRACE_SYSTEM),		\
+@@ -590,6 +599,7 @@ static struct ftrace_event_class __used event_class_##call = {		\
+ 	.probe			= ftrace_raw_event_##call,		\
+ 	.reg			= ftrace_event_reg,			\
+ 	_TRACE_PERF_INIT(call)						\
++	_TRACE_KTAP_INIT(call)						\
+ };
+ 
+ #undef DEFINE_EVENT
+@@ -779,5 +789,110 @@ static inline void perf_test_probe_##call(void)				\
+ #include TRACE_INCLUDE(TRACE_INCLUDE_FILE)
+ #endif /* CONFIG_PERF_EVENTS */
+ 
++
++/* KTAP */
++#undef __entry
++#define __entry entry
++
++#undef __get_dynamic_array
++#define __get_dynamic_array(field)	\
++		((void *)__entry + (__entry->__data_loc_##field & 0xffff))
++
++#undef __get_str
++#define __get_str(field) (char *)__get_dynamic_array(field)
++
++#undef __perf_addr
++#define __perf_addr(a) __addr = (a)
++
++#undef __perf_count
++#define __perf_count(c) __count = (c)
++
++#undef __perf_task
++#define __perf_task(t) __task = (t)
++
++#undef TP_perf_assign
++#define TP_perf_assign(args...) args
++
++#undef TP_printk
++#define TP_printk(fmt, args...) fmt "\n", args
++
++/* todo: implement this marco in trace/events/irq.h
++ *
++ * struct trace_seq variable problem in events/scsi.h
++ * __parse_cdb
++ *
++ **/
++
++#undef __parse_cdb
++#define __parse_cdb(cdb, len)  	"N/A"
++
++#undef __print_symbolic
++#define __print_symbolic(value, symbol_array...)	"N/A"
++
++#undef __print_symbolic_u64
++#define __print_symbolic_u64(value, symbol_array...)	"N/A"
++
++#undef __print_flags
++#define __print_flags(flag, delim, flag_array...)	"N/A"
++
++#undef __print_hex
++#define __print_hex(buf, buf_len)			"N/A"
++
++extern void ktap_do_trace(struct ftrace_event_call *call, void *entry, const char *fmt, ...);
++
++#undef DECLARE_EVENT_CLASS
++#define DECLARE_EVENT_CLASS(call, proto, args, tstruct, assign, print)	\
++static notrace void							\
++ktap_trace_##call(void *__data, proto)					\
++{									\
++	struct ftrace_event_call *event_call = __data;			\
++	struct ftrace_data_offsets_##call __maybe_unused __data_offsets;\
++	struct ftrace_raw_##call entry0;				\
++	struct ftrace_raw_##call *entry;				\
++	struct pt_regs __regs;						\
++	u64 __addr = 0, __count = 1;					\
++	struct task_struct *__task = NULL;				\
++	int __data_size;						\
++									\
++	entry = &entry0;						\
++	__data_size = ftrace_get_offsets_##call(&__data_offsets, args); \
++									\
++	tstruct								\
++									\
++	{ assign; }							\
++									\
++	event_call->ktap_do_trace(event_call, (void *)entry, print);	\
++	return;								\
++}
++
++/*
++ * This part is compiled out, it is only here as a build time check
++ * to make sure that if the tracepoint handling changes, the
++ * perf probe will fail to compile unless it too is updated.
++ */
++#undef DEFINE_EVENT
++#define DEFINE_EVENT(template, call, proto, args)			\
++static inline void ktap_test_probe_##call(void)				\
++{									\
++	check_trace_callback_type_##call(ktap_trace_##template);	\
++}
++
++
++#undef DEFINE_EVENT_PRINT
++#define DEFINE_EVENT_PRINT(template, name, proto, args, print)	\
++	DEFINE_EVENT(template, name, PARAMS(proto), PARAMS(args))
++
++#undef TRACE_EVENT
++#define TRACE_EVENT(name, proto, args, tstruct, assign, print) \
++	DECLARE_EVENT_CLASS(name,			       \
++			     PARAMS(proto),		       \
++			     PARAMS(args),		       \
++			     PARAMS(tstruct),		       \
++			     PARAMS(assign),		       \
++			     PARAMS(print));		       \
++	DEFINE_EVENT(name, name, PARAMS(proto), PARAMS(args));
++
++#include TRACE_INCLUDE(TRACE_INCLUDE_FILE)
++
+ #undef _TRACE_PROFILE_INIT
+ 
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index d608d09..6bf3d94 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -43,6 +43,7 @@ trace_get_fields(struct ftrace_event_call *event_call)
+ 		return &event_call->class->fields;
+ 	return event_call->class->get_fields(event_call);
+ }
++EXPORT_SYMBOL_GPL(trace_get_fields);
+ 
+ static int __trace_define_field(struct list_head *head, const char *type,
+ 				const char *name, int offset, int size,
+@@ -279,6 +280,62 @@ static void put_system(struct event_subsystem *system)
+ 	mutex_unlock(&event_mutex);
+ }
+ 
++typedef void (*ftrace_call_func)(struct ftrace_event_call *, void *data);
++void ftrace_on_event_call(char *buf, ftrace_call_func actor, void *data)
++{
++	char *event = NULL, *sub = NULL, *match;
++	struct ftrace_event_call *call;
++
++	/*
++	 * The buf format can be <subsystem>:<event-name>
++	 *  *:<event-name> means any event by that name.
++	 *  :<event-name> is the same.
++	 *
++	 *  <subsystem>:* means all events in that subsystem
++	 *  <subsystem>: means the same.
++	 *
++	 *  <name> (no ':') means all events in a subsystem with
++	 *  the name <name> or any event that matches <name>
++	 */
++
++	match = strsep(&buf, ":");
++	if (buf) {
++		sub = match;
++		event = buf;
++		match = NULL;
++
++		if (!strlen(sub) || strcmp(sub, "*") == 0)
++			sub = NULL;
++		if (!strlen(event) || strcmp(event, "*") == 0)
++			event = NULL;
++	}
++
++	mutex_lock(&event_mutex);
++	list_for_each_entry(call, &ftrace_events, list) {
++
++		if (!call->name || !call->class || !call->class->reg)
++			continue;
++
++		if (call->flags & TRACE_EVENT_FL_IGNORE_ENABLE)
++			continue;
++
++		if (match &&
++		    strcmp(match, call->name) != 0 &&
++		    strcmp(match, call->class->system) != 0)
++			continue;
++
++		if (sub && strcmp(sub, call->class->system) != 0)
++			continue;
++
++		if (event && strcmp(event, call->name) != 0)
++			continue;
++
++		(*actor)(call, data);
++	}
++	mutex_unlock(&event_mutex);
++}
++EXPORT_SYMBOL_GPL(ftrace_on_event_call);
++
+ /*
+  * __ftrace_set_clr_event(NULL, NULL, NULL, set) will set/unset all events.
+  */

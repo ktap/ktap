@@ -1,0 +1,117 @@
+Todo list of ktap:
+
+(You can make this todo list as ktap's implementation backlog
+keeping update this file)
+
+Id
+Item
+Priority(Low/Normal/High)
+State(Planned/Ongoing/Finished)
+
+----------------------------------------------------------------------------------------------------
+Id: 1
+Item: drop ftrace.patch, make ktap to be a kernel module
+Priority: High
+State: Planned
+
+Id: 2
+Item: GC
+Priority: High
+State: Planned
+
+Id: 3
+Item: printf support
+Priority: High
+State: Planned
+
+Id: 4
+Item: read kernel address by symbol 
+Priority: High
+State: Planned
+
+Id: 5
+Item: table stat showing
+Priority: High
+State: Planned
+
+Id: 6
+Item: ktap memory allocation
+Priority: High
+State: Planned
+
+Id: 7
+Item: per-cpu ktap_State for performance improvement
+Priority: High
+State: Planned
+
+Id: 8
+Item: x86-64 support
+Priority: High
+State: Planned
+
+Id: 9
+Item: ARM support
+Priority: Normal
+State: Planned
+
+Id: 10
+Item: All tracepoints support
+Priority: Normal
+State: Planned
+
+Id: 11
+Item: Timer support
+Priority: Normal
+State: Planned
+
+Id: 12
+Item: kprobe/uprobe support
+Priority: Normal
+State: Planned
+
+Id: 13
+Item: more lightweight traceporint support
+Priority: Low
+State: Planned
+
+Id: 14
+Item: dead loop detaction
+Priority: Low
+State: Planned
+
+Id: 15
+Item: function call speedup
+Priority: Low
+State: Planned
+
+Id: 16
+Item: product more useful ktap script
+Priority: Low
+State: Planned
+
+Id: 17
+Item: test script for verification
+Priority: Low
+State: Planned
+
+Id: 18
+Item: userspace C file to test table and tstring functionality
+Priority: Low
+State: Planned
+
+Id: 19
+Item: not-tracing mode support(side effects mode)
+Priority: Low
+State: Planned
+
+
+Id: 999999
+Item: ktap Manual/Doc writing
+Priority: Normal
+State: Planned
+
+Id: 10000000
+Item: upstream
+Priority: N/A
+State: N/A
+

@@ -1,0 +1,31 @@
+
+
+syscall_table={}
+gcount = 0
+
+os.trace("syscalls:sys_enter_open",
+function (syscall_nr, enter, syscall_ret, argnum, arg1, arg2)
+	print(process.comm(), process.pid())
+	print("open:", syscall_nr, enter, syscall_ret, argnum);
+	syscall_table[syscall_nr] = 1
+	gcount = gcount + 1
+end)
+
+os.trace("syscalls:sys_exit_open",
+function (syscall_nr, enter, syscall_ret, argnum, arg1, arg2)
+	print(process.comm(), process.pid())
+	print("exit:", syscall_nr, enter, syscall_ret, argnum);
+	syscall_table[syscall_nr] = 1
+	gcount = gcount + 1
+end)
+
+os.trace("signal:signal_deliver",
+function (sig, errno, code, sa_handler, sa_flags)
+	print(process.comm(), process.pid())
+	print("signal:signal_deliver:", "sig", "errno", "code", "sa_handler", "sa_flags")
+	print("signal:signal_deliver:", sig, errno, code, sa_handler, sa_flags)
+end)
+
+os.trace_end(function ()
+	print("trace ending\n")
+end)
