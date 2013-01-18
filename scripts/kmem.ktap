@@ -1,0 +1,13 @@
+
+count = 0
+
+os.trace("kmem:kmalloc",
+function (call_site, ptr, bytes_req, bytes_alloc, gfp_flags)
+	count = count + 1
+end)
+
+
+os.trace_end(function ()
+	print("count:", count)
+	print("trace ending\n")
+end)

@@ -81,6 +81,11 @@ static void ktap_do_trace(struct ftrace_event_call *call, void *entry,
 		ktap_State *ks = cbdata->ks;
 		Closure *cl = cbdata->cl;
 
+		if (ks->tracing == 1)
+			continue;
+
+		ks->tracing = 1;
+
 		/* todo: trace_get_fields is not exported right now */
 		if (cl) {
 			call_user_closure(ks, cl, entry, trace_get_fields(call));
@@ -96,6 +101,8 @@ static void ktap_do_trace(struct ftrace_event_call *call, void *entry,
 
 			ktap_printf(ks, buff);
 		}
+
+		ks->tracing = 0;
 	}
 }
 
