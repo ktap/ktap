@@ -1,9 +1,10 @@
 /*
  * object.c - ktap object generic operation
  *
- * Copyright (C) 2012 Jovi Zhang <bookjovi@gmail.com>
+ * Copyright (C) 2012-2013 Jovi Zhang
  *
  * Author: Jovi Zhang <bookjovi@gmail.com>
+ *         zhangwei(Jovi) <jovi.zhangwei@huawei.com>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
