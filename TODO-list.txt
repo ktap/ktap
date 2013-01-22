@@ -14,6 +14,7 @@ High:
 6. ktap memory allocation
 7. per-cpu ktap_State for performance improvement
 8. x86-64 support
+9. non-mainthread error exit problem(like printf arg mismatch)
 
 
 Normal:
@@ -22,6 +23,7 @@ Normal:
 3. Timer support
 4. kprobe/uprobe support
 5. function call speedup
+6. improve printf performance
 
 
 Low:
