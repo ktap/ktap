@@ -8,13 +8,12 @@ keeping update this file)
 High:
 1. Drop ftrace.patch
 2. GC
-3. printf support
-4. read kernel memory by symbol
-5. table stat showing
-6. ktap memory allocation
-7. per-cpu ktap_State for performance improvement
-8. x86-64 support
-9. non-mainthread error exit problem(like printf arg mismatch)
+3. read kernel memory by symbol
+4. table stat showing
+5. ktap memory allocation
+6. per-cpu ktap_State for performance improvement
+7. x86-64 support
+8. non-mainthread error exit problem(like printf arg mismatch)
 
 
 Normal:

@@ -230,6 +230,24 @@ Proto *ktap_newproto(ktap_State *ks)
 	return f;
 }
 
+static Udata *ktap_newudata(ktap_State *ks, size_t s)
+{
+	Udata *u;
+
+	u = &newobject(ks, KTAP_TUSERDATA, sizeof(Udata) + s, NULL)->u;
+	u->uv.len = s;
+	return u;
+}
+
+void *ktap_newuserdata(ktap_State *ks, size_t size)
+{
+	Udata *u;
+
+	u = ktap_newudata(ks, size);
+	return u + 1;
+}
+
+
 void free_all_gcobject(ktap_State *ks)
 {
 	Gcobject *o = G(ks)->allgc;
@@ -252,6 +270,89 @@ void free_all_gcobject(ktap_State *ks)
 
 	G(ks)->allgc = NULL;
 }
+
+/******************************************************************************/
+/*
+ * Generic Buffer manipulation
+ */
+
+/*
+ * ** check whether buffer is using a userdata on the stack as a temporary
+ * ** buffer
+ * */
+#define buffonstack(B)  ((B)->b != (B)->initb)
+
+
+/*
+ * returns a pointer to a free area with at least 'sz' bytes
+ */
+char *ktap_prepbuffsize(ktap_Buffer *B, size_t sz)
+{
+	ktap_State *ks = B->ks;
+
+	if (B->size - B->n < sz) {  /* not enough space? */
+		char *newbuff;
+		size_t newsize = B->size * 2;  /* double buffer size */
+
+		if (newsize - B->n < sz)  /* not bit enough? */
+			newsize = B->n + sz;
+
+		if (newsize < B->n || newsize - B->n < sz)
+			ktap_runerror(ks, "buffer too large");
+
+		/* create larger buffer */
+		newbuff = (char *)ktap_newuserdata(ks, newsize * sizeof(char));
+		/* move content to new buffer */
+		memcpy(newbuff, B->b, B->n * sizeof(char));
+		/* todo: remove old buffer now, cannot use ktap_free directly */
+		#if 0
+		if (buffonstack(B))
+			ktap_remove(ks, -2);  /* remove old buffer */
+		#endif
+		B->b = newbuff;
+		B->size = newsize;
+	}
+	return &B->b[B->n];
+}
+
+
+void ktap_addlstring(ktap_Buffer *B, const char *s, size_t l)
+{
+	char *b = ktap_prepbuffsize(B, l);
+	memcpy(b, s, l * sizeof(char));
+	ktap_addsize(B, l);
+}
+
+
+void ktap_addstring(ktap_Buffer *B, const char *s)
+{
+	ktap_addlstring(B, s, strlen(s));
+}
+
+
+void ktap_pushresult(ktap_Buffer *B)
+{
+	ktap_State *ks = B->ks;
+
+	setsvalue(ks->top, tstring_newlstr(ks, B->b, B->n));
+        incr_top(ks);
+
+	/* todo: remove old buffer now, cannot use ktap_free directly */
+	#if 0
+	if (buffonstack(B))
+		ktap_remove(ks, -2);  /* remove old buffer */
+	#endif
+}
+
+
+void ktap_buffinit(ktap_State *ks, ktap_Buffer *B)
+{
+	B->ks = ks;
+	B->b = B->initb;
+	B->n = 0;
+	B->size = KTAP_BUFFERSIZE;
+}
+
 
 /******************************************************************************/
 

@@ -56,17 +56,14 @@ static int ktap_lib_print(ktap_State *ks)
 	return 0;
 }
 
-
-/* todo: how to invoke printf in ktap? */
 static int ktap_lib_printf(ktap_State *ks)
 {
+	const char *str = getstr(ktap_strfmt(ks));
+	ktap_printf(ks, str);
+
 	return 0;
 }
 
-static int ktap_lib_printk(ktap_State *ks)
-{
-	return 0;
-}
 
 static const ktap_Reg base_funcs[] = {
 //  {"assert", ktap_assert},
@@ -79,7 +76,6 @@ static const ktap_Reg base_funcs[] = {
 //  {"pairs", ktap_pairs},
 	{"print", ktap_lib_print},
 	{"printf", ktap_lib_printf},
-	{"printk", ktap_lib_printk},
 //  {"tonumber", ktap_tonumber},
 //  {"tostring", ktap_tostring},
 //  {"type", ktap_type},

@@ -40,9 +40,6 @@ void stop_trace_syscalls(struct ftrace_event_call *call,
 int start_trace(ktap_State *ks, char *event_name, Closure *cl);
 void end_all_trace(ktap_State *ks);
 
-
-
-
-
+Tstring *ktap_strfmt(ktap_State *ks);
 
 #endif /* __KTAP_H__ */

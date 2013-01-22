@@ -76,14 +76,14 @@ typedef Tvalue * StkId;
 
 
 
-typedef union udata {
+typedef union Udata {
 	struct {
 		CommonHeader;
 		struct Table *metatable;
 		struct Table *env;
 		size_t len;  /* number of bytes */
 	} uv;
-} udata;
+} Udata;
 
 /*
  * Description of an upvalue for function prototypes
@@ -278,7 +278,7 @@ typedef struct gcheader {
 union Gcobject {
   gcheader gch;  /* common header */
   union Tstring ts;
-  union udata u;
+  union Udata u;
   struct Closure cl;
   struct Table h;
   struct Proto p;
@@ -487,6 +487,7 @@ int ktap_str2d(const char *s, size_t len, ktap_Number *result);
 	((v) = (t *)ktap_reallocv(ks, v, osize * sizeof(t), nsize * sizeof(t)))
 
 
+/* todo: print callchain to user in kernel */
 #define ktap_runerror(ks, args...) \
 	do { \
 		ktap_printf(ks, args);	\
@@ -522,6 +523,42 @@ extern global_State dummy_global_state;
 #define KTAP_QL(x)      "'" x "'"
 #define KTAP_QS         KTAP_QL("%s")
 
+
+/*
+ * ** {======================================================
+ * ** Generic Buffer manipulation
+ * ** =======================================================
+ * */
+
+#define KTAP_BUFFERSIZE  512
+
+typedef struct ktap_Buffer {
+	char *b;  /* buffer address */
+	size_t size;  /* buffer size */
+	size_t n;  /* number of characters in buffer */
+	ktap_State *ks;
+	char initb[KTAP_BUFFERSIZE];  /* initial buffer */
+} ktap_Buffer;
+
+
+#define ktap_addchar(B,c) \
+	((void)((B)->n < (B)->size || ktap_prepbuffsize((B), 1)), \
+	((B)->b[(B)->n++] = (c)))
+
+#define ktap_addsize(B,s)       ((B)->n += (s))
+
+void (ktap_buffinit)(ktap_State *ks, ktap_Buffer *B);
+char *(ktap_prepbuffsize)(ktap_Buffer *B, size_t sz);
+void (ktap_addlstring)(ktap_Buffer *B, const char *s, size_t l);
+void (ktap_addstring)(ktap_Buffer *B, const char *s);
+void (ktap_addvalue)(ktap_Buffer *B);
+void (ktap_pushresult)(ktap_Buffer *B);
+void (ktap_pushresultsize)(ktap_Buffer *B, size_t sz);
+char *(ktap_buffinitsize)(ktap_State *ks, ktap_Buffer *B, size_t sz);
+
+#define ktap_prepbuffer(B)      ktap_prepbuffsize(B, KTAP_BUFFERSIZE)
+
+/* }====================================================== */
 
 #endif /* __KTAP_TYPES_H__ */
 
