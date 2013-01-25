@@ -1,0 +1,17 @@
+
+function eventfun (e)
+	printf("%s\t", e.name);
+---	printf("%s\n", e.allfield);
+---	print(e.print_fmt);
+	printf(e.annotate);
+---	printf("field1: %d\n", e.field1)
+end
+
+---os.trace("signal:signal_deliver", eventfun);
+---os.trace("signal:signal_generate", eventfun);
+os.trace("syscalls:sys_enter_open", eventfun);
+os.trace("syscalls:sys_exit_open", eventfun);
+
+os.trace_end(function ()
+	print("trace ending\n")
+end)
