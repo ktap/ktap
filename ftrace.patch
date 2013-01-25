@@ -1,8 +1,8 @@
 diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-index 642928c..697cba2 100644
+index a3d4895..0f4d7aa 100644
 --- a/include/linux/ftrace_event.h
 +++ b/include/linux/ftrace_event.h
-@@ -162,6 +162,7 @@ struct ftrace_event_class {
+@@ -168,6 +168,7 @@ struct ftrace_event_class {
  #ifdef CONFIG_PERF_EVENTS
  	void			*perf_probe;
  #endif
@@ -10,17 +10,17 @@ index 642928c..697cba2 100644
  	int			(*reg)(struct ftrace_event_call *event,
  				       enum trace_reg type, void *data);
  	int			(*define_fields)(struct ftrace_event_call *);
-@@ -226,6 +227,9 @@ struct ftrace_event_call {
+@@ -232,6 +233,9 @@ struct ftrace_event_call {
  	int				perf_refcount;
  	struct hlist_head __percpu	*perf_events;
  #endif
 +	int				ktap_refcount;
 +	struct hlist_head		ktap_callback_list;
-+	void (*ktap_do_trace)(struct ftrace_event_call *, const char *, ...);
++	void (*ktap_do_trace)(struct ftrace_event_call *call, void *entry, int entry_size, int data_size);
  };
  
  #define __TRACE_EVENT_FLAGS(name, value)				\
-@@ -268,6 +272,9 @@ extern void trace_remove_event_call(struct ftrace_event_call *call);
+@@ -274,6 +278,9 @@ extern void trace_remove_event_call(struct ftrace_event_call *call);
  
  #define is_signed_type(type)	(((type)(-1)) < 0)
  
@@ -30,24 +30,8 @@ index 642928c..697cba2 100644
  int trace_set_clr_event(const char *system, const char *event, int set);
  
  /*
-diff --git a/include/trace/events/scsi.h b/include/trace/events/scsi.h
-index db6c935..6a763f4 100644
---- a/include/trace/events/scsi.h
-+++ b/include/trace/events/scsi.h
-@@ -195,8 +195,10 @@
- 		scsi_prot_op_name(SCSI_PROT_READ_PASS),		\
- 		scsi_prot_op_name(SCSI_PROT_WRITE_PASS))
- 
-+/* todo: fix this for ktap */
- const char *scsi_trace_parse_cdb(struct trace_seq*, unsigned char*, int);
--#define __parse_cdb(cdb, len) scsi_trace_parse_cdb(p, cdb, len)
-+//#define __parse_cdb(cdb, len) scsi_trace_parse_cdb(p, cdb, len)
-+#define __parse_cdb(cdb, len) "N/A"
- 
- TRACE_EVENT(scsi_dispatch_cmd_start,
- 
 diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
-index a763888..57c58bb 100644
+index 40dc5e8..cfd4604 100644
 --- a/include/trace/ftrace.h
 +++ b/include/trace/ftrace.h
 @@ -486,6 +486,14 @@ static inline notrace int ftrace_get_offsets_##call(			\
@@ -65,7 +49,7 @@ index a763888..57c58bb 100644
  #undef __entry
  #define __entry entry
  
-@@ -581,6 +589,7 @@ static inline void ftrace_test_probe_##call(void)			\
+@@ -580,6 +588,7 @@ static inline void ftrace_test_probe_##call(void)			\
  #undef DECLARE_EVENT_CLASS
  #define DECLARE_EVENT_CLASS(call, proto, args, tstruct, assign, print)	\
  _TRACE_PERF_PROTO(call, PARAMS(proto));					\
@@ -73,7 +57,7 @@ index a763888..57c58bb 100644
  static const char print_fmt_##call[] = print;				\
  static struct ftrace_event_class __used event_class_##call = {		\
  	.system			= __stringify(TRACE_SYSTEM),		\
-@@ -590,6 +599,7 @@ static struct ftrace_event_class __used event_class_##call = {		\
+@@ -589,6 +598,7 @@ static struct ftrace_event_class __used event_class_##call = {		\
  	.probe			= ftrace_raw_event_##call,		\
  	.reg			= ftrace_event_reg,			\
  	_TRACE_PERF_INIT(call)						\
@@ -81,7 +65,7 @@ index a763888..57c58bb 100644
  };
  
  #undef DEFINE_EVENT
-@@ -779,5 +789,110 @@ static inline void perf_test_probe_##call(void)				\
+@@ -705,5 +715,79 @@ static inline void perf_test_probe_##call(void)				\
  #include TRACE_INCLUDE(TRACE_INCLUDE_FILE)
  #endif /* CONFIG_PERF_EVENTS */
  
@@ -97,44 +81,15 @@ index a763888..57c58bb 100644
 +#undef __get_str
 +#define __get_str(field) (char *)__get_dynamic_array(field)
 +
-+#undef __perf_addr
-+#define __perf_addr(a) __addr = (a)
-+
-+#undef __perf_count
-+#define __perf_count(c) __count = (c)
-+
-+#undef __perf_task
-+#define __perf_task(t) __task = (t)
++#undef TP_fast_assign
++#define TP_fast_assign(args...) args
 +
 +#undef TP_perf_assign
-+#define TP_perf_assign(args...) args
++#define TP_perf_assign(args...)
 +
 +#undef TP_printk
-+#define TP_printk(fmt, args...) fmt "\n", args
 +
-+/* todo: implement this marco in trace/events/irq.h
-+ *
-+ * struct trace_seq variable problem in events/scsi.h
-+ * __parse_cdb
-+ *
-+ **/
-+
-+#undef __parse_cdb
-+#define __parse_cdb(cdb, len)  	"N/A"
-+
-+#undef __print_symbolic
-+#define __print_symbolic(value, symbol_array...)	"N/A"
-+
-+#undef __print_symbolic_u64
-+#define __print_symbolic_u64(value, symbol_array...)	"N/A"
-+
-+#undef __print_flags
-+#define __print_flags(flag, delim, flag_array...)	"N/A"
-+
-+#undef __print_hex
-+#define __print_hex(buf, buf_len)			"N/A"
-+
-+extern void ktap_do_trace(struct ftrace_event_call *call, void *entry, const char *fmt, ...);
++extern void ktap_do_trace(struct ftrace_event_call *call, void *entry, int entry_size, int data_size);
 +
 +#undef DECLARE_EVENT_CLASS
 +#define DECLARE_EVENT_CLASS(call, proto, args, tstruct, assign, print)	\
@@ -143,21 +98,19 @@ index a763888..57c58bb 100644
 +{									\
 +	struct ftrace_event_call *event_call = __data;			\
 +	struct ftrace_data_offsets_##call __maybe_unused __data_offsets;\
-+	struct ftrace_raw_##call entry0;				\
 +	struct ftrace_raw_##call *entry;				\
-+	struct pt_regs __regs;						\
-+	u64 __addr = 0, __count = 1;					\
-+	struct task_struct *__task = NULL;				\
++	struct ftrace_raw_##call entry0;				\
 +	int __data_size;						\
 +									\
 +	entry = &entry0;						\
 +	__data_size = ftrace_get_offsets_##call(&__data_offsets, args); \
 +									\
++	entry->ent.type = event_call->event.type;			\
 +	tstruct								\
 +									\
 +	{ assign; }							\
 +									\
-+	event_call->ktap_do_trace(event_call, (void *)entry, print);	\
++	event_call->ktap_do_trace(event_call, (void *)entry, sizeof(struct ftrace_raw_##call), __data_size);\
 +	return;								\
 +}
 +
@@ -193,18 +146,10 @@ index a763888..57c58bb 100644
  #undef _TRACE_PROFILE_INIT
  
 diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index d608d09..6bf3d94 100644
+index 880073d..4da5f57 100644
 --- a/kernel/trace/trace_events.c
 +++ b/kernel/trace/trace_events.c
-@@ -43,6 +43,7 @@ trace_get_fields(struct ftrace_event_call *event_call)
- 		return &event_call->class->fields;
- 	return event_call->class->get_fields(event_call);
- }
-+EXPORT_SYMBOL_GPL(trace_get_fields);
- 
- static int __trace_define_field(struct list_head *head, const char *type,
- 				const char *name, int offset, int size,
-@@ -279,6 +280,62 @@ static void put_system(struct event_subsystem *system)
+@@ -279,6 +279,62 @@ static void put_system(struct event_subsystem *system)
  	mutex_unlock(&event_mutex);
  }
  

@@ -64,6 +64,8 @@ const char *const ktap_opnames[NUM_OPCODES + 1] = {
   "CLOSURE",
   "VARARG",
   "EXTRAARG",
+
+  "EVENT", /* used for e.field in tracing*/
   NULL
 };
 
@@ -112,6 +114,7 @@ const u8 ktap_opmodes[NUM_OPCODES] = {
  ,opmode(0, 1, OpArgU, OpArgN, iABx)            /* OP_CLOSURE */
  ,opmode(0, 1, OpArgU, OpArgN, iABC)            /* OP_VARARG */
  ,opmode(0, 0, OpArgU, OpArgU, iAx)             /* OP_EXTRAARG */
+ ,opmode(0, 1, OpArgR, OpArgK, iABC)            /* OP_EVENT */
 };
 
 

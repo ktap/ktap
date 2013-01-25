@@ -6,14 +6,15 @@ keeping update this file)
 -------------------------------------------------------------------------
 
 High:
-1. Drop ftrace.patch
-2. GC
-3. read kernel memory by symbol
-4. table stat showing
-5. ktap memory allocation
+1. event based tracing infrastructure
+2. Drop ftrace.patch
+3. GC
+4. read kernel memory by symbol
+5. table stat showing
+6. ktap memory allocation
 6. per-cpu ktap_State for performance improvement
-7. x86-64 support
-8. non-mainthread error exit problem(like printf arg mismatch)
+8. x86-64 support
+9. non-mainthread error exit problem(like printf arg mismatch)
 
 
 Normal:
@@ -23,6 +24,7 @@ Normal:
 4. kprobe/uprobe support
 5. function call speedup
 6. improve printf performance
+7. dumpstack support
 
 
 Low:

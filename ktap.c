@@ -117,8 +117,11 @@ static int ktap_main(int argc, char **argv)
 
 	vfree(buff);
 
-	if (cl)
+	if (cl) {
+		/* optimize bytecode before excuting */
+		ktap_optimize_code(ks, 0, cl->l.p);
 		ktap_call(ks, ks->top - 1, 0);
+	}
 
 	ktap_exit(ks);
 	return 0;

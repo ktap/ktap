@@ -127,6 +127,73 @@ void *ktapc_growaux(void *block, int *size, size_t size_elems, int limit,
 
 /*************************************************************************/
 
+#define print_base(i) \
+	do {	\
+		if (i < f->sizelocvars) /* it's a localvars */ \
+			printf("%s", getstr(f->locvars[i].varname));  \
+		else \
+			printf("base + %d", i);	\
+	} while (0)
+
+#define print_RKC(instr)	\
+	do {	\
+		if (ISK(GETARG_C(instr))) \
+			showobj(NULL, k + INDEXK(GETARG_C(instr))); \
+		else \
+			print_base(GETARG_C(instr)); \
+	} while (0)
+
+static void decode_instruction(Proto *f, int instr)
+{
+	int opcode = GET_OPCODE(instr);
+	Tvalue *k;
+
+	k = f->k;
+
+	printf("%.8x\t", instr);
+	printf("%s\t", ktap_opnames[opcode]);
+
+	switch (opcode) {
+	case OP_GETTABUP:
+		print_base(GETARG_A(instr));
+		printf(" <- ");
+
+		if (GETARG_B(instr) == 0)
+			printf("global");
+		else
+			printf("upvalues[%d]", GETARG_B(instr));
+
+		printf("{"); print_RKC(instr); printf("}");
+
+		break;
+	case OP_GETTABLE:
+		print_base(GETARG_A(instr));
+		printf(" <- ");
+
+		print_base(GETARG_B(instr));
+
+		printf("{");
+		print_RKC(instr);
+		printf("}");
+		break;
+	case OP_LOADK:
+		printf("\t");
+		print_base(GETARG_A(instr));
+		printf(" <- ");
+
+		showobj(NULL, k + GETARG_Bx(instr));
+		break;
+	case OP_CALL:
+		printf("\t");
+		print_base(GETARG_A(instr));
+		break;
+	default:
+		break;
+	}
+
+	printf("\n");
+}
+
 static int function_nr = 0;
 
 /* this is a debug function used for check bytecode chunk file */
@@ -141,7 +208,7 @@ static void dump_function(int level, Proto *f)
 	printf("numparams: %d\n", f->numparams);
 	printf("is_vararg: %d\n", f->is_vararg);
 	printf("maxstacksize: %d\n", f->maxstacksize);
-	printf("source: %s\n", f->source + 1); /*fix me*/
+	printf("source: %s\n", getstr(f->source));
 	printf("sizelineinfo: %d \t", f->sizelineinfo);
 	for (i = 0; i < f->sizelineinfo; i++)
 		printf("%d ", f->lineinfo[i]);
@@ -174,31 +241,21 @@ static void dump_function(int level, Proto *f)
 	printf("sizelocvars: %d\n", f->sizelocvars);
 	for (i = 0; i < f->sizelocvars; i++) {
 		printf("\tlocvars: %s startpc: %d endpc: %d\n",
-			(Tstring *)f->locvars[i].varname + 1, f->locvars[i].startpc,
-			f->locvars[i].endpc);
-	}
-
-	printf("sizelocvars: %d\n", f->sizelocvars);
-	for (i = 0; i < f->sizelocvars; i++) {
-		printf("\tlocvars: %s startpc: %d endpc: %d\n",
-			(Tstring *)f->locvars[i].varname + 1, f->locvars[i].startpc,
+			getstr(f->locvars[i].varname), f->locvars[i].startpc,
 			f->locvars[i].endpc);
 	}
 
 	printf("sizeupvalues: %d\n", f->sizeupvalues);
 	for (i = 0; i < f->sizeupvalues; i++) {
 		printf("\tname: %s instack: %d idx: %d\n",
-			(Tstring *)f->upvalues[i].name + 1, f->upvalues[i].instack,
+			getstr(f->upvalues[i].name), f->upvalues[i].instack,
 			f->upvalues[i].idx);
 	}
 
 	printf("\n");
 	printf("sizecode: %d\n", f->sizecode);
-	for (i = 0; i < f->sizecode; i++) {
-		int instr = f->code[i];
-		printf("%.8x\t", instr);
-		printf("%s\n", ktap_opnames[GET_OPCODE(instr)]);
-	}
+	for (i = 0; i < f->sizecode; i++)
+		decode_instruction(f, f->code[i]);
 
 	printf("sizep: %d\n", f->sizep);
 	for (i = 0; i < f->sizep; i++)
@@ -276,6 +333,9 @@ int main(int argc, char **argv)
 
 	munmap(buff, sb.st_size);
 	close(fdin);
+
+	dump_function(1, cl->l.p);
+//	return;
 
 	/* ktapc output */
 	fdout = open(default_output_filename, O_RDWR | O_CREAT | O_TRUNC, 0);

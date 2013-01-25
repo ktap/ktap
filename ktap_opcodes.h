@@ -76,11 +76,13 @@ OP_CLOSURE,/*   A Bx    R(A) := closure(KPROTO[Bx])                     */
 
 OP_VARARG,/*    A B     R(A), R(A+1), ..., R(A+B-2) = vararg            */
 
-OP_EXTRAARG/*   Ax      extra (larger) argument for previous opcode     */
+OP_EXTRAARG,/*   Ax      extra (larger) argument for previous opcode     */
+
+OP_EVENT,/*  A B C   R(A) := R(B)[C]                             */
 } OpCode;
 
 
-#define NUM_OPCODES     ((int)OP_EXTRAARG + 1)
+#define NUM_OPCODES     ((int)OP_EVENT + 1)
 
 
 enum OpMode {iABC, iABx, iAsBx, iAx};  /* basic instruction format */
@@ -133,11 +135,11 @@ enum OpMode {iABC, iABx, iAsBx, iAx};  /* basic instruction format */
 
 #define GET_OPCODE(i)   ((OpCode)((i)>>POS_OP) & MASK1(SIZE_OP,0))
 #define SET_OPCODE(i,o) ((i) = (((i)&MASK0(SIZE_OP,POS_OP)) | \
-                (((Instruction)o)<<POS_OP)&MASK1(SIZE_OP,POS_OP)))
+                ((((Instruction)o)<<POS_OP)&MASK1(SIZE_OP,POS_OP))))
 
 #define getarg(i,pos,size)      ((int)((i)>>pos) & MASK1(size,0))
 #define setarg(i,v,pos,size)    ((i) = (((i)&MASK0(size,pos)) | \
-                (((Instruction)v)<<pos)&MASK1(size,pos)))
+                ((((Instruction)v)<<pos)&MASK1(size,pos))))
 
 #define GETARG_A(i)     getarg(i, POS_A, SIZE_A)
 #define SETARG_A(i,v)   setarg(i, v, POS_A, SIZE_A)

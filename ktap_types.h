@@ -348,6 +348,8 @@ typedef int ktap_Number;
 #define KTAP_TPROTO		11
 #define KTAP_TUPVAL		12
 
+#define KTAP_TEVENT		13
+
 
 #define ttype(o)	((o->type) & 0x3F)
 #define settype(obj, t)	((obj)->type = (t))
@@ -376,6 +378,7 @@ typedef int ktap_Number;
 #define fvalue(o)	(val_(o).f)
 #define rawuvalue(o)	(&val_(o).gc->u)
 #define uvalue(o)	(&rawuvalue(o)->uv)
+#define evalue(o)	(val_(o).p)
 
 #define gcvalue(o)	(val_(o).gc)
 
@@ -390,6 +393,7 @@ typedef int ktap_Number;
 #define ttisnil(o)		((o)->type == KTAP_TNIL)
 #define ttisboolean(o)		((o)->type == KTAP_TBOOLEAN)
 #define ttisequal(o1,o2)        ((o1)->type == (o2)->type)
+#define ttisevent(o)		((o)->type == KTAP_TEVENT)
 
 
 
@@ -420,6 +424,9 @@ typedef int ktap_Number;
 #define setthvalue(L,obj,x) \
   { Tvalue *io=(obj); \
     val_(io).gc = (Gcobject *)(x); settype(io, KTAP_TTHREAD); }
+
+#define setevalue(obj, x) \
+  { Tvalue *io=(obj); val_(io).p = (x); settype(io, KTAP_TEVENT); }
 
 #define setobj(ks,obj1,obj2) \
         { const Tvalue *io2=(obj2); Tvalue *io1=(obj1); \

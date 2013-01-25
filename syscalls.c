@@ -24,6 +24,7 @@
 #include <linux/kallsyms.h>
 #include <trace/events/syscalls.h>
 #include <trace/syscall.h>
+#include "../trace.h"
 #include "ktap.h"
 
 static struct syscall_metadata **syscalls_metadata;
@@ -42,68 +43,22 @@ static struct syscall_metadata *syscall_nr_to_meta(int nr)
 	return syscalls_metadata[nr];
 }
 
-/*
- * we are not passing syscall name to trace function for performance
- * reason, try to use ktap syscall table if you want get syscall name
- */
-static void call_user_closure(ktap_State *mainthread, Closure *cl,
-			      int syscall_nr, int enter, int retval,
-			      int argnum, void *args_data)
-{
-	ktap_State *ks;
-	int numparames = min(argnum + 4, (int)cl->l.p->numparams);
-	Tvalue *func;
-	int i;
+struct ktap_syscall_trace_enter {
+	struct syscall_trace_enter entry;
+	unsigned long args[7];
+};
 
-	ks = ktap_newthread(mainthread);
-	setcllvalue(ks->top, cl);
-	func = ks->top;
-	incr_top(ks);
-
-	//ktap_printf(ks, "argnum: %d, numpar: %d\n", argnum, numparames);
-
-	if (numparames > 0) {
-		setnvalue(ks->top, syscall_nr);
-		incr_top(ks);
-		numparames--;
-	}
-
-	if (numparames > 0) {
-		setnvalue(ks->top, enter);
-		incr_top(ks);
-		numparames--;
-	}
-
-	if (numparames > 0) {
-		setnvalue(ks->top, retval);
-		incr_top(ks);
-		numparames--;
-	}
-
-	if (numparames > 0) {
-		setnvalue(ks->top, argnum);
-		incr_top(ks);
-		numparames--;
-	}
-
-	for (i = 0; (i < argnum) && (numparames > 0); i++) {
-		setnvalue(ks->top, *((ktap_Number *)args_data + i));
-		incr_top(ks);
-		numparames--;
-	}
-
-	ktap_call(ks, func, 0);
-	ktap_exitthread(ks);
-}
+struct ktap_syscall_trace_exit {
+	struct syscall_trace_exit entry;
+};
 
 static void syscall_raw_trace(void *data, struct pt_regs *regs, int enter)
 {
-	ktap_Callback_data *cbdata;
-	struct hlist_node *pos;
 	struct syscall_metadata *sys_data;
 	struct ftrace_event_call *call;
-	unsigned long args_data[7];
-	int syscall_nr, syscall_ret = 0;
+	struct ktap_syscall_trace_enter enter_entry;
+	struct ktap_syscall_trace_exit exit_entry;
+	int syscall_nr;
 	int i;
 
 	syscall_nr = syscall_get_nr(current, regs);
@@ -122,49 +77,19 @@ static void syscall_raw_trace(void *data, struct pt_regs *regs, int enter)
 	if (!sys_data)
 		return;
 
-	call = enter ? sys_data->enter_event : sys_data->exit_event;
-
-	syscall_get_arguments(current, regs, 0, sys_data->nb_args,
-			      (unsigned long *)&args_data);
-
-	if (!enter)
-		syscall_ret = syscall_get_return_value(current, regs);
-
-	/* todo: moew for loop out of this for_each_entry */
-	hlist_for_each_entry_rcu(cbdata, pos,
-				 &call->ktap_callback_list, node) {
-		ktap_State *ks = cbdata->ks;
-		Closure *cl = cbdata->cl;
-
-		/* call user defined trace function */
-		if (cl) {
-			call_user_closure(ks, cl, syscall_nr, enter,
-					  syscall_ret,
-					  enter ? sys_data->nb_args : 0,
-					  &args_data[0]);
-			continue;
-		}
-
-		/* default print */
-		if (!enter) {
-			ktap_printf(ks, "%d[%s]\t%s return %d\n", current->pid,
-					current->comm, sys_data->name,
-					syscall_ret);
-			continue;
-		}
-
-		ktap_printf(ks, "%d[%s]\t%s(", current->pid,
-				current->comm, sys_data->name);
-
-		for (i = 0; i < sys_data->nb_args; i++) {
-			if (i == sys_data->nb_args - 1) {
-				ktap_printf(ks, "(%s)%s: 0x%x)\n", sys_data->types[i],
-						sys_data->args[i], args_data[i]);
-				break;
-			}
-			ktap_printf(ks, "(%s)%s: 0x%x, ", sys_data->types[i],
-					sys_data->args[i], args_data[i]);
-		}
+	if (enter) {
+		call = sys_data->enter_event;
+		enter_entry.entry.nr = syscall_nr;
+		syscall_get_arguments(current, regs, 0, sys_data->nb_args,
+				      (unsigned long *)&enter_entry.entry.args);
+		enter_entry.entry.ent.type = call->event.type;
+		ktap_do_trace(call, (void *)&enter_entry, sizeof(enter_entry), 0);
+	} else {
+		call = sys_data->exit_event;
+		exit_entry.entry.nr = syscall_nr;
+		exit_entry.entry.ret = syscall_get_return_value(current, regs);
+		exit_entry.entry.ent.type = call->event.type;
+		ktap_do_trace(call, (void *)&exit_entry, sizeof(exit_entry), 0);
 	}
 }
 

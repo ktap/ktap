@@ -333,14 +333,12 @@ static int precall(ktap_State *ks, StkId func, int nresults)
 
 #define RA(i)   (base+GETARG_A(i))
 #define RB(i)   (base+GETARG_B(i))
-#define ISK(x)	((x) & BITRK)
+#define ISK(x)  ((x) & BITRK)
 #define RC(i)   base+GETARG_C(i)
 #define RKB(i) \
         ISK(GETARG_B(i)) ? k+INDEXK(GETARG_B(i)) : base+GETARG_B(i)
 #define RKC(i)  \
         ISK(GETARG_C(i)) ? k+INDEXK(GETARG_C(i)) : base+GETARG_C(i)
-#define KBx(i)  \
-  (k + (GETARG_Bx(i) != 0 ? GETARG_Bx(i) - 1 : GETARG_Ax(*ci->u.l.savedpc++)))
 
 #define dojump(ci,i,e) { \
 	ci->u.l.savedpc += GETARG_sBx(i) + e; }
@@ -696,6 +694,20 @@ static void ktap_execute(ktap_State *ks)
 		}
 	case OP_EXTRAARG:
 		return;
+
+	case OP_EVENT: {
+		Tvalue *b = RB(instr);
+		if ((GETARG_B(instr) == 0) && ttisevent(b)) {
+			ktap_event_handle(ks, evalue(b), GETARG_C(instr), ra);
+		} else {
+			/* normal OP_GETTABLE operation */
+			setsvalue(RKC(instr), ktap_event_get_ts(ks, GETARG_C(instr)));
+
+			gettable(ks, RB(instr), RKC(instr), ra);
+			base = ci->u.l.base;
+		}
+		break;
+		}
 	}
 
 	goto mainloop;
@@ -705,6 +717,42 @@ void ktap_call(ktap_State *ks, StkId func, int nresults)
 {
 	if (!precall(ks, func, nresults))
 		ktap_execute(ks);
+}
+
+/*
+ * making OP_EVENT for fast event field getting.
+ *
+ * This function must be called before all code loaded.
+ */
+void ktap_optimize_code(ktap_State *ks, int level, Proto *f)
+{
+	int i;
+
+	for (i = 0; i < f->sizecode; i++) {
+		int instr = f->code[i];
+		Tvalue *k = f->k;
+
+		switch (GET_OPCODE(instr)) {
+		case OP_GETTABLE:
+			if ((GETARG_B(instr) == 0) && ISK(GETARG_C(instr))) {
+				Tvalue *field = k + INDEXK(GETARG_C(instr));
+				if (ttype(field) == KTAP_TSTRING) {
+					int index = ktap_event_get_index(svalue(field));
+					if (index == -1)
+						break;
+
+					SET_OPCODE(instr, OP_EVENT);
+					SETARG_C(instr, index);
+					f->code[i] = instr;
+					break;
+				}
+			}
+		}
+	}
+
+	/* continue optimize sub functions */
+	for (i = 0; i < f->sizep; i++)
+		ktap_optimize_code(ks, level + 1, f->p[i]);
 }
 
 

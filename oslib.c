@@ -138,7 +138,7 @@ static int ktap_lib_trace(ktap_State *ks)
 	} else
 		cl = NULL;
 
-	event_name = (char *)getstr(rawtsvalue(evname));
+	event_name = svalue(evname);
 	start_trace(ks, event_name, cl);
 
 	return 0;

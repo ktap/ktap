@@ -283,3 +283,4 @@ Closure *ktap_load(ktap_State *ks, unsigned char *buff)
 	verify_code(&S, cl->l.p);
 	return cl;
 }
+
