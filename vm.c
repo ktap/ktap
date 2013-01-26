@@ -867,6 +867,8 @@ void ktap_exit(ktap_State *ks)
 	free_all_gcobject(ks);
 	ktap_exitthread(ks);
 
+	ktap_transport_exit();
+
 	/* life ending, no return anymore*/
 	do_exit(0);
 }
@@ -884,6 +886,8 @@ ktap_State *ktap_newstate()
 	G(ks) = (global_State *)(ks + 1);
 	G(ks)->mainthread = ks;
 	G(ks)->seed = 201236; /* todo: make more random in */
+
+	ktap_transport_init();
 
 	/* init output file structure, use for ktap_printf*/
 	f = fdget(1);

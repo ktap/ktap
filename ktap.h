@@ -48,4 +48,7 @@ Tstring *ktap_event_get_ts(ktap_State *ks, int index);
 
 Tstring *ktap_strfmt(ktap_State *ks);
 
+void ktap_transport_exit(void);
+int ktap_transport_init(void);
+
 #endif /* __KTAP_H__ */

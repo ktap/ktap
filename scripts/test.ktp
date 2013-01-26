@@ -22,14 +22,14 @@ end
 
 ---os.trace("irq:irq_handler_entry", eventfun1);
 ---os.trace("irq:softirq_entry", eventfun1);
----os.trace("kmem:kmalloc", eventfun1);
+os.trace("kmem:kmalloc", eventfun1);
 ---os.trace("signal:signal_deliver", eventfun1);
 ---os.trace("signal:signal_generate", eventfun1);
 ---os.trace("syscalls:sys_enter_open", eventfun);
 ---os.trace("syscalls:sys_exit_open", eventfun);
 ---os.trace("syscalls", eventfun1);
 ---os.trace("sched:sched_process_fork", eventfun)
-os.trace("sched:sched_switch", eventfun1)
+---os.trace("sched:sched_switch", eventfun1)
 
 os.trace_end(function ()
 	print(count1, count2)

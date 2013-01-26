@@ -2,7 +2,7 @@
 
 obj-m		+= ktapvm.o
 ktapvm-y	:= ktap.o loader.o object.o baselib.o oslib.o tstring.o table.o vm.o \
-			syscalls.o trace.o opcode.o strfmt.o
+			syscalls.o trace.o opcode.o strfmt.o transport.o
 
 all:
 	make -C ../../.. M=`pwd` modules
