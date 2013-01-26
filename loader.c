@@ -44,7 +44,7 @@ struct load_state {
 		S->pos += size;	\
 	} while(0)
 
-#define NEW_VECTOR(S, size)	kmalloc(size, GFP_KERNEL)
+#define NEW_VECTOR(S, size)	ktap_malloc(S->ks, size)
 
 
 static void load_function(struct load_state *S, Proto *f);
@@ -80,7 +80,7 @@ static Tstring *load_string(struct load_state *S)
 		char *s = NEW_VECTOR(S, size);
 		READ_VECTOR(S, s, size * sizeof(char));
 		ts = tstring_newlstr(S->ks, s, size - 1); /* remove trailing '\0' */
-		kfree(s);
+		ktap_free(S->ks, s);
 		return ts;
 	}
 }

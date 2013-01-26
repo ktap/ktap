@@ -827,8 +827,8 @@ static void ktap_init_state(ktap_State *ks)
 void ktap_exitthread(ktap_State *ks)
 {
 	free_ci(ks);
-	kfree(ks->stack);
-	kfree(ks);
+	ktap_free(ks, ks->stack);
+	ktap_free(ks, ks);
 }
 
 ktap_State *ktap_newthread(ktap_State *mainthread)

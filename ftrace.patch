@@ -1,5 +1,5 @@
 diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-index a3d4895..0f4d7aa 100644
+index a3d4895..fb110da 100644
 --- a/include/linux/ftrace_event.h
 +++ b/include/linux/ftrace_event.h
 @@ -168,6 +168,7 @@ struct ftrace_event_class {
@@ -10,17 +10,19 @@ index a3d4895..0f4d7aa 100644
  	int			(*reg)(struct ftrace_event_call *event,
  				       enum trace_reg type, void *data);
  	int			(*define_fields)(struct ftrace_event_call *);
-@@ -232,6 +233,9 @@ struct ftrace_event_call {
+@@ -232,6 +233,11 @@ struct ftrace_event_call {
  	int				perf_refcount;
  	struct hlist_head __percpu	*perf_events;
  #endif
 +	int				ktap_refcount;
 +	struct hlist_head		ktap_callback_list;
++	void *(*ktap_pre_trace)(struct ftrace_event_call *call, int size);
 +	void (*ktap_do_trace)(struct ftrace_event_call *call, void *entry, int entry_size, int data_size);
++	void (*ktap_post_trace)(struct ftrace_event_call *call, void *entry);
  };
  
  #define __TRACE_EVENT_FLAGS(name, value)				\
-@@ -274,6 +278,9 @@ extern void trace_remove_event_call(struct ftrace_event_call *call);
+@@ -274,6 +280,9 @@ extern void trace_remove_event_call(struct ftrace_event_call *call);
  
  #define is_signed_type(type)	(((type)(-1)) < 0)
  
@@ -31,7 +33,7 @@ index a3d4895..0f4d7aa 100644
  
  /*
 diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
-index 40dc5e8..cfd4604 100644
+index 40dc5e8..0960fa1 100644
 --- a/include/trace/ftrace.h
 +++ b/include/trace/ftrace.h
 @@ -486,6 +486,14 @@ static inline notrace int ftrace_get_offsets_##call(			\
@@ -65,7 +67,7 @@ index 40dc5e8..cfd4604 100644
  };
  
  #undef DEFINE_EVENT
-@@ -705,5 +715,79 @@ static inline void perf_test_probe_##call(void)				\
+@@ -705,5 +715,78 @@ static inline void perf_test_probe_##call(void)				\
  #include TRACE_INCLUDE(TRACE_INCLUDE_FILE)
  #endif /* CONFIG_PERF_EVENTS */
  
@@ -99,18 +101,17 @@ index 40dc5e8..cfd4604 100644
 +	struct ftrace_event_call *event_call = __data;			\
 +	struct ftrace_data_offsets_##call __maybe_unused __data_offsets;\
 +	struct ftrace_raw_##call *entry;				\
-+	struct ftrace_raw_##call entry0;				\
 +	int __data_size;						\
 +									\
-+	entry = &entry0;						\
 +	__data_size = ftrace_get_offsets_##call(&__data_offsets, args); \
 +									\
-+	entry->ent.type = event_call->event.type;			\
++	entry = event_call->ktap_pre_trace(event_call, sizeof(*entry) + __data_size); \
 +	tstruct								\
 +									\
 +	{ assign; }							\
 +									\
 +	event_call->ktap_do_trace(event_call, (void *)entry, sizeof(struct ftrace_raw_##call), __data_size);\
++	event_call->ktap_post_trace(event_call, entry);			\
 +	return;								\
 +}
 +

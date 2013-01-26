@@ -21,6 +21,7 @@
  */
 
 #include <linux/module.h>
+#include <linux/hardirq.h>
 #include <linux/slab.h>
 
 #include "ktap.h"
@@ -64,6 +65,14 @@ static int ktap_lib_printf(ktap_State *ks)
 	return 0;
 }
 
+static int ktap_lib_in_interrupt(ktap_State *ks)
+{
+	int ret = in_interrupt();
+
+	setnvalue(ks->top, ret);
+	incr_top(ks);
+	return 1;
+}
 
 static const ktap_Reg base_funcs[] = {
 //  {"assert", ktap_assert},
@@ -76,6 +85,7 @@ static const ktap_Reg base_funcs[] = {
 //  {"pairs", ktap_pairs},
 	{"print", ktap_lib_print},
 	{"printf", ktap_lib_printf},
+	{"in_interrupt", ktap_lib_in_interrupt},
 //  {"tonumber", ktap_tonumber},
 //  {"tostring", ktap_tostring},
 //  {"type", ktap_type},

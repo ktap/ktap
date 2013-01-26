@@ -214,9 +214,10 @@ void ktap_do_trace(struct ftrace_event_call *call, void *entry,
 	struct ktap_event event;
 
 	/* todo: fix this */
+#if 0
 	if (in_interrupt())
 		return;
-
+#endif
 	event.call = call;
 	event.entry = entry;
 	event.entry_size = entry_size;
@@ -239,6 +240,21 @@ void ktap_do_trace(struct ftrace_event_call *call, void *entry,
 	}
 }
 
+static void *ktap_pre_trace(struct ftrace_event_call *call, int size)
+{
+	struct trace_entry  *entry;
+
+	entry = ktap_malloc(NULL, size);
+	entry->type = call->event.type;
+
+	return entry;
+}
+
+static void ktap_post_trace(struct ftrace_event_call *call, void *entry)
+{
+	ktap_free(NULL, entry);
+}
+
 static void enable_event(struct ftrace_event_call *call, void *data)
 {
 	ktap_Callback_data *cbdata = data;
@@ -248,7 +264,7 @@ static void enable_event(struct ftrace_event_call *call, void *data)
 	if (!call->ktap_refcount) {
 		struct ktap_trace_list *ktl;
 
-		ktl = kmalloc(sizeof(struct ktap_trace_list), GFP_KERNEL);
+		ktl = ktap_malloc(cbdata->ks, sizeof(struct ktap_trace_list));
 		if (!ktl) {
 			ktap_printf(cbdata->ks, "allocate ktap_trace_list failed\n");
 			return;
@@ -257,12 +273,14 @@ static void enable_event(struct ftrace_event_call *call, void *data)
 		ktl->cbdata = data;
 		INIT_LIST_HEAD(&ktl->list);
 
+		call->ktap_pre_trace = ktap_pre_trace;
 		call->ktap_do_trace = ktap_do_trace;
+		call->ktap_post_trace = ktap_post_trace;
 
 		if (!call->class->ktap_probe) {
 			/* syscall tracing */
 			if (start_trace_syscalls(call, cbdata)) {
-				kfree(ktl);
+				ktap_free(cbdata->ks, ktl);
 				return;
 			}
 		} else
@@ -316,8 +334,8 @@ void end_all_trace(ktap_State *ks)
 		}
 
 		if (!--cbdata->event_refcount)
-			kfree(cbdata);
-		kfree(pos);
+			ktap_free(ks, cbdata);
+		ktap_free(ks, pos);
 	}
 
 	tracepoint_synchronize_unregister();
