@@ -263,8 +263,6 @@ typedef struct ktap_State {
 	int debug;
 	int version;
 	int gcrunning;
-
-	int tracing; /* ktap forbid recursive tracing */
 } ktap_State;
 
 

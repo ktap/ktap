@@ -33,7 +33,7 @@ index a3d4895..fb110da 100644
  
  /*
 diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
-index 40dc5e8..0960fa1 100644
+index 40dc5e8..0a66012 100644
 --- a/include/trace/ftrace.h
 +++ b/include/trace/ftrace.h
 @@ -486,6 +486,14 @@ static inline notrace int ftrace_get_offsets_##call(			\
@@ -67,7 +67,7 @@ index 40dc5e8..0960fa1 100644
  };
  
  #undef DEFINE_EVENT
-@@ -705,5 +715,78 @@ static inline void perf_test_probe_##call(void)				\
+@@ -705,5 +715,81 @@ static inline void perf_test_probe_##call(void)				\
  #include TRACE_INCLUDE(TRACE_INCLUDE_FILE)
  #endif /* CONFIG_PERF_EVENTS */
  
@@ -106,6 +106,9 @@ index 40dc5e8..0960fa1 100644
 +	__data_size = ftrace_get_offsets_##call(&__data_offsets, args); \
 +									\
 +	entry = event_call->ktap_pre_trace(event_call, sizeof(*entry) + __data_size); \
++									\
++	if (unlikely(!entry))						\
++		return;							\
 +	tstruct								\
 +									\
 +	{ assign; }							\

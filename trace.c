@@ -228,21 +228,22 @@ void ktap_do_trace(struct ftrace_event_call *call, void *entry,
 		ktap_State *ks = cbdata->ks;
 		Closure *cl = cbdata->cl;
 
-		if (ks->tracing == 1)
-			continue;
-
-		ks->tracing = 1;
-
 		//call_user_closure(ks, cl, entry, trace_get_fields(call));
 		call_user_closure(ks, cl, &event);
-
-		ks->tracing = 0;
 	}
 }
+
+
+static DEFINE_PER_CPU(bool, ktap_in_tracing);
 
 static void *ktap_pre_trace(struct ftrace_event_call *call, int size)
 {
 	struct trace_entry  *entry;
+
+	if (unlikely(__this_cpu_read(ktap_in_tracing)))
+		return NULL;
+
+	__this_cpu_write(ktap_in_tracing, true);
 
 	entry = ktap_malloc(NULL, size);
 	entry->type = call->event.type;
@@ -253,6 +254,8 @@ static void *ktap_pre_trace(struct ftrace_event_call *call, int size)
 static void ktap_post_trace(struct ftrace_event_call *call, void *entry)
 {
 	ktap_free(NULL, entry);
+
+	__this_cpu_write(ktap_in_tracing, false);
 }
 
 static void enable_event(struct ftrace_event_call *call, void *data)
