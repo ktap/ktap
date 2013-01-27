@@ -76,6 +76,7 @@ static void event_annotate(ktap_State *ks, struct ktap_event *event, StkId ra)
 		struct trace_seq *s = &iter->seq;
 		int len = s->len >= PAGE_SIZE ? PAGE_SIZE - 1 : s->len;
 
+		/* todo: delete this annotate string after event call finish */
 		setsvalue(ra, tstring_newlstr(ks, s->buffer, len));
 	} else
 		setnilvalue(ra);
@@ -213,11 +214,6 @@ void ktap_do_trace(struct ftrace_event_call *call, void *entry,
 	struct hlist_node *pos;
 	struct ktap_event event;
 
-	/* todo: fix this */
-#if 0
-	if (in_interrupt())
-		return;
-#endif
 	event.call = call;
 	event.entry = entry;
 	event.entry_size = entry_size;
@@ -228,34 +224,40 @@ void ktap_do_trace(struct ftrace_event_call *call, void *entry,
 		ktap_State *ks = cbdata->ks;
 		Closure *cl = cbdata->cl;
 
-		//call_user_closure(ks, cl, entry, trace_get_fields(call));
 		call_user_closure(ks, cl, &event);
 	}
 }
 
 
+static void *entry_percpu_buffer;
 static DEFINE_PER_CPU(bool, ktap_in_tracing);
 
-static void *ktap_pre_trace(struct ftrace_event_call *call, int size)
+static void *ktap_pre_trace(struct ftrace_event_call *call, int size, unsigned long *flags)
 {
 	struct trace_entry  *entry;
 
-	if (unlikely(__this_cpu_read(ktap_in_tracing)))
+	if (unlikely(size > PAGE_SIZE))
 		return NULL;
+
+	local_irq_save(*flags);
+
+	if (unlikely(__this_cpu_read(ktap_in_tracing))) {
+		local_irq_restore(*flags);
+		return NULL;
+	}
 
 	__this_cpu_write(ktap_in_tracing, true);
 
-	entry = ktap_malloc(NULL, size);
+	entry = per_cpu_ptr(entry_percpu_buffer, smp_processor_id());
 	entry->type = call->event.type;
 
 	return entry;
 }
 
-static void ktap_post_trace(struct ftrace_event_call *call, void *entry)
+static void ktap_post_trace(struct ftrace_event_call *call, void *entry, unsigned long *flags)
 {
-	ktap_free(NULL, entry);
-
 	__this_cpu_write(ktap_in_tracing, false);
+	local_irq_restore(*flags);
 }
 
 static void enable_event(struct ftrace_event_call *call, void *data)
@@ -346,4 +348,15 @@ void end_all_trace(ktap_State *ks)
 	/* empty trace_list */	
 	INIT_LIST_HEAD(&trace_list);
 }
+
+
+int ktap_trace_init()
+{
+	entry_percpu_buffer = alloc_percpu(PAGE_SIZE);
+	if (!entry_percpu_buffer)
+		return -1;
+
+	return 0;
+}
+
 

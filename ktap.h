@@ -40,6 +40,7 @@ int start_trace_syscalls(struct ftrace_event_call *call,
 			  ktap_Callback_data *callback);
 void stop_trace_syscalls(struct ftrace_event_call *call,
 			 ktap_Callback_data *callback);
+int ktap_trace_init(void);
 
 int start_trace(ktap_State *ks, char *event_name, Closure *cl);
 void end_all_trace(ktap_State *ks);
@@ -48,6 +49,8 @@ Tstring *ktap_event_get_ts(ktap_State *ks, int index);
 
 Tstring *ktap_strfmt(ktap_State *ks);
 
+void ktap_transport_write(const void *data, size_t length);
+void *ktap_transport_reserve(size_t length);
 void ktap_transport_exit(void);
 int ktap_transport_init(void);
 

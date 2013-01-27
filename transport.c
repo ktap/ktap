@@ -51,13 +51,16 @@ static int remove_buf_file_callback(struct dentry *dentry)
 	return 0;
 }
 
+/*
+ * we must use per-cpu relay buffer, otherwise we need to protect each
+ * tracing call to order every printf call, that's really bad to performance.
+ */
 static struct dentry *create_buf_file_callback(const char *filename,
 					       struct dentry *parent,
 					       umode_t mode,
 					       struct rchan_buf *buf,
 					       int *is_global)
 {
-	*is_global = 1;
 	return debugfs_create_file(filename, mode, parent, buf,
 				   &relay_file_operations);
 }
@@ -68,20 +71,40 @@ static struct rchan_callbacks relay_callbacks = {
 	.remove_buf_file        = remove_buf_file_callback,
 };
 
+void ktap_transport_write(const void *data, size_t length)
+{
+	relay_write(ktap_chan, data, length);
+}
+
+void *ktap_transport_reserve(size_t length)
+{
+	return relay_reserve(ktap_chan, length);
+}
+
 void ktap_transport_exit()
 {
-	relay_close(ktap_chan);
-	debugfs_remove(ktap_dir);
+	if (ktap_chan)
+		relay_close(ktap_chan);
+	if (ktap_dir)
+		debugfs_remove(ktap_dir);
 }
 
 int ktap_transport_init()
 {
 	ktap_dir = debugfs_create_dir("ktap", NULL);
-	if (!ktap_dir)
+	if (!ktap_dir) {
+		pr_err("ktap: debugfs_create_dir failed\n");
 		return -1;
+	}
 
 	ktap_chan = relay_open("trace", ktap_dir, 1024, 1, &relay_callbacks, NULL);
-	if (!ktap_chan)
+	if (!ktap_chan) {
+		pr_err("ktap: relay_open failed\n");
+		debugfs_remove(ktap_dir);
 		return -1;
+	}
+
+	return 0;
 }
+
 

@@ -878,6 +878,7 @@ ktap_State *ktap_newstate()
 {
 	struct fd f;
 	ktap_State *ks;
+	int ret;
 
 	ks = kzalloc(sizeof(ktap_State) + sizeof(global_State), GFP_KERNEL);
 	if (!ks)
@@ -887,7 +888,11 @@ ktap_State *ktap_newstate()
 	G(ks)->mainthread = ks;
 	G(ks)->seed = 201236; /* todo: make more random in */
 
-	ktap_transport_init();
+	ret = ktap_transport_init();
+	if (ret)
+		return NULL;
+
+	ktap_trace_init();
 
 	/* init output file structure, use for ktap_printf*/
 	f = fdget(1);

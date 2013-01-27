@@ -53,11 +53,14 @@ void ktap_printf(ktap_State *ks, const char *fmt, ...)
 	len = vscnprintf(buff, 512, fmt, args);
 	va_end(args);
 
+	ktap_transport_write(buff, len);
+#if 0
 	pos = f->f_pos;
 	set_fs(KERNEL_DS);
 	vfs_write(G(ks)->ofile, buff, len, &pos);
 	f->f_pos = pos;
 	set_fs(old_fs);
+#endif
 }
 
 

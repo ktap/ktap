@@ -1,5 +1,5 @@
 diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-index a3d4895..fb110da 100644
+index a3d4895..7b5a424 100644
 --- a/include/linux/ftrace_event.h
 +++ b/include/linux/ftrace_event.h
 @@ -168,6 +168,7 @@ struct ftrace_event_class {
@@ -16,9 +16,9 @@ index a3d4895..fb110da 100644
  #endif
 +	int				ktap_refcount;
 +	struct hlist_head		ktap_callback_list;
-+	void *(*ktap_pre_trace)(struct ftrace_event_call *call, int size);
++	void *(*ktap_pre_trace)(struct ftrace_event_call *call, int size, unsigned long *flags);
 +	void (*ktap_do_trace)(struct ftrace_event_call *call, void *entry, int entry_size, int data_size);
-+	void (*ktap_post_trace)(struct ftrace_event_call *call, void *entry);
++	void (*ktap_post_trace)(struct ftrace_event_call *call, void *entry, unsigned long *flags);
  };
  
  #define __TRACE_EVENT_FLAGS(name, value)				\
@@ -33,7 +33,7 @@ index a3d4895..fb110da 100644
  
  /*
 diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
-index 40dc5e8..0a66012 100644
+index 40dc5e8..cbe49d7 100644
 --- a/include/trace/ftrace.h
 +++ b/include/trace/ftrace.h
 @@ -486,6 +486,14 @@ static inline notrace int ftrace_get_offsets_##call(			\
@@ -67,7 +67,7 @@ index 40dc5e8..0a66012 100644
  };
  
  #undef DEFINE_EVENT
-@@ -705,5 +715,81 @@ static inline void perf_test_probe_##call(void)				\
+@@ -705,5 +715,82 @@ static inline void perf_test_probe_##call(void)				\
  #include TRACE_INCLUDE(TRACE_INCLUDE_FILE)
  #endif /* CONFIG_PERF_EVENTS */
  
@@ -102,10 +102,11 @@ index 40dc5e8..0a66012 100644
 +	struct ftrace_data_offsets_##call __maybe_unused __data_offsets;\
 +	struct ftrace_raw_##call *entry;				\
 +	int __data_size;						\
++	unsigned long ktap_flags;						\
 +									\
 +	__data_size = ftrace_get_offsets_##call(&__data_offsets, args); \
 +									\
-+	entry = event_call->ktap_pre_trace(event_call, sizeof(*entry) + __data_size); \
++	entry = event_call->ktap_pre_trace(event_call, sizeof(*entry) + __data_size, &ktap_flags); \
 +									\
 +	if (unlikely(!entry))						\
 +		return;							\
@@ -114,7 +115,7 @@ index 40dc5e8..0a66012 100644
 +	{ assign; }							\
 +									\
 +	event_call->ktap_do_trace(event_call, (void *)entry, sizeof(struct ftrace_raw_##call), __data_size);\
-+	event_call->ktap_post_trace(event_call, entry);			\
++	event_call->ktap_post_trace(event_call, entry, &ktap_flags);			\
 +	return;								\
 +}
 +
