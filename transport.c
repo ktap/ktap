@@ -73,7 +73,7 @@ static struct rchan_callbacks relay_callbacks = {
 
 void ktap_transport_write(const void *data, size_t length)
 {
-	relay_write(ktap_chan, data, length);
+	__relay_write(ktap_chan, data, length);
 }
 
 void *ktap_transport_reserve(size_t length)
