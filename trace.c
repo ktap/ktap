@@ -27,15 +27,18 @@
 #include "../trace.h"
 #include "ktap.h"
 
-struct ktap_trace_list {
+typedef struct ktap_Callback_data {
+	ktap_State *ks;
+	Closure *cl;
+} ktap_Callback_data;
+
+struct ktap_event_node {
 	struct ftrace_event_call *call;
-	ktap_Callback_data *cbdata;
+	ktap_State *ks;
+	Closure *cl;
 	struct list_head list;
+	struct hlist_node node;
 };
-
-/* todo: put this list to global ktap State and percpu? */
-static LIST_HEAD(trace_list);
-
 
 /* this structure allocate on stack */
 struct ktap_event {
@@ -44,7 +47,6 @@ struct ktap_event {
 	int entry_size;
 	int data_size;
 };
-
 
 static struct list_head *ktap_get_fields(struct ftrace_event_call *event_call)
 {
@@ -210,7 +212,7 @@ static void call_user_closure(ktap_State *mainthread, Closure *cl,
 void ktap_do_trace(struct ftrace_event_call *call, void *entry,
 			  int entry_size, int data_size)
 {
-	ktap_Callback_data *cbdata;
+	struct ktap_event_node *eventnode;
 	struct hlist_node *pos;
 	struct ktap_event event;
 
@@ -219,10 +221,10 @@ void ktap_do_trace(struct ftrace_event_call *call, void *entry,
 	event.entry_size = entry_size;
 	event.data_size = data_size;
 
-	hlist_for_each_entry_rcu(cbdata, pos,
+	hlist_for_each_entry_rcu(eventnode, pos,
 				 &call->ktap_callback_list, node) {
-		ktap_State *ks = cbdata->ks;
-		Closure *cl = cbdata->cl;
+		ktap_State *ks = eventnode->ks;
+		Closure *cl = eventnode->cl;
 
 		call_user_closure(ks, cl, &event);
 	}
@@ -263,83 +265,86 @@ static void ktap_post_trace(struct ftrace_event_call *call, void *entry, unsigne
 static void enable_event(struct ftrace_event_call *call, void *data)
 {
 	ktap_Callback_data *cbdata = data;
-	
+	struct ktap_event_node *eventnode;
+
 	ktap_printf(cbdata->ks, "enable event: %s\n", call->name);
 
+	eventnode = ktap_malloc(cbdata->ks, sizeof(struct ktap_event_node));
+	if (!eventnode) {
+		ktap_printf(cbdata->ks, "allocate ktap_event_node failed\n");
+		return;
+	}
+	eventnode->call = call;
+	eventnode->ks = cbdata->ks;
+	eventnode->cl = cbdata->cl;
+	INIT_LIST_HEAD(&eventnode->list);
+
 	if (!call->ktap_refcount) {
-		struct ktap_trace_list *ktl;
-
-		ktl = ktap_malloc(cbdata->ks, sizeof(struct ktap_trace_list));
-		if (!ktl) {
-			ktap_printf(cbdata->ks, "allocate ktap_trace_list failed\n");
-			return;
-		}
-		ktl->call = call;
-		ktl->cbdata = data;
-		INIT_LIST_HEAD(&ktl->list);
-
 		call->ktap_pre_trace = ktap_pre_trace;
 		call->ktap_do_trace = ktap_do_trace;
 		call->ktap_post_trace = ktap_post_trace;
+		INIT_HLIST_HEAD(&call->ktap_callback_list);
 
 		if (!call->class->ktap_probe) {
 			/* syscall tracing */
-			if (start_trace_syscalls(call, cbdata)) {
-				ktap_free(cbdata->ks, ktl);
+			if (start_trace_syscalls(call)) {
+				ktap_free(cbdata->ks, eventnode);
 				return;
 			}
 		} else
 			tracepoint_probe_register(call->name,
 						  call->class->ktap_probe,
 						  call);
-		list_add(&ktl->list, &trace_list);
 	}
 
-	hlist_add_head_rcu(&cbdata->node, &call->ktap_callback_list);
+	list_add(&eventnode->list, &(G(cbdata->ks)->event_nodes));
+	hlist_add_head_rcu(&eventnode->node, &call->ktap_callback_list);
+
 	call->ktap_refcount++;
-	cbdata->event_refcount++;
 }
 
 int start_trace(ktap_State *ks, char *event_name, Closure *cl)
 {
+#if 0
 	ktap_Callback_data *callback;
 
 	callback = kzalloc(sizeof(ktap_Callback_data), GFP_KERNEL);
 	callback->ks = ks;
 	callback->cl = cl;
+#endif
 
-	ftrace_on_event_call(event_name, enable_event, (void *)callback);
+	ktap_Callback_data  callback;
+
+	callback.ks = ks;
+	callback.cl = cl;
+	ftrace_on_event_call(event_name, enable_event, (void *)&callback);
 	return 0;
 }
 
 /* cleanup all tracepoint owned by this ktap */
 void end_all_trace(ktap_State *ks)
 {
-	struct ktap_trace_list *pos;
+	struct ktap_event_node *pos;
+	struct list_head *event_nodes = &(G(ks)->event_nodes);
 
-	if (list_empty(&trace_list))
+	if (list_empty(event_nodes))
 		return;
 
-	list_for_each_entry(pos, &trace_list, list) {
+	list_for_each_entry(pos, event_nodes, list) {
 		struct ftrace_event_call *call = pos->call;
-		ktap_Callback_data *cbdata = pos->cbdata;
 
-		hlist_del_rcu(&cbdata->node);
-
+		hlist_del_rcu(&pos->node);
 		if (!--call->ktap_refcount) {
 			if (!call->class->ktap_probe)
-				stop_trace_syscalls(call, cbdata);
+				stop_trace_syscalls(call);
 			else
 				tracepoint_probe_unregister(call->name,
 							    call->class->ktap_probe,
 							    call);
 
 			call->ktap_do_trace = NULL;
-			hlist_empty(&call->ktap_callback_list);
 		}
 
-		if (!--cbdata->event_refcount)
-			ktap_free(ks, cbdata);
 		ktap_free(ks, pos);
 	}
 
@@ -347,8 +352,7 @@ void end_all_trace(ktap_State *ks)
 
 	free_percpu(entry_percpu_buffer);
 
-	/* empty trace_list */	
-	INIT_LIST_HEAD(&trace_list);
+	INIT_LIST_HEAD(event_nodes);
 }
 
 int ktap_trace_init()

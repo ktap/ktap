@@ -137,8 +137,7 @@ static int get_syscall_info(struct ftrace_event_call *call, int *enter)
 	return syscall_nr;
 }
 
-int start_trace_syscalls(struct ftrace_event_call *call,
-			  ktap_Callback_data *callback)
+int start_trace_syscalls(struct ftrace_event_call *call)
 {
 	int enter, syscall_nr, ret = 0;
 
@@ -167,8 +166,7 @@ int start_trace_syscalls(struct ftrace_event_call *call,
 	return 0;
 }
 
-void stop_trace_syscalls(struct ftrace_event_call *call,
-			 ktap_Callback_data *callback)
+void stop_trace_syscalls(struct ftrace_event_call *call)
 {
 	int enter, syscall_nr;
 

@@ -4,21 +4,10 @@
 #include "ktap_types.h"
 #include "ktap_opcodes.h"
 
-
-typedef struct ktap_Callback_data {
-	ktap_State *ks;
-	Closure *cl;
-	int event_refcount;
-	struct hlist_node node;
-} ktap_Callback_data;
-
-
 typedef struct ktap_Reg {
         const char *name;
         ktap_cfunction func;
 } ktap_Reg;
-
-
 
 ktap_State *ktap_newstate(void);
 void ktap_exit(ktap_State *ks);
@@ -36,10 +25,8 @@ void ktap_init_oslib(ktap_State *ks);
 void ktap_event_handle(ktap_State *ks, void *e, int field, StkId ra);
 void ktap_do_trace(struct ftrace_event_call *call, void *entry,
 			  int entry_size, int data_size);
-int start_trace_syscalls(struct ftrace_event_call *call,
-			  ktap_Callback_data *callback);
-void stop_trace_syscalls(struct ftrace_event_call *call,
-			 ktap_Callback_data *callback);
+int start_trace_syscalls(struct ftrace_event_call *call);
+void stop_trace_syscalls(struct ftrace_event_call *call);
 int ktap_trace_init(void);
 
 int start_trace(ktap_State *ks, char *event_name, Closure *cl);

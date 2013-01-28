@@ -887,6 +887,7 @@ ktap_State *ktap_newstate()
 	G(ks) = (global_State *)(ks + 1);
 	G(ks)->mainthread = ks;
 	G(ks)->seed = 201236; /* todo: make more random in */
+	INIT_LIST_HEAD(&(G(ks)->event_nodes));
 
 	ret = ktap_transport_init();
 	if (ret)

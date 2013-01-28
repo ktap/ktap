@@ -242,6 +242,9 @@ typedef struct global_State {
 	Upval uvhead; /* head of double-linked list of all open upvalues */
 
 	struct ktap_State *mainthread;
+#ifdef __KERNEL__
+	struct list_head event_nodes;
+#endif
 } global_State;
 
 typedef struct ktap_State {

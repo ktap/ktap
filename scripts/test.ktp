@@ -21,9 +21,9 @@ function eventfun1 (e)
 end
 
 ---os.trace("irq:irq_handler_entry", eventfun);
-os.trace("irq:softirq_entry", eventfun);
----os.trace("kmem:kmalloc", eventfun1);
-os.trace("sched:sched_switch", eventfun);
+---os.trace("irq:softirq_entry", eventfun);
+---os.trace("kmem", eventfun1);
+os.trace("sched", eventfun1);
 ---os.trace("signal:signal_deliver", eventfun1);
 ---os.trace("signal:signal_generate", eventfun1);
 ---os.trace("syscalls:sys_enter_open", eventfun);
