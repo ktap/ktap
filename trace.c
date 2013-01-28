@@ -345,10 +345,11 @@ void end_all_trace(ktap_State *ks)
 
 	tracepoint_synchronize_unregister();
 
+	free_percpu(entry_percpu_buffer);
+
 	/* empty trace_list */	
 	INIT_LIST_HEAD(&trace_list);
 }
-
 
 int ktap_trace_init()
 {
