@@ -59,7 +59,6 @@ static void syscall_raw_trace(void *data, struct pt_regs *regs, int enter)
 	struct ktap_syscall_trace_enter enter_entry;
 	struct ktap_syscall_trace_exit exit_entry;
 	int syscall_nr;
-	int i;
 
 	syscall_nr = syscall_get_nr(current, regs);
 	if (syscall_nr < 0)
@@ -118,15 +117,15 @@ static int find_syscall_nr(const char *name)
 
 static int get_syscall_info(struct ftrace_event_call *call, int *enter)
 {
-	char syscall_name[16] = {0};
+	char syscall_name[128] = {0};
 	int syscall_nr;
 
 	if (!strncmp(call->name, "sys_enter_", 10)) {
 		*enter = 1;
-		strncpy(syscall_name, call->name + 10, 16);
+		strncpy(syscall_name, call->name + 10, strlen(call->name) - 10);
 	} else if (!strncmp(call->name, "sys_exit_", 9)) {
 		*enter = 0;
-		strncpy(syscall_name, call->name + 9, 16);
+		strncpy(syscall_name, call->name + 9, strlen(call->name) - 9);
 	} else
 		return -EINVAL;
 
@@ -140,6 +139,9 @@ static int get_syscall_info(struct ftrace_event_call *call, int *enter)
 int start_trace_syscalls(struct ftrace_event_call *call)
 {
 	int enter, syscall_nr, ret = 0;
+	static int count1 = 0;
+
+	printk("start_trace_syscalls %d: %s\n", count1++, call->name);
 
 	syscall_nr = get_syscall_info(call, &enter);
 	if (syscall_nr < 0)
@@ -169,7 +171,9 @@ int start_trace_syscalls(struct ftrace_event_call *call)
 void stop_trace_syscalls(struct ftrace_event_call *call)
 {
 	int enter, syscall_nr;
+	static int count = 0;
 
+	printk("stop_trace_syscalls %d: %s\n", count++, call->name);
 	syscall_nr = get_syscall_info(call, &enter);
 	if (syscall_nr < 0)
 		return;
@@ -187,8 +191,6 @@ void stop_trace_syscalls(struct ftrace_event_call *call)
 			unregister_trace_sys_exit(trace_syscall_exit, NULL);
 	}
 	mutex_unlock(&syscall_trace_lock);
-
-	tracepoint_synchronize_unregister();
 }
 
 void ktap_init_syscalls(ktap_State *ks)

@@ -324,16 +324,17 @@ int start_trace(ktap_State *ks, char *event_name, Closure *cl)
 /* cleanup all tracepoint owned by this ktap */
 void end_all_trace(ktap_State *ks)
 {
-	struct ktap_event_node *pos;
+	struct ktap_event_node *pos, *tmp;
 	struct list_head *event_nodes = &(G(ks)->event_nodes);
 
 	if (list_empty(event_nodes))
 		return;
 
-	list_for_each_entry(pos, event_nodes, list) {
+	list_for_each_entry_safe(pos, tmp, event_nodes, list) {
 		struct ftrace_event_call *call = pos->call;
 
 		hlist_del_rcu(&pos->node);
+
 		if (!--call->ktap_refcount) {
 			if (!call->class->ktap_probe)
 				stop_trace_syscalls(call);
