@@ -24,6 +24,7 @@
 #include <linux/kallsyms.h>
 #include <trace/events/syscalls.h>
 #include <trace/syscall.h>
+
 #include "../trace.h"
 #include "ktap.h"
 
@@ -43,21 +44,11 @@ static struct syscall_metadata *syscall_nr_to_meta(int nr)
 	return syscalls_metadata[nr];
 }
 
-struct ktap_syscall_trace_enter {
-	struct syscall_trace_enter entry;
-	unsigned long args[7];
-};
-
-struct ktap_syscall_trace_exit {
-	struct syscall_trace_exit entry;
-};
-
 static void syscall_raw_trace(void *data, struct pt_regs *regs, int enter)
 {
 	struct syscall_metadata *sys_data;
 	struct ftrace_event_call *call;
-	struct ktap_syscall_trace_enter enter_entry;
-	struct ktap_syscall_trace_exit exit_entry;
+	unsigned long flags;
 	int syscall_nr;
 
 	syscall_nr = syscall_get_nr(current, regs);
@@ -77,18 +68,34 @@ static void syscall_raw_trace(void *data, struct pt_regs *regs, int enter)
 		return;
 
 	if (enter) {
+		struct syscall_trace_enter *entry;
+		int entry_size;
+
 		call = sys_data->enter_event;
-		enter_entry.entry.nr = syscall_nr;
+		entry_size = sizeof(*entry) +sizeof(unsigned long) * sys_data->nb_args;
+
+		entry = ktap_pre_trace(call, entry_size, &flags);
+		entry->ent.type = call->event.type;
+		entry->nr = syscall_nr;
 		syscall_get_arguments(current, regs, 0, sys_data->nb_args,
-				      (unsigned long *)&enter_entry.entry.args);
-		enter_entry.entry.ent.type = call->event.type;
-		ktap_do_trace(call, (void *)&enter_entry, sizeof(enter_entry), 0);
+				      (unsigned long *)&entry->args);
+
+		ktap_do_trace(call, (void *)entry, entry_size, 0);
+
+		ktap_post_trace(call, entry, &flags);
 	} else {
+		struct syscall_trace_exit *entry;
+
 		call = sys_data->exit_event;
-		exit_entry.entry.nr = syscall_nr;
-		exit_entry.entry.ret = syscall_get_return_value(current, regs);
-		exit_entry.entry.ent.type = call->event.type;
-		ktap_do_trace(call, (void *)&exit_entry, sizeof(exit_entry), 0);
+
+		entry = ktap_pre_trace(call, sizeof(*entry), &flags);
+		entry->ent.type = call->event.type;
+		entry->nr = syscall_nr;
+		entry->ret = syscall_get_return_value(current, regs);
+
+		ktap_do_trace(call, (void *)entry, sizeof(*entry), 0);
+
+		ktap_post_trace(call, entry, &flags);
 	}
 }
 

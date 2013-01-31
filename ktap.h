@@ -41,4 +41,6 @@ void *ktap_transport_reserve(size_t length);
 void ktap_transport_exit(void);
 int ktap_transport_init(void);
 
+void *ktap_pre_trace(struct ftrace_event_call *call, int size, unsigned long *flags);
+void ktap_post_trace(struct ftrace_event_call *call, void *entry, unsigned long *flags);
 #endif /* __KTAP_H__ */

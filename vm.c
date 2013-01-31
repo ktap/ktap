@@ -25,7 +25,8 @@
 #include <linux/file.h>
 #include <linux/fs.h>
 #include <linux/signal.h>
-#include <asm-generic/uaccess.h>
+#include <linux/hardirq.h>
+#include <linux/sched.h>
 
 #include "ktap.h"
 
@@ -258,6 +259,11 @@ static Callinfo *extend_ci(ktap_State *ks)
 	Callinfo *ci;
 
 	ci = ktap_malloc(ks, sizeof(Callinfo));
+	if (!ci) {
+		printk("cannot alloc callinfo %d\n", sizeof(Callinfo));	
+		dump_stack();
+		return;
+	}
 	ks->ci->next = ci;
 	ci->prev = ks->ci;
 	ci->next = NULL;
@@ -807,6 +813,11 @@ static void ktap_init_state(ktap_State *ks)
 	int i;
 
 	ks->stack = ktap_malloc(ks, BASIC_STACK_SIZE * sizeof(Tvalue));
+	if (!ks->stack) {
+		printk("cannot alloc stack %d\n", BASIC_STACK_SIZE * sizeof(Tvalue));	
+		dump_stack();
+		return;
+	}
 	ks->stacksize = BASIC_STACK_SIZE;
 
 	for (i = 0; i < BASIC_STACK_SIZE; i++)
@@ -828,9 +839,12 @@ void ktap_exitthread(ktap_State *ks)
 {
 	free_ci(ks);
 	ktap_free(ks, ks->stack);
-	ktap_free(ks, ks);
+
+	if (ks == G(ks)->mainthread)
+		ktap_free(ks, ks);
 }
 
+static ktap_State *ktap_percpu_state;
 ktap_State *ktap_newthread(ktap_State *mainthread)
 {
 	ktap_State *ks;
@@ -839,10 +853,10 @@ ktap_State *ktap_newthread(ktap_State *mainthread)
 	if (mainthread != g->mainthread)
 		return NULL;
 
-	ks = ktap_malloc(mainthread, sizeof(ktap_State));
-	if (!ks)
-		return NULL;
+	if (in_nmi())
+		printk("ktap_newthread in nmi\n");
 
+	ks = per_cpu_ptr(ktap_percpu_state, smp_processor_id());
 	G(ks) = G(mainthread);
 	ktap_init_state(ks);
 	return ks;
@@ -861,6 +875,8 @@ void ktap_exit(ktap_State *ks)
 
 	ktap_printf(ks, "exitting\n");
 	end_all_trace(ks);
+
+	free_percpu(ktap_percpu_state);
 
 	/* free all resources got by ktap */
 	tstring_freeall(ks);
@@ -908,6 +924,11 @@ ktap_State *ktap_newstate()
 	ktap_init_syscalls(ks);
 	ktap_init_baselib(ks);
 	ktap_init_oslib(ks);
+
+	ktap_percpu_state = alloc_percpu(PAGE_SIZE);
+	if (!ktap_percpu_state)
+		return NULL;
+
 	return ks;
 }
 

@@ -234,7 +234,7 @@ void ktap_do_trace(struct ftrace_event_call *call, void *entry,
 static void *entry_percpu_buffer;
 static DEFINE_PER_CPU(bool, ktap_in_tracing);
 
-static void *ktap_pre_trace(struct ftrace_event_call *call, int size, unsigned long *flags)
+void *ktap_pre_trace(struct ftrace_event_call *call, int size, unsigned long *flags)
 {
 	struct trace_entry  *entry;
 
@@ -256,7 +256,7 @@ static void *ktap_pre_trace(struct ftrace_event_call *call, int size, unsigned l
 	return entry;
 }
 
-static void ktap_post_trace(struct ftrace_event_call *call, void *entry, unsigned long *flags)
+void ktap_post_trace(struct ftrace_event_call *call, void *entry, unsigned long *flags)
 {
 	__this_cpu_write(ktap_in_tracing, false);
 	local_irq_restore(*flags);
@@ -305,14 +305,6 @@ static void enable_event(struct ftrace_event_call *call, void *data)
 
 int start_trace(ktap_State *ks, char *event_name, Closure *cl)
 {
-#if 0
-	ktap_Callback_data *callback;
-
-	callback = kzalloc(sizeof(ktap_Callback_data), GFP_KERNEL);
-	callback->ks = ks;
-	callback->cl = cl;
-#endif
-
 	ktap_Callback_data  callback;
 
 	callback.ks = ks;
