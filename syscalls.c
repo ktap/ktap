@@ -139,9 +139,6 @@ static int get_syscall_info(struct ftrace_event_call *call, int *enter)
 int start_trace_syscalls(struct ftrace_event_call *call)
 {
 	int enter, syscall_nr, ret = 0;
-	static int count1 = 0;
-
-	printk("start_trace_syscalls %d: %s\n", count1++, call->name);
 
 	syscall_nr = get_syscall_info(call, &enter);
 	if (syscall_nr < 0)
@@ -171,9 +168,7 @@ int start_trace_syscalls(struct ftrace_event_call *call)
 void stop_trace_syscalls(struct ftrace_event_call *call)
 {
 	int enter, syscall_nr;
-	static int count = 0;
 
-	printk("stop_trace_syscalls %d: %s\n", count++, call->name);
 	syscall_nr = get_syscall_info(call, &enter);
 	if (syscall_nr < 0)
 		return;
