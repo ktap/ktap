@@ -1,9 +1,9 @@
 count = 0
 function eventfun (e)
----	printf("%s\t", e.name);
+	printf("%s\t%s\n", process.comm(), e.name);
 ---	printf("%s\n", e.allfield);
 ---	print(e.print_fmt);
-	printf(e.annotate);
+---	printf(e.annotate);
 ---	printf("field1: %d\n", e.field1)
 	count = count + 1
 end
@@ -22,15 +22,15 @@ end
 
 ---os.trace("irq:irq_handler_entry", eventfun);
 ---os.trace("irq:softirq_entry", eventfun);
-os.trace("kmem", eventfun1);
+---os.trace("kmem", eventfun1);
 ---os.trace("kmem:kmalloc", eventfun1);
 ---os.trace("sched", eventfun1);
----os.trace("signal:signal_deliver", eventfun1);
+---os.trace("signal", eventfun1);
 ---os.trace("signal:signal_generate", eventfun1);
 ---os.trace("syscalls:sys_enter_open", eventfun1);
 ---os.trace("syscalls:sys_exit_open", eventfun1);
 ---os.trace("syscalls:sys_enter_futex", eventfun);
-os.trace("syscalls", eventfun1);
+os.trace("syscalls", eventfun);
 ---os.trace("sched:sched_process_fork", eventfun)
 
 os.trace_end(function ()

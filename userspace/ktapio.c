@@ -23,27 +23,34 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdarg.h>
+#include <unistd.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/poll.h>
 #include <fcntl.h>
-
+#include <pthread.h>
 
 #define MAX_BUFLEN  131072
+#define PATH_MAX 128
 
 #define handle_error(str) do { perror(str); exit(-1); } while(0)
 
-int main(int argc, char **argv)
+static void *reader_thread(void *data)
 {
 	char buf[MAX_BUFLEN];
 	struct pollfd pollfd;
 	struct timespec tim = {.tv_sec=0, .tv_nsec=200000000};
 	int timeout, fd, ret, len;
+	int cpu = (int)(long)data;
+	char filename[PATH_MAX];
 
-	fd = open("/sys/kernel/debug/ktap/trace0", O_RDONLY);
-	if (fd < 0)
-		handle_error("open failed");
+	sprintf(filename, "/sys/kernel/debug/ktap/trace%d", cpu);
+
+	fd = open(filename, O_RDONLY);
+	if (fd < 0) {
+		fprintf(stderr, "open %s failed\n", filename);
+		return NULL;
+	}
 
 	pollfd.fd = fd;
 	pollfd.events = POLLIN;
@@ -59,7 +66,33 @@ int main(int argc, char **argv)
 		}
 	} while (1);
 
-	close(fd);	
+	close(fd);
+
+	return NULL;
+}
+
+int main(int argc, char **argv)
+{
+	long ncpus = -1;
+	pthread_t *reader;
+	int i;
+
+	ncpus = sysconf(_SC_NPROCESSORS_ONLN);
+	if (ncpus < 0)
+		handle_error("cannot get cpu number\n");
+
+	reader = malloc(sizeof(pthread_t) * ncpus);
+	if (!reader)
+		handle_error("cannot malloc\n");
+		
+	for (i = 0; i < ncpus; i++) {
+		if (pthread_create(&reader[i], NULL, reader_thread, (void *)(long)i) < 0)
+			handle_error("pthread_create failed\n");
+	}
+
+	for (i = 0; i < ncpus; i++) {
+		pthread_join(reader[i], NULL);
+	}
 
 	return 0;
 }

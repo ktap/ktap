@@ -8,11 +8,13 @@ all:
 	make -C ../../.. M=`pwd` modules
 
 UDIR = userspace
-ktap: $(UDIR)/main.c $(UDIR)/lex.c $(UDIR)/parser.c $(UDIR)/code.c $(UDIR)/dump.c $(UDIR)/util.c \
-	opcode.c table.c tstring.c object.c
+ktap: 
+	gcc -g -O2 -o ktap $(UDIR)/lex.c $(UDIR)/parser.c $(UDIR)/code.c  \
+		$(UDIR)/dump.c $(UDIR)/main.c $(UDIR)/util.c  \
+		opcode.c table.c tstring.c object.c
 
-	gcc -g -O2 -o ktap $(UDIR)/lex.c $(UDIR)/parser.c $(UDIR)/code.c $(UDIR)/dump.c $(UDIR)/main.c $(UDIR)/util.c  \
-	opcode.c table.c tstring.c object.c
+ktapio: userspace/ktapio.c
+	gcc -o ktapio userspace/ktapio.c -lpthread
 
 clean:
 	rm -rf ktapvm ktap *.o *.out *.ko *.mod.c *.order *.o.cmd Module.symvers

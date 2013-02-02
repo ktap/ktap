@@ -6,13 +6,13 @@ keeping update this file)
 -------------------------------------------------------------------------
 
 High:
-1. event based tracing infrastructure
+1. event based tracing infrastructure	--- done
 2. Drop ftrace.patch
 3. GC
 4. read kernel memory by symbol
 5. table stat showing
-6. ktap memory allocation
-6. per-cpu ktap_State for performance improvement
+6. ktap memory allocation		--- done
+7. per-cpu ktap_State for performance improvement	--- done
 8. x86-64 support
 9. non-mainthread error exit problem(like printf arg mismatch)
 
