@@ -10,11 +10,8 @@ all:
 UDIR = userspace
 ktap: 
 	gcc -g -O2 -o ktap $(UDIR)/lex.c $(UDIR)/parser.c $(UDIR)/code.c  \
-		$(UDIR)/dump.c $(UDIR)/main.c $(UDIR)/util.c  \
-		opcode.c table.c tstring.c object.c
-
-ktapio: userspace/ktapio.c
-	gcc -o ktapio userspace/ktapio.c -lpthread
+		$(UDIR)/dump.c $(UDIR)/main.c $(UDIR)/util.c $(UDIR)/ktapio.c \
+		opcode.c table.c tstring.c object.c -lpthread
 
 clean:
 	rm -rf ktapvm ktap *.o *.out *.ko *.mod.c *.order *.o.cmd Module.symvers

@@ -32,8 +32,6 @@
 
 
 static struct rchan *ktap_chan;
-static struct dentry *ktap_dir;
-
 
 static int subbuf_start_callback(struct rchan_buf *buf, void *subbuf,
 				 void *prev_subbuf, size_t prev_padding)
@@ -85,18 +83,12 @@ void ktap_transport_exit()
 {
 	if (ktap_chan)
 		relay_close(ktap_chan);
-	if (ktap_dir)
-		debugfs_remove(ktap_dir);
 }
+
+extern struct dentry *ktap_dir;
 
 int ktap_transport_init()
 {
-	ktap_dir = debugfs_create_dir("ktap", NULL);
-	if (!ktap_dir) {
-		pr_err("ktap: debugfs_create_dir failed\n");
-		return -1;
-	}
-
 	ktap_chan = relay_open("trace", ktap_dir, 1024, 1, &relay_callbacks, NULL);
 	if (!ktap_chan) {
 		pr_err("ktap: relay_open failed\n");

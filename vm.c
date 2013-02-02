@@ -26,6 +26,7 @@
 #include <linux/fs.h>
 #include <linux/signal.h>
 #include <linux/hardirq.h>
+#include <linux/delay.h>
 #include <linux/sched.h>
 
 #include "ktap.h"
@@ -903,6 +904,7 @@ ktap_State *ktap_newstate()
 	G(ks) = (global_State *)(ks + 1);
 	G(ks)->mainthread = ks;
 	G(ks)->seed = 201236; /* todo: make more random in */
+	G(ks)->task = current;
 	INIT_LIST_HEAD(&(G(ks)->event_nodes));
 
 	ret = ktap_transport_init();

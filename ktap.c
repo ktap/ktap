@@ -41,6 +41,7 @@
 #include <asm/segment.h>
 #include <asm/uaccess.h>
 #include <linux/buffer_head.h>
+#include <linux/debugfs.h>
 
 #include "ktap.h"
 
@@ -202,22 +203,38 @@ static struct miscdevice ktap_miscdev = {
 };
 
 
+struct dentry *ktap_dir;
+
 static int __init init_ktap(void)
 {
         int ret;
 
         ret = misc_register(&ktap_miscdev);
-        if (ret < 0)
+        if (ret < 0) {
                 pr_err("Can't register ktap misc device");
+		return ret;
+	}
 
-        //proc_create("ktap_info", 0444, NULL, &ktap_proc_operations);
+	ktap_dir = debugfs_create_dir("ktap", NULL);
+	if (!ktap_dir) {
+		ktap_dir = debugfs_get_dentry("ktap");
+		if (!ktap_dir) {
+			pr_err("ktap: debugfs_create_dir failed\n");
+			goto err;
+		}
+	}
 
-        return  ret;
+	return 0;
+
+ err:
+	misc_deregister(&ktap_miscdev);
+        return  -1;
 }
 
 static void __exit exit_ktap(void)
 {
         misc_deregister(&ktap_miscdev);
+	debugfs_remove(ktap_dir);
 }
 
 

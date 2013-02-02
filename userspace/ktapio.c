@@ -71,10 +71,20 @@ static void *reader_thread(void *data)
 	return NULL;
 }
 
-int main(int argc, char **argv)
+static pthread_t *reader;
+static long ncpus = -1;
+
+void ktapio_exit()
 {
-	long ncpus = -1;
-	pthread_t *reader;
+	int i;
+
+	for (i = 0; i < ncpus; i++) {
+		pthread_join(reader[i], NULL);
+	}
+}
+
+int ktapio_create()
+{
 	int i;
 
 	ncpus = sysconf(_SC_NPROCESSORS_ONLN);
@@ -88,10 +98,6 @@ int main(int argc, char **argv)
 	for (i = 0; i < ncpus; i++) {
 		if (pthread_create(&reader[i], NULL, reader_thread, (void *)(long)i) < 0)
 			handle_error("pthread_create failed\n");
-	}
-
-	for (i = 0; i < ncpus; i++) {
-		pthread_join(reader[i], NULL);
 	}
 
 	return 0;

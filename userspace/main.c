@@ -354,6 +354,8 @@ int main(int argc, char **argv)
 	if (ktap_fd < 0)
 		handle_error("ioctl ktapvm failed");
 
+	ktapio_create();
+
 	printf("ktaprun: %s\n", argv[1]);
 	ioctl(ktap_fd, KTAP_CMD_RUN, default_output_filename);
 

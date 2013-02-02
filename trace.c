@@ -223,8 +223,12 @@ void ktap_do_trace(struct ftrace_event_call *call, void *entry,
 
 	hlist_for_each_entry_rcu(eventnode, pos,
 				 &call->ktap_callback_list, node) {
+
 		ktap_State *ks = eventnode->ks;
 		Closure *cl = eventnode->cl;
+
+		if (same_thread_group(current, G(ks)->task))
+			continue;
 
 		call_user_closure(ks, cl, &event);
 	}

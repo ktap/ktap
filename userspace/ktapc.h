@@ -294,5 +294,8 @@ Tvalue *ktapc_table_set(Table *t, const Tvalue *key);
 Closure *ktapc_newlclosure(int n);
 char *ktapc_sprintf(const char *fmt, ...);
 
+void ktapio_exit(void);
+int ktapio_create(void);
+
 #define ktapc_equalobj(t1, t2)	equalobjv(NULL, t1, t2)
 
