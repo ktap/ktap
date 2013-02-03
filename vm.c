@@ -854,9 +854,6 @@ ktap_State *ktap_newthread(ktap_State *mainthread)
 	if (mainthread != g->mainthread)
 		return NULL;
 
-	if (in_nmi())
-		printk("ktap_newthread in nmi\n");
-
 	ks = per_cpu_ptr(ktap_percpu_state, smp_processor_id());
 	G(ks) = G(mainthread);
 	ktap_init_state(ks);
