@@ -200,9 +200,19 @@ static int ktap_lib_dummy(ktap_State *ks)
 	return 0;
 }
 
+static int ktap_lib_smp_processor_id(ktap_State *ks)
+{
+	setnvalue(ks->top, smp_processor_id());
+	incr_top(ks);
+	return 1;
+}
+
+
 static const ktap_Reg oslib_funcs[] = {
 	{"clock", ktap_lib_clock},
 	{"info", ktap_lib_info},
+	{"smp_processor_id", ktap_lib_smp_processor_id},
+
 	{"dumpstack", ktap_lib_dumpstack},
 	{"sleep", ktap_lib_sleep},
 	{"wait", ktap_lib_wait},
