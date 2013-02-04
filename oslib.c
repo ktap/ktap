@@ -42,10 +42,7 @@
  */
 void ktap_printf(ktap_State *ks, const char *fmt, ...)
 {
-	char buff[512] = {0};
-	mm_segment_t old_fs = get_fs();
-	struct file *f = G(ks)->ofile;
-	loff_t pos;
+	char buff[512];
 	va_list args;
 	int len;
 
@@ -54,13 +51,6 @@ void ktap_printf(ktap_State *ks, const char *fmt, ...)
 	va_end(args);
 
 	ktap_transport_write(buff, len);
-#if 0
-	pos = f->f_pos;
-	set_fs(KERNEL_DS);
-	vfs_write(G(ks)->ofile, buff, len, &pos);
-	f->f_pos = pos;
-	set_fs(old_fs);
-#endif
 }
 
 

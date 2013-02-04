@@ -260,11 +260,6 @@ static Callinfo *extend_ci(ktap_State *ks)
 	Callinfo *ci;
 
 	ci = ktap_malloc(ks, sizeof(Callinfo));
-	if (!ci) {
-		printk("cannot alloc callinfo %d\n", sizeof(Callinfo));	
-		dump_stack();
-		return;
-	}
 	ks->ci->next = ci;
 	ci->prev = ks->ci;
 	ci->next = NULL;
@@ -358,6 +353,8 @@ static int precall(ktap_State *ks, StkId func, int nresults)
 		ktap_Number nb = nvalue(rb), nc = nvalue(rc); \
 		setnvalue(ra, op(nb, nc)); \
 	} }
+
+static Tvalue *cfunction_cache_get(ktap_State *ks, int index);
 
 static void ktap_execute(ktap_State *ks)
 {
@@ -715,6 +712,12 @@ static void ktap_execute(ktap_State *ks)
 		}
 		break;
 		}
+
+	case OP_LOAD_GLOBAL: {
+		Tvalue *cfunc = cfunction_cache_get(ks, GETARG_C(instr));
+		setobj(ks, ra, cfunc);
+		}
+		break;
 	}
 
 	goto mainloop;
@@ -725,6 +728,8 @@ void ktap_call(ktap_State *ks, StkId func, int nresults)
 	if (!precall(ks, func, nresults))
 		ktap_execute(ks);
 }
+
+static int cfunction_cache_getindex(ktap_State *ks, Tvalue *fname);
 
 /*
  * making OP_EVENT for fast event field getting.
@@ -754,6 +759,22 @@ void ktap_optimize_code(ktap_State *ks, int level, Proto *f)
 					break;
 				}
 			}
+			break;
+		case OP_GETTABUP:
+			if ((GETARG_B(instr) == 0) && ISK(GETARG_C(instr))) {
+				Tvalue *field = k + INDEXK(GETARG_C(instr));
+				if (ttype(field) == KTAP_TSTRING) {
+					int index = cfunction_cache_getindex(ks, field);
+					if (index == -1)
+						break;
+
+					SET_OPCODE(instr, OP_LOAD_GLOBAL);
+					SETARG_C(instr, index);
+					f->code[i] = instr;
+					break;
+				}
+			}
+			break;
 		}
 	}
 
@@ -762,6 +783,39 @@ void ktap_optimize_code(ktap_State *ks, int level, Proto *f)
 		ktap_optimize_code(ks, level + 1, f->p[i]);
 }
 
+
+static int nr_builtin_cfunction;
+static Tvalue *cfunction_tbl;
+
+static Tvalue *cfunction_cache_get(ktap_State *ks, int index)
+{
+	return &cfunction_tbl[index];
+}
+
+static int cfunction_cache_getindex(ktap_State *ks, Tvalue *fname)
+{
+	const Tvalue *gt = table_getint(hvalue(&G(ks)->registry), KTAP_RIDX_GLOBALS);
+	Tvalue *cfunc;
+	int i;
+
+	cfunc = table_get(hvalue(gt), fname);
+
+	for (i = 0; i < nr_builtin_cfunction; i++) {
+		if (rawequalobj(&cfunction_tbl[i], cfunc))
+			return i;
+	}
+
+	return -1;
+}
+
+static void cfunction_cache_add(ktap_State *ks, Tvalue *func)
+{
+	if (!cfunction_tbl)
+		cfunction_tbl = ktap_malloc(ks, sizeof(Tvalue) * 128);
+
+	setobj(ks, &cfunction_tbl[nr_builtin_cfunction], func);
+	nr_builtin_cfunction++;
+}
 
 /* function for register library */
 void ktap_register_lib(ktap_State *ks, const char *libname, const ktap_Reg *funcs)
@@ -790,6 +844,8 @@ void ktap_register_lib(ktap_State *ks, const char *libname, const ktap_Reg *func
 		setsvalue(&func_name, tstring_new(ks, funcs[i].name));
 		setfvalue(&cl, funcs[i].func);
 		table_setvalue(ks, target_tbl, &func_name, &cl);
+
+		cfunction_cache_add(ks, &cl);
 	}
 }
 
@@ -890,7 +946,6 @@ void ktap_exit(ktap_State *ks)
 /* ktap mainthread initization, main entry for ktap */
 ktap_State *ktap_newstate()
 {
-	struct fd f;
 	ktap_State *ks;
 	int ret;
 
@@ -909,11 +964,6 @@ ktap_State *ktap_newstate()
 		return NULL;
 
 	ktap_trace_init();
-
-	/* init output file structure, use for ktap_printf*/
-	f = fdget(1);
-	G(ks)->ofile = f.file;
-	fdput(f);
 
 	ktap_init_state(ks);
 	ktap_init_registry(ks);

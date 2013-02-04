@@ -79,10 +79,12 @@ OP_VARARG,/*    A B     R(A), R(A+1), ..., R(A+B-2) = vararg            */
 OP_EXTRAARG,/*   Ax      extra (larger) argument for previous opcode     */
 
 OP_EVENT,/*  A B C   R(A) := R(B)[C]                             */
+
+OP_LOAD_GLOBAL,/*  A B C   R(A) := R(B)[C]                             */
 } OpCode;
 
 
-#define NUM_OPCODES     ((int)OP_EVENT + 1)
+#define NUM_OPCODES     ((int)OP_LOAD_GLOBAL + 1)
 
 
 enum OpMode {iABC, iABx, iAsBx, iAx};  /* basic instruction format */

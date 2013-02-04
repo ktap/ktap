@@ -229,7 +229,6 @@ typedef struct Stringtable {
 } Stringtable;
 
 typedef struct global_State {
-	struct file *ofile; /* output file structure, use for ktap_printf */
 	Stringtable strt;  /* hash table for strings */
 	Tvalue registry;
 	unsigned int seed; /* randonized seed for hashes */
