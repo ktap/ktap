@@ -311,6 +311,9 @@ int start_trace(ktap_State *ks, char *event_name, Closure *cl)
 {
 	ktap_Callback_data  callback;
 
+	if (*event_name == '\0')
+		event_name = NULL;
+
 	callback.ks = ks;
 	callback.cl = cl;
 	ftrace_on_event_call(event_name, enable_event, (void *)&callback);
