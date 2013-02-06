@@ -33,7 +33,7 @@ Low:
 3. test script for verification
 4. not-tracing mode support(side effects mode)
 5. making ktap syntax more C like
-6. ktap Manual/Doc writing
+6. ktap Manual/Doc/ppt/pdf writing
 
 
 

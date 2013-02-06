@@ -217,16 +217,13 @@ static int __init init_ktap(void)
 
 	ktap_dir = debugfs_create_dir("ktap", NULL);
 	if (!ktap_dir) {
-		ktap_dir = debugfs_get_dentry("ktap");
-		if (!ktap_dir) {
-			pr_err("ktap: debugfs_create_dir failed\n");
-			goto err;
-		}
+		pr_err("ktap: debugfs_create_dir failed\n");
+		goto error;
 	}
 
 	return 0;
 
- err:
+ error:
 	misc_deregister(&ktap_miscdev);
         return  -1;
 }
