@@ -55,6 +55,7 @@ static struct list_head *ktap_get_fields(struct ftrace_event_call *event_call)
 	return event_call->class->get_fields(event_call);
 }
 
+static struct trace_iterator *percpu_trace_iterator;
 /* e.annotate */
 static void event_annotate(ktap_State *ks, struct ktap_event *event, StkId ra)
 {
@@ -64,8 +65,8 @@ static void event_annotate(ktap_State *ks, struct ktap_event *event, StkId ra)
 
 	/* Simulate the iterator */
 
-	/* iter can be a bit big for the stack */
-	iter = ktap_malloc(ks, sizeof(*iter));
+	/* iter can be a bit big for the stack, use percpu*/
+	iter = per_cpu_ptr(percpu_trace_iterator, smp_processor_id());
 
 	trace_seq_init(&iter->seq);
 	iter->ent = event->entry;
@@ -82,8 +83,6 @@ static void event_annotate(ktap_State *ks, struct ktap_event *event, StkId ra)
 		setsvalue(ra, tstring_newlstr(ks, s->buffer, len));
 	} else
 		setnilvalue(ra);
-
-	ktap_free(ks, iter);
 }
 
 /* e.name */
@@ -360,6 +359,12 @@ int ktap_trace_init()
 	entry_percpu_buffer = alloc_percpu(PAGE_SIZE);
 	if (!entry_percpu_buffer)
 		return -1;
+
+	percpu_trace_iterator = alloc_percpu(struct trace_iterator);
+	if (!percpu_trace_iterator) {
+		free_percpu(entry_percpu_buffer);
+		return -1;
+	}
 
 	return 0;
 }
