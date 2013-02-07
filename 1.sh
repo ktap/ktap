@@ -1,3 +1,3 @@
 rmmod ktapvm
 insmod ktapvm.ko
-./ktap scripts/test.ktp
+./ktap scripts/test.kp
