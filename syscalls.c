@@ -21,28 +21,17 @@
  */
 
 #include <linux/module.h>
-#include <linux/kallsyms.h>
 #include <trace/events/syscalls.h>
 #include <trace/syscall.h>
 
 #include "../trace.h"
 #include "ktap.h"
 
-static struct syscall_metadata **syscalls_metadata;
-
 static DEFINE_MUTEX(syscall_trace_lock);
 static int sys_refcount_enter;
 static int sys_refcount_exit;
 static DECLARE_BITMAP(enabled_enter_syscalls, NR_syscalls);
 static DECLARE_BITMAP(enabled_exit_syscalls, NR_syscalls);
-
-static struct syscall_metadata *syscall_nr_to_meta(int nr)
-{
-	if (!syscalls_metadata || nr >= NR_syscalls || nr < 0)
-		return NULL;
-
-	return syscalls_metadata[nr];
-}
 
 static void syscall_raw_trace(void *data, struct pt_regs *regs, int enter)
 {
@@ -114,14 +103,22 @@ static int find_syscall_nr(const char *name)
 	int i;
 
 	for (i = 0; i < NR_syscalls; i++) {
-		if (!syscalls_metadata[i])
+		struct syscall_metadata *meta;
+
+		meta = syscall_nr_to_meta(i);
+		if (!meta)
 			continue;
-		if (!strcmp(syscalls_metadata[i]->name + 4, name))
+
+		if (!strcmp(meta->name + 4, name))
 			return i;
 	}
 	return -1;
 }
 
+/*
+ * todo: see ARCH_HAS_SYSCALL_MATCH_SYM_NAME in trace_syscall.c
+ * ppc64: not use sys_ prefix syscall, may have SyS
+ */
 static int get_syscall_info(struct ftrace_event_call *call, int *enter)
 {
 	char syscall_name[128] = {0};
@@ -197,18 +194,8 @@ void stop_trace_syscalls(struct ftrace_event_call *call)
 
 void ktap_init_syscalls(ktap_State *ks)
 {
-	unsigned long addr;
 	Table *syscall_tbl;
 	int i;
-
-	/* this is hacking, syscalls_metadata is already inited in ftrace */
-	addr = kallsyms_lookup_name("syscalls_metadata");
-	if (!addr) {
-		ktap_printf(ks, "Error: Cannot get syscalls_metadata\n");
-		return;
-	}
-
-	syscalls_metadata = (struct syscall_metadata **)(*(unsigned long *)addr);
 
 	/*
 	 * init basic syscall ktap table
@@ -219,12 +206,14 @@ void ktap_init_syscalls(ktap_State *ks)
 	table_resize(ks, syscall_tbl, NR_syscalls, NR_syscalls);
 
 	for (i = 0; i < NR_syscalls; i++) {
+		struct syscall_metadata *meta;
 		Tvalue vn, vi;
 
-		if (!syscalls_metadata[i])
+		meta = syscall_nr_to_meta(i);
+		if (!meta)
 			continue;
 
-		setsvalue(&vn, tstring_new(ks, syscalls_metadata[i]->name));
+		setsvalue(&vn, tstring_new(ks, meta->name));
         	table_setint(ks, syscall_tbl, i, &vn);
 
 		setnvalue(&vi, i);
