@@ -30,21 +30,11 @@
 #define GetArg(ks, n)	((ks)->ci->func + (n))
 #define GetArgN(ks)	((int)(ks->top - (ks->ci->func + 1)))
 
-/*
- * There have some ktap_printf calling in print, so
- * we need to protect race again each thread, to make output
- * more alignment when multithread call print at same time
- *
- * todo: move this mutex to G(ks)
- */
-static DEFINE_MUTEX(ktap_print_mutex);
-
 static int ktap_lib_print(ktap_State *ks)
 {
 	int i;
 	int n = GetArgN(ks);
 
-	mutex_lock(&ktap_print_mutex);
 	for (i = 1; i <= n; i++) {
 		Tvalue *arg = GetArg(ks, i);
 		if (i > 1)
@@ -53,7 +43,7 @@ static int ktap_lib_print(ktap_State *ks)
 	}
 
 	ktap_printf(ks, "\n");
-	mutex_unlock(&ktap_print_mutex);
+
 	return 0;
 }
 
