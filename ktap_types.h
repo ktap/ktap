@@ -558,14 +558,15 @@ typedef struct ktap_Buffer {
 
 #define ktap_addsize(B,s)       ((B)->n += (s))
 
-void (ktap_buffinit)(ktap_State *ks, ktap_Buffer *B);
-char *(ktap_prepbuffsize)(ktap_Buffer *B, size_t sz);
-void (ktap_addlstring)(ktap_Buffer *B, const char *s, size_t l);
-void (ktap_addstring)(ktap_Buffer *B, const char *s);
-void (ktap_addvalue)(ktap_Buffer *B);
-void (ktap_pushresult)(ktap_Buffer *B);
-void (ktap_pushresultsize)(ktap_Buffer *B, size_t sz);
-char *(ktap_buffinitsize)(ktap_State *ks, ktap_Buffer *B, size_t sz);
+void ktap_buffinit(ktap_State *ks, ktap_Buffer *B);
+void ktap_bufffree(ktap_State *ks, ktap_Buffer *B);
+char *ktap_prepbuffsize(ktap_Buffer *B, size_t sz);
+void ktap_addlstring(ktap_Buffer *B, const char *s, size_t l);
+void ktap_addstring(ktap_Buffer *B, const char *s);
+void ktap_addvalue(ktap_Buffer *B);
+void ktap_pushresult(ktap_Buffer *B);
+void ktap_pushresultsize(ktap_Buffer *B, size_t sz);
+char *ktap_buffinitsize(ktap_State *ks, ktap_Buffer *B, size_t sz);
 
 #define ktap_prepbuffer(B)      ktap_prepbuffsize(B, KTAP_BUFFERSIZE)
 

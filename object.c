@@ -297,7 +297,8 @@ char *ktap_prepbuffsize(ktap_Buffer *B, size_t sz)
 			ktap_runerror(ks, "buffer too large");
 
 		/* create larger buffer */
-		newbuff = (char *)ktap_newuserdata(ks, newsize * sizeof(char));
+		//newbuff = (char *)ktap_newuserdata(ks, newsize * sizeof(char));
+		newbuff = (char *)ktap_malloc(ks, newsize * sizeof(char));
 		/* move content to new buffer */
 		memcpy(newbuff, B->b, B->n * sizeof(char));
 		/* todo: remove old buffer now, cannot use ktap_free directly */
@@ -347,6 +348,12 @@ void ktap_buffinit(ktap_State *ks, ktap_Buffer *B)
 	B->b = B->initb;
 	B->n = 0;
 	B->size = KTAP_BUFFERSIZE;
+}
+
+void ktap_bufffree(ktap_State *ks, ktap_Buffer *B)
+{
+	if (B->b != B->initb)
+		ktap_free(ks, B->b);
 }
 
 
