@@ -239,6 +239,7 @@ void tstring_freeall(ktap_State *ks)
 	ktap_free(ks, g->strt.hash);
 }
 
+/* todo: dump long string, strt table only contain short string */
 void tstring_dump(ktap_State *ks)
 {
 	Gcobject *o;
