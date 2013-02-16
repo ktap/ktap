@@ -190,7 +190,11 @@ Tstring *ktap_strfmt(ktap_State *ks)
 		}
 	}
 
-	ts = tstring_newlstr(ks, b.b, b.n);
+	/*
+	 * we want printf generated string will be deleted when ktap thread exit,
+	 * so use "local" function here
+	 */
+	ts = tstring_newlstr_local(ks, b.b, b.n);
 	ktap_bufffree(ks, &b);
 
 	return ts;

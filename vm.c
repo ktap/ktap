@@ -894,8 +894,18 @@ static void ktap_init_state(ktap_State *ks)
 
 void ktap_exitthread(ktap_State *ks)
 {
+	Gcobject *o = ks->localgc;
+	Gcobject *next;
+
 	free_ci(ks);
 	ktap_free(ks, ks->stack);
+
+	/* free local allocation objects, like annotate strings */
+	while (o) {
+		next = gch(o)->next;
+		ktap_free(ks, o);
+		o = next;
+	}
 
 	if (ks == G(ks)->mainthread)
 		ktap_free(ks, ks);
@@ -912,6 +922,7 @@ ktap_State *ktap_newthread(ktap_State *mainthread)
 
 	ks = per_cpu_ptr(ktap_percpu_state, smp_processor_id());
 	G(ks) = G(mainthread);
+	ks->localgc = NULL;
 	ktap_init_state(ks);
 	return ks;
 }

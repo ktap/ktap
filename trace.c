@@ -79,8 +79,7 @@ static void event_annotate(ktap_State *ks, struct ktap_event *event, StkId ra)
 		struct trace_seq *s = &iter->seq;
 		int len = s->len >= PAGE_SIZE ? PAGE_SIZE - 1 : s->len;
 
-		/* todo: delete this annotate string after event call finish */
-		setsvalue(ra, tstring_newlstr(ks, s->buffer, len));
+		setsvalue(ra, tstring_new_local(ks, s->buffer, len));
 	} else
 		setnilvalue(ra);
 }

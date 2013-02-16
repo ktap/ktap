@@ -266,6 +266,8 @@ typedef struct ktap_State {
 	int debug;
 	int version;
 	int gcrunning;
+
+	Gcobject *localgc; /* list of temp collectable objects, free when thread exit */
 } ktap_State;
 
 
@@ -460,7 +462,9 @@ typedef int ktap_Number;
 
 
 Tstring *tstring_newlstr(ktap_State *ks, const char *str, size_t l);
+Tstring *tstring_newlstr_local(ktap_State *ks, const char *str, size_t l);
 Tstring *tstring_new(ktap_State *ks, const char *str);
+Tstring *tstring_new_local(ktap_State *ks, const char *str, size_t l);
 int tstring_eqstr(Tstring *a, Tstring *b);
 unsigned int string_hash(const char *str, size_t l, unsigned int seed);
 int tstring_eqlngstr(Tstring *a, Tstring *b);

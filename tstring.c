@@ -94,6 +94,7 @@ unsigned int string_hash(const char *str, size_t l, unsigned int seed)
 
 /*
  * resizes the string table
+ * todo: resize when after tracing
  */
 void tstring_resize(ktap_State *ks, int newsize)
 {
@@ -175,6 +176,7 @@ static Tstring *newshrstr(ktap_State *ks, const char *str, size_t l,
 	return s;
 }
 
+static DEFINE_SPINLOCK(tstring_lock);
 
 /*
  * checks whether short string exists and reuses it or creates a new one
@@ -183,19 +185,24 @@ static Tstring *internshrstr(ktap_State *ks, const char *str, size_t l)
 {
 	Gcobject *o;
 	global_State *g = G(ks);
+	Tstring *ts;
 	unsigned int h = string_hash(str, l, g->seed);
 
+	spin_lock(&tstring_lock);
 	for (o = g->strt.hash[lmod(h, g->strt.size)]; o != NULL;
 	     o = gch(o)->next) {
-		Tstring *ts = rawgco2ts(o);
+		ts = rawgco2ts(o);
 
 		if (h == ts->tsv.hash && ts->tsv.len == l &&
 		   (memcmp(str, getstr(ts), l * sizeof(char)) == 0)) {
+			spin_unlock(&tstring_lock);
 			return ts;
 		}
 	}
 
-	return newshrstr(ks, str, l, h);  /* not found; create a new string */
+	ts = newshrstr(ks, str, l, h);  /* not found; create a new string */
+	spin_unlock(&tstring_lock);
+	return ts;
 }
 
 
@@ -211,6 +218,14 @@ Tstring *tstring_newlstr(ktap_State *ks, const char *str, size_t l)
 		return createstrobj(ks, str, l, KTAP_TLNGSTR, G(ks)->seed, NULL);
 }
 
+Tstring *tstring_newlstr_local(ktap_State *ks, const char *str, size_t l)
+{
+	/* short string? */
+	if (l <= STRING_MAXSHORTLEN)
+		return internshrstr(ks, str, l);
+	else
+		return createstrobj(ks, str, l, KTAP_TLNGSTR, G(ks)->seed, &ks->localgc);
+}
 
 /*
  * new zero-terminated string
@@ -218,6 +233,11 @@ Tstring *tstring_newlstr(ktap_State *ks, const char *str, size_t l)
 Tstring *tstring_new(ktap_State *ks, const char *str)
 {
 	return tstring_newlstr(ks, str, strlen(str));
+}
+
+Tstring *tstring_new_local(ktap_State *ks, const char *str, size_t l)
+{
+	return createstrobj(ks, str, l, KTAP_TLNGSTR, G(ks)->seed, &ks->localgc);
 }
 
 void tstring_freeall(ktap_State *ks)
