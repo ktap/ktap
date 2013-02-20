@@ -150,6 +150,17 @@ index 40dc5e8..aeef0b6 100644
 +
  #undef _TRACE_PROFILE_INIT
  
+diff --git a/include/trace/syscall.h b/include/trace/syscall.h
+index 84bc419..3d88f63 100644
+--- a/include/trace/syscall.h
++++ b/include/trace/syscall.h
+@@ -31,4 +31,6 @@ struct syscall_metadata {
+ 	struct ftrace_event_call *exit_event;
+ };
+ 
++struct syscall_metadata *syscall_nr_to_meta(int nr);
++
+ #endif /* _TRACE_SYSCALL_H */
 diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
 index 880073d..4da5f57 100644
 --- a/kernel/trace/trace_events.c
@@ -217,3 +228,23 @@ index 880073d..4da5f57 100644
  /*
   * __ftrace_set_clr_event(NULL, NULL, NULL, set) will set/unset all events.
   */
+diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
+index 7609dd6..3e96498 100644
+--- a/kernel/trace/trace_syscalls.c
++++ b/kernel/trace/trace_syscalls.c
+@@ -69,13 +69,14 @@ find_syscall_meta(unsigned long syscall)
+ 	return NULL;
+ }
+ 
+-static struct syscall_metadata *syscall_nr_to_meta(int nr)
++struct syscall_metadata *syscall_nr_to_meta(int nr)
+ {
+ 	if (!syscalls_metadata || nr >= NR_syscalls || nr < 0)
+ 		return NULL;
+ 
+ 	return syscalls_metadata[nr];
+ }
++EXPORT_SYMBOL_GPL(syscall_nr_to_meta);
+ 
+ enum print_line_t
+ print_syscall_enter(struct trace_iterator *iter, int flags,
