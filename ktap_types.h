@@ -529,6 +529,10 @@ extern global_State dummy_global_state;
 #define ktap_reallocv(ks, block, osize, nsize)	realloc(block, nsize)
 #define ktap_printf(ks, args...)		printf(args)
 #define ktap_exit(ks)				exit(EXIT_FAILURE)
+
+#define DEFINE_SPINLOCK
+#define spin_lock
+#define spin_unlock
 #endif
 
 /*
