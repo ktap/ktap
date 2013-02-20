@@ -15,6 +15,10 @@ High:
 7. per-cpu ktap_State for performance improvement	--- done
 8. x86-64 support
 9. non-mainthread error exit problem(like printf arg mismatch)
+10. ktapio problem in all event tracepoints opened
+11. ktapio support global and percpu mode
+12. issue: trace_end function cannot print into ktapio
+13. event library support
 
 
 Normal:
@@ -22,9 +26,10 @@ Normal:
 2. All tracepoints support
 3. Timer support
 4. kprobe/uprobe support
-5. function call speedup
+5. function call speedup	--- done
 6. improve printf performance
 7. dumpstack support
+8. script argument support
 
 
 Low:
@@ -34,6 +39,8 @@ Low:
 4. not-tracing mode support(side effects mode)
 5. making ktap syntax more C like
 6. ktap Manual/Doc/ppt/pdf writing
+7. structure reference support in script like dtrace
+8. more lightwight traceing infrastructure support
 
 
 
