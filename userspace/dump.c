@@ -71,10 +71,10 @@ static void DumpVector(const void *b, int n, size_t size, DumpState *D)
 static void DumpString(const Tstring *s, DumpState *D)
 {
 	if (s == NULL) {
-		size_t size = 0;
+		int size = 0;
 		DumpVar(size, D);
 	} else {
-		size_t size = s->tsv.len + 1;		/* include trailing '\0' */
+		int size = s->tsv.len + 1;		/* include trailing '\0' */
 		DumpVar(size, D);
 		DumpBlock(getstr(s), size * sizeof(char), D);
 	}
@@ -105,6 +105,7 @@ static void DumpConstants(const Proto *f, DumpState *D)
 			DumpString(rawtsvalue(o), D);
 			break;
 		default:
+			printf("ktap: DumpConstants with unknown vaule type %d\n", ttypenv(o));
 			ktap_assert(0);
 		}
 	}
