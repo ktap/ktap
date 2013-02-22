@@ -294,6 +294,10 @@ Tvalue *ktapc_table_set(Table *t, const Tvalue *key);
 Closure *ktapc_newlclosure(int n);
 char *ktapc_sprintf(const char *fmt, ...);
 
+void *ktapc_reallocv(void *block, size_t osize, size_t nsize);
+void *ktapc_growaux(void *block, int *size, size_t size_elems, int limit,
+		    const char *what);
+
 void ktapio_exit(void);
 int ktapio_create(void);
 
