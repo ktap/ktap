@@ -58,7 +58,7 @@ static const Node dummynode_ = {
 #define hashstr(t,str)          hashpow2(t, (str)->tsv.hash)
 #define hashboolean(t,p)        hashpow2(t, p)
 #define hashnum(t, n)		hashmod(t, n)
-#define hashpointer(t,p)	hashmod(t, (unsigned int)(p))
+#define hashpointer(t,p)	hashmod(t, (unsigned long)(p))
 
 #define dummynode	(&dummynode_)
 #define isdummy(n)	((n) == dummynode)
