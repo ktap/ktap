@@ -47,7 +47,7 @@ struct load_state {
 #define NEW_VECTOR(S, size)	ktap_malloc(S->ks, size)
 
 
-static void load_function(struct load_state *S, Proto *f);
+static int load_function(struct load_state *S, Proto *f);
 
 
 static int load_int(struct load_state *S)
@@ -86,16 +86,18 @@ static Tstring *load_string(struct load_state *S)
 }
 
 
-static void load_code(struct load_state *S, Proto *f)
+static int load_code(struct load_state *S, Proto *f)
 {
 	int n = READ_INT(S);
 
 	f->sizecode = n;
-	f->code = NEW_VECTOR(S, n * sizeof(unsigned int));
-	READ_VECTOR(S, f->code, n * sizeof(unsigned int));
+	f->code = NEW_VECTOR(S, n * sizeof(Instruction));
+	READ_VECTOR(S, f->code, n * sizeof(Instruction));
+
+	return 0;
 }
 
-static void load_constants(struct load_state *S, Proto *f)
+static int load_constants(struct load_state *S, Proto *f)
 {
 	int i,n;
 
@@ -126,7 +128,8 @@ static void load_constants(struct load_state *S, Proto *f)
 			break;
 		default:
 			ktap_printf(S->ks, "ktap: load_constants: unknow Tvalue\n");
-			ktap_assert(0);
+			return -1;
+			
 		}
 	}
 
@@ -137,12 +140,15 @@ static void load_constants(struct load_state *S, Proto *f)
 		f->p[i] = NULL;
 	for (i = 0; i < n; i++) {
 		f->p[i] = ktap_newproto(S->ks);
-		load_function(S, f->p[i]);
+		if (load_function(S, f->p[i]))
+			return -1;
 	}
+
+	return 0;
 }
 
 
-static void load_upvalues(struct load_state *S, Proto *f)
+static int load_upvalues(struct load_state *S, Proto *f)
 {
 	int i,n;
 
@@ -157,9 +163,11 @@ static void load_upvalues(struct load_state *S, Proto *f)
 		f->upvalues[i].instack = READ_BYTE(S);
 		f->upvalues[i].idx = READ_BYTE(S);
 	}
+
+	return 0;
 }
 
-static void load_debuginfo(struct load_state *S, Proto *f)
+static int load_debuginfo(struct load_state *S, Proto *f)
 {
 	int i,n;
 
@@ -181,19 +189,27 @@ static void load_debuginfo(struct load_state *S, Proto *f)
 	n = READ_INT(S);
 	for (i = 0; i < n; i++)
 		f->upvalues[i].name = READ_STRING(S);
+
+	return 0;
 }
 
-static void load_function(struct load_state *S, Proto *f)
+static int load_function(struct load_state *S, Proto *f)
 {
 	f->linedefined = READ_INT(S);
  	f->lastlinedefined = READ_INT(S);
 	f->numparams = READ_BYTE(S);
 	f->is_vararg = READ_BYTE(S);
 	f->maxstacksize = READ_BYTE(S);
-	load_code(S,f);
-	load_constants(S,f);
-	load_upvalues(S,f);
-	load_debuginfo(S,f);
+	if (load_code(S, f))
+		return -1;
+	if (load_constants(S, f))
+		return -1;
+	if (load_upvalues(S, f))
+		return -1;
+	if (load_debuginfo(S, f))
+		return -1;
+
+	return 0;
 }
 
 
@@ -258,7 +274,8 @@ Closure *ktap_load(ktap_State *ks, unsigned char *buff)
 	incr_top(ks);
 
 	cl->l.p = ktap_newproto(ks);
-	load_function(&S, cl->l.p);
+	if (load_function(&S, cl->l.p))
+		return NULL;
 
 	if (cl->l.p->sizeupvalues != 1) {
 		Proto *p = cl->l.p;
