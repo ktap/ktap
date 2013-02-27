@@ -89,7 +89,7 @@ extern struct dentry *ktap_dir;
 
 int ktap_transport_init()
 {
-	ktap_chan = relay_open("trace", ktap_dir, 1024, 1, &relay_callbacks, NULL);
+	ktap_chan = relay_open("trace", ktap_dir, 1024, 5, &relay_callbacks, NULL);
 	if (!ktap_chan) {
 		pr_err("ktap: relay_open failed\n");
 		debugfs_remove(ktap_dir);
