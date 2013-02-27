@@ -13,7 +13,7 @@ High:
 5. table stat showing
 6. ktap memory allocation		--- done
 7. per-cpu ktap_State for performance improvement	--- done
-8. x86-64 support
+8. x86-64 support			--- done
 9. non-mainthread error exit problem(like printf arg mismatch)
 10. ktapio problem in all event tracepoints opened
 11. ktapio support global and percpu mode
