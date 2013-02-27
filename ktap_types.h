@@ -244,6 +244,7 @@ typedef struct global_State {
 #ifdef __KERNEL__
 	struct list_head event_nodes;
 	struct task_struct *task;
+	struct rchan *ktap_chan;
 #endif
 } global_State;
 

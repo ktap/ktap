@@ -50,7 +50,7 @@ void ktap_printf(ktap_State *ks, const char *fmt, ...)
 	len = vscnprintf(buff, 512, fmt, args);
 	va_end(args);
 
-	ktap_transport_write(buff, len);
+	ktap_transport_write(ks, buff, len);
 }
 
 

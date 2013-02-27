@@ -21,7 +21,7 @@ function eventfun1 (e)
 
 end
 
----os.trace("", eventfun);
+os.trace("", eventfun);
 ---os.trace("irq:irq_handler_exit", eventfun);
 ---os.trace("irq:softirq_entry", eventfun);
 ---os.trace("kmem", eventfun1);
@@ -32,7 +32,7 @@ end
 ---os.trace("syscalls:sys_enter_open", eventfun1);
 ---os.trace("syscalls:sys_exit_open", eventfun1);
 ---os.trace("syscalls:sys_enter_futex", eventfun);
-os.trace("syscalls", eventfun);
+---os.trace("syscalls", eventfun);
 ---os.trace("sched:sched_process_fork", eventfun)
 
 os.trace_end(function ()

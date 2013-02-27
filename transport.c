@@ -31,7 +31,6 @@
 #include "ktap.h"
 
 
-static struct rchan *ktap_chan;
 
 static int subbuf_start_callback(struct rchan_buf *buf, void *subbuf,
 				 void *prev_subbuf, size_t prev_padding)
@@ -69,28 +68,28 @@ static struct rchan_callbacks relay_callbacks = {
 	.remove_buf_file        = remove_buf_file_callback,
 };
 
-void ktap_transport_write(const void *data, size_t length)
+void ktap_transport_write(ktap_State *ks, const void *data, size_t length)
 {
-	__relay_write(ktap_chan, data, length);
+	__relay_write(G(ks)->ktap_chan, data, length);
 }
 
-void *ktap_transport_reserve(size_t length)
+void *ktap_transport_reserve(ktap_State *ks, size_t length)
 {
-	return relay_reserve(ktap_chan, length);
+	return relay_reserve(G(ks)->ktap_chan, length);
 }
 
-void ktap_transport_exit()
+void ktap_transport_exit(ktap_State *ks)
 {
-	if (ktap_chan)
-		relay_close(ktap_chan);
+	if (G(ks)->ktap_chan)
+		relay_close(G(ks)->ktap_chan);
 }
 
 extern struct dentry *ktap_dir;
 
-int ktap_transport_init()
+int ktap_transport_init(ktap_State *ks)
 {
-	ktap_chan = relay_open("trace", ktap_dir, 1024, 5, &relay_callbacks, NULL);
-	if (!ktap_chan) {
+	G(ks)->ktap_chan = relay_open("trace", ktap_dir, 1024, 5, &relay_callbacks, NULL);
+	if (!G(ks)->ktap_chan) {
 		pr_err("ktap: relay_open failed\n");
 		debugfs_remove(ktap_dir);
 		return -1;

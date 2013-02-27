@@ -948,7 +948,7 @@ void ktap_exit(ktap_State *ks)
 	free_all_gcobject(ks);
 	ktap_exitthread(ks);
 
-	ktap_transport_exit();
+	ktap_transport_exit(ks);
 
 	/* life ending, no return anymore*/
 	do_exit(0);
@@ -970,7 +970,7 @@ ktap_State *ktap_newstate()
 	G(ks)->task = current;
 	INIT_LIST_HEAD(&(G(ks)->event_nodes));
 
-	ret = ktap_transport_init();
+	ret = ktap_transport_init(ks);
 	if (ret)
 		return NULL;
 

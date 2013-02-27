@@ -36,10 +36,10 @@ Tstring *ktap_event_get_ts(ktap_State *ks, int index);
 
 Tstring *ktap_strfmt(ktap_State *ks);
 
-void ktap_transport_write(const void *data, size_t length);
-void *ktap_transport_reserve(size_t length);
-void ktap_transport_exit(void);
-int ktap_transport_init(void);
+void ktap_transport_write(ktap_State *ks, const void *data, size_t length);
+void *ktap_transport_reserve(ktap_State *ks, size_t length);
+void ktap_transport_exit(ktap_State *ks);
+int ktap_transport_init(ktap_State *ks);
 
 void *ktap_pre_trace(struct ftrace_event_call *call, int size, unsigned long *flags);
 void ktap_post_trace(struct ftrace_event_call *call, void *entry, unsigned long *flags);
