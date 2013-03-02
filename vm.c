@@ -28,6 +28,8 @@
 #include <linux/hardirq.h>
 #include <linux/delay.h>
 #include <linux/sched.h>
+#include <linux/completion.h>
+#include <linux/freezer.h>
 
 #include "ktap.h"
 
@@ -270,7 +272,12 @@ static Callinfo *extend_ci(ktap_State *ks)
 static void free_ci(ktap_State *ks)
 {
 	Callinfo *ci = ks->ci;
-	Callinfo *next = ci->next;
+	Callinfo *next;
+
+	if (!ci)
+		return;
+
+	next = ci->next;
 	ci->next = NULL;
 	while ((ci = next) != NULL) {
 		next = ci->next;
@@ -927,6 +934,31 @@ ktap_State *ktap_newthread(ktap_State *mainthread)
 	return ks;
 }
 
+void ktap_user_complete(ktap_State *ks)
+{
+        if (!G(ks)->user_completion)
+                return;
+
+        complete(G(ks)->user_completion);
+        G(ks)->user_completion = NULL;
+}
+
+static int wait_user_completion(ktap_State *ks)
+{
+        struct completion t;
+        int killed;
+
+        G(ks)->user_completion = &t;
+        init_completion(&t);
+
+        freezer_do_not_count();
+        killed = wait_for_completion_interruptible(&t);
+        freezer_count();
+
+        return killed;
+}
+
+
 /* todo: move this ktap_exit to other location */
 /* todo: how to process not-mainthread exit? */
 void ktap_exit(ktap_State *ks)
@@ -935,27 +967,31 @@ void ktap_exit(ktap_State *ks)
 		ktap_printf(ks, "Error: ktap_exit called by non mainthread\n");
 		return;
 	}
-	/* we need to flush all signals, otherwise cannot print to file */
+	/* we need to flush all signals */
 	flush_signals(current);
 
 	ktap_printf(ks, "exitting\n");
 	end_all_trace(ks);
 
-	free_percpu(ktap_percpu_state);
+	if (ktap_percpu_state)
+		free_percpu(ktap_percpu_state);
 
 	/* free all resources got by ktap */
 	tstring_freeall(ks);
 	free_all_gcobject(ks);
-	ktap_exitthread(ks);
+
+	wait_user_completion(ks);
+	flush_signals(current);
 
 	ktap_transport_exit(ks);
 
+	ktap_exitthread(ks);
 	/* life ending, no return anymore*/
 	do_exit(0);
 }
 
 /* ktap mainthread initization, main entry for ktap */
-ktap_State *ktap_newstate()
+ktap_State *ktap_newstate(ktap_State **private_data)
 {
 	ktap_State *ks;
 	int ret;
@@ -963,6 +999,8 @@ ktap_State *ktap_newstate()
 	ks = kzalloc(sizeof(ktap_State) + sizeof(global_State), GFP_KERNEL);
 	if (!ks)
 		return NULL;
+
+	*private_data = ks;
 
 	G(ks) = (global_State *)(ks + 1);
 	G(ks)->mainthread = ks;
@@ -985,7 +1023,7 @@ ktap_State *ktap_newstate()
 	ktap_init_baselib(ks);
 	ktap_init_oslib(ks);
 
-	ktap_percpu_state = alloc_percpu(PAGE_SIZE);
+	ktap_percpu_state = (ktap_State *)alloc_percpu(PAGE_SIZE);
 	if (!ktap_percpu_state)
 		return NULL;
 

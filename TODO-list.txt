@@ -17,13 +17,14 @@ High:
 9. non-mainthread error exit problem(like printf arg mismatch)
 10. ktapio problem in all event tracepoints opened
 11. ktapio support global and percpu mode
-12. issue: trace_end function cannot print into ktapio
+12. issue: trace_end function cannot print into ktapio	--- done
 13. event library support
+14. change comments sytle to "#"
 
 
 Normal:
 1. ARM support
-2. All tracepoints support
+2. All tracepoints support	--- done
 3. Timer support
 4. kprobe/uprobe support
 5. function call speedup	--- done

@@ -1,22 +1,6 @@
 #ifndef __KTAP_BYTECODE_H__
 #define __KTAP_BYTECODE_H__
 
-enum {
-	KTAP_CMD_VERSION,
-	KTAP_CMD_RUN,
-	KTAP_CMD_NO_GC,
-	KTAP_CMD_GC_FULL,
-	KTAP_CMD_GC_MINOR,
-	KTAP_CMD_GC_THREASH,
-	KTAP_CMD_GC_NOW,
-	KTAP_CMD_EVENTS_LIST,
-	KTAP_CMD_STRICT_MODE,
-	KTAP_CMD_MEM_LIMIT,
-	KTAP_CMD_SET_STACKSIZE,
-	KTAP_CMD_DEBUG,
-	KTAP_CMD_EXIT
-};
-
 typedef enum {
 /*----------------------------------------------------------------------
  * name            args    description

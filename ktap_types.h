@@ -10,6 +10,24 @@ typedef char u8;
 #include <string.h>
 #endif
 
+enum {
+	KTAP_CMD_VERSION,
+	KTAP_CMD_RUN,
+	KTAP_CMD_USER_COMPLETE = 50,
+	KTAP_CMD_NO_GC,
+	KTAP_CMD_GC_FULL,
+	KTAP_CMD_GC_MINOR,
+	KTAP_CMD_GC_THREASH,
+	KTAP_CMD_GC_NOW,
+	KTAP_CMD_EVENTS_LIST,
+	KTAP_CMD_STRICT_MODE,
+	KTAP_CMD_MEM_LIMIT,
+	KTAP_CMD_SET_STACKSIZE,
+	KTAP_CMD_DEBUG,
+	KTAP_CMD_EXIT
+};
+
+
 #define KTAP_ENV	"_ENV"
 
 #define KTAP_VERSION_MAJOR       "0"
@@ -245,6 +263,7 @@ typedef struct global_State {
 	struct list_head event_nodes;
 	struct task_struct *task;
 	struct rchan *ktap_chan;
+	struct completion *user_completion;
 #endif
 } global_State;
 

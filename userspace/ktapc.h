@@ -299,7 +299,7 @@ void *ktapc_growaux(void *block, int *size, size_t size_elems, int limit,
 		    const char *what);
 
 void ktapio_exit(void);
-int ktapio_create(void);
+int ktapio_create(void *);
 
 #define ktapc_equalobj(t1, t2)	equalobjv(NULL, t1, t2)
 

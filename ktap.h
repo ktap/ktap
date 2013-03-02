@@ -9,7 +9,7 @@ typedef struct ktap_Reg {
         ktap_cfunction func;
 } ktap_Reg;
 
-ktap_State *ktap_newstate(void);
+ktap_State *ktap_newstate(ktap_State **ks);
 void ktap_exit(ktap_State *ks);
 ktap_State *ktap_newthread(ktap_State *mainthread);
 void ktap_exitthread(ktap_State *ks);
@@ -43,4 +43,6 @@ int ktap_transport_init(ktap_State *ks);
 
 void *ktap_pre_trace(struct ftrace_event_call *call, int size, unsigned long *flags);
 void ktap_post_trace(struct ftrace_event_call *call, void *entry, unsigned long *flags);
+
+void ktap_user_complete(ktap_State *ks);
 #endif /* __KTAP_H__ */

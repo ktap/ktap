@@ -305,13 +305,20 @@ static int ktapc_writer(const void* p, size_t sz, void* ud)
 	return 0;
 }
 
+int ktap_fd;
+
+void ktap_user_complete_cb()
+{
+	ioctl(ktap_fd, KTAP_CMD_USER_COMPLETE, NULL);
+}
+
 int main(int argc, char **argv)
 {
 	Closure *cl;
 	unsigned char *buff;
 	struct stat sb;
 	int fdin, fdout;
-        int ktapvm_fd, ktap_fd;
+        int ktapvm_fd;
 
 	if (argc == 1)
 		usage("miss ktap file argument");
@@ -354,7 +361,7 @@ int main(int argc, char **argv)
 	if (ktap_fd < 0)
 		handle_error("ioctl ktapvm failed");
 
-	ktapio_create();
+	ktapio_create((void *)ktap_user_complete_cb);
 
 	printf("ktaprun: %s\n", argv[1]);
 	ioctl(ktap_fd, KTAP_CMD_RUN, default_output_filename);

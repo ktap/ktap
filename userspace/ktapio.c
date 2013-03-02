@@ -27,6 +27,7 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/poll.h>
+#include <sys/signal.h>
 #include <fcntl.h>
 #include <pthread.h>
 
@@ -35,14 +36,33 @@
 
 #define handle_error(str) do { perror(str); exit(-1); } while(0)
 
+extern int ktap_fd;
+
+void sigfunc(int signo)
+{
+	/* should not not reach here */
+}
+
+static void block_sigint()
+{
+	sigset_t mask, omask;
+
+	sigemptyset(&mask);
+	sigaddset(&mask, SIGINT);
+
+	pthread_sigmask(SIG_BLOCK, &mask, &omask);
+}
+
 static void *reader_thread(void *data)
 {
 	char buf[MAX_BUFLEN];
-	struct pollfd pollfd;
+	struct pollfd pollfd[2];
 	struct timespec tim = {.tv_sec=0, .tv_nsec=200000000};
 	int timeout, fd, ret, len;
 	int cpu = (int)(long)data;
 	char filename[PATH_MAX];
+
+	block_sigint();
 
 	sprintf(filename, "/sys/kernel/debug/ktap/trace%d", cpu);
 
@@ -52,18 +72,28 @@ static void *reader_thread(void *data)
 		return NULL;
 	}
 
-	pollfd.fd = fd;
-	pollfd.events = POLLIN;
+	pollfd[0].fd = fd;
+	pollfd[0].events = POLLIN;
+	pollfd[1].fd = ktap_fd;
+	pollfd[1].events = POLLIN;
 	timeout = tim.tv_sec * 1000 + tim.tv_nsec / 1000000;
 
 	do {
-		ret = poll(&pollfd, 1, timeout);
+		int exiting = 0;
+
+		ret = poll(&pollfd[0], 2, timeout);
 		if (ret < 0)
 			break;
 
-		while ((len = read(fd, buf, sizeof(buf))) > 0) {
+		/* ktapvm is waiting for reader to read all remain content */
+		if (pollfd[1].revents == POLLERR)
+			exiting = 1;
+
+		while ((len = read(fd, buf, sizeof(buf))) > 0)
 			write(1, buf, len);
-		}
+
+		if (exiting == 1)
+			break;
 	} while (1);
 
 	close(fd);
@@ -74,18 +104,12 @@ static void *reader_thread(void *data)
 static pthread_t *reader;
 static long ncpus = -1;
 
-void ktapio_exit()
+static void *manager_thread(void *data)
 {
+	void (*ktap_io_ready_cb)(void) = data;
 	int i;
 
-	for (i = 0; i < ncpus; i++) {
-		pthread_join(reader[i], NULL);
-	}
-}
-
-int ktapio_create()
-{
-	int i;
+	block_sigint();
 
 	ncpus = sysconf(_SC_NPROCESSORS_ONLN);
 	if (ncpus < 0)
@@ -97,11 +121,26 @@ int ktapio_create()
 		
 	for (i = 0; i < ncpus; i++) {
 		if (pthread_create(&reader[i], NULL, reader_thread, (void *)(long)i) < 0)
-			handle_error("pthread_create failed\n");
+			handle_error("pthread_create reader_thread failed\n");
 	}
+
+	for (i = 0; i < ncpus; i++) {
+		pthread_join(reader[i], NULL);
+	}
+
+	(*ktap_io_ready_cb)();
+}
+
+int ktapio_create(void *cb)
+{
+	pthread_t manager;
+
+	 signal(SIGINT, sigfunc);
+
+	if (pthread_create(&manager, NULL, manager_thread, cb) < 0)
+		handle_error("pthread_create manager_thread failed\n");
 
 	return 0;
 }
-
 
 

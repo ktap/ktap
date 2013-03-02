@@ -36,6 +36,7 @@
 #include <linux/user.h>
 #include <linux/init.h>
 #include <linux/slab.h>
+#include <linux/poll.h>
 #include <linux/miscdevice.h>
 #include <linux/anon_inodes.h>
 #include <asm/segment.h>
@@ -96,7 +97,7 @@ static int loadfile(const char *path, unsigned long **buff)
 }
 
 /* Ktap Main Entry */
-static int ktap_main(int argc, char **argv)
+static int ktap_main(struct file *file, int argc, char **argv)
 {
 	unsigned long *buff = NULL;
 	ktap_State *ks;
@@ -110,7 +111,7 @@ static int ktap_main(int argc, char **argv)
 	if (unlikely(ret))
 		return ret;
 
-	ks = ktap_newstate();
+	ks = ktap_newstate((ktap_State **)&file->private_data);
 	if (unlikely(!ks))
 		return -ENOEXEC;
 
@@ -138,35 +139,54 @@ static long ktap_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	char cmdline[64] = {0};
 	int argc, ret;
 	char **argv;
+	ktap_State *ks = file->private_data;
 
-	if (cmd == KTAP_CMD_VERSION) {
+	switch (cmd) {
+	case KTAP_CMD_VERSION:
 		print_version();
 		return 0;
-	}
+	case KTAP_CMD_RUN:
+		ret = copy_from_user(cmdline, (void __user *)arg, 64);
+		if (ret < 0)
+			return -EFAULT;
 
-	if (cmd != KTAP_CMD_RUN)
+		argv = argv_split(GFP_KERNEL, cmdline, &argc);
+		if (!argv) {
+			pr_err("out of memory");
+			return -EINVAL;
+		}
+
+		ktap_main(file, argc, argv);
+
+		argv_free(argv);
+		return 0;
+	case KTAP_CMD_USER_COMPLETE:
+		ktap_user_complete(ks);
+		break;
+	default:
 		return -EINVAL;
+	};
 
-	ret = copy_from_user(cmdline, (void __user *)arg, 64);
-	if (ret < 0)
-		return -EFAULT;
-
-	argv = argv_split(GFP_KERNEL, cmdline, &argc);
-	if (!argv) {
-		pr_err("out of memory");
-		return -EINVAL;
-	}
-
-	ktap_main(argc, argv);
-
-	argv_free(argv);
         return 0;
+}
+
+static unsigned int ktap_poll(struct file *file, poll_table *wait)
+{
+	ktap_State *ks = file->private_data;
+
+	if (!ks)
+		return 0;
+
+	if (G(ks)->user_completion)
+		return POLLERR;
+
+	return 0;
 }
 
 static const struct file_operations ktap_fops = {
 	.llseek                 = no_llseek,
 	.unlocked_ioctl         = ktap_ioctl,
-	.compat_ioctl           = ktap_ioctl,
+	.poll			= ktap_poll
 };
 
 
