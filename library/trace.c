@@ -219,9 +219,7 @@ void ktap_do_trace(struct ftrace_event_call *call, void *entry,
 	event.entry_size = entry_size;
 	event.data_size = data_size;
 
-	hlist_for_each_entry_rcu(eventnode, pos,
-				 &call->ktap_callback_list, node) {
-
+	hlist_for_each_entry_rcu(eventnode, &call->ktap_callback_list, node) {
 		ktap_State *ks = eventnode->ks;
 		Closure *cl = eventnode->cl;
 

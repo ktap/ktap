@@ -62,7 +62,7 @@ static int loadfile(const char *path, unsigned long **buff)
 		return -EACCES;
 	}
 
-	ret = vfs_getattr(file->f_path.mnt, file->f_path.dentry, &st);
+	ret = vfs_getattr(&file->f_path, &st);
 	if (ret) {
 		filp_close(file, NULL);
 		return ret;

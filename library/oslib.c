@@ -72,8 +72,7 @@ static int ktap_lib_info(ktap_State *ks)
 
 static DEFINE_PER_CPU(bool, ktap_in_dumpstack);
 
-void trace_console_func(void *__data, const char *log_buf, unsigned start,
-			unsigned end, unsigned log_buf_len)
+void trace_console_func(void *__data, const char *text, size_t len)
 {
 	ktap_State *ks = __data;
 
@@ -81,7 +80,7 @@ void trace_console_func(void *__data, const char *log_buf, unsigned start,
 		return;
 
 	/* cannot use ktap_printf here */
-	ktap_transport_write(ks, log_buf, log_buf_len);
+	ktap_transport_write(ks, text, len);
 }
 
 /*
