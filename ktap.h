@@ -45,4 +45,7 @@ void *ktap_pre_trace(struct ftrace_event_call *call, int size, unsigned long *fl
 void ktap_post_trace(struct ftrace_event_call *call, void *entry, unsigned long *flags);
 
 void ktap_user_complete(ktap_State *ks);
+
+void trace_console_func(void * __data, const char *log_buf, unsigned start,
+			unsigned end, unsigned log_buf_len);
 #endif /* __KTAP_H__ */

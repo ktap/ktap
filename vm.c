@@ -30,6 +30,8 @@
 #include <linux/sched.h>
 #include <linux/completion.h>
 #include <linux/freezer.h>
+#include <linux/tracepoint.h>
+#include <trace/events/printk.h>
 
 #include "ktap.h"
 
@@ -980,6 +982,8 @@ void ktap_exit(ktap_State *ks)
 	tstring_freeall(ks);
 	free_all_gcobject(ks);
 
+	unregister_trace_console(trace_console_func, ks);
+
 	wait_user_completion(ks);
 	flush_signals(current);
 
@@ -1025,6 +1029,10 @@ ktap_State *ktap_newstate(ktap_State **private_data)
 
 	ktap_percpu_state = (ktap_State *)alloc_percpu(PAGE_SIZE);
 	if (!ktap_percpu_state)
+		return NULL;
+
+	ret = register_trace_console(trace_console_func, ks);
+	if (ret)
 		return NULL;
 
 	return ks;

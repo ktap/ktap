@@ -25,6 +25,7 @@
 #include <linux/file.h>
 #include <linux/fs.h>
 #include <linux/delay.h>
+#include <linux/console.h>
 #include <asm-generic/uaccess.h>
 #include <linux/sched.h>
 
@@ -69,14 +70,40 @@ static int ktap_lib_info(ktap_State *ks)
 	return 0;
 }
 
+static DEFINE_PER_CPU(bool, ktap_in_dumpstack);
+
+void trace_console_func(void *__data, const char *log_buf, unsigned start,
+			unsigned end, unsigned log_buf_len)
+{
+	ktap_State *ks = __data;
+
+	if (likely(!__this_cpu_read(ktap_in_dumpstack)))
+		return;
+
+	/* cannot use ktap_printf here */
+	ktap_transport_write(ks, log_buf, log_buf_len);
+}
+
+/*
+ * Some method:
+ * 1) use console tracepoint
+ * 2) register console driver
+ * 3) hack printk function, like kdb does now.
+ * 4) console_lock firstly, read log buffer, then console_unlock
+ *
+ * Note we cannot use console_lock/console_trylock here.
+ * Issue: printk may not call call_console_drivers if console semaphore
+ * is already held, in this case, ktap may output nothing.
+ *
+ * todo: not output to consoles.
+ */
 static int ktap_lib_dumpstack(ktap_State *ks)
 {
-	/*
-	 * dump_stack implementation is arch-dependent,
-	 * so it's hard to re-implement it uniformly in ktap,
-	 * not easy to redirect by ktap_printf.
-	 */   
+	__this_cpu_write(ktap_in_dumpstack, true);
+
 	dump_stack();
+
+	__this_cpu_write(ktap_in_dumpstack, false);
 	return 0;
 }
 
