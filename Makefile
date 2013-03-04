@@ -1,9 +1,9 @@
 
+LIBDIR = library
 
 obj-m		+= ktapvm.o
-ktapvm-y	:= ktap.o loader.o object.o baselib.o oslib.o tstring.o table.o vm.o \
-			syscalls.o trace.o opcode.o strfmt.o transport.o
-
+ktapvm-y	:= ktap.o loader.o object.o $(LIBDIR)/baselib.o $(LIBDIR)/oslib.o tstring.o table.o vm.o \
+			$(LIBDIR)/syscalls.o $(LIBDIR)/trace.o opcode.o $(LIBDIR)/strfmt.o transport.o
 all:
 	make -C ../../.. M=`pwd` modules
 
@@ -14,5 +14,5 @@ ktap:
 		opcode.c table.c tstring.c object.c -lpthread
 
 clean:
-	rm -rf ktapvm ktap *.o *.out *.ko *.mod.c *.order *.o.cmd Module.symvers
+	rm -rf ktapvm ktap *.o library/*.o library/.*.o.cmd *.out *.ko *.mod.c *.order *.o.cmd Module.symvers
 
