@@ -347,6 +347,7 @@ void end_all_trace(ktap_State *ks)
 	tracepoint_synchronize_unregister();
 
 	free_percpu(entry_percpu_buffer);
+	free_percpu(percpu_trace_iterator);
 
 	INIT_LIST_HEAD(event_nodes);
 }
