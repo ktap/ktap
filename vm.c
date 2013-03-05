@@ -915,9 +915,6 @@ void ktap_exitthread(ktap_State *ks)
 		ktap_free(ks, o);
 		o = next;
 	}
-
-	if (ks == G(ks)->mainthread)
-		ktap_free(ks, ks);
 }
 
 static ktap_State *ktap_percpu_state;
@@ -990,6 +987,8 @@ void ktap_exit(ktap_State *ks)
 	ktap_transport_exit(ks);
 
 	ktap_exitthread(ks);
+	ktap_free(ks, ks);
+
 	/* life ending, no return anymore*/
 	do_exit(0);
 }
