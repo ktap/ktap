@@ -97,23 +97,36 @@ static int loadfile(const char *path, unsigned long **buff)
 }
 
 /* Ktap Main Entry */
-static int ktap_main(struct file *file, int argc, char **argv)
+static int ktap_main(struct file *file, char *cmdline)
 {
 	unsigned long *buff = NULL;
 	ktap_State *ks;
 	Closure *cl;
+	int argc;
+	char **argv;
 	int ret;
+
+	argv = argv_split(GFP_KERNEL, cmdline, &argc);
+	if (!argv) {
+		pr_err("out of memory");
+		return -EINVAL;
+	}
 
 //	if (parse_option(argc, argv, ks) < 0)
 //		print_usage();
 
 	ret = loadfile(argv[0], &buff);
+
+	argv_free(argv);
+
 	if (unlikely(ret))
-		return ret;
+		return -EINVAL;
 
 	ks = ktap_newstate((ktap_State **)&file->private_data);
-	if (unlikely(!ks))
+	if (unlikely(!ks)) {
+		vfree(buff);
 		return -ENOEXEC;
+	}
 
 	cl = ktap_load(ks, (unsigned char *)buff);
 
@@ -139,7 +152,6 @@ static long ktap_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	char cmdline[64] = {0};
 	int argc, ret;
 	char **argv;
-	ktap_State *ks = file->private_data;
 
 	switch (cmd) {
 	case KTAP_CMD_VERSION:
@@ -150,19 +162,13 @@ static long ktap_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		if (ret < 0)
 			return -EFAULT;
 
-		argv = argv_split(GFP_KERNEL, cmdline, &argc);
-		if (!argv) {
-			pr_err("out of memory");
-			return -EINVAL;
-		}
-
-		ktap_main(file, argc, argv);
-
-		argv_free(argv);
-		return 0;
-	case KTAP_CMD_USER_COMPLETE:
+		ktap_main(file, cmdline);
+		break;
+	case KTAP_CMD_USER_COMPLETE: {
+		ktap_State *ks = file->private_data;
 		ktap_user_complete(ks);
 		break;
+		}
 	default:
 		return -EINVAL;
 	};
