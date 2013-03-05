@@ -819,11 +819,23 @@ static int cfunction_cache_getindex(ktap_State *ks, Tvalue *fname)
 
 static void cfunction_cache_add(ktap_State *ks, Tvalue *func)
 {
-	if (!cfunction_tbl)
-		cfunction_tbl = ktap_malloc(ks, sizeof(Tvalue) * 128);
 
 	setobj(ks, &cfunction_tbl[nr_builtin_cfunction], func);
 	nr_builtin_cfunction++;
+}
+
+static void cfunction_cache_exit(ktap_State *ks)
+{
+	ktap_free(ks, cfunction_tbl);
+}
+
+static int cfunction_cache_init(ktap_State *ks)
+{
+	cfunction_tbl = ktap_malloc(ks, sizeof(Tvalue) * 128);
+	if (cfunction_tbl)
+		return -ENOMEM;
+
+	return 0;
 }
 
 /* function for register library */
@@ -978,6 +990,7 @@ void ktap_exit(ktap_State *ks)
 	/* free all resources got by ktap */
 	tstring_freeall(ks);
 	free_all_gcobject(ks);
+	cfunction_cache_exit(ks);
 
 	unregister_trace_console(trace_console_func, ks);
 
@@ -1022,6 +1035,7 @@ ktap_State *ktap_newstate(ktap_State **private_data)
 	tstring_resize(ks, 32); /* set inital string hashtable size */
 
 	/* init library */
+	cfunction_cache_init(ks);
 	ktap_init_syscalls(ks);
 	ktap_init_baselib(ks);
 	ktap_init_oslib(ks);
