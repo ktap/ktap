@@ -29,7 +29,7 @@ Normal:
 4. kprobe/uprobe support
 5. function call speedup	--- done
 6. improve printf performance
-7. dumpstack support
+7. dumpstack support		--- done
 8. script argument support
 
 
