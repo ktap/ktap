@@ -91,7 +91,6 @@ int ktap_transport_init(ktap_State *ks)
 	G(ks)->ktap_chan = relay_open("trace", ktap_dir, 4096, 10, &relay_callbacks, NULL);
 	if (!G(ks)->ktap_chan) {
 		pr_err("ktap: relay_open failed\n");
-		debugfs_remove(ktap_dir);
 		return -1;
 	}
 
