@@ -792,25 +792,23 @@ void ktap_optimize_code(ktap_State *ks, int level, Proto *f)
 		ktap_optimize_code(ks, level + 1, f->p[i]);
 }
 
-
-static int nr_builtin_cfunction;
-static Tvalue *cfunction_tbl;
-
 static Tvalue *cfunction_cache_get(ktap_State *ks, int index)
 {
-	return &cfunction_tbl[index];
+	return &G(ks)->cfunction_tbl[index];
 }
 
 static int cfunction_cache_getindex(ktap_State *ks, Tvalue *fname)
 {
-	const Tvalue *gt = table_getint(hvalue(&G(ks)->registry), KTAP_RIDX_GLOBALS);
+	const Tvalue *gt = table_getint(hvalue(&G(ks)->registry),
+				KTAP_RIDX_GLOBALS);
 	Tvalue *cfunc;
-	int i;
+	int nr, i;
 
+	nr = G(ks)->nr_builtin_cfunction;
 	cfunc = table_get(hvalue(gt), fname);
 
-	for (i = 0; i < nr_builtin_cfunction; i++) {
-		if (rawequalobj(&cfunction_tbl[i], cfunc))
+	for (i = 0; i < nr; i++) {
+		if (rawequalobj(&G(ks)->cfunction_tbl[i], cfunc))
 			return i;
 	}
 
@@ -819,20 +817,20 @@ static int cfunction_cache_getindex(ktap_State *ks, Tvalue *fname)
 
 static void cfunction_cache_add(ktap_State *ks, Tvalue *func)
 {
-
-	setobj(ks, &cfunction_tbl[nr_builtin_cfunction], func);
-	nr_builtin_cfunction++;
+	int nr = G(ks)->nr_builtin_cfunction;
+	setobj(ks, &G(ks)->cfunction_tbl[nr], func);
+	G(ks)->nr_builtin_cfunction++;
 }
 
 static void cfunction_cache_exit(ktap_State *ks)
 {
-	ktap_free(ks, cfunction_tbl);
+	ktap_free(ks, G(ks)->cfunction_tbl);
 }
 
 static int cfunction_cache_init(ktap_State *ks)
 {
-	cfunction_tbl = ktap_malloc(ks, sizeof(Tvalue) * 128);
-	if (cfunction_tbl)
+	G(ks)->cfunction_tbl = ktap_zalloc(ks, sizeof(Tvalue) * 128);
+	if (!G(ks)->cfunction_tbl)
 		return -ENOMEM;
 
 	return 0;
@@ -947,26 +945,28 @@ ktap_State *ktap_newthread(ktap_State *mainthread)
 
 void ktap_user_complete(ktap_State *ks)
 {
-        if (!G(ks)->user_completion)
-                return;
+	if (!G(ks)->user_completion)
+		return;
 
-        complete(G(ks)->user_completion);
-        G(ks)->user_completion = NULL;
+	complete(G(ks)->user_completion);
+	G(ks)->user_completion = NULL;
 }
 
 static int wait_user_completion(ktap_State *ks)
 {
-        struct completion t;
-        int killed;
+	struct completion t;
+	int killed;
 
-        G(ks)->user_completion = &t;
-        init_completion(&t);
+	G(ks)->user_completion = &t;
+	init_completion(&t);
 
-        freezer_do_not_count();
-        killed = wait_for_completion_interruptible(&t);
-        freezer_count();
+	freezer_do_not_count();
+	killed = wait_for_completion_interruptible(&t);
+	freezer_count();
 
-        return killed;
+	G(ks)->user_completion = NULL;
+
+	return killed;
 }
 
 
@@ -982,6 +982,8 @@ void ktap_exit(ktap_State *ks)
 	flush_signals(current);
 
 	ktap_printf(ks, "exitting\n");
+	unregister_trace_console(trace_console_func, ks);
+
 	end_all_trace(ks);
 
 	if (ktap_percpu_state)
@@ -991,8 +993,6 @@ void ktap_exit(ktap_State *ks)
 	tstring_freeall(ks);
 	free_all_gcobject(ks);
 	cfunction_cache_exit(ks);
-
-	unregister_trace_console(trace_console_func, ks);
 
 	wait_user_completion(ks);
 	flush_signals(current);
@@ -1024,6 +1024,10 @@ ktap_State *ktap_newstate(ktap_State **private_data)
 	G(ks)->task = current;
 	INIT_LIST_HEAD(&(G(ks)->event_nodes));
 
+	if (cfunction_cache_init(ks) < 0)
+		return NULL;
+
+
 	ret = ktap_transport_init(ks);
 	if (ret)
 		return NULL;
@@ -1032,10 +1036,9 @@ ktap_State *ktap_newstate(ktap_State **private_data)
 
 	ktap_init_state(ks);
 	ktap_init_registry(ks);
-	tstring_resize(ks, 32); /* set inital string hashtable size */
+	tstring_resize(ks, 512); /* set inital string hashtable size */
 
 	/* init library */
-	cfunction_cache_init(ks);
 	ktap_init_syscalls(ks);
 	ktap_init_baselib(ks);
 	ktap_init_oslib(ks);
@@ -1047,7 +1050,6 @@ ktap_State *ktap_newstate(ktap_State **private_data)
 	ret = register_trace_console(trace_console_func, ks);
 	if (ret)
 		return NULL;
-
 	return ks;
 }
 

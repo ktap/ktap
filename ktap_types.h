@@ -260,6 +260,8 @@ typedef struct global_State {
 
 	struct ktap_State *mainthread;
 #ifdef __KERNEL__
+	int nr_builtin_cfunction;
+	Tvalue *cfunction_tbl;
 	struct list_head event_nodes;
 	struct task_struct *task;
 	struct rchan *ktap_chan;
@@ -535,6 +537,7 @@ int ktap_str2d(const char *s, size_t len, ktap_Number *result);
 #define ktap_malloc(ks, size)			kmalloc(size, KTAP_ALLOC_FLAGS)
 #define ktap_free(ks, block)			kfree(block)
 #define ktap_reallocv(ks, block, osize, nsize)	krealloc(block, nsize, KTAP_ALLOC_FLAGS)
+#define ktap_zalloc(ks, size)			kzalloc(size, KTAP_ALLOC_FLAGS)
 void ktap_printf(ktap_State *ks, const char *fmt, ...);
 #else
 /*
