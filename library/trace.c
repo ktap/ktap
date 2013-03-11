@@ -352,8 +352,10 @@ void end_all_trace(ktap_State *ks)
 	INIT_LIST_HEAD(event_nodes);
 }
 
-int ktap_trace_init()
+int ktap_trace_init(ktap_State *ks)
 {
+	ktap_init_syscalls(ks);
+
 	entry_percpu_buffer = alloc_percpu(PAGE_SIZE);
 	if (!entry_percpu_buffer)
 		return -1;

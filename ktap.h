@@ -27,7 +27,7 @@ void ktap_do_trace(struct ftrace_event_call *call, void *entry,
 			  int entry_size, int data_size);
 int start_trace_syscalls(struct ftrace_event_call *call);
 void stop_trace_syscalls(struct ftrace_event_call *call);
-int ktap_trace_init(void);
+int ktap_trace_init(ktap_State *ks);
 
 int start_trace(ktap_State *ks, char *event_name, Closure *cl);
 void end_all_trace(ktap_State *ks);
