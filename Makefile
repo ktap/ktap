@@ -3,7 +3,7 @@ LIBDIR = library
 
 obj-m		+= ktapvm.o
 ktapvm-y	:= ktap.o loader.o object.o $(LIBDIR)/baselib.o $(LIBDIR)/oslib.o tstring.o table.o vm.o \
-			$(LIBDIR)/syscalls.o $(LIBDIR)/trace.o opcode.o $(LIBDIR)/strfmt.o transport.o
+			$(LIBDIR)/syscalls.o $(LIBDIR)/trace.o opcode.o strfmt.o transport.o
 all:
 	make -C ../../.. M=`pwd` modules
 

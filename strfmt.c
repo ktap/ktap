@@ -24,7 +24,7 @@
 #include <linux/slab.h>
 #include <linux/ctype.h>
 
-#include "../ktap.h"
+#include "ktap.h"
 
 /* get argument operation macro */
 #define GetArg(ks, n)	((ks)->ci->func + (n))
