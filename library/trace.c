@@ -211,7 +211,6 @@ void ktap_do_trace(struct ftrace_event_call *call, void *entry,
 			  int entry_size, int data_size)
 {
 	struct ktap_event_node *eventnode;
-	struct hlist_node *pos;
 	struct ktap_event event;
 
 	event.call = call;
