@@ -1032,11 +1032,11 @@ ktap_State *ktap_newstate(ktap_State **private_data)
 	if (ret)
 		return NULL;
 
-	ktap_trace_init(ks);
-
 	ktap_init_state(ks);
 	ktap_init_registry(ks);
 	tstring_resize(ks, 512); /* set inital string hashtable size */
+
+	ktap_trace_init(ks);
 
 	/* init library */
 	ktap_init_baselib(ks);
