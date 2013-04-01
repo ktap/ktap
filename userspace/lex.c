@@ -442,6 +442,12 @@ static int llex(LexState *ls, SemInfo *seminfo)
 			next(ls);
 			break;
 		}
+		case '#': {
+			while (!currIsNewline(ls) && ls->current != EOZ)
+				next(ls);  /* skip until end of line (or end of file) */
+			break;
+		}
+		#if 0
 		case '-': {  /* '-' or '--' (comment) */
 			next(ls);
 			if (ls->current != '-')
@@ -462,6 +468,7 @@ static int llex(LexState *ls, SemInfo *seminfo)
 				next(ls);  /* skip until end of line (or end of file) */
 			break;
 		}
+		#endif
 		case '[': {  /* long string or simply '[' */
 			int sep = skip_sep(ls);
 			if (sep >= 0) {

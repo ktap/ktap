@@ -19,7 +19,7 @@ High:
 11. ktapio support global and percpu mode
 12. issue: trace_end function cannot print into ktapio	--- done
 13. event library support
-14. change comments sytle to "#"
+14. change comments sytle to "#"	--- done
 
 
 Normal:

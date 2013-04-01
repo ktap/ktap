@@ -14,7 +14,7 @@ if (na ~= 1 and nb ~= 2) then
 	print("failed");
 end
 
----------------------------------
+#####
 print("testing: string compare")
 local a="zhang"
 local b="zhan"
@@ -24,7 +24,7 @@ else
 	print("failed")
 end
 
----------------------------------
+#####
 print("testing: forloop")
 local variable
 count = 0
@@ -36,7 +36,7 @@ if (count ~= 100001) then
 	print("failed")
 end
 
----------------------------------
+#####
 print("testing: whileloop")
 count = 0
 i = 1
@@ -48,7 +48,7 @@ if (count ~= 5) then
 	print("failed")
 end
 
----------------------------------
+#####
 print("testing: table set")
 days = {"Sunday", "Monday", "Tuesday", "Wednesday",
             "Thursday", "Friday", "Saturday"}
@@ -64,16 +64,16 @@ end
 
 os.trace("syscall:open");
 
----------------------------------
+#####
 print("testing: sleep 5 seconds")
 os.sleep(1000 * 5)
 
----------------------------------
+#####
 print("testing: wait")
 os.wait()
 print("\treturn from wait");
 
 
----os.kprobe("schedule")
----os.uprobe("malloc");
+#os.kprobe("schedule")
+#os.uprobe("malloc");
 

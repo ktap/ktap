@@ -1,11 +1,11 @@
 count = 0
 function eventfun (e)
 	printf("%d\t%s\t%s", os.smp_processor_id(), process.comm(), e.annotate);
----	printf("%d\n", os.smp_processor_id())
----	printf("%s\n", e.name);
----	print(e.print_fmt);
----	printf(e.annotate);
----	printf("field1: %d\n", e.field1)
+#	printf("%d\n", os.smp_processor_id())
+#	printf("%s\n", e.name);
+#	print(e.print_fmt);
+#	printf(e.annotate);
+#	printf("field1: %d\n", e.field1)
 	count = count + 1
 end
 
@@ -22,18 +22,18 @@ function eventfun1 (e)
 end
 
 os.trace("", eventfun);
----os.trace("irq:irq_handler_exit", eventfun);
----os.trace("irq:softirq_entry", eventfun);
----os.trace("kmem", eventfun1);
----os.trace("kmem:kmalloc", eventfun1);
----os.trace("sched:sched_process_exec", eventfun);
----os.trace("signal", eventfun1);
----os.trace("signal:signal_generate", eventfun1);
----os.trace("syscalls:sys_enter_open", eventfun1);
----os.trace("syscalls:sys_exit_open", eventfun1);
----os.trace("syscalls:sys_enter_futex", eventfun);
----os.trace("syscalls", eventfun);
----os.trace("sched:sched_process_fork", eventfun)
+#os.trace("irq:irq_handler_exit", eventfun);
+#os.trace("irq:softirq_entry", eventfun);
+#os.trace("kmem", eventfun1);
+#os.trace("kmem:kmalloc", eventfun1);
+#os.trace("sched:sched_process_exec", eventfun);
+#os.trace("signal", eventfun1);
+#os.trace("signal:signal_generate", eventfun1);
+#os.trace("syscalls:sys_enter_open", eventfun1);
+#os.trace("syscalls:sys_exit_open", eventfun1);
+#os.trace("syscalls:sys_enter_futex", eventfun);
+#os.trace("syscalls", eventfun);
+#os.trace("sched:sched_process_fork", eventfun)
 
 os.trace_end(function ()
 	print(count1, count2)
