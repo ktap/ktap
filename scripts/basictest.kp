@@ -2,7 +2,7 @@
 
 print("testing: normal function call")
 function f(a, b)
-	if (a ~= 0 and b ~= 1) then
+	if (a != 0 and b != 1) then
 		print("failed");
 	end
 	return a+1, b+1
@@ -10,7 +10,7 @@ end
 
 
 na, nb = f(0, 1)
-if (na ~= 1 and nb ~= 2) then
+if (na != 1 and nb != 2) then
 	print("failed");
 end
 
@@ -32,7 +32,7 @@ for variable = 0, 100000, 1 do
 	count = count + 1
 end
 
-if (count ~= 100001) then
+if (count != 100001) then
 	print("failed")
 end
 
@@ -44,7 +44,7 @@ while i <= 5 do
 	count = count + 1
 	i = i + 1
 end
-if (count ~= 5) then
+if (count != 5) then
 	print("failed")
 end
 
@@ -53,12 +53,12 @@ print("testing: table set")
 days = {"Sunday", "Monday", "Tuesday", "Wednesday",
             "Thursday", "Friday", "Saturday"}
 
-if (days[2] ~= "Monday") then
+if (days[2] != "Monday") then
 	print("failed")
 end
 
 days["endday"] = "20121220"
-if (days["endday"] ~= "20121220") then
+if (days["endday"] != "20121220") then
 	print("failed")
 end
 
