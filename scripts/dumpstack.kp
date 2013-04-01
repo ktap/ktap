@@ -1,10 +1,11 @@
-function eventfun(e)
+function eventfun(e) {
 	printf(e.annotate)
 	printf("\n")
 	os.dumpstack()
-end
+}
+
 os.trace("syscalls:sys_enter_open", eventfun);
 
-os.trace_end(function ()
+os.trace_end(function () {
 	print("trace ending\n")
-end)
+})
