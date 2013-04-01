@@ -662,6 +662,8 @@ static int block_follow (LexState *ls, int withuntil)
 		return 1;
 	case TK_UNTIL:
 		return withuntil;
+	case '}':
+		return 1;
 	default:
 		return 0;
 	}
@@ -1515,8 +1517,11 @@ static void test_then_block(LexState *ls, int *escapelist)
 	int jf;  /* instruction to skip 'then' code (if condition is false) */
 
 	lex_next(ls);  /* skip IF or ELSEIF */
+	checknext(ls, '(');
 	expr(ls, &v);  /* read condition */
-	checknext(ls, TK_THEN);
+	checknext(ls, ')');
+	//checknext(ls, TK_THEN);
+	checknext(ls, '{');
 	if (ls->t.token == TK_GOTO || ls->t.token == TK_BREAK) {
 		codegen_goiffalse(ls->fs, &v);  /* will jump to label if condition is true */
 		enterblock(fs, &bl, 0);  /* must enter block before 'goto' */
@@ -1533,6 +1538,7 @@ static void test_then_block(LexState *ls, int *escapelist)
 		jf = v.f;
 	}
 	statlist(ls);  /* `then' part */
+	checknext(ls, '}');
 	leaveblock(fs);
 	if (ls->t.token == TK_ELSE || ls->t.token == TK_ELSEIF)  /* followed by 'else'/'elseif'? */
 		codegen_concat(fs, escapelist, codegen_jump(fs));  /* must jump over it */
@@ -1549,9 +1555,12 @@ static void ifstat(LexState *ls, int line)
 	test_then_block(ls, &escapelist);  /* IF cond THEN block */
 	while (ls->t.token == TK_ELSEIF)
 		test_then_block(ls, &escapelist);  /* ELSEIF cond THEN block */
-	if (testnext(ls, TK_ELSE))
+	if (testnext(ls, TK_ELSE)) {
+		checknext(ls, '{');
 		block(ls);  /* `else' part */
-	check_match(ls, TK_END, TK_IF, line);
+		checknext(ls, '}');
+	}
+	//check_match(ls, TK_END, TK_IF, line);
 	codegen_patchtohere(fs, escapelist);  /* patch escape list to 'if' end */
 }
 
