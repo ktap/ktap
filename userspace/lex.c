@@ -43,7 +43,7 @@ static const char *const ktap_tokens [] = {
 	"end", "false", "for", "function", "goto", "if",
 	"in", "local", "nil", "not", "or", "repeat",
 	"return", "then", "true", "until", "while",
-	"..", "...", "==", ">=", "<=", "~=", "::", "<eof>",
+	"..", "...", "==", ">=", "<=", "!=", "::", "<eof>",
 	"<number>", "<name>", "<string>"
 };
 
@@ -507,10 +507,10 @@ static int llex(LexState *ls, SemInfo *seminfo)
 				return TK_GE;
 			}
 		}
-		case '~': {
+		case '!': {
 			next(ls);
 			if (ls->current != '=')
-				return '~';
+				return '!';
 			else {
 				next(ls);
 				return TK_NE;
