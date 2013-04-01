@@ -1360,12 +1360,17 @@ static void whilestat(LexState *ls, int line)
 
 	lex_next(ls);  /* skip WHILE */
 	whileinit = codegen_getlabel(fs);
+	checknext(ls, '(');
 	condexit = cond(ls);
+	checknext(ls, ')');
+
 	enterblock(fs, &bl, 1);
-	checknext(ls, TK_DO);
+	//checknext(ls, TK_DO);
+	checknext(ls, '{');
 	block(ls);
 	codegen_jumpto(fs, whileinit);
-	check_match(ls, TK_END, TK_WHILE, line);
+	checknext(ls, '}');
+	//check_match(ls, TK_END, TK_WHILE, line);
 	leaveblock(fs);
 	codegen_patchtohere(fs, condexit);  /* false conditions finish the loop */
 }
@@ -1413,8 +1418,11 @@ static void forbody(LexState *ls, int base, int line, int nvars, int isnum)
 	FuncState *fs = ls->fs;
 	int prep, endfor;
 
+	checknext(ls, ')');
+
 	adjustlocalvars(ls, 3);  /* control variables */
-	checknext(ls, TK_DO);
+	//checknext(ls, TK_DO);
+	checknext(ls, '{');
 	prep = isnum ? codegen_codeAsBx(fs, OP_FORPREP, base, NO_JUMP) : codegen_jump(fs);
 	enterblock(fs, &bl, 0);  /* scope for declared variables */
 	adjustlocalvars(ls, nvars);
@@ -1494,6 +1502,8 @@ static void forstat(LexState *ls, int line)
 
 	enterblock(fs, &bl, 1);  /* scope for loop and control variables */
 	lex_next(ls);  /* skip `for' */
+
+	checknext(ls, '(');
 	varname = str_checkname(ls);  /* first variable name */
 	switch (ls->t.token) {
 	case '=':
@@ -1505,7 +1515,8 @@ static void forstat(LexState *ls, int line)
 	default: 
 		lex_syntaxerror(ls, KTAP_QL("=") " or " KTAP_QL("in") " expected");
 	}
-	check_match(ls, TK_END, TK_FOR, line);
+	//check_match(ls, TK_END, TK_FOR, line);
+	checknext(ls, '}');
 	leaveblock(fs);  /* loop scope (`break' jumps to this point) */
 }
 
