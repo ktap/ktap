@@ -2,27 +2,27 @@
 
 print("testing: normal function call")
 function f(a, b)
-	if (a != 0 and b != 1) then
+	if (a != 0 and b != 1) {
 		print("failed");
-	end
+	}
 	return a+1, b+1
 end
 
 
 na, nb = f(0, 1)
-if (na != 1 and nb != 2) then
+if (na != 1 and nb != 2) {
 	print("failed");
-end
+}
 
 #####
 print("testing: string compare")
 local a="zhang"
 local b="zhan"
 
-if (a > b) then
-else
+if (a > b) {
+} else {
 	print("failed")
-end
+}
 
 #####
 print("testing: forloop")
@@ -32,35 +32,35 @@ for variable = 0, 100000, 1 do
 	count = count + 1
 end
 
-if (count != 100001) then
+if (count != 100001) {
 	print("failed")
-end
+}
 
 #####
 print("testing: whileloop")
 count = 0
 i = 1
-while i <= 5 do
+while (i <= 5) do
 	count = count + 1
 	i = i + 1
 end
-if (count != 5) then
+if (count != 5) {
 	print("failed")
-end
+}
 
 #####
 print("testing: table set")
 days = {"Sunday", "Monday", "Tuesday", "Wednesday",
             "Thursday", "Friday", "Saturday"}
 
-if (days[2] != "Monday") then
+if (days[2] != "Monday") {
 	print("failed")
-end
+}
 
 days["endday"] = "20121220"
-if (days["endday"] != "20121220") then
+if (days["endday"] != "20121220") {
 	print("failed")
-end
+}
 
 os.trace("syscall:open");
 

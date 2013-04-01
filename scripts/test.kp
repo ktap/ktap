@@ -12,11 +12,11 @@ end
 count1 = 0
 count2 = 0
 function eventfun1 (e)
-	if (in_interrupt() == 0) then
+	if (in_interrupt() == 0) {
 		count1 = count1 + 1
-	else
+	} else {
 		count2 = count2 + 1
-	end
+	}
 	return
 
 end
