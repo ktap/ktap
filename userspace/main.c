@@ -28,6 +28,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <math.h>
+#include <getopt.h>
 
 #include "../ktap_types.h"
 #include "../ktap_opcodes.h"
@@ -267,13 +268,11 @@ static void usage(const char *msg)
 {
 	fprintf(stderr, msg);
 	fprintf(stderr,
-		"usage: ktapc [options] [filenames]\n"
+		"usage: ktap [options] [filenames]\n"
 		"Available options are:\n"
-		"  -l       list"
-		"  -o name  output to file  name default is ktapc.out"
-		"  -p       parse only\n"
-		"  -s       strip debug information\n"
-		"  -v       show version information\n");
+		"  -o name  output to file  name default is ktapc.out\n"
+		"  -v       version info\n"
+		"  -V       verbose\n");
 
 	exit(EXIT_FAILURE);
 }
@@ -291,7 +290,6 @@ static void init_dummy_global_state()
 
 #define handle_error(str) do { perror(str); exit(-1); } while(0)
 
-static const char *default_output_filename = "ktapc.out";
 
 static int ktapc_writer(const void* p, size_t sz, void* ud)
 {
@@ -312,47 +310,10 @@ void ktap_user_complete_cb()
 	ioctl(ktap_fd, KTAP_CMD_USER_COMPLETE, NULL);
 }
 
-int main(int argc, char **argv)
+static void run_ktapvm(const char *file_name)
 {
-	Closure *cl;
-	unsigned char *buff;
-	struct stat sb;
-	int fdin, fdout;
         int ktapvm_fd;
 
-	if (argc == 1)
-		usage("miss ktap file argument");
-
-	/* input */
-	fdin = open(argv[1], O_RDONLY);
-	if (fdin < 0)
-		handle_error("open failed");
-
-	if (fstat(fdin, &sb) == -1)
-		handle_error("fstat failed");
-
-	buff = mmap(NULL, sb.st_size, PROT_READ, MAP_PRIVATE, fdin, 0);
-	if (buff == MAP_FAILED)
-		handle_error("mmap failed");
-
-	init_dummy_global_state();
-	cl = ktapc_parser(buff, argv[1]);
-
-	munmap(buff, sb.st_size);
-	close(fdin);
-
-	dump_function(1, cl->l.p);
-//	return;
-
-	/* ktapc output */
-	fdout = open(default_output_filename, O_RDWR | O_CREAT | O_TRUNC, 0);
-	if (fdout < 0)
-		handle_error("open failed");
-
-	ktapc_dump(cl->l.p, ktapc_writer, fdout, 0);
-	close(fdout);
-
-	/* start running into kernel ktapvm */
 	ktapvm_fd = open("/dev/ktapvm", O_RDONLY);
 	if (ktapvm_fd < 0)
 		handle_error("open /dev/ktapvm failed");
@@ -363,10 +324,107 @@ int main(int argc, char **argv)
 
 	ktapio_create((void *)ktap_user_complete_cb);
 
-	printf("ktaprun: %s\n", argv[1]);
-	ioctl(ktap_fd, KTAP_CMD_RUN, default_output_filename);
+	ioctl(ktap_fd, KTAP_CMD_RUN, file_name);
 
 	close(ktap_fd);
 	close(ktapvm_fd);
+}
+
+static int verbose = 0;
+static char output_filename[128] = "ktapc.out";
+
+static int parse_option(int argc, char **argv)
+{
+	int option_index = 0;
+
+	for (;;) {
+		static struct option long_options[] = {
+			{"output",	required_argument, NULL, 'o'},
+                        {"verbose",	no_argument, NULL, 'V'},
+                        {"version",	no_argument, NULL, 'v'},
+			{"help",	no_argument, NULL, '?'},
+                        {NULL, 0, NULL, 0}
+                };
+                int c = getopt_long(argc, argv, "o:Vv?", long_options,
+							&option_index);
+		if (c == -1)
+			break;
+
+		switch (c) {
+		case 'o':
+			memset(output_filename, 0, sizeof(output_filename));
+			strncpy(output_filename, optarg, strlen(optarg));
+			break;
+		case 'V':
+			verbose = 1;
+			break;
+		case 'v':
+		case '?':
+			usage("");
+			break;
+		default:
+			usage("wrong argument");
+			break;
+		}
+	}
+
+	if (optind >= argc)
+		usage("parse options failure\n");
+
+	return optind;
+}
+
+static void compile(const char *input)
+{
+	Closure *cl;
+	unsigned char *buff;
+	struct stat sb;
+	int fdin, fdout;
+
+	/* input */
+	fdin = open(input, O_RDONLY);
+	if (fdin < 0) {
+		fprintf(stderr, "open file %s failed\n", input);
+		exit(-1);
+	}
+
+	if (fstat(fdin, &sb) == -1)
+		handle_error("fstat failed");
+
+	buff = mmap(NULL, sb.st_size, PROT_READ, MAP_PRIVATE, fdin, 0);
+	if (buff == MAP_FAILED)
+		handle_error("mmap failed");
+
+	init_dummy_global_state();
+	cl = ktapc_parser(buff, input);
+
+	munmap(buff, sb.st_size);
+	close(fdin);
+
+	if (verbose)
+		dump_function(1, cl->l.p);
+
+	/* ktapc output */
+	fdout = open(output_filename, O_RDWR | O_CREAT | O_TRUNC, 0);
+	if (fdout < 0)
+		handle_error("open failed");
+
+	ktapc_dump(cl->l.p, ktapc_writer, fdout, 0);
+	close(fdout);
+}
+
+int main(int argc, char **argv)
+{
+	int src_argindex;
+
+	if (argc == 1)
+		usage("");
+
+	src_argindex = parse_option(argc, argv);
+
+	compile(argv[src_argindex]);
+
+	/* start running into kernel ktapvm */
+	run_ktapvm(output_filename);
 }
 

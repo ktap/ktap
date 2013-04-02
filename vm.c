@@ -981,7 +981,6 @@ void ktap_exit(ktap_State *ks)
 	/* we need to flush all signals */
 	flush_signals(current);
 
-	ktap_printf(ks, "exitting\n");
 	unregister_trace_console(trace_console_func, ks);
 
 	end_all_trace(ks);
