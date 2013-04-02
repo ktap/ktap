@@ -314,9 +314,9 @@ static void run_ktapvm(const char *file_name)
 {
         int ktapvm_fd;
 
-	ktapvm_fd = open("/dev/ktapvm", O_RDONLY);
+	ktapvm_fd = open("/sys/kernel/debug/ktap/ktapvm", O_RDONLY);
 	if (ktapvm_fd < 0)
-		handle_error("open /dev/ktapvm failed");
+		handle_error("open /sys/kernel/debug/ktap/ktapvm failed");
 
 	ktap_fd = ioctl(ktapvm_fd, 0, NULL);
 	if (ktap_fd < 0)

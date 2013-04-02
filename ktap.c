@@ -233,18 +233,20 @@ struct dentry *ktap_dir;
 
 static int __init init_ktap(void)
 {
-        int ret;
-
-        ret = misc_register(&ktap_miscdev);
-        if (ret < 0) {
-                pr_err("Can't register ktap misc device");
-		return ret;
-	}
+	struct dentry *ktapvm_dentry;
 
 	ktap_dir = debugfs_create_dir("ktap", NULL);
 	if (!ktap_dir) {
 		pr_err("ktap: debugfs_create_dir failed\n");
 		goto error;
+	}
+
+	ktapvm_dentry = debugfs_create_file("ktapvm", 0444, ktap_dir, NULL,
+					    &ktapvm_fops);
+
+	if (!ktapvm_dentry) {
+		pr_err("ktapvm: cannot create ktapvm file\n");
+		return -1;
 	}
 
 	return 0;
@@ -256,8 +258,7 @@ static int __init init_ktap(void)
 
 static void __exit exit_ktap(void)
 {
-        misc_deregister(&ktap_miscdev);
-	debugfs_remove(ktap_dir);
+	debugfs_remove_recursive(ktap_dir);
 }
 
 
