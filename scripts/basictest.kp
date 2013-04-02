@@ -2,7 +2,7 @@
 
 print("testing: normal function call")
 function f(a, b) {
-	if (a != 0 and b != 1) {
+	if ((a != 0) && (b != 1)) {
 		print("failed");
 	}
 	return a+1, b+1
@@ -10,7 +10,7 @@ function f(a, b) {
 
 
 na, nb = f(0, 1)
-if (na != 1 and nb != 2) {
+if (na != 1 && nb != 2) {
 	print("failed");
 }
 
