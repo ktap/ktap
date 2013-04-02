@@ -549,6 +549,24 @@ static int llex(LexState *ls, SemInfo *seminfo)
 		case EOZ: {
 			return TK_EOS;
 		}
+		case '&': {
+			next(ls);
+			if (ls->current != '&')
+				return '&';
+			else {
+				next(ls);
+				return TK_AND;
+			}
+		} 
+		case '|': {
+			next(ls);
+			if (ls->current != '|')
+				return '|';
+			else {
+				next(ls);
+				return TK_OR;
+			}
+		} 
 		default: {
 			if (islalpha(ls->current)) {  /* identifier or reserved word? */
 				Tstring *ts;
