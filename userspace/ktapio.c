@@ -37,6 +37,7 @@
 #define handle_error(str) do { perror(str); exit(-1); } while(0)
 
 extern int ktap_fd;
+extern pid_t ktap_pid;
 
 void sigfunc(int signo)
 {
@@ -64,7 +65,7 @@ static void *reader_thread(void *data)
 
 	block_sigint();
 
-	sprintf(filename, "/sys/kernel/debug/ktap/trace%d", cpu);
+	sprintf(filename, "/sys/kernel/debug/ktap/trace-%d-%d", ktap_pid, cpu);
 
 	fd = open(filename, O_RDONLY);
 	if (fd < 0) {

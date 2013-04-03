@@ -304,6 +304,7 @@ static int ktapc_writer(const void* p, size_t sz, void* ud)
 }
 
 int ktap_fd;
+pid_t ktap_pid;
 
 void ktap_user_complete_cb()
 {
@@ -316,7 +317,7 @@ static void run_ktapvm(const char *file_name)
 {
         int ktapvm_fd;
 
-	static const char *ktapvm_path = "";
+	ktap_pid = getpid();
 
 	ktapvm_fd = open(KTAPVM_PATH, O_RDONLY);
 	if (ktapvm_fd < 0)
