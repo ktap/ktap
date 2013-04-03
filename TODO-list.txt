@@ -36,7 +36,7 @@ Normal:
 
 
 Low:
-1. dead loop detaction
+1. dead loop detaction		--- done
 2. product more useful ktap script
 3. test script for verification
 4. not-tracing mode support(side effects mode)
