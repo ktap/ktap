@@ -111,7 +111,7 @@ static void ktap_argerror(ktap_State *ks, int narg, const char *extramsg)
 		} while (0)
 
 
-Tstring *ktap_strfmt(ktap_State *ks)
+int ktap_strfmt(ktap_State *ks, ktap_Buffer *b)
 {
 	int arg = 1;
 	size_t sfl;
@@ -119,21 +119,21 @@ Tstring *ktap_strfmt(ktap_State *ks)
 	Tvalue *arg_fmt = GetArg(ks, 1);
 	int argnum = GetArgN(ks);
 	const char *strfrmt, *strfrmt_end;
-	ktap_Buffer b;
 
 	strfrmt = svalue(arg_fmt);
 	sfl = rawtsvalue(arg_fmt)->tsv.len;
 	strfrmt_end = strfrmt + sfl;
 
-	ktap_buffinit(ks, &b);
+	ktap_buffinit(ks, b);
+
 	while (strfrmt < strfrmt_end) {
 		if (*strfrmt != L_ESC)
-			ktap_addchar(&b, *strfrmt++);
+			ktap_addchar(b, *strfrmt++);
 		else if (*++strfrmt == L_ESC)
-			ktap_addchar(&b, *strfrmt++);  /* %% */
+			ktap_addchar(b, *strfrmt++);  /* %% */
 		else { /* format item */
 			char form[MAX_FORMAT];  /* to store the format (`%...') */
-			char *buff = ktap_prepbuffsize(&b, MAX_ITEM);  /* to put formatted item */
+			char *buff = ktap_prepbuffsize(b, MAX_ITEM);  /* to put formatted item */
 			int nb = 0;  /* number of bytes in added item */
 
 			if (++arg > argnum)
@@ -175,7 +175,7 @@ Tstring *ktap_strfmt(ktap_State *ks)
 					 * no precision and string is too long to be formatted;
 					 * keep original string
 					 */
-					ktap_addlstring(&b, s, l);
+					ktap_addlstring(b, s, l);
 					break;
 				} else {
 					nb = sprintf(buff, form, s);
@@ -186,17 +186,10 @@ Tstring *ktap_strfmt(ktap_State *ks)
 				ktap_runerror(ks, "invalid option " KTAP_QL("%%%c") " to "
 					KTAP_QL("format"), *(strfrmt - 1));
 			}
-			ktap_addsize(&b, nb);
+			ktap_addsize(b, nb);
 		}
 	}
 
-	/*
-	 * we want printf generated string will be deleted when ktap thread exit,
-	 * so use "local" function here
-	 */
-	ts = tstring_newlstr_local(ks, b.b, b.n);
-	ktap_bufffree(ks, &b);
-
-	return ts;
+	return 0;
 }
 

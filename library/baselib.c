@@ -47,10 +47,19 @@ static int ktap_lib_print(ktap_State *ks)
 	return 0;
 }
 
+/* don't engage with tstring when printf, use buffer directly */
 static int ktap_lib_printf(ktap_State *ks)
 {
-	const char *str = getstr(ktap_strfmt(ks));
-	ktap_printf(ks, str);
+	ktap_Buffer b;
+
+	if (ktap_strfmt(ks, &b)) {
+		ktap_bufffree(ks, &b);
+		return 0;
+	}
+	
+	ktap_transport_write(ks, b.b, b.n);
+
+	ktap_bufffree(ks, &b);
 
 	return 0;
 }

@@ -34,7 +34,7 @@ void end_all_trace(ktap_State *ks);
 int ktap_event_get_index(const char *field);
 Tstring *ktap_event_get_ts(ktap_State *ks, int index);
 
-Tstring *ktap_strfmt(ktap_State *ks);
+int ktap_strfmt(ktap_State *ks, ktap_Buffer *b);
 
 void ktap_transport_write(ktap_State *ks, const void *data, size_t length);
 void *ktap_transport_reserve(ktap_State *ks, size_t length);
