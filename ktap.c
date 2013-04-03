@@ -30,6 +30,7 @@
 #include <linux/signal.h>
 #include <linux/string.h>
 #include <linux/fs.h>
+#include <linux/namei.h>
 #include <linux/file.h>
 #include <linux/stat.h>
 #include <linux/fcntl.h>
@@ -46,54 +47,84 @@
 
 #include "ktap.h"
 
+static void remove_file(struct file *file, const char *filename)
+{
+	int err;
+	struct path parent;
+
+	err = kern_path(filename, LOOKUP_PARENT, &parent);
+	if (err)
+                return;
+
+	dget(file->f_path.dentry);
+	err = vfs_unlink(parent.dentry->d_inode, file->f_path.dentry);
+	if (err && err != -ENOENT)
+		pr_warn("cannot unlink file %s\n", filename);
+
+	path_put(&parent);
+}
+
+static void need_remove_ktapc_out(struct file *file, const char *path)
+{
+	int pid, ret;
+
+	ret = sscanf(path, TEMP_KTAPC_OUT_PATH_FMT, &pid);
+	if ((ret > 0) && (pid == task_tgid_vnr(current))) {
+		/* remove ktapc.out file in /tmp */
+		remove_file(file, path);
+	}
+}
+
 static int loadfile(const char *path, unsigned long **buff)
 {
 	struct file *file;
 	struct kstat st;
 	int ret;
-	unsigned long *vmstart;
+	unsigned long *vmstart = NULL;
 
 	file = filp_open(path, O_RDONLY | O_LARGEFILE, 0);
 	if (IS_ERR(file))
 		return PTR_ERR(file);
 
 	if (!S_ISREG(file->f_path.dentry->d_inode->i_mode)) {
-		filp_close(file, NULL);
-		return -EACCES;
+		ret = -EACCES;
+		goto out;
 	}
 
 	ret = vfs_getattr(&file->f_path, &st);
-	if (ret) {
-		filp_close(file, NULL);
-		return ret;
-	}
+	if (ret)
+		goto out;
 
 	if (st.size == 0) {
-		filp_close(file, NULL);
-		return -EINVAL;
+		ret = -EINVAL;
+		goto out;
 	}
 		
 	vmstart = vmalloc(st.size);
 	if (!vmstart) {
-		filp_close(file, NULL);
-		return -ENOMEM;
+		ret = -ENOMEM;
+		goto out;
 	}
 
 	ret = kernel_read(file, 0, (char *)vmstart, st.size);
 	if (ret != st.size) {
 		vfree(vmstart);
-		filp_close(file, NULL);
-		return ret;
+		goto out;
 	}
 
-	filp_close(file, NULL);
+	ret = 0;
 
-//	print_hex_dump(KERN_INFO, "ktapvm: ", DUMP_PREFIX_OFFSET, 16, 1,
-//		       vmstart, filesize, true);
-
+ out:
 	*buff = vmstart;
 
-	return 0;
+	/*
+	 * remove /tmp/ktapc.out.$pid file before interpreter start
+	 * This will avoid file leak in /tmp if ktapvm crashed.
+	 */
+	need_remove_ktapc_out(file, path);
+
+	filp_close(file, NULL);
+	return ret;
 }
 
 /* Ktap Main Entry */
@@ -119,7 +150,7 @@ static int ktap_main(struct file *file, char *cmdline)
 
 	argv_free(argv);
 
-	if (unlikely(ret))
+	if (ret)
 		return -EINVAL;
 
 	ks = ktap_newstate((ktap_State **)&file->private_data);
@@ -213,6 +244,7 @@ static long ktapvm_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		return err;
 	}
 
+	file->private_data = 0;
 	fd_install(new_fd, new_file);
 	return new_fd;
 }

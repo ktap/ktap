@@ -945,7 +945,7 @@ ktap_State *ktap_newthread(ktap_State *mainthread)
 
 void ktap_user_complete(ktap_State *ks)
 {
-	if (!G(ks)->user_completion)
+	if (!ks || !G(ks)->user_completion)
 		return;
 
 	complete(G(ks)->user_completion);

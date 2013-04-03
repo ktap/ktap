@@ -10,6 +10,8 @@ typedef char u8;
 #include <string.h>
 #endif
 
+#define TEMP_KTAPC_OUT_PATH_FMT		"/tmp/ktapc.out.%d"
+
 enum {
 	KTAP_CMD_VERSION,
 	KTAP_CMD_RUN,

@@ -310,13 +310,17 @@ void ktap_user_complete_cb()
 	ioctl(ktap_fd, KTAP_CMD_USER_COMPLETE, NULL);
 }
 
+#define KTAPVM_PATH "/sys/kernel/debug/ktap/ktapvm"
+
 static void run_ktapvm(const char *file_name)
 {
         int ktapvm_fd;
 
-	ktapvm_fd = open("/sys/kernel/debug/ktap/ktapvm", O_RDONLY);
+	static const char *ktapvm_path = "";
+
+	ktapvm_fd = open(KTAPVM_PATH, O_RDONLY);
 	if (ktapvm_fd < 0)
-		handle_error("open /sys/kernel/debug/ktap/ktapvm failed");
+		handle_error("open " KTAPVM_PATH " failed");
 
 	ktap_fd = ioctl(ktapvm_fd, 0, NULL);
 	if (ktap_fd < 0)
@@ -330,8 +334,10 @@ static void run_ktapvm(const char *file_name)
 	close(ktapvm_fd);
 }
 
-static int verbose = 0;
-static char output_filename[128] = "ktapc.out";
+static int use_temp_ktapc_out = 1;
+
+static int verbose;
+static char output_filename[128];
 
 static int parse_option(int argc, char **argv)
 {
@@ -354,6 +360,7 @@ static int parse_option(int argc, char **argv)
 		case 'o':
 			memset(output_filename, 0, sizeof(output_filename));
 			strncpy(output_filename, optarg, strlen(optarg));
+			use_temp_ktapc_out = 0;
 			break;
 		case 'V':
 			verbose = 1;
@@ -370,6 +377,9 @@ static int parse_option(int argc, char **argv)
 
 	if (optind >= argc)
 		usage("parse options failure\n");
+
+	if (use_temp_ktapc_out)
+		sprintf(output_filename, TEMP_KTAPC_OUT_PATH_FMT, (int)getpid());
 
 	return optind;
 }
@@ -411,6 +421,9 @@ static void compile(const char *input)
 
 	ktapc_dump(cl->l.p, ktapc_writer, fdout, 0);
 	close(fdout);
+
+	if (!use_temp_ktapc_out)
+		exit(0);
 }
 
 int main(int argc, char **argv)
