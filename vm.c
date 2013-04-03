@@ -367,6 +367,7 @@ static Tvalue *cfunction_cache_get(ktap_State *ks, int index);
 
 static void ktap_execute(ktap_State *ks)
 {
+	int exec_count = 0;
 	Callinfo *ci;
 	LClosure *cl;
 	Tvalue *k;
@@ -384,6 +385,22 @@ static void ktap_execute(ktap_State *ks)
 
  mainloop:
 	/* main loop of interpreter */
+
+	/* dead loop detaction */
+	if (exec_count++ == 10000) {
+		if (G(ks)->mainthread != ks) {
+			pr_warn("non-mainthread executing too much, please "
+				"try to enlarge execution limit\n");
+			return;
+		}
+
+		cond_resched();
+		if (signal_pending(current)) {
+			flush_signals(current);
+			return;
+		}
+		exec_count = 0;
+	}
 
 	instr = *(ci->u.l.savedpc++);
 	opcode = GET_OPCODE(instr);
