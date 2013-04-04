@@ -38,7 +38,6 @@
 #include <linux/init.h>
 #include <linux/slab.h>
 #include <linux/poll.h>
-#include <linux/miscdevice.h>
 #include <linux/anon_inodes.h>
 #include <asm/segment.h>
 #include <asm/uaccess.h>
@@ -254,13 +253,6 @@ static const struct file_operations ktapvm_fops = {
 	.unlocked_ioctl         = ktapvm_ioctl,
 };
 
-static struct miscdevice ktap_miscdev = {
-        .minor = MISC_DYNAMIC_MINOR,
-        .name = "ktapvm",
-        .fops = &ktapvm_fops,
-};
-
-
 struct dentry *ktap_dir;
 
 static int __init init_ktap(void)
@@ -270,7 +262,7 @@ static int __init init_ktap(void)
 	ktap_dir = debugfs_create_dir("ktap", NULL);
 	if (!ktap_dir) {
 		pr_err("ktap: debugfs_create_dir failed\n");
-		goto error;
+		return -1;
 	}
 
 	ktapvm_dentry = debugfs_create_file("ktapvm", 0444, ktap_dir, NULL,
@@ -278,14 +270,11 @@ static int __init init_ktap(void)
 
 	if (!ktapvm_dentry) {
 		pr_err("ktapvm: cannot create ktapvm file\n");
+		debugfs_remove_recursive(ktap_dir);
 		return -1;
 	}
 
 	return 0;
-
- error:
-	misc_deregister(&ktap_miscdev);
-        return  -1;
 }
 
 static void __exit exit_ktap(void)
