@@ -35,8 +35,6 @@
 
 #define L_ESC		'%'
 
-/* maximum size of each formatted item (> len(format('%99.99f', -1e308))) */
-#define MAX_ITEM	512
 /* valid flags in a format specification */
 #define FLAGS	"-+ #0"
 
@@ -110,8 +108,7 @@ static void ktap_argerror(ktap_State *ks, int narg, const char *extramsg)
 				ktap_argerror(ks, (numarg), (extramsg)); \
 		} while (0)
 
-
-int ktap_strfmt(ktap_State *ks, ktap_Buffer *b)
+int ktap_strfmt(ktap_State *ks, struct trace_seq *seq)
 {
 	int arg = 1;
 	size_t sfl;
@@ -124,17 +121,13 @@ int ktap_strfmt(ktap_State *ks, ktap_Buffer *b)
 	sfl = rawtsvalue(arg_fmt)->tsv.len;
 	strfrmt_end = strfrmt + sfl;
 
-	ktap_buffinit(ks, b);
-
 	while (strfrmt < strfrmt_end) {
 		if (*strfrmt != L_ESC)
-			ktap_addchar(b, *strfrmt++);
+			trace_seq_putc(seq, *strfrmt++);
 		else if (*++strfrmt == L_ESC)
-			ktap_addchar(b, *strfrmt++);  /* %% */
+			trace_seq_putc(seq, *strfrmt++);
 		else { /* format item */
 			char form[MAX_FORMAT];  /* to store the format (`%...') */
-			char *buff = ktap_prepbuffsize(b, MAX_ITEM);  /* to put formatted item */
-			int nb = 0;  /* number of bytes in added item */
 
 			if (++arg > argnum)
 				ktap_argerror(ks, arg, "no value");
@@ -142,7 +135,7 @@ int ktap_strfmt(ktap_State *ks, ktap_Buffer *b)
 			strfrmt = scanformat(ks, strfrmt, form);
 			switch (*strfrmt++) {
 			case 'c':
-				nb = sprintf(buff, form, nvalue(GetArg(ks, arg)));
+				trace_seq_printf(seq, form, nvalue(GetArg(ks, arg)));
 				break;
 			case 'd':  case 'i': {
 				ktap_Number n = nvalue(GetArg(ks, arg));
@@ -154,7 +147,7 @@ int ktap_strfmt(ktap_State *ks, ktap_Buffer *b)
 					"not a number in proper range");
 				#endif
 				addlenmod(form, INTFRMLEN);
-				nb = sprintf(buff, form, ni);
+				trace_seq_printf(seq, form, ni);
 				break;
 			}
 			case 'o':  case 'u':  case 'x':  case 'X': {
@@ -164,7 +157,7 @@ int ktap_strfmt(ktap_State *ks, ktap_Buffer *b)
 				ktap_argcheck(ks, -1 < diff && diff < 1, arg,
 					"not a non-negative number in proper range");
 				addlenmod(form, INTFRMLEN);
-				nb = sprintf(buff, form, ni);
+				trace_seq_printf(seq, form, ni);
 				break;
 			}
 			case 's': {
@@ -175,10 +168,10 @@ int ktap_strfmt(ktap_State *ks, ktap_Buffer *b)
 					 * no precision and string is too long to be formatted;
 					 * keep original string
 					 */
-					ktap_addlstring(b, s, l);
+					trace_seq_printf(seq, "%s", s);
 					break;
 				} else {
-					nb = sprintf(buff, form, s);
+					trace_seq_printf(seq, form, s);
 					break;
 				}
 			}
@@ -186,7 +179,6 @@ int ktap_strfmt(ktap_State *ks, ktap_Buffer *b)
 				ktap_runerror(ks, "invalid option " KTAP_QL("%%%c") " to "
 					KTAP_QL("format"), *(strfrmt - 1));
 			}
-			ktap_addsize(b, nb);
 		}
 	}
 

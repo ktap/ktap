@@ -50,16 +50,15 @@ static int ktap_lib_print(ktap_State *ks)
 /* don't engage with tstring when printf, use buffer directly */
 static int ktap_lib_printf(ktap_State *ks)
 {
-	ktap_Buffer b;
+	struct trace_seq seq;
 
-	if (ktap_strfmt(ks, &b)) {
-		ktap_bufffree(ks, &b);
+	trace_seq_init(&seq);
+	if (ktap_strfmt(ks, &seq)) {
 		return 0;
 	}
-	
-	ktap_transport_write(ks, b.b, b.n);
 
-	ktap_bufffree(ks, &b);
+	seq.buffer[seq.len] = '\0';
+	ktap_transport_write(ks, seq.buffer, seq.len);
 
 	return 0;
 }
