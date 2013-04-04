@@ -1,23 +1,5 @@
-count = 0
 function eventfun (e) {
 	printf("%d\t%s\t%s", os.smp_processor_id(), process.comm(), e.annotate);
-#	printf("%d\n", os.smp_processor_id())
-#	printf("%s\n", e.name);
-#	print(e.print_fmt);
-#	printf(e.annotate);
-#	printf("field1: %d\n", e.field1)
-	count = count + 1
-}
-
-count1 = 0
-count2 = 0
-function eventfun1 (e) {
-	if (in_interrupt() == 0) {
-		count1 = count1 + 1
-	} else {
-		count2 = count2 + 1
-	}
-	return
 }
 
 #os.trace("", eventfun);
@@ -35,6 +17,5 @@ os.trace("sched", eventfun);
 #os.trace("sched:sched_process_fork", eventfun)
 
 os.trace_end(function () {
-	print(count1, count2)
 	print("trace ending\n")
 })
