@@ -495,6 +495,7 @@ int tstring_eqlngstr(Tstring *a, Tstring *b);
 int tstring_cmp(const Tstring *ls, const Tstring *rs);
 void tstring_resize(ktap_State *ks, int newsize);
 void tstring_freeall(ktap_State *ks);
+Tstring *tstring_assemble(ktap_State *ks, const char *str, size_t l);
 
 Tvalue *table_set(ktap_State *ks, Table *t, const Tvalue *key);
 Table *table_new(ktap_State *ks);
