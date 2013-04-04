@@ -220,11 +220,7 @@ Tstring *tstring_newlstr(ktap_State *ks, const char *str, size_t l)
 
 Tstring *tstring_newlstr_local(ktap_State *ks, const char *str, size_t l)
 {
-	/* short string? */
-	if (l <= STRING_MAXSHORTLEN)
-		return internshrstr(ks, str, l);
-	else
-		return createstrobj(ks, str, l, KTAP_TLNGSTR, G(ks)->seed, &ks->localgc);
+	return createstrobj(ks, str, l, KTAP_TLNGSTR, G(ks)->seed, &ks->localgc);
 }
 
 /*
