@@ -217,14 +217,13 @@ index abbdd9e..2de593d 100644
  	if (level >= console_loglevel && !ignore_loglevel)
  		return;
 diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index 57e9b28..146ad2a 100644
+index 57e9b28..074e299 100644
 --- a/kernel/trace/trace_events.c
 +++ b/kernel/trace/trace_events.c
-@@ -278,6 +278,62 @@ static void put_system(struct event_subsystem *system)
+@@ -278,6 +278,61 @@ static void put_system(struct event_subsystem *system)
  	mutex_unlock(&event_mutex);
  }
  
-+typedef void (*ftrace_call_func)(struct ftrace_event_call *, void *data);
 +void ftrace_on_event_call(char *buf, ftrace_call_func actor, void *data)
 +{
 +	char *event = NULL, *sub = NULL, *match;
