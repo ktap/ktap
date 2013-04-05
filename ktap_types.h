@@ -267,6 +267,7 @@ typedef struct global_State {
 	struct list_head event_nodes;
 	struct task_struct *task;
 	struct rchan *ktap_chan;
+	int trace_enabled;
 	struct completion *user_completion;
 #endif
 } global_State;

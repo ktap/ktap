@@ -307,6 +307,20 @@ int start_trace(ktap_State *ks, char *event_name, Closure *cl)
 {
 	ktap_Callback_data  callback;
 
+	if (!G(ks)->trace_enabled) {
+		entry_percpu_buffer = alloc_percpu(PAGE_SIZE);
+		if (!entry_percpu_buffer)
+			return -1;
+
+		percpu_trace_iterator = alloc_percpu(struct trace_iterator);
+		if (!percpu_trace_iterator) {
+			free_percpu(entry_percpu_buffer);
+			return -1;
+		}
+
+		G(ks)->trace_enabled = 1;
+	}
+
 	if (*event_name == '\0')
 		event_name = NULL;
 
@@ -322,7 +336,7 @@ void end_all_trace(ktap_State *ks)
 	struct ktap_event_node *pos, *tmp;
 	struct list_head *event_nodes = &(G(ks)->event_nodes);
 
-	if (list_empty(event_nodes))
+	if (!G(ks)->trace_enabled)
 		return;
 
 	list_for_each_entry_safe(pos, tmp, event_nodes, list) {
@@ -350,22 +364,13 @@ void end_all_trace(ktap_State *ks)
 	free_percpu(percpu_trace_iterator);
 
 	INIT_LIST_HEAD(event_nodes);
+
+	G(ks)->trace_enabled = 0;
 }
 
 int ktap_trace_init(ktap_State *ks)
 {
 	ktap_init_syscalls(ks);
-
-	entry_percpu_buffer = alloc_percpu(PAGE_SIZE);
-	if (!entry_percpu_buffer)
-		return -1;
-
-	percpu_trace_iterator = alloc_percpu(struct trace_iterator);
-	if (!percpu_trace_iterator) {
-		free_percpu(entry_percpu_buffer);
-		return -1;
-	}
-
 	return 0;
 }
 
