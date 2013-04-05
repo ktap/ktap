@@ -1058,7 +1058,7 @@ ktap_State *ktap_newstate(ktap_State **private_data)
 	ktap_init_baselib(ks);
 	ktap_init_oslib(ks);
 
-	ktap_percpu_state = (ktap_State *)alloc_percpu(PAGE_SIZE);
+	ktap_percpu_state = (ktap_State *)alloc_percpu(ktap_State);
 	if (!ktap_percpu_state)
 		return NULL;
 
