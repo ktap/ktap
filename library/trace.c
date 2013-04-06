@@ -308,7 +308,8 @@ int start_trace(ktap_State *ks, char *event_name, Closure *cl)
 	ktap_Callback_data  callback;
 
 	if (!G(ks)->trace_enabled) {
-		entry_percpu_buffer = alloc_percpu(PAGE_SIZE);
+		entry_percpu_buffer = __alloc_percpu(PAGE_SIZE,
+						     __alignof__(char));
 		if (!entry_percpu_buffer)
 			return -1;
 
@@ -352,7 +353,9 @@ void end_all_trace(ktap_State *ks)
 							    call->class->ktap_probe,
 							    call);
 
+			call->ktap_pre_trace = NULL;
 			call->ktap_do_trace = NULL;
+			call->ktap_post_trace = NULL;
 		}
 
 		ktap_free(ks, pos);
