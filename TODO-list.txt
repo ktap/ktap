@@ -34,6 +34,7 @@ Normal:
 9. call ktap script in while loop shell script issue
 10. maintaince different kernel version branch of ktap
 11. splice io output
+12. fast loading(not using temp file?)
 
 
 Low:
