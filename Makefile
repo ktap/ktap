@@ -14,27 +14,27 @@ all:
 UDIR = userspace
 
 $(UDIR)/lex.o: $(UDIR)/lex.c
-	$(QUIET_CC)$(CC) -o $@ -c $<
+	$(QUIET_CC)$(CC) -g -o $@ -c $<
 $(UDIR)/parser.o: $(UDIR)/parser.c
-	$(QUIET_CC)$(CC) -o $@ -c $<
+	$(QUIET_CC)$(CC) -g -o $@ -c $<
 $(UDIR)/code.o: $(UDIR)/code.c
-	$(QUIET_CC)$(CC) -o $@ -c $<
+	$(QUIET_CC)$(CC) -g -o $@ -c $<
 $(UDIR)/dump.o: $(UDIR)/dump.c
-	$(QUIET_CC)$(CC) -o $@ -c $<
+	$(QUIET_CC)$(CC) -g -o $@ -c $<
 $(UDIR)/main.o: $(UDIR)/main.c
-	$(QUIET_CC)$(CC) -o $@ -c $<
+	$(QUIET_CC)$(CC) -g -o $@ -c $<
 $(UDIR)/util.o: $(UDIR)/util.c
-	$(QUIET_CC)$(CC) -o $@ -c $<
+	$(QUIET_CC)$(CC) -g -o $@ -c $<
 $(UDIR)/ktapio.o: $(UDIR)/ktapio.c
-	$(QUIET_CC)$(CC) -o $@ -c $<
+	$(QUIET_CC)$(CC) -g -o $@ -c $<
 $(UDIR)/opcode.o: opcode.c
-	$(QUIET_CC)$(CC) -o $@ -c $<
+	$(QUIET_CC)$(CC) -g -o $@ -c $<
 $(UDIR)/table.o: table.c
-	$(QUIET_CC)$(CC) -o $@ -c $<
+	$(QUIET_CC)$(CC) -g -o $@ -c $<
 $(UDIR)/tstring.o: tstring.c
-	$(QUIET_CC)$(CC) -o $@ -c $<
+	$(QUIET_CC)$(CC) -g -o $@ -c $<
 $(UDIR)/object.o: object.c
-	$(QUIET_CC)$(CC) -o $@ -c $<
+	$(QUIET_CC)$(CC) -g -o $@ -c $<
 
 KTAPOBJS =
 KTAPOBJS += $(UDIR)/lex.o
