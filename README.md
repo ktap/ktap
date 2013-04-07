@@ -17,18 +17,36 @@ fulfilling the embedd ecosystem's tracing needs.
 KTAP is built from scratch, with GPL licensed.
 https://github.com/ktap/ktap.git
 
+Please get more info in doc/ directory.
+
 ---------------------------------
-Building ktap:
+How to running ktap:
 
-1) put this ktap directory into linux/kernel/trace/.
-   patching ftrace.patch into Linux kernel source directory
+1) Clone ktap into linux/kernel/trace/
+	[root@jovi]# cd linux/kernel/trace/
+	[root@jovi]# git clone https://github.com/ktap/ktap.git
 
-2) Compiling:
-	make ktap    --- generate userspace ktap tool
-	make         --- generate ktapvm kernel module
+2) Patching ftrace.patch into Linux kernel source directory
+	[root@jovi]# cd linux
+	[root@jovi]# patch -p1 < ftrace.patch
 
-3) Running ktap:
-	./ktap scripts/test.kp
+3) Building Linux kernel
+	[root@jovi]# make nconfig
+	[root@jovi]# make -j4
+	[root@jovi]# make modules_install
+	[root@jovi]# make install
+	[root@jovi]# reboot
+
+4) Compiling ktap
+	[root@jovi]# cd linux/kernel/trace/ktap
+	[root@jovi]# make ktap	--- generate userspace ktap tool
+	[root@jovi]# make	--- generate ktapvm kernel module
+
+5) Insert kernel module
+	[root@jovi]# insmod ./ktapvm.ko
+
+6) Running ktap:
+	[root@jovi]# ./ktap scripts/test.kp
 
 
 
