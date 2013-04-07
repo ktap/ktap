@@ -59,3 +59,12 @@ while (i < 100000) {
 	i = i + 1
 }
 
+#### table initization
+days = {"Sunday", "Monday", "Tuesday", "Wednesday",
+	"Thursday", "Friday", "Saturday"}
+
+if (days[2] != "Monday") {
+	failed()
+}
+
+
