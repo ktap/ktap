@@ -337,6 +337,9 @@ static int precall(ktap_State *ks, StkId func, int nresults)
 		ci->callstatus = CIST_KTAP;
 		ks->top = ci->top;
 		return 0;
+	default:
+		ktap_printf(ks, "cannot calling nil function\n");
+		return -1;
 	}
 
 	return 0;
@@ -567,11 +570,16 @@ static void ktap_execute(ktap_State *ks)
 	case OP_CALL: {
 		int b = GETARG_B(instr);
 		nresults = GETARG_C(instr) - 1;
+		int ret;
 
 		if (b != 0)
 			ks->top = ra + b;
 
-		if (precall(ks, ra, nresults)) { /* C function */
+		ret = precall(ks, ra, nresults);
+		if (ret == -1)
+			return;
+
+		if (ret) { /* C function */
 			if (nresults >= 0)
 				ks->top = ci->top;
 			base = ci->u.l.base;
