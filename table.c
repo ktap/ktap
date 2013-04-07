@@ -54,10 +54,9 @@ static const Node dummynode_ = {
 
 #define hashmod(t,n)		(gnode(t, ((n) % ((sizenode(t)-1)|1))))
 
-
 #define hashstr(t,str)          hashpow2(t, (str)->tsv.hash)
 #define hashboolean(t,p)        hashpow2(t, p)
-#define hashnum(t, n)		hashmod(t, n)
+#define hashnum(t, n)		hashmod(t, (unsigned int)n)
 #define hashpointer(t,p)	hashmod(t, (unsigned long)(p))
 
 #define dummynode	(&dummynode_)
@@ -106,13 +105,11 @@ Table *table_new(ktap_State *ks)
 
 const Tvalue *table_getint(Table *t, int key)
 {
-	ktap_Number nk;
 	Node *n;
 
 	if ((unsigned int)(key - 1) < (unsigned int)t->sizearray)
 		return &t->array[key - 1];
 
-	nk = (ktap_Number)key;
 	n = hashnum(t, key);
 	do {
 		if (ttisnumber(gkey(n)) && nvalue(gkey(n)) == key)
