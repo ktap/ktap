@@ -1,0 +1,9 @@
+
+function failed() {
+	printf("failed\n");
+	exit(-1);
+}
+
+a = 1/0
+#should not go here
+printf("Failed\n")
