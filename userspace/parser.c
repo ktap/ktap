@@ -1542,6 +1542,7 @@ static void test_then_block(LexState *ls, int *escapelist)
 		skipnoopstat(ls);  /* skip other no-op statements */
 		if (block_follow(ls, 0)) {  /* 'goto' is the entire block? */
 			leaveblock(fs);
+			checknext(ls, '}');
 			return;  /* and that is it */
 		} else  /* must skip over 'then' part if condition is false */
 			jf = codegen_jump(fs);
