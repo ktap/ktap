@@ -63,6 +63,11 @@ static int ktap_lib_printf(ktap_State *ks)
 	return 0;
 }
 
+static int ktap_lib_exit(ktap_State *ks)
+{
+	ktap_exit(ks);
+}
+
 static int ktap_lib_in_interrupt(ktap_State *ks)
 {
 	int ret = in_interrupt();
@@ -84,6 +89,7 @@ static const ktap_Reg base_funcs[] = {
 	{"print", ktap_lib_print},
 	{"printf", ktap_lib_printf},
 	{"in_interrupt", ktap_lib_in_interrupt},
+	{"exit", ktap_lib_exit},
 //  {"tonumber", ktap_tonumber},
 //  {"tostring", ktap_tostring},
 //  {"type", ktap_type},
