@@ -47,18 +47,27 @@ static int ktap_lib_print(ktap_State *ks)
 	return 0;
 }
 
+static struct trace_seq mainthread_printf_seq;
+static DEFINE_PER_CPU(struct trace_seq, printf_seq);
+
 /* don't engage with tstring when printf, use buffer directly */
 static int ktap_lib_printf(ktap_State *ks)
 {
-	struct trace_seq seq;
+	struct trace_seq *seq;
 
-	trace_seq_init(&seq);
-	if (ktap_strfmt(ks, &seq)) {
+	if (ks == G(ks)->mainthread) {
+		seq = &mainthread_printf_seq;		
+	} else {
+		seq = &per_cpu(printf_seq, smp_processor_id());
+	}
+
+	trace_seq_init(seq);
+	if (ktap_strfmt(ks, seq)) {
 		return 0;
 	}
 
-	seq.buffer[seq.len] = '\0';
-	ktap_transport_write(ks, seq.buffer, seq.len);
+	seq->buffer[seq->len] = '\0';
+	ktap_transport_write(ks, seq->buffer, seq->len);
 
 	return 0;
 }
