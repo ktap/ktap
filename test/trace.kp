@@ -1,0 +1,23 @@
+
+function failed() {
+	printf("failed\n");
+	exit(-1);
+}
+
+#----------------------------------------#
+
+count = 0
+function eventfun(e) {
+	count = count + 1
+}
+
+os.trace("sched", eventfun)
+
+# second argument 1 of trace_end means not waiting,
+# so user don't need press CTRL+C to stop tracing in here
+
+os.trace_end(function () {
+	if (!count) {
+		failed()
+	}
+}, 1)
