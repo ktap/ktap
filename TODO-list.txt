@@ -47,6 +47,6 @@ Low:
 7. structure reference support in script like dtrace
 8. more lightwight traceing infrastructure support
 9. parrot research: use opcode generate like parrot
-
+10. support include header file in ktap script, only for compiler
 
 
