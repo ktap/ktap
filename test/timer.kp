@@ -1,0 +1,20 @@
+
+function failed() {
+	printf("failed\n");
+	exit(-1);
+}
+
+#---------------------------------------#
+
+count = 0
+
+os.timer("1s", function () {
+	count = count + 1
+})
+
+os.sleep(10*1000)
+
+if (count != 10) {
+	failed()
+}
+
