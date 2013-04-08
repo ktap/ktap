@@ -6,15 +6,20 @@ function failed() {
 
 #---------------------------------------#
 
-count = 0
+count1 = 0
+count2 = 0
 
 os.timer("1s", function () {
-	count = count + 1
+	count1 = count1 + 1
+})
+
+os.timer("2s", function () {
+	count2 = count2 + 1
 })
 
 os.sleep(10*1000)
 
-if (count != 10) {
+if (count1 != 10 || count2 != 5) {
 	failed()
 }
 
