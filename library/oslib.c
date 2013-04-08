@@ -141,10 +141,20 @@ struct hrtimer_ktap {
 	struct list_head list;
 };
 
+extern DEFINE_PER_CPU(bool, ktap_in_tracing);
 static enum hrtimer_restart hrtimer_ktap_fn(struct hrtimer *timer)
 {
 	ktap_State *ks;
 	struct hrtimer_ktap *t;
+
+	/* 
+	 * we need to make sure timer cannot running conflict with tracing
+	 * ktap_newthread use percpu ktap_State, we need to avoid timer
+	 * callback closure running with tracepoint enabled, then percpu
+	 * ktap_State will crash. so here make ktap_in_tracing as true, to
+	 * tell ktap not running any tracepoint in timer callback closure.
+	 */
+	__this_cpu_write(ktap_in_tracing, true);
 
 	t = container_of(timer, struct hrtimer_ktap, timer);
 
@@ -155,6 +165,8 @@ static enum hrtimer_restart hrtimer_ktap_fn(struct hrtimer *timer)
 	ktap_exitthread(ks);
 
 	hrtimer_add_expires_ns(timer, t->ns);
+
+	__this_cpu_write(ktap_in_tracing, false);
 
 	return HRTIMER_RESTART;
 }

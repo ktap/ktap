@@ -232,7 +232,7 @@ void ktap_do_trace(struct ftrace_event_call *call, void *entry,
 
 
 static void *entry_percpu_buffer;
-static DEFINE_PER_CPU(bool, ktap_in_tracing);
+DEFINE_PER_CPU(bool, ktap_in_tracing);
 
 void *ktap_pre_trace(struct ftrace_event_call *call, int size, unsigned long *flags)
 {
