@@ -914,17 +914,25 @@ static void ktap_init_registry(ktap_State *ks)
 	table_setint(ks, registry, KTAP_RIDX_GLOBALS, &mt);
 }
 
+#define KTAP_STACK_SIZE (BASIC_STACK_SIZE * sizeof(Tvalue))
+static void *percpu_ktap_stack;
+
 static void ktap_init_state(ktap_State *ks)
 {
 	Callinfo *ci;
 	int i;
 
-	ks->stack = ktap_malloc(ks, BASIC_STACK_SIZE * sizeof(Tvalue));
-	if (!ks->stack) {
-		printk("cannot alloc stack %d\n", BASIC_STACK_SIZE * sizeof(Tvalue));	
-		dump_stack();
-		return;
+	if (ks == G(ks)->mainthread) {
+		ks->stack = ktap_malloc(ks, KTAP_STACK_SIZE);
+		if (!ks->stack) {
+			ktap_printf(ks, "cannot alloc stack %d\n",
+				    KTAP_STACK_SIZE);
+			return;
+		}
+	} else {
+		ks->stack = per_cpu_ptr(percpu_ktap_stack, smp_processor_id());
 	}
+
 	ks->stacksize = BASIC_STACK_SIZE;
 
 	for (i = 0; i < BASIC_STACK_SIZE; i++)
@@ -948,7 +956,9 @@ void ktap_exitthread(ktap_State *ks)
 	Gcobject *next;
 
 	free_ci(ks);
-	ktap_free(ks, ks->stack);
+
+	if (ks == G(ks)->mainthread)
+		ktap_free(ks, ks->stack);
 
 	/* free local allocation objects, like annotate strings */
 	while (o) {
@@ -1017,8 +1027,8 @@ void ktap_exit(ktap_State *ks)
 	end_all_trace(ks);
 	ktap_exit_timers(ks);
 
-	if (ktap_percpu_state)
-		free_percpu(ktap_percpu_state);
+	free_percpu(ktap_percpu_state);
+	free_percpu(percpu_ktap_stack);
 
 	/* free all resources got by ktap */
 	tstring_freeall(ks);
@@ -1076,6 +1086,10 @@ ktap_State *ktap_newstate(ktap_State **private_data)
 
 	ktap_percpu_state = (ktap_State *)alloc_percpu(ktap_State);
 	if (!ktap_percpu_state)
+		return NULL;
+
+	percpu_ktap_stack = __alloc_percpu(KTAP_STACK_SIZE, __alignof__(char));
+	if (!percpu_ktap_stack)
 		return NULL;
 
 	ret = register_trace_console(trace_console_func, ks);
