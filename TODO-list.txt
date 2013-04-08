@@ -40,9 +40,9 @@ Normal:
 Low:
 1. dead loop detaction		--- done
 2. product more useful ktap script
-3. test script for verification
+3. test script for verification		--- done
 4. not-tracing mode support(side effects mode)
-5. making ktap syntax more C like
+5. making ktap syntax more C like	--- done
 6. ktap Manual/Doc/ppt/pdf writing
 7. structure reference support in script like dtrace
 8. more lightwight traceing infrastructure support
