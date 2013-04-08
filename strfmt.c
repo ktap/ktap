@@ -112,7 +112,6 @@ int ktap_strfmt(ktap_State *ks, struct trace_seq *seq)
 {
 	int arg = 1;
 	size_t sfl;
-	Tstring *ts;
 	Tvalue *arg_fmt = GetArg(ks, 1);
 	int argnum = GetArgN(ks);
 	const char *strfrmt, *strfrmt_end;

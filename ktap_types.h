@@ -268,6 +268,7 @@ typedef struct global_State {
 	struct task_struct *task;
 	struct rchan *ktap_chan;
 	int trace_enabled;
+	struct list_head timers;
 	struct completion *user_completion;
 #endif
 } global_State;

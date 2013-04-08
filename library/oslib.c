@@ -133,17 +133,131 @@ static int ktap_lib_wait(ktap_State *ks)
 	return 0;
 }
 
-static int ktap_lib_timer(ktap_State *ks)
-{
+struct hrtimer_ktap {
+	struct hrtimer timer;
+	ktap_State *ks;
+	Closure *cl;
+	u64 ns;
+	struct list_head list;
+};
 
+static enum hrtimer_restart hrtimer_ktap_fn(struct hrtimer *timer)
+{
+	ktap_State *ks;
+	struct hrtimer_ktap *t;
+
+	t = container_of(timer, struct hrtimer_ktap, timer);
+
+	ks = ktap_newthread(t->ks);
+	setcllvalue(ks->top, t->cl);
+	incr_top(ks);
+	ktap_call(ks, ks->top - 1, 0);
+	ktap_exitthread(ks);
+
+	hrtimer_add_expires_ns(timer, t->ns);
+
+	return HRTIMER_RESTART;
+}
+
+static int get_ns_period(ktap_State *ks, Tvalue *o, u64 *period)
+{
+	const char *p, *tmp;
+	char digits[32] = {0};
+	unsigned long long res;
+	int factor;
+
+	if (!ttisstring(o)) {
+		ktap_printf(ks, "Error: need period factor: s, ms, us, ns\n");
+		return -1;
+	}
+
+	p = svalue(o);
+	tmp = p;
+
+	while (*tmp <= '9' && *tmp >= '0') {
+		tmp++;
+	}
+
+	strncpy(digits, p, tmp-p);
+	if (kstrtoull(digits, 10, &res)) {
+		ktap_printf(ks, "Error: digit %u parse error\n", res);
+		return -1;
+	}
+
+	if (!strcmp(tmp, "s")) {
+		factor = NSEC_PER_SEC;
+	} else if (!strcmp(tmp, "ms")) {
+		factor = NSEC_PER_MSEC;
+	} else if (!strcmp(tmp, "us")) {
+		factor = NSEC_PER_USEC;
+	} else if (!strcmp(tmp, "ns")) {
+		factor = 1;
+	} else {
+		ktap_printf(ks, "unknown period factor %s\n", tmp);
+		return -1;
+	}
+
+	*period = (u64)(res * factor);
 
 	return 0;
+}
+
+static int ktap_lib_timer(ktap_State *ks)
+{
+	struct hrtimer_ktap *t;
+	u64 period;
+	Tvalue *tracefunc;
+	Closure *cl;
+
+	if (get_ns_period(ks, GetArg(ks, 1), &period))
+		return -1;
+	
+	if (GetArgN(ks) >= 2) {
+		tracefunc = GetArg(ks, 2);
+
+		if (ttisfunc(tracefunc))
+			cl = (Closure *)gcvalue(tracefunc);
+		else
+			cl = NULL;
+	} else
+		cl = NULL;
+
+	t = ktap_malloc(ks, sizeof(*t));
+	t->ks = ks;
+	t->cl = cl;
+	t->ns = period;
+
+	INIT_LIST_HEAD(&t->list);
+	list_add(&t->list, &(G(ks)->timers));
+
+	hrtimer_init(&t->timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+	t->timer.function = hrtimer_ktap_fn;
+	hrtimer_start(&t->timer, ns_to_ktime(period), HRTIMER_MODE_REL);
+
+	return 0;
+}
+
+void ktap_exit_timers(ktap_State *ks)
+{
+	struct hrtimer_ktap *t, *tmp;
+	struct list_head *timers_list = &(G(ks)->timers);
+	unsigned long flags;
+
+	/* we need disable irq when cleanup timers, for safety */
+	local_irq_save(flags);
+
+	list_for_each_entry_safe(t, tmp, timers_list, list) {
+		hrtimer_cancel(&t->timer);
+		ktap_free(ks, t);
+	}
+
+	local_irq_restore(flags);
 }
 
 static int ktap_lib_trace(ktap_State *ks)
 {
 	Tvalue *evname = GetArg(ks, 1);
-	char *event_name;
+	const char *event_name;
 	Tvalue *tracefunc;
 	Closure *cl;
 
@@ -237,8 +351,7 @@ static const ktap_Reg oslib_funcs[] = {
 	{"dumpstack", ktap_lib_dumpstack},
 	{"sleep", ktap_lib_sleep},
 	{"wait", ktap_lib_wait},
-	{"timer_start", ktap_lib_dummy},
-	{"timer_end", ktap_lib_dummy},
+	{"timer", ktap_lib_timer},
 	{"trace", ktap_lib_trace},
 	{"trace_end", ktap_lib_trace_end},
 	{"kprobe", ktap_lib_kprobe},

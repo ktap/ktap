@@ -569,8 +569,9 @@ static void ktap_execute(ktap_State *ks)
 		}
 	case OP_CALL: {
 		int b = GETARG_B(instr);
-		nresults = GETARG_C(instr) - 1;
 		int ret;
+
+		nresults = GETARG_C(instr) - 1;
 
 		if (b != 0)
 			ks->top = ra + b;
@@ -1014,6 +1015,7 @@ void ktap_exit(ktap_State *ks)
 	unregister_trace_console(trace_console_func, ks);
 
 	end_all_trace(ks);
+	ktap_exit_timers(ks);
 
 	if (ktap_percpu_state)
 		free_percpu(ktap_percpu_state);
@@ -1052,6 +1054,7 @@ ktap_State *ktap_newstate(ktap_State **private_data)
 	G(ks)->seed = 201236; /* todo: make more random in */
 	G(ks)->task = current;
 	INIT_LIST_HEAD(&(G(ks)->event_nodes));
+	INIT_LIST_HEAD(&(G(ks)->timers));
 
 	if (cfunction_cache_init(ks) < 0)
 		return NULL;

@@ -66,6 +66,7 @@ static int ktap_lib_printf(ktap_State *ks)
 static int ktap_lib_exit(ktap_State *ks)
 {
 	ktap_exit(ks);
+	return 0;
 }
 
 static int ktap_lib_in_interrupt(ktap_State *ks)

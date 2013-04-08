@@ -303,7 +303,7 @@ static void enable_event(struct ftrace_event_call *call, void *data)
 	call->ktap_refcount++;
 }
 
-int start_trace(ktap_State *ks, char *event_name, Closure *cl)
+int start_trace(ktap_State *ks, const char *event_name, Closure *cl)
 {
 	ktap_Callback_data  callback;
 
