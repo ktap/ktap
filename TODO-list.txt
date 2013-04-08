@@ -25,7 +25,7 @@ High:
 Normal:
 1. ARM support
 2. All tracepoints support	--- done
-3. Timer support
+3. Timer support		--- done
 4. kprobe/uprobe support
 5. function call speedup	--- done
 6. improve printf performance
