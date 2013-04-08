@@ -166,18 +166,23 @@ static int ktap_lib_trace(ktap_State *ks)
 static int ktap_lib_trace_end(ktap_State *ks)
 {
 	Tvalue *endfunc;
-
-	set_current_state(TASK_INTERRUPTIBLE);
-	schedule();
-	if (fatal_signal_pending(current))
-		flush_signals(current);
-
-	end_all_trace(ks);
+	int no_wait = 0;
 
 	if (GetArgN(ks) == 0)
 		return 0;
 
 	endfunc = GetArg(ks, 1);
+	if (GetArgN(ks) >= 2)
+		no_wait = nvalue(GetArg(ks, 2));
+
+	if (!no_wait) {
+		set_current_state(TASK_INTERRUPTIBLE);
+		schedule();
+		if (fatal_signal_pending(current))
+			flush_signals(current);
+	}
+
+	end_all_trace(ks);
 
 	setcllvalue(ks->top, clvalue(endfunc));
 	incr_top(ks);
