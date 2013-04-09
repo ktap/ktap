@@ -283,6 +283,9 @@ static int ktap_lib_trace(ktap_State *ks)
 	} else
 		cl = NULL;
 
+	if (!cl)
+		return -1;
+
 	event_name = svalue(evname);
 	start_trace(ks, event_name, cl);
 

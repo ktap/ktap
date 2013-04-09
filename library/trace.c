@@ -24,7 +24,6 @@
 #include <linux/kallsyms.h>
 #include <linux/ftrace_event.h>
 
-#include "../../trace.h"
 #include "../ktap.h"
 
 typedef struct ktap_Callback_data {
@@ -45,7 +44,6 @@ struct ktap_event {
 	struct ftrace_event_call *call;
 	void *entry;
 	int entry_size;
-	int data_size;
 };
 
 static struct list_head *ktap_get_fields(struct ftrace_event_call *event_call)
@@ -207,101 +205,209 @@ static void call_user_closure(ktap_State *mainthread, Closure *cl,
 	ktap_exitthread(ks);
 }
 
-/* core probe function called by tracepoint */
-void ktap_do_trace(struct ftrace_event_call *call, void *entry,
-			  int entry_size, int data_size)
-{
-	struct ktap_event_node *eventnode;
-	struct ktap_event event;
-
-	event.call = call;
-	event.entry = entry;
-	event.entry_size = entry_size;
-	event.data_size = data_size;
-
-	hlist_for_each_entry_rcu(eventnode, &call->ktap_callback_list, node) {
-		ktap_State *ks = eventnode->ks;
-		Closure *cl = eventnode->cl;
-
-		if (same_thread_group(current, G(ks)->task))
-			continue;
-
-		call_user_closure(ks, cl, &event);
-	}
-}
-
-
 static void *entry_percpu_buffer;
 DEFINE_PER_CPU(bool, ktap_in_tracing);
 
-void *ktap_pre_trace(struct ftrace_event_call *call, int size, unsigned long *flags)
+struct ktap_event_file {
+	struct ftrace_event_file file;
+	ktap_State *ks;
+	Closure *cl;
+};
+
+static void *ktap_events_pre_trace(struct ftrace_event_file *file,
+				   int entry_size, void *data)
 {
 	struct trace_entry  *entry;
+	struct ftrace_trace_descriptor_t *desc;
+	unsigned long irq_flags;
 
-	if (unlikely(size > PAGE_SIZE))
+	if (unlikely(entry_size > PAGE_SIZE))
 		return NULL;
 
-	local_irq_save(*flags);
+	local_irq_save(irq_flags);
 
 	if (unlikely(__this_cpu_read(ktap_in_tracing))) {
-		local_irq_restore(*flags);
+		local_irq_restore(irq_flags);
 		return NULL;
 	}
 
 	__this_cpu_write(ktap_in_tracing, true);
 
 	entry = per_cpu_ptr(entry_percpu_buffer, smp_processor_id());
-	entry->type = call->event.type;
+	entry->type = file->event_call->event.type;
+
+	desc = &((struct trace_descriptor_t *)data)->f;
+	desc->irq_flags = irq_flags;
 
 	return entry;
 }
 
-void ktap_post_trace(struct ftrace_event_call *call, void *entry, unsigned long *flags)
+static struct ftrace_event_class *syscall_enter_class;
+static struct ftrace_event_class *syscall_exit_class;
+
+static inline int is_syscall_event(struct ftrace_event_file *file)
 {
+	struct ftrace_event_class *class = file->event_call->class;
+
+	if (class == syscall_enter_class || class == syscall_exit_class)
+		return 1;
+
+	return 0;
+}
+
+static void handle_syscall_event(struct ftrace_event_file *file, void *entry,
+				 int entry_size)
+{
+	struct trace_array *tr = file->tr;
+	struct ftrace_event_file *this_file;
+	struct ktap_event event;
+
+	event.call = file->event_call;
+	event.entry = entry;
+	event.entry_size = entry_size;
+
+	/* change it in future, this really slow, and not safe */
+	list_for_each_entry_rcu(this_file, &tr->events, list) {
+		struct ktap_event_file *ktap_file =
+			container_of(this_file, struct ktap_event_file, file);
+		ktap_State *ks = ktap_file->ks;
+
+		if (this_file->event_call != file->event_call)
+			continue;
+		
+		if (same_thread_group(current, G(ks)->task))
+			continue;
+
+		call_user_closure(ks, ktap_file->cl, &event);
+	}
+}
+
+/* core probe function called by tracepoint */
+static void ktap_events_do_trace(struct ftrace_event_file *file, void *entry,
+				 int entry_size, void *data)
+{
+	struct ftrace_trace_descriptor_t *desc;
+	struct ktap_event_file *ktap_file;
+	ktap_State *ks;
+	struct ktap_event event;
+
+	/* syscall event is special, make it faster in future */
+	if (is_syscall_event(file)) {
+		handle_syscall_event(file, entry, entry_size);
+		goto out;
+	} else
+		ktap_file = container_of(file, struct ktap_event_file, file);
+
+	ks = ktap_file->ks;
+
+	if (same_thread_group(current, G(ks)->task))
+		goto out;
+
+	event.call = ktap_file->file.event_call;
+	event.entry = entry;
+	event.entry_size = entry_size;
+
+	call_user_closure(ks, ktap_file->cl, &event);
+
+ out:
 	__this_cpu_write(ktap_in_tracing, false);
-	local_irq_restore(*flags);
+
+	desc = &((struct trace_descriptor_t *)data)->f;
+	local_irq_restore(desc->irq_flags);
+}
+
+static struct event_trace_ops ktap_events_ops = {
+	.pre_trace = ktap_events_pre_trace,
+	.do_trace  = ktap_events_do_trace,
+};
+
+struct trace_array ktap_tr = {
+	.events = LIST_HEAD_INIT(ktap_tr.events),
+	.ops = &ktap_events_ops,
+};
+
+typedef void (*ftrace_call_func)(struct ftrace_event_call * call, void *data);
+
+/* helper function for ktap register tracepoint */
+void ftrace_on_event_call(const char *buf, ftrace_call_func actor, void *data)
+{
+	char *event = NULL, *sub = NULL, *match, *buf_ptr;
+	char new_buf[32] = {0};
+	struct ftrace_event_call *call;
+
+	/* argument buf is const, so we need to prepare a changeable buff */
+	strncpy(new_buf, buf, 31);
+	buf_ptr = new_buf;
+
+	/*
+	 * The buf format can be <subsystem>:<event-name>
+	 *  *:<event-name> means any event by that name.
+	 *  :<event-name> is the same.
+	 *
+	 *  <subsystem>:* means all events in that subsystem
+	 *  <subsystem>: means the same.
+	 *
+	 *  <name> (no ':') means all events in a subsystem with
+	 *  the name <name> or any event that matches <name>
+	 */
+
+	match = strsep(&buf_ptr, ":");
+	if (buf_ptr) {
+		sub = match;
+		event = buf_ptr;
+		match = NULL;
+
+		if (!strlen(sub) || strcmp(sub, "*") == 0)
+			sub = NULL;
+		if (!strlen(event) || strcmp(event, "*") == 0)
+			event = NULL;
+	}
+
+	list_for_each_entry(call, &ftrace_events, list) {
+
+		if (!call->name || !call->class || !call->class->reg)
+			continue;
+
+		if (call->flags & TRACE_EVENT_FL_IGNORE_ENABLE)
+			continue;
+
+		if (match &&
+		    strcmp(match, call->name) != 0 &&
+		    strcmp(match, call->class->system) != 0)
+			continue;
+
+		if (sub && strcmp(sub, call->class->system) != 0)
+			continue;
+
+		if (event && strcmp(event, call->name) != 0)
+			continue;
+
+		(*actor)(call, data);
+	}
 }
 
 static void enable_event(struct ftrace_event_call *call, void *data)
 {
 	ktap_Callback_data *cbdata = data;
-	struct ktap_event_node *eventnode;
+	struct ktap_event_file *ktap_file;
 
 	ktap_printf(cbdata->ks, "enable event: %s\n", call->name);
 
-	eventnode = ktap_malloc(cbdata->ks, sizeof(struct ktap_event_node));
-	if (!eventnode) {
-		ktap_printf(cbdata->ks, "allocate ktap_event_node failed\n");
+	ktap_file = ktap_malloc(cbdata->ks, sizeof(*ktap_file));
+	if (!ktap_file) {
+		ktap_printf(cbdata->ks, "allocate ktap_event_file failed\n");
 		return;
 	}
-	eventnode->call = call;
-	eventnode->ks = cbdata->ks;
-	eventnode->cl = cbdata->cl;
-	INIT_LIST_HEAD(&eventnode->list);
+	ktap_file->file.event_call = call;
+	ktap_file->file.tr = &ktap_tr;
+	ktap_file->ks = cbdata->ks;
+	ktap_file->cl = cbdata->cl;
 
-	if (!call->ktap_refcount) {
-		call->ktap_pre_trace = ktap_pre_trace;
-		call->ktap_do_trace = ktap_do_trace;
-		call->ktap_post_trace = ktap_post_trace;
-		INIT_HLIST_HEAD(&call->ktap_callback_list);
+	list_add_rcu(&ktap_file->file.list, &ktap_tr.events);
 
-		if (!call->class->ktap_probe) {
-			/* syscall tracing */
-			if (start_trace_syscalls(call)) {
-				ktap_free(cbdata->ks, eventnode);
-				return;
-			}
-		} else
-			tracepoint_probe_register(call->name,
-						  call->class->ktap_probe,
-						  call);
-	}
-
-	list_add(&eventnode->list, &(G(cbdata->ks)->event_nodes));
-	hlist_add_head_rcu(&eventnode->node, &call->ktap_callback_list);
-
-	call->ktap_refcount++;
+	call->class->reg(call, TRACE_REG_REGISTER, &ktap_file->file);
 }
+
 
 int start_trace(ktap_State *ks, const char *event_name, Closure *cl)
 {
@@ -334,45 +440,55 @@ int start_trace(ktap_State *ks, const char *event_name, Closure *cl)
 /* cleanup all tracepoint owned by this ktap */
 void end_all_trace(ktap_State *ks)
 {
-	struct ktap_event_node *pos, *tmp;
-	struct list_head *event_nodes = &(G(ks)->event_nodes);
+	struct ftrace_event_file *file, *tmp;
 
 	if (!G(ks)->trace_enabled)
 		return;
 
-	list_for_each_entry_safe(pos, tmp, event_nodes, list) {
-		struct ftrace_event_call *call = pos->call;
+	list_for_each_entry_rcu(file, &ktap_tr.events, list) {
+		struct ktap_event_file *ktap_file =
+			container_of(file, struct ktap_event_file, file);
+		struct ftrace_event_call *call = file->event_call;
 
-		hlist_del_rcu(&pos->node);
-
-		if (!--call->ktap_refcount) {
-			if (!call->class->ktap_probe)
-				stop_trace_syscalls(call);
-			else
-				tracepoint_probe_unregister(call->name,
-							    call->class->ktap_probe,
-							    call);
-
-			call->ktap_pre_trace = NULL;
-			call->ktap_do_trace = NULL;
-			call->ktap_post_trace = NULL;
-		}
-
-		ktap_free(ks, pos);
+		call->class->reg(call, TRACE_REG_UNREGISTER, file);
 	}
 
 	tracepoint_synchronize_unregister();
 
+	/* free after tracepoint_synchronize_unregister */
+	list_for_each_entry_safe(file, tmp, &ktap_tr.events, list) {
+		struct ktap_event_file *ktap_file =
+			container_of(file, struct ktap_event_file, file);
+
+		ktap_free(ktap_file->ks, ktap_file);
+	}
+
 	free_percpu(entry_percpu_buffer);
 	free_percpu(percpu_trace_iterator);
-
-	INIT_LIST_HEAD(event_nodes);
 
 	G(ks)->trace_enabled = 0;
 }
 
 int ktap_trace_init(ktap_State *ks)
 {
+	struct ftrace_event_call *call;
+
+	list_for_each_entry(call, &ftrace_events, list) {
+		if (!strncmp(call->name, "sys_enter_", 10)) {
+			syscall_enter_class = call->class;
+			break;
+		}
+	}
+
+	list_for_each_entry(call, &ftrace_events, list) {
+		if (!strncmp(call->name, "sys_exit_", 9)) {
+			syscall_exit_class = call->class;
+			break;
+		}
+	}
+
+	/* change it in future, ktap cannot use ktap_tr.events global variable */
+	INIT_LIST_HEAD(&ktap_tr.events);
 	ktap_init_syscalls(ks);
 	return 0;
 }
