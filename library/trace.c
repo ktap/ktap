@@ -23,12 +23,6 @@
 #include <linux/ftrace_event.h>
 #include "../ktap.h"
 
-typedef struct ktap_Callback_data {
-	ktap_State *ks;
-	Closure *cl;
-} ktap_Callback_data;
-
-
 /* this structure allocate on stack */
 struct ktap_event {
 	struct ftrace_event_call *call;
@@ -327,22 +321,28 @@ void ftrace_on_event_call(const char *buf, ftrace_call_func actor, void *data)
 	}
 }
 
+/* this structure allocate on stack */
+struct ktap_trace_arg {
+	ktap_State *ks;
+	Closure *cl;
+};
+
 static void enable_event(struct ftrace_event_call *call, void *data)
 {
-	ktap_Callback_data *cbdata = data;
+	struct ktap_trace_arg *arg = data;
 	struct ktap_event_file *ktap_file;
 
-	ktap_printf(cbdata->ks, "enable event: %s\n", call->name);
+	ktap_printf(arg->ks, "enable event: %s\n", call->name);
 
-	ktap_file = ktap_malloc(cbdata->ks, sizeof(*ktap_file));
+	ktap_file = ktap_malloc(arg->ks, sizeof(*ktap_file));
 	if (!ktap_file) {
-		ktap_printf(cbdata->ks, "allocate ktap_event_file failed\n");
+		ktap_printf(arg->ks, "allocate ktap_event_file failed\n");
 		return;
 	}
 	ktap_file->file.event_call = call;
 	ktap_file->file.tr = &ktap_tr;
-	ktap_file->ks = cbdata->ks;
-	ktap_file->cl = cbdata->cl;
+	ktap_file->ks = arg->ks;
+	ktap_file->cl = arg->cl;
 
 	list_add_rcu(&ktap_file->file.list, &ktap_tr.events);
 
@@ -352,7 +352,7 @@ static void enable_event(struct ftrace_event_call *call, void *data)
 
 int start_trace(ktap_State *ks, const char *event_name, Closure *cl)
 {
-	ktap_Callback_data  callback;
+	struct ktap_trace_arg arg;
 
 	if (!G(ks)->trace_enabled) {
 		entry_percpu_buffer = __alloc_percpu(PAGE_SIZE,
@@ -372,9 +372,9 @@ int start_trace(ktap_State *ks, const char *event_name, Closure *cl)
 	if (*event_name == '\0')
 		event_name = NULL;
 
-	callback.ks = ks;
-	callback.cl = cl;
-	ftrace_on_event_call(event_name, enable_event, (void *)&callback);
+	arg.ks = ks;
+	arg.cl = cl;
+	ftrace_on_event_call(event_name, enable_event, (void *)&arg);
 	return 0;
 }
 
