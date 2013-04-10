@@ -24,26 +24,14 @@
 #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 
 #include <linux/module.h>
-
-#include <linux/kernel.h>
 #include <linux/errno.h>
-#include <linux/signal.h>
-#include <linux/string.h>
-#include <linux/fs.h>
 #include <linux/namei.h>
 #include <linux/file.h>
-#include <linux/stat.h>
 #include <linux/fcntl.h>
-#include <linux/user.h>
-#include <linux/init.h>
-#include <linux/slab.h>
+#include <linux/sched.h>
 #include <linux/poll.h>
 #include <linux/anon_inodes.h>
-#include <asm/segment.h>
-#include <asm/uaccess.h>
-#include <linux/buffer_head.h>
 #include <linux/debugfs.h>
-
 #include "ktap.h"
 
 static void remove_file(struct file *file, const char *filename)

@@ -21,8 +21,6 @@
  */
 
 #ifdef __KERNEL__
-#include <linux/module.h>
-#include <linux/slab.h>
 #include "ktap.h"
 #else
 #include "ktap_types.h"

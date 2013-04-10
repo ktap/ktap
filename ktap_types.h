@@ -3,6 +3,7 @@
 
 #ifdef __KERNEL__
 #include <linux/module.h>
+#include <linux/slab.h>
 #else
 typedef char u8;
 #include <stdlib.h>

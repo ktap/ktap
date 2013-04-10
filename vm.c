@@ -25,14 +25,11 @@
 #include <linux/file.h>
 #include <linux/fs.h>
 #include <linux/signal.h>
-#include <linux/hardirq.h>
 #include <linux/delay.h>
 #include <linux/sched.h>
 #include <linux/completion.h>
 #include <linux/freezer.h>
-#include <linux/tracepoint.h>
 #include <trace/events/printk.h>
-
 #include "ktap.h"
 
 typedef int ptrdiff_t;

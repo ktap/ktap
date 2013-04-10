@@ -20,17 +20,9 @@
  * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include <linux/module.h>
-#include <linux/slab.h>
-#include <linux/file.h>
-#include <linux/fs.h>
-#include <linux/delay.h>
 #include <linux/debugfs.h>
 #include <linux/relay.h>
-
 #include "ktap.h"
-
-
 
 static int subbuf_start_callback(struct rchan_buf *buf, void *subbuf,
 				 void *prev_subbuf, size_t prev_padding)

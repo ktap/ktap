@@ -20,10 +20,7 @@
  * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include <linux/module.h>
-#include <linux/kallsyms.h>
 #include <linux/ftrace_event.h>
-
 #include "../ktap.h"
 
 typedef struct ktap_Callback_data {
