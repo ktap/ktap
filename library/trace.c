@@ -489,7 +489,6 @@ int ktap_trace_init(ktap_State *ks)
 
 	/* change it in future, ktap cannot use ktap_tr.events global variable */
 	INIT_LIST_HEAD(&ktap_tr.events);
-	ktap_init_syscalls(ks);
 	return 0;
 }
 
