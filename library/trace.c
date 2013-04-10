@@ -28,13 +28,6 @@ typedef struct ktap_Callback_data {
 	Closure *cl;
 } ktap_Callback_data;
 
-struct ktap_event_node {
-	struct ftrace_event_call *call;
-	ktap_State *ks;
-	Closure *cl;
-	struct list_head list;
-	struct hlist_node node;
-};
 
 /* this structure allocate on stack */
 struct ktap_event {
@@ -215,7 +208,7 @@ static void *ktap_events_pre_trace(struct ftrace_event_file *file,
 				   int entry_size, void *data)
 {
 	struct trace_entry  *entry;
-	struct ftrace_trace_descriptor_t *desc;
+	struct trace_descriptor_t *desc = data;
 	unsigned long irq_flags;
 
 	if (unlikely(entry_size > PAGE_SIZE))
@@ -233,7 +226,6 @@ static void *ktap_events_pre_trace(struct ftrace_event_file *file,
 	entry = per_cpu_ptr(entry_percpu_buffer, smp_processor_id());
 	entry->type = file->event_call->event.type;
 
-	desc = &((struct trace_descriptor_t *)data)->f;
 	desc->irq_flags = irq_flags;
 
 	return entry;
@@ -283,7 +275,7 @@ static void handle_syscall_event(struct ftrace_event_file *file, void *entry,
 static void ktap_events_do_trace(struct ftrace_event_file *file, void *entry,
 				 int entry_size, void *data)
 {
-	struct ftrace_trace_descriptor_t *desc;
+	struct trace_descriptor_t *desc = data;
 	struct ktap_event_file *ktap_file;
 	ktap_State *ks;
 	struct ktap_event event;
@@ -308,8 +300,6 @@ static void ktap_events_do_trace(struct ftrace_event_file *file, void *entry,
 
  out:
 	__this_cpu_write(ktap_in_tracing, false);
-
-	desc = &((struct trace_descriptor_t *)data)->f;
 	local_irq_restore(desc->irq_flags);
 }
 
