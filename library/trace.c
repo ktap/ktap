@@ -231,46 +231,6 @@ static void *ktap_events_pre_trace(struct ftrace_event_file *file,
 	return entry;
 }
 
-static struct ftrace_event_class *syscall_enter_class;
-static struct ftrace_event_class *syscall_exit_class;
-
-static inline int is_syscall_event(struct ftrace_event_file *file)
-{
-	struct ftrace_event_class *class = file->event_call->class;
-
-	if (class == syscall_enter_class || class == syscall_exit_class)
-		return 1;
-
-	return 0;
-}
-
-static void handle_syscall_event(struct ftrace_event_file *file, void *entry,
-				 int entry_size)
-{
-	struct trace_array *tr = file->tr;
-	struct ftrace_event_file *this_file;
-	struct ktap_event event;
-
-	event.call = file->event_call;
-	event.entry = entry;
-	event.entry_size = entry_size;
-
-	/* change it in future, this really slow, and not safe */
-	list_for_each_entry_rcu(this_file, &tr->events, list) {
-		struct ktap_event_file *ktap_file =
-			container_of(this_file, struct ktap_event_file, file);
-		ktap_State *ks = ktap_file->ks;
-
-		if (this_file->event_call != file->event_call)
-			continue;
-		
-		if (same_thread_group(current, G(ks)->task))
-			continue;
-
-		call_user_closure(ks, ktap_file->cl, &event);
-	}
-}
-
 /* core probe function called by tracepoint */
 static void ktap_events_do_trace(struct ftrace_event_file *file, void *entry,
 				 int entry_size, void *data)
@@ -280,13 +240,7 @@ static void ktap_events_do_trace(struct ftrace_event_file *file, void *entry,
 	ktap_State *ks;
 	struct ktap_event event;
 
-	/* syscall event is special, make it faster in future */
-	if (is_syscall_event(file)) {
-		handle_syscall_event(file, entry, entry_size);
-		goto out;
-	} else
-		ktap_file = container_of(file, struct ktap_event_file, file);
-
+	ktap_file = container_of(file, struct ktap_event_file, file);
 	ks = ktap_file->ks;
 
 	if (same_thread_group(current, G(ks)->task))
@@ -458,22 +412,6 @@ void end_all_trace(ktap_State *ks)
 
 int ktap_trace_init(ktap_State *ks)
 {
-	struct ftrace_event_call *call;
-
-	list_for_each_entry(call, &ftrace_events, list) {
-		if (!strncmp(call->name, "sys_enter_", 10)) {
-			syscall_enter_class = call->class;
-			break;
-		}
-	}
-
-	list_for_each_entry(call, &ftrace_events, list) {
-		if (!strncmp(call->name, "sys_exit_", 9)) {
-			syscall_exit_class = call->class;
-			break;
-		}
-	}
-
 	/* change it in future, ktap cannot use ktap_tr.events global variable */
 	INIT_LIST_HEAD(&ktap_tr.events);
 	return 0;
