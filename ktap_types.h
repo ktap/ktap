@@ -265,7 +265,6 @@ typedef struct global_State {
 #ifdef __KERNEL__
 	int nr_builtin_cfunction;
 	Tvalue *cfunction_tbl;
-	struct list_head event_nodes;
 	struct task_struct *task;
 	struct rchan *ktap_chan;
 	int trace_enabled;
