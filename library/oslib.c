@@ -324,21 +324,6 @@ static int ktap_lib_uprobe(ktap_State *ks)
 	return 0;
 }
 
-static int ktap_lib_comm(ktap_State *ks)
-{
-	Tstring *ts = tstring_new(ks, current->comm);
-	setsvalue(ks->top, ts);
-	incr_top(ks);
-	return 1;
-}
-
-static int ktap_lib_pid(ktap_State *ks)
-{
-	setnvalue(ks->top, task_tgid_vnr(current));
-	incr_top(ks);
-	return 1;
-}
-
 static int ktap_lib_dummy(ktap_State *ks)
 {
 	return 0;
@@ -368,12 +353,6 @@ static const ktap_Reg oslib_funcs[] = {
 	{NULL}
 };
 
-static const ktap_Reg processlib_funcs[] = {
-	{"comm", ktap_lib_comm},
-	{"pid", ktap_lib_pid},
-	{NULL}
-};
-
 static const ktap_Reg systemlib_funcs[] = {
 	{"info", ktap_lib_dummy},
 	{NULL}
@@ -382,7 +361,6 @@ static const ktap_Reg systemlib_funcs[] = {
 void ktap_init_oslib(ktap_State *ks)
 {
 	ktap_register_lib(ks, "os", oslib_funcs);
-	ktap_register_lib(ks, "process", processlib_funcs);
 	ktap_register_lib(ks, "system", oslib_funcs);
 }
 

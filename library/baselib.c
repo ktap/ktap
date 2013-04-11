@@ -85,6 +85,14 @@ static int ktap_lib_pid(ktap_State *ks)
 	return 1;
 }
 
+static int ktap_lib_execname(ktap_State *ks)
+{
+	Tstring *ts = tstring_new(ks, current->comm);
+	setsvalue(ks->top, ts);
+	incr_top(ks);
+	return 1;
+}
+
 static int ktap_lib_in_interrupt(ktap_State *ks)
 {
 	int ret = in_interrupt();
@@ -95,24 +103,24 @@ static int ktap_lib_in_interrupt(ktap_State *ks)
 }
 
 static const ktap_Reg base_funcs[] = {
-//  {"assert", ktap_assert},
-//  {"collectgarbage", ktap_collectgarbage},
-//  {"error", ktap_error},
-//  {"getmetatable", ktap_getmetatable},
-//  {"setmetatable", ktap_setmetatable},
-//  {"ipairs", ktap_ipairs},
-//  {"next", ktap_next},
-//  {"pairs", ktap_pairs},
+//	{"assert", ktap_assert},
+//	{"collectgarbage", ktap_collectgarbage},
+//	{"error", ktap_error},
+//	{"getmetatable", ktap_getmetatable},
+//	{"setmetatable", ktap_setmetatable},
+//	{"ipairs", ktap_ipairs},
+//	{"next", ktap_next},
+//	{"pairs", ktap_pairs},
+//	{"tonumber", ktap_tonumber},
+//	{"tostring", ktap_tostring},
+//	{"type", ktap_type},
 	{"print", ktap_lib_print},
 	{"printf", ktap_lib_printf},
 	{"in_interrupt", ktap_lib_in_interrupt},
 	{"exit", ktap_lib_exit},
 	{"pid", ktap_lib_pid},
-	
-//  {"tonumber", ktap_tonumber},
-//  {"tostring", ktap_tostring},
-//  {"type", ktap_type},
-  {NULL}
+	{"execname", ktap_lib_execname},
+	{NULL}
 };
 
 void ktap_init_baselib(ktap_State *ks)
