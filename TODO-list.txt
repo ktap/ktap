@@ -54,7 +54,7 @@ keep updating this file)
     cpu(), execname(), tid(), pid(), uid(),
     backtrace(), print_stack(), print_backtrace(),
     pp(), probefunc(), probemod()
-- fibonacci in ktap
+- fibonacci in ktap	--- done
 
 [LOW]
 - dead loop detaction		--- done
