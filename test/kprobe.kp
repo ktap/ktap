@@ -1,0 +1,22 @@
+
+function failed() {
+	printf("failed\n");
+	exit(-1);
+}
+
+#----------------------------------------#
+
+count = 0
+function eventfun () {
+	count = count + 1
+}
+
+os.kprobe("schedule", eventfun);
+
+os.sleep(3)
+
+os.kprobe_end(function () {
+	if (!count) {
+		failed()
+	}
+}, 1)
