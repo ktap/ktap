@@ -35,7 +35,26 @@ Normal:
 10. maintaince different kernel version branch of ktap
 11. splice io output
 12. fast loading(not using temp file?)
-
+13. Interval timer probes fire periodicalle
+	Available units: timer.s, jiffies, s/sec, ms/msec, us/usec, ns/nsec
+        Add variation with .randomize(N)
+    The profile timer runs on every systerm tick
+        timer.profile
+     runs on all CPUS, Includes context of interrupted process
+14. kernel_string()/user_string()
+15. More built-in functions:
+    - Printing:
+    print(), println(), printd(), printf(),
+    sprint(), sprintln(), sprintd(), sprintf()
+    - Strings
+    strlen(), substr(), isinstr(), strtol()
+    - Timestamps
+    get_cycles(), gettimeofday_s(), gettimeofday_ns()
+    - Context
+    cpu(), execname(), tid(), pid(), uid(),
+    backtrace(), print_stack(), print_backtrace(),
+    pp(), probefunc(), probemod()
+16. fibonacci in ktap
 
 Low:
 1. dead loop detaction		--- done
@@ -43,11 +62,15 @@ Low:
 3. test script for verification		--- done
 4. not-tracing mode support(side effects mode)
 5. making ktap syntax more C like	--- done
-6. ktap Manual/Doc/ppt/pdf writing
+6. ktap Manual/Doc/ppt/pdf/man writing
 7. structure reference support in script like dtrace
 8. more lightwight traceing infrastructure support
 9. parrot research: use opcode generate like parrot
 10. support include header file in ktap script, only for compiler
 11. kernel 3.9(include previous kernel version) maintain, use same code base?
-
+12. ktap -e "oneline scripting"
+13. yum install ktap; apt-get install ktap
+14. conference
+15. systemtap integrate: compile into ktap bytecode, use same vm in kernel
+16. commit to kernel: staging first?
 
