@@ -1,49 +1,49 @@
 Todo list of ktap:
 
 (You can make this todo list as ktap's implementation backlog
-keeping update this file)
+keep updating this file)
 
 -------------------------------------------------------------------------
 
-High:
-1. event based tracing infrastructure	--- done
-2. Drop ftrace.patch			--- done
-3. GC
-4. read kernel memory by symbol
-5. table stat showing
-6. ktap memory allocation		--- done
-7. per-cpu ktap_State for performance improvement	--- done
-8. x86-64 support			--- done
-9. non-mainthread error exit problem(like printf arg mismatch)
-10. ktapio problem in all event tracepoints opened
-11. ktapio support global and percpu mode
-12. issue: trace_end function cannot print into ktapio	--- done
-13. event library support
-14. change comments sytle to "#"	--- done
+[HIGH]
+- event based tracing infrastructure	--- done
+- Drop ftrace.patch			--- done
+- GC
+- read kernel memory by symbol
+- table stat showing
+- ktap memory allocation		--- done
+- per-cpu ktap_State for performance improvement	--- done
+- x86-64 support			--- done
+- non-mainthread error exit problem(like printf arg mismatch)
+- ktapio problem in all event tracepoints opened
+- ktapio support global and percpu mode
+- issue: trace_end function cannot print into ktapio	--- done
+- event library support
+- change comments sytle to "#"	--- done
 
 
-Normal:
-1. ARM support
-2. All tracepoints support	--- done
-3. Timer support		--- done
-4. kprobe/uprobe support
-5. function call speedup	--- done
-6. improve printf performance
-7. dumpstack support		--- done
-8. script argument support
-9. call ktap script in while loop shell script issue
-10. maintaince different kernel version branch of ktap
-11. splice io output
-12. fast loading(not using temp file?)
-13. Interval timer probes fire periodicalle
+[NORMAL]
+- ARM support
+- All tracepoints support	--- done
+- Timer support		--- done
+- kprobe/uprobe support
+- function call speedup	--- done
+- improve printf performance
+- dumpstack support		--- done
+- script argument support
+- call ktap script in while loop shell script issue
+- maintaince different kernel version branch of ktap
+- splice io output
+- fast loading(not using temp file?)
+- Interval timer probes fire periodicalle
 	Available units: timer.s, jiffies, s/sec, ms/msec, us/usec, ns/nsec
         Add variation with .randomize(N)
     The profile timer runs on every systerm tick
         timer.profile
      runs on all CPUS, Includes context of interrupted process
-14. kernel_string()/user_string()
-15. More built-in functions:
-    - Printing:
+- kernel_string()/user_string()
+- More built-in functions:
+    - Printing
     print(), println(), printd(), printf(),
     sprint(), sprintln(), sprintd(), sprintf()
     - Strings
@@ -54,23 +54,23 @@ Normal:
     cpu(), execname(), tid(), pid(), uid(),
     backtrace(), print_stack(), print_backtrace(),
     pp(), probefunc(), probemod()
-16. fibonacci in ktap
+- fibonacci in ktap
 
-Low:
-1. dead loop detaction		--- done
-2. product more useful ktap script
-3. test script for verification		--- done
-4. not-tracing mode support(side effects mode)
-5. making ktap syntax more C like	--- done
-6. ktap Manual/Doc/ppt/pdf/man writing
-7. structure reference support in script like dtrace
-8. more lightwight traceing infrastructure support
-9. parrot research: use opcode generate like parrot
-10. support include header file in ktap script, only for compiler
-11. kernel 3.9(include previous kernel version) maintain, use same code base?
-12. ktap -e "oneline scripting"
-13. yum install ktap; apt-get install ktap
-14. conference
-15. systemtap integrate: compile into ktap bytecode, use same vm in kernel
-16. commit to kernel: staging first?
+[LOW]
+- dead loop detaction		--- done
+- product more useful ktap script
+- test script for verification		--- done
+- not-tracing mode support(side effects mode)
+- making ktap syntax more C like	--- done
+- ktap Manual/Doc/ppt/pdf/man writing
+- structure reference support in script like dtrace
+- more lightwight traceing infrastructure support
+- parrot research: use opcode generate like parrot
+- support include header file in ktap script, only for compiler
+- kernel 3.9(include previous kernel version) maintain, use same code base?
+- ktap -e "oneline scripting"
+- yum install ktap; apt-get install ktap
+- conference
+- systemtap integrate: compile into ktap bytecode, use same vm in kernel
+- commit to kernel: staging first?
 
