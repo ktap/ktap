@@ -135,7 +135,6 @@ struct hrtimer_ktap {
 	struct list_head list;
 };
 
-extern DEFINE_PER_CPU(bool, ktap_in_tracing);
 static enum hrtimer_restart hrtimer_ktap_fn(struct hrtimer *timer)
 {
 	ktap_State *ks;
@@ -316,8 +315,56 @@ static int ktap_lib_trace_end(ktap_State *ks)
 
 static int ktap_lib_kprobe(ktap_State *ks)
 {
+	Tvalue *evname = GetArg(ks, 1);
+	const char *event_name;
+	Tvalue *tracefunc;
+	Closure *cl;
+
+	if (GetArgN(ks) >= 2) {
+		tracefunc = GetArg(ks, 2);
+
+		if (ttisfunc(tracefunc))
+			cl = (Closure *)gcvalue(tracefunc);
+		else
+			cl = NULL;
+	} else
+		cl = NULL;
+
+	if (!cl)
+		return -1;
+
+	event_name = svalue(evname);
+	return start_kprobe(ks, event_name, cl);
+}
+
+static int ktap_lib_kprobe_end(ktap_State *ks)
+{
+	Tvalue *endfunc;
+	int no_wait = 0;
+
+	if (GetArgN(ks) == 0)
+		return 0;
+
+	endfunc = GetArg(ks, 1);
+	if (GetArgN(ks) >= 2)
+		no_wait = nvalue(GetArg(ks, 2));
+
+	if (!no_wait) {
+		set_current_state(TASK_INTERRUPTIBLE);
+		schedule();
+		if (fatal_signal_pending(current))
+			flush_signals(current);
+	}
+
+	end_kprobes(ks);
+
+	setcllvalue(ks->top, clvalue(endfunc));
+	incr_top(ks);
+	
+	ktap_call(ks, ks->top - 1, 0);
 	return 0;
 }
+
 
 static int ktap_lib_uprobe(ktap_State *ks)
 {
@@ -339,6 +386,7 @@ static const ktap_Reg oslib_funcs[] = {
 	{"trace", ktap_lib_trace},
 	{"trace_end", ktap_lib_trace_end},
 	{"kprobe", ktap_lib_kprobe},
+	{"kprobe_end", ktap_lib_kprobe_end},
 	{"uprobe", ktap_lib_uprobe},
 	{NULL}
 };

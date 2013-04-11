@@ -387,8 +387,6 @@ void end_all_trace(ktap_State *ks)
 		return;
 
 	list_for_each_entry_rcu(file, &ktap_tr.events, list) {
-		struct ktap_event_file *ktap_file =
-			container_of(file, struct ktap_event_file, file);
 		struct ftrace_event_call *call = file->event_call;
 
 		call->class->reg(call, TRACE_REG_UNREGISTER, file);
@@ -402,6 +400,7 @@ void end_all_trace(ktap_State *ks)
 			container_of(file, struct ktap_event_file, file);
 
 		ktap_free(ktap_file->ks, ktap_file);
+		list_del(&ktap_file->file.list);
 	}
 
 	free_percpu(entry_percpu_buffer);

@@ -1,0 +1,9 @@
+function eventfun () {
+	printf("%d %d\t%s\n", cpu(), pid(), execname());
+}
+
+os.kprobe("schedule", eventfun);
+
+os.kprobe_end(function () {
+	print("kprobe ending\n")
+})

@@ -269,6 +269,7 @@ typedef struct global_State {
 	struct rchan *ktap_chan;
 	int trace_enabled;
 	struct list_head timers;
+	struct list_head kprobes;
 	struct completion *user_completion;
 #endif
 } global_State;
