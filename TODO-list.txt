@@ -55,6 +55,19 @@ keep updating this file)
     backtrace(), print_stack(), print_backtrace(),
     pp(), probefunc(), probemod()
 - fibonacci in ktap	--- done
+- support kprobe and uprobe in os.trace unified interface, need change tracing code
+  echo 'p:myprobe schedule' > /sys/kernel/debug/tracing/kprobe_events
+  echo 'p /bin/zsh:0x46420 %ip %ax' > uprobe_events"
+
+  os.trace("kprobe:schedule", eventfun);
+  os.trace("uprobe:/lib/libc.so malloc", eventfun);
+- support "raw tracepoint", "raw kprobe", "raw uprobe", "raw breakpoint", "raw watchpoint"
+  compare with os.trace which is based on event tracing infrastruction in kernel
+  os.probe("tracepoint:xxx", eventfun);
+  os.probe("kprobe:xxx", eventfun);
+  os.probe("uprobe:xxx", eventfun);
+  os.probe("bp:xxx", eventfun);
+  os.probe("wp:xxx", eventfun);
 
 [LOW]
 - dead loop detaction		--- done
