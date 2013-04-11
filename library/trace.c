@@ -202,10 +202,15 @@ static void *ktap_events_pre_trace(struct ftrace_event_file *file,
 				   int entry_size, void *data)
 {
 	struct trace_entry  *entry;
+	struct ktap_event_file *ktap_file;
 	struct trace_descriptor_t *desc = data;
 	unsigned long irq_flags;
 
 	if (unlikely(entry_size > PAGE_SIZE))
+		return NULL;
+
+	ktap_file = container_of(file, struct ktap_event_file, file);
+	if (same_thread_group(current, G(ktap_file->ks)->task))
 		return NULL;
 
 	local_irq_save(irq_flags);
@@ -231,22 +236,16 @@ static void ktap_events_do_trace(struct ftrace_event_file *file, void *entry,
 {
 	struct trace_descriptor_t *desc = data;
 	struct ktap_event_file *ktap_file;
-	ktap_State *ks;
 	struct ktap_event event;
 
 	ktap_file = container_of(file, struct ktap_event_file, file);
-	ks = ktap_file->ks;
-
-	if (same_thread_group(current, G(ks)->task))
-		goto out;
 
 	event.call = ktap_file->file.event_call;
 	event.entry = entry;
 	event.entry_size = entry_size;
 
-	call_user_closure(ks, ktap_file->cl, &event);
+	call_user_closure(ktap_file->ks, ktap_file->cl, &event);
 
- out:
 	__this_cpu_write(ktap_in_tracing, false);
 	local_irq_restore(desc->irq_flags);
 }
