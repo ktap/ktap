@@ -399,8 +399,8 @@ void end_all_trace(ktap_State *ks)
 		struct ktap_event_file *ktap_file =
 			container_of(file, struct ktap_event_file, file);
 
-		ktap_free(ktap_file->ks, ktap_file);
 		list_del(&ktap_file->file.list);
+		ktap_free(ktap_file->ks, ktap_file);
 	}
 
 	free_percpu(entry_percpu_buffer);
