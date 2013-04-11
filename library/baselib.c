@@ -93,6 +93,13 @@ static int ktap_lib_execname(ktap_State *ks)
 	return 1;
 }
 
+static int ktap_lib_cpu(ktap_State *ks)
+{
+	setnvalue(ks->top, smp_processor_id());
+	incr_top(ks);
+	return 1;
+}
+
 static int ktap_lib_in_interrupt(ktap_State *ks)
 {
 	int ret = in_interrupt();
@@ -120,6 +127,7 @@ static const ktap_Reg base_funcs[] = {
 	{"exit", ktap_lib_exit},
 	{"pid", ktap_lib_pid},
 	{"execname", ktap_lib_execname},
+	{"cpu", ktap_lib_cpu},
 	{NULL}
 };
 

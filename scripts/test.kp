@@ -1,5 +1,5 @@
 function eventfun (e) {
-	printf("%d\t%s\t%s", pid(), execname(), e.annotate);
+	printf("%d %d\t%s\t%s", cpu(), pid(), execname(), e.annotate);
 }
 
 #os.trace("", eventfun);
