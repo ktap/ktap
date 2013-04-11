@@ -1,5 +1,5 @@
 function eventfun (e) {
-	printf("%d\t%s\t%s", os.smp_processor_id(), process.comm(), e.annotate);
+	printf("%d\t%s\t%s", pid(), process.comm(), e.annotate);
 }
 
 #os.trace("", eventfun);
@@ -7,13 +7,13 @@ function eventfun (e) {
 #os.trace("irq:softirq_entry", eventfun);
 #os.trace("kmem", eventfun1);
 #os.trace("kmem:kmalloc", eventfun1);
-os.trace("sched", eventfun);
+#os.trace("sched", eventfun);
 #os.trace("signal", eventfun1);
 #os.trace("signal:signal_generate", eventfun1);
 #os.trace("syscalls:sys_enter_open", eventfun1);
 #os.trace("syscalls:sys_exit_open", eventfun1);
 #os.trace("syscalls:sys_enter_futex", eventfun);
-#os.trace("syscalls", eventfun);
+os.trace("syscalls", eventfun);
 #os.trace("sched:sched_process_fork", eventfun)
 
 os.trace_end(function () {

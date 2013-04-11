@@ -21,6 +21,7 @@
  */
 
 #include <linux/hardirq.h>
+#include <linux/sched.h>
 #include "../ktap.h"
 
 /* get argument operation macro */
@@ -75,6 +76,15 @@ static int ktap_lib_exit(ktap_State *ks)
 	return 0;
 }
 
+static int ktap_lib_pid(ktap_State *ks)
+{
+	pid_t pid = task_tgid_vnr(current);
+
+	setnvalue(ks->top, (int)pid);
+	incr_top(ks);
+	return 1;
+}
+
 static int ktap_lib_in_interrupt(ktap_State *ks)
 {
 	int ret = in_interrupt();
@@ -97,6 +107,8 @@ static const ktap_Reg base_funcs[] = {
 	{"printf", ktap_lib_printf},
 	{"in_interrupt", ktap_lib_in_interrupt},
 	{"exit", ktap_lib_exit},
+	{"pid", ktap_lib_pid},
+	
 //  {"tonumber", ktap_tonumber},
 //  {"tostring", ktap_tostring},
 //  {"type", ktap_type},
