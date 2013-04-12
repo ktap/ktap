@@ -11,11 +11,11 @@ function eventfun () {
 	count = count + 1
 }
 
-os.kprobe("schedule", eventfun);
+os.probe("kprobe:schedule", eventfun);
 
 os.sleep(3)
 
-os.kprobe_end(function () {
+os.probe_end(function () {
 	if (!count) {
 		failed()
 	}
