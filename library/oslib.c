@@ -313,7 +313,7 @@ static int ktap_lib_trace_end(ktap_State *ks)
 	return 0;
 }
 
-static int ktap_lib_kprobe(ktap_State *ks)
+static int ktap_lib_probe(ktap_State *ks)
 {
 	Tvalue *evname = GetArg(ks, 1);
 	const char *event_name;
@@ -334,10 +334,10 @@ static int ktap_lib_kprobe(ktap_State *ks)
 		return -1;
 
 	event_name = svalue(evname);
-	return start_kprobe(ks, event_name, cl);
+	return start_probe(ks, event_name, cl);
 }
 
-static int ktap_lib_kprobe_end(ktap_State *ks)
+static int ktap_lib_probe_end(ktap_State *ks)
 {
 	Tvalue *endfunc;
 	int no_wait = 0;
@@ -356,18 +356,12 @@ static int ktap_lib_kprobe_end(ktap_State *ks)
 			flush_signals(current);
 	}
 
-	end_kprobes(ks);
+	end_probes(ks);
 
 	setcllvalue(ks->top, clvalue(endfunc));
 	incr_top(ks);
 	
 	ktap_call(ks, ks->top - 1, 0);
-	return 0;
-}
-
-
-static int ktap_lib_uprobe(ktap_State *ks)
-{
 	return 0;
 }
 
@@ -385,9 +379,8 @@ static const ktap_Reg oslib_funcs[] = {
 	{"timer", ktap_lib_timer},
 	{"trace", ktap_lib_trace},
 	{"trace_end", ktap_lib_trace_end},
-	{"kprobe", ktap_lib_kprobe},
-	{"kprobe_end", ktap_lib_kprobe_end},
-	{"uprobe", ktap_lib_uprobe},
+	{"probe", ktap_lib_probe},
+	{"probe_end", ktap_lib_probe_end},
 	{NULL}
 };
 

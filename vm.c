@@ -1022,7 +1022,7 @@ void ktap_exit(ktap_State *ks)
 	unregister_trace_console(trace_console_func, ks);
 
 	end_all_trace(ks);
-	end_kprobes(ks);
+	end_probes(ks);
 	ktap_exit_timers(ks);
 
 	free_percpu(ktap_percpu_state);

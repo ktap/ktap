@@ -27,9 +27,9 @@ void ktap_event_handle(ktap_State *ks, void *e, int field, StkId ra);
 int ktap_trace_init(ktap_State *ks);
 
 int start_trace(ktap_State *ks, const char *event_name, Closure *cl);
-int start_kprobe(ktap_State *ks, const char *event_name, Closure *cl);
+int start_probe(ktap_State *ks, const char *event_name, Closure *cl);
 void end_all_trace(ktap_State *ks);
-void end_kprobes(ktap_State *ks);
+void end_probes(ktap_State *ks);
 int ktap_event_get_index(const char *field);
 Tstring *ktap_event_get_ts(ktap_State *ks, int index);
 
