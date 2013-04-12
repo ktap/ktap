@@ -75,6 +75,9 @@ keep updating this file)
 
 - change library/trace.c to use perf event mechanism, without change ftrace code
 
+- only tracing on cpu: ktap -c cpu *.kp
+- kernel_version() base function call
+
 [LOW]
 - dead loop detaction		--- done
 - product more useful ktap script
