@@ -55,19 +55,25 @@ keep updating this file)
     backtrace(), print_stack(), print_backtrace(),
     pp(), probefunc(), probemod()
 - fibonacci in ktap	--- done
-- support kprobe and uprobe in os.trace unified interface, need change tracing code
-  echo 'p:myprobe schedule' > /sys/kernel/debug/tracing/kprobe_events
-  echo 'p /bin/zsh:0x46420 %ip %ax' > uprobe_events"
-
-  os.trace("kprobe:schedule", eventfun);
-  os.trace("uprobe:/lib/libc.so malloc", eventfun);
-- support "raw tracepoint", "raw kprobe", "raw uprobe", "raw breakpoint", "raw watchpoint"
-  compare with os.trace which is based on event tracing infrastruction in kernel
+- unified event probe interface:
   os.probe("tracepoint:xxx", eventfun);
-  os.probe("kprobe:xxx", eventfun);
-  os.probe("uprobe:xxx", eventfun);
-  os.probe("bp:xxx", eventfun);
-  os.probe("wp:xxx", eventfun);
+  os.probe("tp:xxx", eventfun);
+  os.probe("kprobes:xxx", eventfun);
+  os.probe("k:xxx", eventfun);
+  os.probe("k:xxx!", eventfun);  //kretprobe
+  os.probe("uprobes:xxx:yyy", eventfun);
+  os.probe("u:xxx:yyy", eventfun);
+  os.probe("u:xxx:yyy!", eventfun); //uretprobe
+
+  os.probe("cache-misses", eventfun) //Hardware event
+  os.probe("page-faults", eventfun) //Software event
+  os.probe("branch-load-misses", eventfun) //Hardware cache event
+  os.probe("mem:<addr>[:access]", eventfun) //Hardware breakpoint
+  os.probe("net:netif_rx", eventfun) //Tracepoint event
+
+  os.probe("kprobes:xxx, uprobes:xxx:yyy, cache-misses", eventfun) //support multi-event
+
+- change library/trace.c to use perf event mechanism, without change ftrace code
 
 [LOW]
 - dead loop detaction		--- done
