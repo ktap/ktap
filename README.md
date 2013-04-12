@@ -47,13 +47,13 @@ Example
 syscalls.kp:  
 
 	function eventfun (e) {
-		printf("%d %s\t%s", cpu(), execname(), e.annotate);
+		printf("%d %d\t%s\t%s", cpu(), pid(), execname(), e.annotate)
 	}
 
 	os.probe("tp:syscalls", eventfun)
 
 	os.probe_end(function () {
-		printf("probe end\n");
+		printf("probe end\n")
 	})
 
 
