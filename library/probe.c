@@ -178,6 +178,9 @@ static int start_tracepoint(ktap_State *ks, const char *event_name, Closure *cl)
 {
 	struct ktap_trace_arg arg;
 
+	if (*event_name == '\0')
+		event_name = NULL;
+
 	arg.ks = ks;
 	arg.cl = cl;
 	ftrace_on_event_call(event_name, enable_tracepoint, (void *)&arg);

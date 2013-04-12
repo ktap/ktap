@@ -256,13 +256,15 @@ struct trace_array ktap_tr = {
 /* helper function for ktap register tracepoint */
 void ftrace_on_event_call(const char *buf, ftrace_call_func actor, void *data)
 {
-	char *event = NULL, *sub = NULL, *match, *buf_ptr;
+	char *event = NULL, *sub = NULL, *match, *buf_ptr = NULL;
 	char new_buf[32] = {0};
 	struct ftrace_event_call *call;
 
-	/* argument buf is const, so we need to prepare a changeable buff */
-	strncpy(new_buf, buf, 31);
-	buf_ptr = new_buf;
+	if (buf) {
+		/* argument buf is const, so we need to prepare a changeable buff */
+		strncpy(new_buf, buf, 31);
+		buf_ptr = new_buf;
+	}
 
 	/*
 	 * The buf format can be <subsystem>:<event-name>
