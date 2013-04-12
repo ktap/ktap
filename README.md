@@ -39,7 +39,21 @@ Building & Running
 
 4) Running ktap  
 
-	[root@jovi]# ./ktap scripts/test.kp
+	[root@jovi]# ./ktap scripts/syscalls.kp
 
+Example
+-------
+
+syscalls.kp:  
+
+	function eventfun (e) {
+		printf("%d %s\t%s", cpu(), execname(), e.annotate);
+	}
+
+	os.probe("tp:syscalls", eventfun)
+
+	os.probe_end(function () {
+		printf("probe end\n");
+	})
 
 
