@@ -37,7 +37,7 @@ static int __kprobes pre_handler_kprobe(struct kprobe *p, struct pt_regs *regs)
 	ktap_State *ks;
 
 	if (unlikely(__this_cpu_read(ktap_in_tracing)))
-		return NULL;
+		return 0;
 
 	__this_cpu_write(ktap_in_tracing, true);
 
@@ -85,15 +85,16 @@ static int start_kprobe(ktap_State *ks, const char *event_name, Closure *cl)
 
 int start_probe(ktap_State *ks, const char *event_name, Closure *cl)
 {
-
-	if (!strncmp(event_name, "kprobe:", 7))
-		start_kprobe(ks, event_name + 7, cl);
-	else {
+	if (!strncmp(event_name, "kprobe:", 7) || 
+	    !strncmp(event_name, "kprobes:", 8)) {
+		return start_kprobe(ks, event_name + 7, cl);
+	} else {
 		ktap_printf(ks, "unknown probe event name: %s\n", event_name);
 		return -1;
 	}
 
 }
+
 void end_probes(struct ktap_State *ks)
 {
 	struct list_head *kprobes_list = &(G(ks)->kprobes);
