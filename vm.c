@@ -1021,8 +1021,8 @@ void ktap_exit(ktap_State *ks)
 
 	unregister_trace_console(trace_console_func, ks);
 
-	end_all_trace(ks);
-	end_probes(ks);
+	ktap_trace_exit(ks);
+	ktap_probe_exit(ks);
 	ktap_exit_timers(ks);
 
 	free_percpu(ktap_percpu_state);
@@ -1076,6 +1076,7 @@ ktap_State *ktap_newstate(ktap_State **private_data)
 	ktap_init_registry(ks);
 	tstring_resize(ks, 512); /* set inital string hashtable size */
 
+	ktap_probe_init(ks);
 	ktap_trace_init(ks);
 
 	/* init library */

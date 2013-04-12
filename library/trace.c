@@ -23,13 +23,6 @@
 #include <linux/ftrace_event.h>
 #include "../ktap.h"
 
-/* this structure allocate on stack */
-struct ktap_event {
-	struct ftrace_event_call *call;
-	void *entry;
-	int entry_size;
-};
-
 static struct list_head *ktap_get_fields(struct ftrace_event_call *event_call)
 {
 	if (!event_call->class->get_fields)
@@ -169,8 +162,8 @@ void ktap_event_handle(ktap_State *ks, void *e, int index, StkId ra)
 		event_ftbl[index - EVENT_FIELD_BASE].func(ks, event, ra);
 }
 
-static void call_user_closure(ktap_State *mainthread, Closure *cl,
-			      struct ktap_event *event)
+void ktap_call_probe_closure(ktap_State *mainthread, Closure *cl,
+			     struct ktap_event *event)
 {
 	ktap_State *ks;
 	Tvalue *func;
@@ -244,7 +237,7 @@ static void ktap_events_do_trace(struct ftrace_event_file *file, void *entry,
 	event.entry = entry;
 	event.entry_size = entry_size;
 
-	call_user_closure(ktap_file->ks, ktap_file->cl, &event);
+	ktap_call_probe_closure(ktap_file->ks, ktap_file->cl, &event);
 
 	__this_cpu_write(ktap_in_tracing, false);
 	local_irq_restore(desc->irq_flags);
@@ -259,8 +252,6 @@ struct trace_array ktap_tr = {
 	.events = LIST_HEAD_INIT(ktap_tr.events),
 	.ops = &ktap_events_ops,
 };
-
-typedef void (*ftrace_call_func)(struct ftrace_event_call * call, void *data);
 
 /* helper function for ktap register tracepoint */
 void ftrace_on_event_call(const char *buf, ftrace_call_func actor, void *data)
@@ -320,18 +311,12 @@ void ftrace_on_event_call(const char *buf, ftrace_call_func actor, void *data)
 	}
 }
 
-/* this structure allocate on stack */
-struct ktap_trace_arg {
-	ktap_State *ks;
-	Closure *cl;
-};
-
 static void enable_event(struct ftrace_event_call *call, void *data)
 {
 	struct ktap_trace_arg *arg = data;
 	struct ktap_event_file *ktap_file;
 
-	ktap_printf(arg->ks, "enable event: %s\n", call->name);
+	ktap_printf(arg->ks, "enable tracepoint event: %s\n", call->name);
 
 	ktap_file = ktap_malloc(arg->ks, sizeof(*ktap_file));
 	if (!ktap_file) {
@@ -348,25 +333,9 @@ static void enable_event(struct ftrace_event_call *call, void *data)
 	call->class->reg(call, TRACE_REG_REGISTER, &ktap_file->file);
 }
 
-
 int start_trace(ktap_State *ks, const char *event_name, Closure *cl)
 {
 	struct ktap_trace_arg arg;
-
-	if (!G(ks)->trace_enabled) {
-		entry_percpu_buffer = __alloc_percpu(PAGE_SIZE,
-						     __alignof__(char));
-		if (!entry_percpu_buffer)
-			return -1;
-
-		percpu_trace_iterator = alloc_percpu(struct trace_iterator);
-		if (!percpu_trace_iterator) {
-			free_percpu(entry_percpu_buffer);
-			return -1;
-		}
-
-		G(ks)->trace_enabled = 1;
-	}
 
 	if (*event_name == '\0')
 		event_name = NULL;
@@ -381,9 +350,6 @@ int start_trace(ktap_State *ks, const char *event_name, Closure *cl)
 void end_all_trace(ktap_State *ks)
 {
 	struct ftrace_event_file *file, *tmp;
-
-	if (!G(ks)->trace_enabled)
-		return;
 
 	list_for_each_entry_rcu(file, &ktap_tr.events, list) {
 		struct ftrace_event_call *call = file->event_call;
@@ -401,6 +367,14 @@ void end_all_trace(ktap_State *ks)
 		list_del(&ktap_file->file.list);
 		ktap_free(ktap_file->ks, ktap_file);
 	}
+}
+
+void ktap_trace_exit(ktap_State *ks)
+{
+	end_all_trace(ks);
+
+	if (!G(ks)->trace_enabled)
+		return;
 
 	free_percpu(entry_percpu_buffer);
 	free_percpu(percpu_trace_iterator);
@@ -410,6 +384,21 @@ void end_all_trace(ktap_State *ks)
 
 int ktap_trace_init(ktap_State *ks)
 {
+	if (!G(ks)->trace_enabled) {
+		entry_percpu_buffer = __alloc_percpu(PAGE_SIZE,
+						     __alignof__(char));
+		if (!entry_percpu_buffer)
+			return -1;
+
+		percpu_trace_iterator = alloc_percpu(struct trace_iterator);
+		if (!percpu_trace_iterator) {
+			free_percpu(entry_percpu_buffer);
+			return -1;
+		}
+
+		G(ks)->trace_enabled = 1;
+	}
+
 	/* change it in future, ktap cannot use ktap_tr.events global variable */
 	INIT_LIST_HEAD(&ktap_tr.events);
 	return 0;
