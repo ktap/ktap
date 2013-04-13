@@ -22,6 +22,7 @@
 
 #include <linux/hardirq.h>
 #include <linux/sched.h>
+#include <linux/utsname.h>
 #include "../ktap.h"
 
 /* get argument operation macro */
@@ -109,6 +110,20 @@ static int ktap_lib_in_interrupt(ktap_State *ks)
 	return 1;
 }
 
+static int ktap_lib_arch(ktap_State *ks)
+{
+	setsvalue(ks->top, tstring_new(ks, utsname()->machine));
+	incr_top(ks);
+	return 1;
+}
+
+static int ktap_lib_kernel_v(ktap_State *ks)
+{
+	setsvalue(ks->top, tstring_new(ks, utsname()->release));
+	incr_top(ks);
+	return 1;
+}
+
 static const ktap_Reg base_funcs[] = {
 //	{"assert", ktap_assert},
 //	{"collectgarbage", ktap_collectgarbage},
@@ -128,6 +143,8 @@ static const ktap_Reg base_funcs[] = {
 	{"pid", ktap_lib_pid},
 	{"execname", ktap_lib_execname},
 	{"cpu", ktap_lib_cpu},
+	{"arch", ktap_lib_arch},
+	{"kernel_v", ktap_lib_kernel_v},
 	{NULL}
 };
 
