@@ -22,6 +22,7 @@
 
 #include <linux/hardirq.h>
 #include <linux/sched.h>
+#include <linux/uaccess.h>
 #include <linux/utsname.h>
 #include "../ktap.h"
 
@@ -124,6 +125,25 @@ static int ktap_lib_kernel_v(ktap_State *ks)
 	return 1;
 }
 
+static int ktap_lib_user_string(ktap_State *ks)
+{
+	unsigned long addr = nvalue(GetArg(ks, 1));
+	char str[256] = {0};
+	int ret;
+
+	pagefault_disable();
+	ret = __copy_from_user_inatomic(str, (void *)addr, 256);
+	pagefault_enable();
+	if (ret) {
+		ktap_printf(ks, "copy from user error, 0x%x\n", addr);
+		setnilvalue(ks->top);
+	} else
+		setsvalue(ks->top, tstring_new(ks, str));
+
+	incr_top(ks);
+	return 1;
+}
+
 static const ktap_Reg base_funcs[] = {
 //	{"assert", ktap_assert},
 //	{"collectgarbage", ktap_collectgarbage},
@@ -145,6 +165,7 @@ static const ktap_Reg base_funcs[] = {
 	{"cpu", ktap_lib_cpu},
 	{"arch", ktap_lib_arch},
 	{"kernel_v", ktap_lib_kernel_v},
+	{"user_string", ktap_lib_user_string},
 	{NULL}
 };
 
