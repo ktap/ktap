@@ -304,7 +304,7 @@ static void enable_tracepoint_on_cpu(int cpu, struct perf_event_attr *attr,
 	ktap_pevent->ks = arg->ks;
 	ktap_pevent->cl = arg->cl;
 	event = perf_event_create_kernel_counter(attr, cpu, NULL,
-						 ktap_overflow_callback, NULL);
+						 ktap_overflow_callback, ktap_pevent);
 	if (IS_ERR(event)) {
 		int err = PTR_ERR(event);
 		ktap_printf(arg->ks, "unable create tracepoint event %s on cpu %d, err: %d\n",
@@ -314,9 +314,9 @@ static void enable_tracepoint_on_cpu(int cpu, struct perf_event_attr *attr,
 	}
 
 	ktap_pevent->event = event;
-	list_add(&ktap_pevent->list, per_cpu_ptr(perf_events_list, cpu));
+	INIT_LIST_HEAD(&ktap_pevent->list);
+	list_add_tail(&ktap_pevent->list, per_cpu_ptr(perf_events_list, cpu));
 
-	event->overflow_handler_context = ktap_pevent;
 	perf_event_enable(event);
 }
 
