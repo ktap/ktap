@@ -25,10 +25,23 @@
 #include <linux/kprobes.h>
 #include "../ktap.h"
 
+/* this structure allocate on stack */
+struct ktap_trace_arg {
+	ktap_State *ks;
+	Closure *cl;
+};
+
+/* this structure allocate on stack */
+struct ktap_event {
+	struct ftrace_event_call *call;
+	void *entry;
+	int entry_size;
+};
+
 DEFINE_PER_CPU(bool, ktap_in_tracing);
 
-void ktap_call_probe_closure(ktap_State *mainthread, Closure *cl,
-			     struct ktap_event *event)
+static void ktap_call_probe_closure(ktap_State *mainthread, Closure *cl,
+				    struct ktap_event *event)
 {
 	ktap_State *ks;
 	Tvalue *func;
@@ -341,8 +354,11 @@ static void enable_tracepoint(struct ftrace_event_call *call, void *data)
 }
 
 struct list_head *ftrace_events_ptr;
+
+typedef void (*ftrace_call_func)(struct ftrace_event_call * call, void *data);
 /* helper function for ktap register tracepoint */
-void ftrace_on_event_call(const char *buf, ftrace_call_func actor, void *data)
+static void ftrace_on_event_call(const char *buf, ftrace_call_func actor,
+				 void *data)
 {
 	char *event = NULL, *sub = NULL, *match, *buf_ptr = NULL;
 	char new_buf[32] = {0};

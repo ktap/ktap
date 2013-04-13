@@ -46,22 +46,4 @@ void ktap_exit_timers(ktap_State *ks);
 
 extern DEFINE_PER_CPU(bool, ktap_in_tracing);
 
-/* this structure allocate on stack */
-struct ktap_trace_arg {
-	ktap_State *ks;
-	Closure *cl;
-};
-
-/* this structure allocate on stack */
-struct ktap_event {
-	struct ftrace_event_call *call;
-	void *entry;
-	int entry_size;
-};
-
-typedef void (*ftrace_call_func)(struct ftrace_event_call * call, void *data);
-void ftrace_on_event_call(const char *buf, ftrace_call_func actor, void *data);
-
-void ktap_call_probe_closure(ktap_State *mainthread, Closure *cl,
-			     struct ktap_event *event);
 #endif /* __KTAP_H__ */
