@@ -149,9 +149,6 @@ int ktap_strfmt(ktap_State *ks, struct trace_seq *seq)
 			case 'o':  case 'u':  case 'x':  case 'X': {
 				ktap_Number n = nvalue(GetArg(ks, arg));
 				unsigned INTFRM_T ni = (unsigned INTFRM_T)n;
-				ktap_Number diff = n - (ktap_Number)ni;
-				ktap_argcheck(ks, -1 < diff && diff < 1, arg,
-					"not a non-negative number in proper range");
 				addlenmod(form, INTFRMLEN);
 				trace_seq_printf(seq, form, ni);
 				break;

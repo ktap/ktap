@@ -36,6 +36,22 @@ struct ktap_event {
 	struct ftrace_event_call *call;
 	void *entry;
 	int entry_size;
+	struct pt_regs *regs;
+	int type;
+};
+
+struct ktap_perf_event {
+	struct perf_event *event;
+	struct list_head list;
+	ktap_State *ks;
+	Closure *cl;
+	int type;
+};
+
+enum {
+	EVENT_TYPE_DEFAULT,
+	EVENT_TYPE_SYSCALL_ENTER,
+	EVENT_TYPE_SYSCALL_EXIT
 };
 
 DEFINE_PER_CPU(bool, ktap_in_tracing);
@@ -163,6 +179,49 @@ static void event_print_fmt(ktap_State *ks, struct ktap_event *event, StkId ra)
 	setsvalue(ra, tstring_new(ks, event->call->print_fmt));
 }
 
+#define ENTRY_HEADSIZE sizeof(struct trace_entry)
+struct syscall_trace_enter {
+	struct trace_entry      ent;
+	int                     nr;
+	unsigned long           args[];
+};
+
+struct syscall_trace_exit {
+	struct trace_entry      ent;
+	int                     nr;
+	long                    ret;
+};
+
+static void event_sc_nr(ktap_State *ks, struct ktap_event *event, StkId ra)
+{
+	struct syscall_trace_enter *entry = event->entry;
+
+	if (event->type != EVENT_TYPE_SYSCALL_ENTER) {
+		setnilvalue(ra);
+		return;
+	}
+
+	setnvalue(ra, entry->nr);
+}
+
+#define EVENT_SC_ARGFUNC(n) \
+static void event_sc_arg##n(ktap_State *ks, struct ktap_event *event, StkId ra)\
+{ \
+	struct syscall_trace_enter *entry = event->entry;	\
+	if (event->type != EVENT_TYPE_SYSCALL_ENTER) {	\
+		setnilvalue(ra);	\
+		return;	\
+	}	\
+	setnvalue(ra, entry->args[n - 1]);	\
+}
+
+EVENT_SC_ARGFUNC(1)
+EVENT_SC_ARGFUNC(2)
+EVENT_SC_ARGFUNC(3)
+EVENT_SC_ARGFUNC(4)
+EVENT_SC_ARGFUNC(5)
+EVENT_SC_ARGFUNC(6)
+
 #if 0
 
 /* e.narg */
@@ -230,6 +289,13 @@ static struct event_field_tbl {
 	{"annotate", event_annotate},
 	{"name", event_name},
 	{"print_fmt", event_print_fmt},
+	{"sc_nr", event_sc_nr},
+	{"sc_arg1", event_sc_arg1},
+	{"sc_arg2", event_sc_arg2},
+	{"sc_arg3", event_sc_arg3},
+	{"sc_arg4", event_sc_arg4},
+	{"sc_arg5", event_sc_arg5},
+	{"sc_arg6", event_sc_arg6},
 #if 0
 	{"allfield", event_allfield},
 	{"field1", event_field1}
@@ -263,14 +329,6 @@ void ktap_event_handle(ktap_State *ks, void *e, int index, StkId ra)
 	} else
 		event_ftbl[index - EVENT_FIELD_BASE].func(ks, event, ra);
 }
-
-struct ktap_perf_event {
-	struct perf_event *event;
-	struct list_head list;
-	ktap_State *ks;
-	Closure *cl;
-};
-
 static struct list_head __percpu *perf_events_list;
 
 /* Callback function for perf event subsystem */
@@ -283,18 +341,20 @@ static void ktap_overflow_callback(struct perf_event *event,
 	struct ktap_event e;
 	unsigned long irq_flags;
 
-	e.call = event->tp_event;
-	e.entry = data->raw->data;
-	e.entry_size = data->raw->size;
-
 	if (unlikely(__this_cpu_read(ktap_in_tracing)))
 		return;
 
-	local_irq_save(irq_flags);
-	__this_cpu_write(ktap_in_tracing, true);
-
 	ktap_pevent = event->overflow_handler_context;
 	ks = ktap_pevent->ks;
+
+	e.call = event->tp_event;
+	e.entry = data->raw->data;
+	e.entry_size = data->raw->size;
+	e.regs = regs;
+	e.type = ktap_pevent->type;
+
+	local_irq_save(irq_flags);
+	__this_cpu_write(ktap_in_tracing, true);
 
 	if (same_thread_group(current, G(ks)->task))
 		goto out;
@@ -308,7 +368,7 @@ static void ktap_overflow_callback(struct perf_event *event,
 
 static void enable_tracepoint_on_cpu(int cpu, struct perf_event_attr *attr,
 				     struct ftrace_event_call *call,
-				     struct ktap_trace_arg *arg)
+				     struct ktap_trace_arg *arg, int type)
 {
 	struct ktap_perf_event *ktap_pevent;
 	struct perf_event *event;
@@ -316,6 +376,7 @@ static void enable_tracepoint_on_cpu(int cpu, struct perf_event_attr *attr,
 	ktap_pevent = ktap_zalloc(arg->ks, sizeof(*ktap_pevent));
 	ktap_pevent->ks = arg->ks;
 	ktap_pevent->cl = arg->cl;
+	ktap_pevent->type = type;
 	event = perf_event_create_kernel_counter(attr, cpu, NULL,
 						 ktap_overflow_callback, ktap_pevent);
 	if (IS_ERR(event)) {
@@ -337,7 +398,7 @@ static void enable_tracepoint(struct ftrace_event_call *call, void *data)
 {
 	struct ktap_trace_arg *arg = data;
 	struct perf_event_attr attr;
-	int cpu;
+	int cpu, type = EVENT_TYPE_DEFAULT;
 
 	ktap_printf(arg->ks, "enable tracepoint event: %s\n", call->name);
 
@@ -349,8 +410,14 @@ static void enable_tracepoint(struct ftrace_event_call *call, void *data)
 	attr.sample_period = 1;
 	attr.size = sizeof(attr);
 
+	if (!strncmp(call->name, "sys_enter_", 10)) {
+		type = EVENT_TYPE_SYSCALL_ENTER;
+	} else if (!strncmp(call->name, "sys_exit_", 9)) {
+		type = EVENT_TYPE_SYSCALL_EXIT;
+	}
+
 	for_each_possible_cpu(cpu)
-		enable_tracepoint_on_cpu(cpu, &attr, call, arg);
+		enable_tracepoint_on_cpu(cpu, &attr, call, arg, type);
 }
 
 struct list_head *ftrace_events_ptr;
