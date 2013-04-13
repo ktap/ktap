@@ -108,13 +108,6 @@ static int start_kprobe(ktap_State *ks, const char *event_name, Closure *cl)
 	return 0;
 }
 
-struct ktap_perf_event {
-	struct perf_event *event;
-	struct hlist_node hlist_entry;
-	ktap_State *ks;
-	Closure *cl;
-};
-
 static struct trace_iterator *percpu_trace_iterator;
 /* e.annotate */
 static void event_annotate(ktap_State *ks, struct ktap_event *event, StkId ra)
@@ -258,8 +251,14 @@ void ktap_event_handle(ktap_State *ks, void *e, int index, StkId ra)
 		event_ftbl[index - EVENT_FIELD_BASE].func(ks, event, ra);
 }
 
+struct ktap_perf_event {
+	struct perf_event *event;
+	struct list_head list;
+	ktap_State *ks;
+	Closure *cl;
+};
 
-struct hlist_head __percpu *perf_events_list;
+static struct list_head __percpu *perf_events_list;
 
 /* Callback function for perf event subsystem */
 static void ktap_overflow_callback(struct perf_event *event,
@@ -267,7 +266,7 @@ static void ktap_overflow_callback(struct perf_event *event,
 				   struct pt_regs *regs)
 {
 	struct ktap_perf_event *ktap_pevent;
-	struct hlist_head *head;
+	ktap_State  *ks;
 	struct ktap_event e;
 	unsigned long irq_flags;
 
@@ -281,18 +280,64 @@ static void ktap_overflow_callback(struct perf_event *event,
 	local_irq_save(irq_flags);
 	__this_cpu_write(ktap_in_tracing, true);
 
-	head = this_cpu_ptr(perf_events_list);
-	hlist_for_each_entry_rcu(ktap_pevent, head, hlist_entry) {
-		ktap_State *ks = ktap_pevent->ks;
+	ktap_pevent = event->overflow_handler_context;
+	ks = ktap_pevent->ks;
 
-		if (same_thread_group(current, G(ks)->task))
-			continue;
+	if (same_thread_group(current, G(ks)->task))
+		goto out;
 
-		ktap_call_probe_closure(ks, ktap_pevent->cl, &e);
-        }
+	ktap_call_probe_closure(ks, ktap_pevent->cl, &e);
 
+ out:
 	__this_cpu_write(ktap_in_tracing, false);
 	local_irq_restore(irq_flags);
+}
+
+static void enable_tracepoint_on_cpu(int cpu, struct perf_event_attr *attr,
+				     struct ftrace_event_call *call,
+				     struct ktap_trace_arg *arg)
+{
+	struct ktap_perf_event *ktap_pevent;
+	struct perf_event *event;
+
+	ktap_pevent = ktap_zalloc(arg->ks, sizeof(*ktap_pevent));
+	ktap_pevent->ks = arg->ks;
+	ktap_pevent->cl = arg->cl;
+	event = perf_event_create_kernel_counter(attr, cpu, NULL,
+						 ktap_overflow_callback, NULL);
+	if (IS_ERR(event)) {
+		int err = PTR_ERR(event);
+		ktap_printf(arg->ks, "unable create tracepoint event %s on cpu %d, err: %d\n",
+				call->name, cpu, err);
+		ktap_free(arg->ks, ktap_pevent);
+		return;
+	}
+
+	ktap_pevent->event = event;
+	list_add(&ktap_pevent->list, per_cpu_ptr(perf_events_list, cpu));
+
+	event->overflow_handler_context = ktap_pevent;
+	perf_event_enable(event);
+}
+
+static void enable_tracepoint(struct ftrace_event_call *call, void *data)
+{
+	struct ktap_trace_arg *arg = data;
+	struct perf_event_attr attr;
+	int cpu;
+
+	ktap_printf(arg->ks, "enable tracepoint event: %s\n", call->name);
+
+	memset(&attr, 0, sizeof(attr));
+	attr.type = PERF_TYPE_TRACEPOINT;	
+	attr.config = call->event.type;
+	attr.sample_type = PERF_SAMPLE_RAW | PERF_SAMPLE_TIME |
+			   PERF_SAMPLE_CPU | PERF_SAMPLE_PERIOD;
+	attr.sample_period = 1;
+	attr.size = sizeof(attr);
+
+	for_each_possible_cpu(cpu)
+		enable_tracepoint_on_cpu(cpu, &attr, call, arg);
 }
 
 struct list_head *ftrace_events_ptr;
@@ -356,53 +401,6 @@ void ftrace_on_event_call(const char *buf, ftrace_call_func actor, void *data)
 	}
 }
 
-
-static void enable_tracepoint_on_cpu(int cpu, struct perf_event_attr *attr,
-				     struct ftrace_event_call *call,
-				     struct ktap_trace_arg *arg)
-{
-	struct ktap_perf_event *ktap_pevent;
-	struct perf_event *event;
-
-	event = perf_event_create_kernel_counter(attr, cpu, NULL,
-						 ktap_overflow_callback, NULL);
-	if (IS_ERR(event)) {
-		int err = PTR_ERR(event);
-		ktap_printf(arg->ks, "unable create tracepoint event %s on cpu %d, err: %d\n",
-				call->name, cpu, err);
-		return;
-	}
-
-	ktap_pevent = ktap_zalloc(arg->ks, sizeof(*ktap_pevent));
-	ktap_pevent->event = event;
-	ktap_pevent->ks = arg->ks;
-	ktap_pevent->cl = arg->cl;
-	hlist_add_head_rcu(&ktap_pevent->hlist_entry,
-			   per_cpu_ptr(perf_events_list, cpu));
-
-	perf_event_enable(event);
-}
-
-static void enable_tracepoint(struct ftrace_event_call *call, void *data)
-{
-	struct ktap_trace_arg *arg = data;
-	struct perf_event_attr attr;
-	int cpu;
-
-	ktap_printf(arg->ks, "enable tracepoint event: %s\n", call->name);
-
-	memset(&attr, 0, sizeof(attr));
-	attr.type = PERF_TYPE_TRACEPOINT;	
-	attr.config = call->event.type;
-	attr.sample_type = PERF_SAMPLE_RAW | PERF_SAMPLE_TIME |
-			   PERF_SAMPLE_CPU | PERF_SAMPLE_PERIOD;
-	attr.sample_period = 1;
-	attr.size = sizeof(attr);
-
-	for_each_possible_cpu(cpu)
-		enable_tracepoint_on_cpu(cpu, &attr, call, arg);
-}
-
 static int start_tracepoint(ktap_State *ks, const char *event_name, Closure *cl)
 {
 	struct ktap_trace_arg arg;
@@ -452,11 +450,12 @@ void end_probes(struct ktap_State *ks)
 
 	for_each_possible_cpu(cpu) {
 		struct ktap_perf_event *ktap_pevent;
-		struct hlist_head *head;
-		struct hlist_node *htmp;
+		struct list_head *head, *ltmp, *pos;
 
 		head = per_cpu_ptr(perf_events_list, cpu);
-		hlist_for_each_entry_rcu(ktap_pevent, head, hlist_entry) {
+		list_for_each(pos, head) {
+			ktap_pevent = container_of(pos, struct ktap_perf_event,
+						   list);
 			perf_event_disable(ktap_pevent->event);
 			perf_event_release_kernel(ktap_pevent->event);
         	}
@@ -466,8 +465,10 @@ void end_probes(struct ktap_State *ks)
 		 */
         	tracepoint_synchronize_unregister();
 
-		hlist_for_each_entry_safe(ktap_pevent, htmp, head, hlist_entry) {
-			hlist_del_rcu(&ktap_pevent->hlist_entry);
+		list_for_each_safe(pos, ltmp, head) {
+			ktap_pevent = container_of(pos, struct ktap_perf_event,
+						   list);
+			list_del(&ktap_pevent->list);
 			ktap_free(ks, ktap_pevent);
 		}
 	}
@@ -489,15 +490,15 @@ void ktap_probe_exit(ktap_State *ks)
 
 int ktap_probe_init(ktap_State *ks)
 {
-	struct hlist_head __percpu *list;
+	struct list_head __percpu *list;
 	int cpu;
 
-	list = alloc_percpu(struct hlist_head);
+	list = alloc_percpu(struct list_head);
 	if (!list)
 		return -1;
 
 	for_each_possible_cpu(cpu)
-		INIT_HLIST_HEAD(per_cpu_ptr(list, cpu));
+		INIT_LIST_HEAD(per_cpu_ptr(list, cpu));
 
 	perf_events_list = list;
 
