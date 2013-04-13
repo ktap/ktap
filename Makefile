@@ -2,8 +2,7 @@
 LIBDIR = library
 
 LIBOBJS = 
-LIBOBJS += $(LIBDIR)/baselib.o $(LIBDIR)/oslib.o $(LIBDIR)/trace.o \
-           $(LIBDIR)/probe.o 
+LIBOBJS += $(LIBDIR)/baselib.o $(LIBDIR)/oslib.o $(LIBDIR)/probe.o 
 
 
 obj-m		+= ktapvm.o

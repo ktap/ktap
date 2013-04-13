@@ -24,14 +24,10 @@ void ktap_init_baselib(ktap_State *ks);
 void ktap_init_oslib(ktap_State *ks);
 
 void ktap_event_handle(ktap_State *ks, void *e, int field, StkId ra);
-int ktap_trace_init(ktap_State *ks);
-void ktap_trace_exit(ktap_State *ks);
 int ktap_probe_init(ktap_State *ks);
 void ktap_probe_exit(ktap_State *ks);
 
-int start_trace(ktap_State *ks, const char *event_name, Closure *cl);
 int start_probe(ktap_State *ks, const char *event_name, Closure *cl);
-void end_all_trace(ktap_State *ks);
 void end_probes(ktap_State *ks);
 int ktap_event_get_index(const char *field);
 Tstring *ktap_event_get_ts(ktap_State *ks, int index);

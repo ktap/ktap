@@ -25,6 +25,29 @@
 #include <linux/kprobes.h>
 #include "../ktap.h"
 
+DEFINE_PER_CPU(bool, ktap_in_tracing);
+
+void ktap_call_probe_closure(ktap_State *mainthread, Closure *cl,
+			     struct ktap_event *event)
+{
+	ktap_State *ks;
+	Tvalue *func;
+
+	ks = ktap_newthread(mainthread);
+	setcllvalue(ks->top, cl);
+	func = ks->top;
+	incr_top(ks);
+
+	if (cl->l.p->numparams) {
+		setevalue(ks->top, event);
+		incr_top(ks);
+	}
+
+	ktap_call(ks, func, 0);
+	ktap_exitthread(ks);
+}
+
+
 struct ktap_kprobe {
 	struct list_head list;
 	struct kprobe p;
@@ -92,6 +115,150 @@ struct ktap_perf_event {
 	Closure *cl;
 };
 
+static struct trace_iterator *percpu_trace_iterator;
+/* e.annotate */
+static void event_annotate(ktap_State *ks, struct ktap_event *event, StkId ra)
+{
+	struct trace_iterator *iter;
+	struct trace_event *ev;
+	enum print_line_t ret = TRACE_TYPE_NO_CONSUME;
+
+	/* Simulate the iterator */
+
+	/* iter can be a bit big for the stack, use percpu*/
+	iter = per_cpu_ptr(percpu_trace_iterator, smp_processor_id());
+
+	trace_seq_init(&iter->seq);
+	iter->ent = event->entry;
+
+	ev = &(event->call->event);
+	if (ev)
+		ret = ev->funcs->trace(iter, 0, ev);
+
+	if (ret != TRACE_TYPE_NO_CONSUME) {
+		struct trace_seq *s = &iter->seq;
+		int len = s->len >= PAGE_SIZE ? PAGE_SIZE - 1 : s->len;
+
+		s->buffer[len] = '\0';
+		setsvalue(ra, tstring_assemble(ks, s->buffer, len + 1));
+	} else
+		setnilvalue(ra);
+}
+
+/* e.name */
+static void event_name(ktap_State *ks, struct ktap_event *event, StkId ra)
+{
+	setsvalue(ra, tstring_new(ks, event->call->name));
+}
+
+/* e.print_fmt */
+static void event_print_fmt(ktap_State *ks, struct ktap_event *event, StkId ra)
+{
+	setsvalue(ra, tstring_new(ks, event->call->print_fmt));
+}
+
+#if 0
+
+/* e.narg */
+static void event_narg(ktap_State *ks, struct ktap_event *event, StkId ra)
+{
+	setsvalue(ra, tstring_new(ks, event->call->name));
+}
+
+static struct list_head *ktap_get_fields(struct ftrace_event_call *event_call)
+{
+	if (!event_call->class->get_fields)
+		return &event_call->class->fields;
+	return event_call->class->get_fields(event_call);
+}
+
+/* e.allfield */
+static void event_allfield(ktap_State *ks, struct ktap_event *event, StkId ra)
+{
+	char s[128];
+	int len, pos = 0;
+	struct ftrace_event_field *field;
+	struct list_head *head;
+
+	head = ktap_get_fields(event->call);
+	list_for_each_entry_reverse(field, head, link) {
+		len = sprintf(s + pos, "[%s-%s-%d-%d-%d] ", field->name, field->type,
+				 field->offset, field->size, field->is_signed);
+		pos += len;
+	}
+	s[pos] = '\0';
+
+	setsvalue(ra, tstring_new(ks, s));
+}
+
+static void event_field(ktap_State *ks, struct ktap_event *event, int index, StkId ra)
+{
+	struct ftrace_event_field *field;
+	struct list_head *head;
+
+	head = ktap_get_fields(event->call);
+	list_for_each_entry_reverse(field, head, link) {
+		if ((--index == 0) && (field->size == 4)) {
+			int n = *(int *)((unsigned char *)event->entry + field->offset);
+			setnvalue(ra, n);
+			return;
+		}
+	}
+
+	setnilvalue(ra);
+}
+
+
+static void event_field1(ktap_State *ks, struct ktap_event *event, StkId ra)
+{
+	event_field(ks, event, 1, ra);
+}
+#endif
+
+#define EVENT_FIELD_BASE	100
+
+static struct event_field_tbl {
+	char *name;
+	void (*func)(ktap_State *ks, struct ktap_event *event, StkId ra);	
+} event_ftbl[] = {
+	{"annotate", event_annotate},
+	{"name", event_name},
+	{"print_fmt", event_print_fmt},
+#if 0
+	{"allfield", event_allfield},
+	{"field1", event_field1}
+#endif
+};
+
+int ktap_event_get_index(const char *field)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(event_ftbl); i++) {
+		if (!strcmp(event_ftbl[i].name, field)) {
+			return EVENT_FIELD_BASE + i;
+		}
+	}
+
+	return -1;
+}
+
+Tstring *ktap_event_get_ts(ktap_State *ks, int index)
+{
+	return tstring_new(ks, event_ftbl[index - EVENT_FIELD_BASE].name);
+}
+
+void ktap_event_handle(ktap_State *ks, void *e, int index, StkId ra)
+{
+	struct ktap_event *event = e;
+
+	if (index < EVENT_FIELD_BASE) {
+		//event_field(ks, event, index, ra);
+	} else
+		event_ftbl[index - EVENT_FIELD_BASE].func(ks, event, ra);
+}
+
+
 struct hlist_head __percpu *perf_events_list;
 
 /* Callback function for perf event subsystem */
@@ -127,6 +294,68 @@ static void ktap_overflow_callback(struct perf_event *event,
 	__this_cpu_write(ktap_in_tracing, false);
 	local_irq_restore(irq_flags);
 }
+
+struct list_head *ftrace_events_ptr;
+/* helper function for ktap register tracepoint */
+void ftrace_on_event_call(const char *buf, ftrace_call_func actor, void *data)
+{
+	char *event = NULL, *sub = NULL, *match, *buf_ptr = NULL;
+	char new_buf[32] = {0};
+	struct ftrace_event_call *call;
+
+	if (buf) {
+		/* argument buf is const, so we need to prepare a changeable buff */
+		strncpy(new_buf, buf, 31);
+		buf_ptr = new_buf;
+	}
+
+	/*
+	 * The buf format can be <subsystem>:<event-name>
+	 *  *:<event-name> means any event by that name.
+	 *  :<event-name> is the same.
+	 *
+	 *  <subsystem>:* means all events in that subsystem
+	 *  <subsystem>: means the same.
+	 *
+	 *  <name> (no ':') means all events in a subsystem with
+	 *  the name <name> or any event that matches <name>
+	 */
+
+	match = strsep(&buf_ptr, ":");
+	if (buf_ptr) {
+		sub = match;
+		event = buf_ptr;
+		match = NULL;
+
+		if (!strlen(sub) || strcmp(sub, "*") == 0)
+			sub = NULL;
+		if (!strlen(event) || strcmp(event, "*") == 0)
+			event = NULL;
+	}
+
+	list_for_each_entry(call, ftrace_events_ptr, list) {
+
+		if (!call->name || !call->class || !call->class->reg)
+			continue;
+
+		if (call->flags & TRACE_EVENT_FL_IGNORE_ENABLE)
+			continue;
+
+		if (match &&
+		    strcmp(match, call->name) != 0 &&
+		    strcmp(match, call->class->system) != 0)
+			continue;
+
+		if (sub && strcmp(sub, call->class->system) != 0)
+			continue;
+
+		if (event && strcmp(event, call->name) != 0)
+			continue;
+
+		(*actor)(call, data);
+	}
+}
+
 
 static void enable_tracepoint_on_cpu(int cpu, struct perf_event_attr *attr,
 				     struct ftrace_event_call *call,
@@ -249,6 +478,13 @@ void ktap_probe_exit(ktap_State *ks)
 	end_probes(ks);
 	free_percpu(perf_events_list);
 	perf_events_list = NULL;
+
+	if (!G(ks)->trace_enabled)
+		return;
+
+	free_percpu(percpu_trace_iterator);
+
+	G(ks)->trace_enabled = 0;
 }
 
 int ktap_probe_init(ktap_State *ks)
@@ -264,6 +500,22 @@ int ktap_probe_init(ktap_State *ks)
 		INIT_HLIST_HEAD(per_cpu_ptr(list, cpu));
 
 	perf_events_list = list;
+
+	/* allocate percpu data */
+	if (!G(ks)->trace_enabled) {
+		percpu_trace_iterator = alloc_percpu(struct trace_iterator);
+		if (!percpu_trace_iterator)
+			return -1;
+
+		G(ks)->trace_enabled = 1;
+	}
+
+	/* get ftrace_events global variable if ftrace_events not exported */
+	ftrace_events_ptr = kallsyms_lookup_name("ftrace_events");
+	if (!ftrace_events_ptr) {
+		ktap_printf(ks, "cannot lookup ftrace_events in kallsyms\n");
+		return -1;
+	}
+
 	return 0;
 }
-

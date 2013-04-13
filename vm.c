@@ -1019,9 +1019,8 @@ void ktap_exit(ktap_State *ks)
 	/* we need to flush all signals */
 	flush_signals(current);
 
-	unregister_trace_console(trace_console_func, ks);
+	//unregister_trace_console(trace_console_func, ks);
 
-	ktap_trace_exit(ks);
 	ktap_probe_exit(ks);
 	ktap_exit_timers(ks);
 
@@ -1077,7 +1076,6 @@ ktap_State *ktap_newstate(ktap_State **private_data)
 	tstring_resize(ks, 512); /* set inital string hashtable size */
 
 	ktap_probe_init(ks);
-	ktap_trace_init(ks);
 
 	/* init library */
 	ktap_init_baselib(ks);
@@ -1091,9 +1089,11 @@ ktap_State *ktap_newstate(ktap_State **private_data)
 	if (!percpu_ktap_stack)
 		return NULL;
 
+#if 0
 	ret = register_trace_console(trace_console_func, ks);
 	if (ret)
 		return NULL;
+#endif
 	return ks;
 }
 
