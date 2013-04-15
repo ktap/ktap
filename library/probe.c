@@ -49,9 +49,10 @@ struct ktap_perf_event {
 };
 
 enum {
-	EVENT_TYPE_DEFAULT,
+	EVENT_TYPE_DEFAULT = 0,
 	EVENT_TYPE_SYSCALL_ENTER,
-	EVENT_TYPE_SYSCALL_EXIT
+	EVENT_TYPE_SYSCALL_EXIT,
+	EVENT_TYPE_TRACEPOINT_MAX
 };
 
 DEFINE_PER_CPU(bool, ktap_in_tracing);
@@ -138,13 +139,15 @@ static int start_kprobe(ktap_State *ks, const char *event_name, Closure *cl)
 }
 
 static struct trace_iterator *percpu_trace_iterator;
-/* e.annotate */
 static void event_annotate(ktap_State *ks, struct ktap_event *e, StkId ra)
 {
 	struct trace_iterator *iter;
 	struct trace_event *ev;
 	enum print_line_t ret = TRACE_TYPE_NO_CONSUME;
 
+	if (e->type >= EVENT_TYPE_TRACEPOINT_MAX)
+		setnilvalue(ra);
+		
 	/* Simulate the iterator */
 
 	/* iter can be a bit big for the stack, use percpu*/
@@ -167,16 +170,30 @@ static void event_annotate(ktap_State *ks, struct ktap_event *e, StkId ra)
 		setnilvalue(ra);
 }
 
-/* e.name */
 static void event_name(ktap_State *ks, struct ktap_event *e, StkId ra)
 {
 	setsvalue(ra, tstring_new(ks, e->call->name));
 }
 
-/* e.print_fmt */
 static void event_print_fmt(ktap_State *ks, struct ktap_event *e, StkId ra)
 {
 	setsvalue(ra, tstring_new(ks, e->call->print_fmt));
+}
+
+/* check pt_regs defintion in linux/arch/x86/include/asm/ptrace.h */
+/* support other architecture pt_regs showing */
+static void event_regstr(ktap_State *ks, struct ktap_event *e, StkId ra)
+{
+	struct pt_regs *regs = e->regs;
+	char str[256] = {0};
+
+	sprintf(str, "{ax: 0x%lx, orig_ax: 0x%lx, bx: 0x%lx, cx: 0x%lx, dx: 0x%lx, "
+		"si: 0x%lx, di: 0x%lx, bp: 0x%lx, ds: 0x%lx, es: 0x%lx, fs: 0x%lx, "
+		"gs: 0x%lx, ip: 0x%lx, cs: 0x%lx, flags: 0x%lx, sp: 0x%lx, ss: 0x%lx}\n",
+		regs->ax, regs->orig_ax, regs->bx, regs->cx, regs->dx,
+		regs->si, regs->di, regs->bp, regs->ds, regs->es, regs->fs,
+		regs->gs, regs->ip, regs->cs, regs->flags, regs->sp, regs->ss);
+	setsvalue(ra, tstring_new(ks, str));
 }
 
 #define ENTRY_HEADSIZE sizeof(struct trace_entry)
@@ -296,6 +313,7 @@ static struct event_field_tbl {
 	{"sc_arg4", event_sc_arg4},
 	{"sc_arg5", event_sc_arg5},
 	{"sc_arg6", event_sc_arg6},
+	{"regstr", event_regstr},
 #if 0
 	{"allfield", event_allfield},
 	{"field1", event_field1}
