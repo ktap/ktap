@@ -47,7 +47,7 @@ void obj_dump(ktap_State *ks, const Tvalue *v)
 		break;
 	case KTAP_TSHRSTR:
 	case KTAP_TLNGSTR:
-		ktap_printf(ks, "SHRSTR #%s", getstr(rawtsvalue(v)));
+		ktap_printf(ks, "SHRSTR #%s", svalue(v));
 		break;
 	case KTAP_TUSERDATA:
 		ktap_printf(ks, "USERDATA %d", uvalue(v));
@@ -81,14 +81,13 @@ void showobj(ktap_State *ks, const Tvalue *v)
 		break;
 	case KTAP_TSHRSTR:
 	case KTAP_TLNGSTR:
-		ktap_printf(ks, "%s", getstr(rawtsvalue(v)));
+		ktap_printf(ks, "\"%s\"", getstr(rawtsvalue(v)));
 		break;
 	case KTAP_TUSERDATA:
 		ktap_printf(ks, "%d", uvalue(v));
 		break;
 	case KTAP_TTABLE:
-		/* todo: show table */
-		ktap_printf(ks, "0x%x", hvalue(v));
+		table_dump(ks, hvalue(v));
 		break;
         default:
 		ktap_printf(ks, "[unknown value type: %d]", ttype(v));

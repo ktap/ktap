@@ -490,24 +490,124 @@ void table_free(ktap_State *ks, Table *t)
 	ktap_free(ks, t);
 }
 
-/* debug function */
 void table_dump(ktap_State *ks, Table *t)
 {
-	int i;
+	int i, count = 0;
 
-	ktap_printf(ks, "dump table 0x%x\n", t);
-	ktap_printf(ks, "sizearray: %d\n", t->sizearray);
-	ktap_printf(ks, "lsizenode: %d\n", t->lsizenode);
-	ktap_printf(ks, "sizenode: %d\n", sizenode(t));
-	ktap_printf(ks, "node: 0x%x\n", t->node);
+	ktap_printf(ks, "{");
+	for (i = 0; i < t->sizearray; i++) {
+		Tvalue *v = &t->array[i];
+
+		if (isnil(v))
+			continue;
+
+		if (count)
+			ktap_printf(ks, ", ");
+
+		ktap_printf(ks, "(%d: ", i);
+		showobj(ks, v);
+		ktap_printf(ks, ")");
+		count++;
+	}
 
 	for (i = 0; i < sizenode(t); i++) {
 		Node *n = &t->node[i];
-		ktap_printf(ks, "node [%d] key [", i);
-		obj_dump(ks, gkey(n));
-		ktap_printf(ks, "] value [");
-		obj_dump(ks, gval(n));
-		ktap_printf(ks, "]\n");	
+
+		if (isnil(gkey(n)))
+			continue;
+
+		if (count)
+			ktap_printf(ks, ", ");
+
+		ktap_printf(ks, "(");
+		showobj(ks, gkey(n));
+		ktap_printf(ks, ": ");
+		showobj(ks, gval(n));
+		ktap_printf(ks, ")");
+		count++;
 	}
+	ktap_printf(ks, "}");
+}
+
+struct table_hist_record {
+	Tvalue key;
+	Tvalue val;
+};
+
+#define DISTRIBUTION_STR "------------- Distribution -------------"
+/* histogram: key should be number or string, value must be number */
+void table_histogram(ktap_State *ks, Table *t)
+{
+	struct table_hist_record *thr;
+	char dist_str[40];
+	int i, ratio, total = 0, count = 0;
+
+	thr = ktap_malloc(ks, sizeof(*thr) * (t->sizearray + sizenode(t)));
+
+	ktap_printf(ks, "%20s%s%s\n", "value ", DISTRIBUTION_STR, " count");
+	for (i = 0; i < t->sizearray; i++) {
+		Tvalue *v = &t->array[i];
+
+		if (isnil(v))
+			continue;
+
+		if (!ttisnumber(v))
+			goto error;
+
+		setnvalue(&thr[count++].key, i);
+		total += nvalue(v);
+	}
+
+	for (i = 0; i < sizenode(t); i++) {
+		Node *n = &t->node[i];
+		int num;
+
+		if (isnil(gkey(n)))
+			continue;
+
+		if (!ttisnumber(gval(n)))
+			goto error;
+
+		num = nvalue(gval(n));
+		setobj(ks, &thr[count].key, gkey(n));
+		setobj(ks, &thr[count].val, gval(n));
+		count++;
+		total += nvalue(gval(n));
+	}
+
+	dist_str[sizeof(dist_str) - 1] = '\0';
+	for (i = 0; i < count; i++) {
+		Tvalue *key = &thr[i].key;
+		Tvalue *val = &thr[i].val;
+
+		memset(dist_str, ' ', sizeof(dist_str) - 1);
+		ratio = (nvalue(val) * (sizeof(dist_str) - 1)) / total;
+		memset(dist_str, '@', ratio);
+
+		if (ttisstring(key)) {
+			char buf[21] = {0};
+			char *keystr;
+
+			if (strlen(svalue(key)) > 20) {
+				strncpy(buf, svalue(key), 16);
+				memset(buf + 16, '.', 3);
+				keystr = buf;
+			} else
+				keystr = svalue(key);
+
+			ktap_printf(ks, "%20s |%s%-10d\n", keystr, dist_str,
+					nvalue(val));
+		} else
+			ktap_printf(ks, "%20d | %s%-10d\n", nvalue(key),
+					dist_str, nvalue(val));
+	}
+
+	goto out;
+
+ error:
+	ktap_printf(ks, "error: table histogram only handle "
+			" (key: string/number val: number)\n");
+ out:
+	ktap_free(ks, thr);
 }
 

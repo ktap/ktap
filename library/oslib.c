@@ -304,6 +304,9 @@ static int ktap_lib_probe_end(ktap_State *ks)
 
 	end_probes(ks);
 
+	/* newline for handle CTRL+C display as ^C */
+	ktap_printf(ks, "\n");
+
 	setcllvalue(ks->top, clvalue(endfunc));
 	incr_top(ks);
 	

@@ -140,6 +140,12 @@ static int ktap_lib_user_string(ktap_State *ks)
 	return 1;
 }
 
+static int ktap_lib_histogram(ktap_State *ks)
+{
+	table_histogram(ks, hvalue(GetArg(ks, 1))); /* need to check firstly */
+	return 0;
+}
+
 static const ktap_Reg base_funcs[] = {
 //	{"assert", ktap_assert},
 //	{"collectgarbage", ktap_collectgarbage},
@@ -162,6 +168,7 @@ static const ktap_Reg base_funcs[] = {
 	{"arch", ktap_lib_arch},
 	{"kernel_v", ktap_lib_kernel_v},
 	{"user_string", ktap_lib_user_string},
+	{"histogram", ktap_lib_histogram},
 	{NULL}
 };
 

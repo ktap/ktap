@@ -418,7 +418,7 @@ typedef int ktap_Number;
 
 #define ttisshrstring(o)	((o)->type == KTAP_TSHRSTR)
 #define ttisstring(o)		(((o)->type & 0x0F) == KTAP_TSTRING)
-#define ttisnumber(o)		((o)->type == KTAP_TNUMBER)
+#define ttisnumber(o)		((o)->type == KTAP_TNUMBER || (o)->type == KTAP_TNIL)
 #define ttisfunc(o)		((o)->type == KTAP_TFUNCTION)
 #define ttisnil(o)		((o)->type == KTAP_TNIL)
 #define ttisboolean(o)		((o)->type == KTAP_TBOOLEAN)
@@ -427,7 +427,7 @@ typedef int ktap_Number;
 
 
 
-#define setnilvalue(obj) settype(obj, KTAP_TNIL)
+#define setnilvalue(obj) {settype(obj, KTAP_TNIL), (obj)->val.n = 0;}
 
 #define setbvalue(obj, x) \
   {Tvalue *io = (obj); io->val.b = (x); settype(io, KTAP_TBOOLEAN); }
