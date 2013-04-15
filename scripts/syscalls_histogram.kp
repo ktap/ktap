@@ -1,0 +1,12 @@
+hist = {}
+
+function eventfun (e) {
+	local syscall_name = e.name
+	hist[syscall_name] = hist[syscall_name] + 1
+}
+
+os.probe("tp:syscalls", eventfun)
+
+os.probe_end(function () {
+	histogram(hist)
+})
