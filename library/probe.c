@@ -57,7 +57,7 @@ enum {
 DEFINE_PER_CPU(bool, ktap_in_tracing);
 
 static void ktap_call_probe_closure(ktap_State *mainthread, Closure *cl,
-				    struct ktap_event *event)
+				    struct ktap_event *e)
 {
 	ktap_State *ks;
 	Tvalue *func;
@@ -68,7 +68,7 @@ static void ktap_call_probe_closure(ktap_State *mainthread, Closure *cl,
 	incr_top(ks);
 
 	if (cl->l.p->numparams) {
-		setevalue(ks->top, event);
+		setevalue(ks->top, e);
 		incr_top(ks);
 	}
 
@@ -139,7 +139,7 @@ static int start_kprobe(ktap_State *ks, const char *event_name, Closure *cl)
 
 static struct trace_iterator *percpu_trace_iterator;
 /* e.annotate */
-static void event_annotate(ktap_State *ks, struct ktap_event *event, StkId ra)
+static void event_annotate(ktap_State *ks, struct ktap_event *e, StkId ra)
 {
 	struct trace_iterator *iter;
 	struct trace_event *ev;
@@ -151,9 +151,9 @@ static void event_annotate(ktap_State *ks, struct ktap_event *event, StkId ra)
 	iter = per_cpu_ptr(percpu_trace_iterator, smp_processor_id());
 
 	trace_seq_init(&iter->seq);
-	iter->ent = event->entry;
+	iter->ent = e->entry;
 
-	ev = &(event->call->event);
+	ev = &(e->call->event);
 	if (ev)
 		ret = ev->funcs->trace(iter, 0, ev);
 
@@ -168,15 +168,15 @@ static void event_annotate(ktap_State *ks, struct ktap_event *event, StkId ra)
 }
 
 /* e.name */
-static void event_name(ktap_State *ks, struct ktap_event *event, StkId ra)
+static void event_name(ktap_State *ks, struct ktap_event *e, StkId ra)
 {
-	setsvalue(ra, tstring_new(ks, event->call->name));
+	setsvalue(ra, tstring_new(ks, e->call->name));
 }
 
 /* e.print_fmt */
-static void event_print_fmt(ktap_State *ks, struct ktap_event *event, StkId ra)
+static void event_print_fmt(ktap_State *ks, struct ktap_event *e, StkId ra)
 {
-	setsvalue(ra, tstring_new(ks, event->call->print_fmt));
+	setsvalue(ra, tstring_new(ks, e->call->print_fmt));
 }
 
 #define ENTRY_HEADSIZE sizeof(struct trace_entry)
@@ -192,11 +192,11 @@ struct syscall_trace_exit {
 	long                    ret;
 };
 
-static void event_sc_nr(ktap_State *ks, struct ktap_event *event, StkId ra)
+static void event_sc_nr(ktap_State *ks, struct ktap_event *e, StkId ra)
 {
-	struct syscall_trace_enter *entry = event->entry;
+	struct syscall_trace_enter *entry = e->entry;
 
-	if (event->type != EVENT_TYPE_SYSCALL_ENTER) {
+	if (e->type != EVENT_TYPE_SYSCALL_ENTER) {
 		setnilvalue(ra);
 		return;
 	}
@@ -205,10 +205,10 @@ static void event_sc_nr(ktap_State *ks, struct ktap_event *event, StkId ra)
 }
 
 #define EVENT_SC_ARGFUNC(n) \
-static void event_sc_arg##n(ktap_State *ks, struct ktap_event *event, StkId ra)\
+static void event_sc_arg##n(ktap_State *ks, struct ktap_event *e, StkId ra)\
 { \
-	struct syscall_trace_enter *entry = event->entry;	\
-	if (event->type != EVENT_TYPE_SYSCALL_ENTER) {	\
+	struct syscall_trace_enter *entry = e->entry;	\
+	if (e->type != EVENT_TYPE_SYSCALL_ENTER) {	\
 		setnilvalue(ra);	\
 		return;	\
 	}	\
@@ -225,9 +225,9 @@ EVENT_SC_ARGFUNC(6)
 #if 0
 
 /* e.narg */
-static void event_narg(ktap_State *ks, struct ktap_event *event, StkId ra)
+static void event_narg(ktap_State *ks, struct ktap_event *e, StkId ra)
 {
-	setsvalue(ra, tstring_new(ks, event->call->name));
+	setsvalue(ra, tstring_new(ks, e->call->name));
 }
 
 static struct list_head *ktap_get_fields(struct ftrace_event_call *event_call)
@@ -238,14 +238,14 @@ static struct list_head *ktap_get_fields(struct ftrace_event_call *event_call)
 }
 
 /* e.allfield */
-static void event_allfield(ktap_State *ks, struct ktap_event *event, StkId ra)
+static void event_allfield(ktap_State *ks, struct ktap_event *e, StkId ra)
 {
 	char s[128];
 	int len, pos = 0;
 	struct ftrace_event_field *field;
 	struct list_head *head;
 
-	head = ktap_get_fields(event->call);
+	head = ktap_get_fields(e->call);
 	list_for_each_entry_reverse(field, head, link) {
 		len = sprintf(s + pos, "[%s-%s-%d-%d-%d] ", field->name, field->type,
 				 field->offset, field->size, field->is_signed);
@@ -256,15 +256,15 @@ static void event_allfield(ktap_State *ks, struct ktap_event *event, StkId ra)
 	setsvalue(ra, tstring_new(ks, s));
 }
 
-static void event_field(ktap_State *ks, struct ktap_event *event, int index, StkId ra)
+static void event_field(ktap_State *ks, struct ktap_event *e, int index, StkId ra)
 {
 	struct ftrace_event_field *field;
 	struct list_head *head;
 
-	head = ktap_get_fields(event->call);
+	head = ktap_get_fields(e->call);
 	list_for_each_entry_reverse(field, head, link) {
 		if ((--index == 0) && (field->size == 4)) {
-			int n = *(int *)((unsigned char *)event->entry + field->offset);
+			int n = *(int *)((unsigned char *)e->entry + field->offset);
 			setnvalue(ra, n);
 			return;
 		}
@@ -274,9 +274,9 @@ static void event_field(ktap_State *ks, struct ktap_event *event, int index, Stk
 }
 
 
-static void event_field1(ktap_State *ks, struct ktap_event *event, StkId ra)
+static void event_field1(ktap_State *ks, struct ktap_event *e, StkId ra)
 {
-	event_field(ks, event, 1, ra);
+	event_field(ks, e, 1, ra);
 }
 #endif
 
@@ -284,7 +284,7 @@ static void event_field1(ktap_State *ks, struct ktap_event *event, StkId ra)
 
 static struct event_field_tbl {
 	char *name;
-	void (*func)(ktap_State *ks, struct ktap_event *event, StkId ra);	
+	void (*func)(ktap_State *ks, struct ktap_event *e, StkId ra);	
 } event_ftbl[] = {
 	{"annotate", event_annotate},
 	{"name", event_name},
@@ -322,12 +322,12 @@ Tstring *ktap_event_get_ts(ktap_State *ks, int index)
 
 void ktap_event_handle(ktap_State *ks, void *e, int index, StkId ra)
 {
-	struct ktap_event *event = e;
+	e = (struct ktap_event *)e;
 
 	if (index < EVENT_FIELD_BASE) {
 		//event_field(ks, event, index, ra);
 	} else
-		event_ftbl[index - EVENT_FIELD_BASE].func(ks, event, ra);
+		event_ftbl[index - EVENT_FIELD_BASE].func(ks, e, ra);
 }
 static struct list_head __percpu *perf_events_list;
 
