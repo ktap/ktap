@@ -129,16 +129,12 @@ static int ktap_lib_user_string(ktap_State *ks)
 {
 	unsigned long addr = nvalue(GetArg(ks, 1));
 	char str[256] = {0};
-	int ret;
 
 	pagefault_disable();
-	ret = __copy_from_user_inatomic(str, (void *)addr, 256);
+	__copy_from_user_inatomic((void *)str, (const void *)addr, 256);
 	pagefault_enable();
-	if (ret) {
-		ktap_printf(ks, "copy from user error, 0x%x\n", addr);
-		setnilvalue(ks->top);
-	} else
-		setsvalue(ks->top, tstring_new(ks, str));
+	str[255] = '\0';
+	setsvalue(ks->top, tstring_new(ks, str));
 
 	incr_top(ks);
 	return 1;
