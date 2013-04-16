@@ -10,7 +10,7 @@ keep updating this file)
 - Drop ftrace.patch			--- done
 - GC
 - read kernel memory by symbol
-- table stat showing
+- table stat showing			--- done
 - ktap memory allocation		--- done
 - per-cpu ktap_State for performance improvement	--- done
 - x86-64 support			--- done
@@ -93,6 +93,7 @@ keep updating this file)
 - ktap -e "oneline scripting"
 - yum install ktap; apt-get install ktap
 - conference
+- website in ktap.org (ROR on free hosting site? fast deployment)
 - systemtap integrate: compile into ktap bytecode, use same vm in kernel
 - commit to kernel: staging first?
 
