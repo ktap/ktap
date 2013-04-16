@@ -14,7 +14,7 @@ do
 	echo "-----------------------------"
 	echo "executing $kp"
 
-	if test $kp == "divide_0.kp"; then
+	if test $kp == "zerodivide.kp"; then
 		$KTAP $kp > /dev/null
 	else
 		$KTAP $kp
