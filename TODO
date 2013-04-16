@@ -91,7 +91,7 @@ keep updating this file)
 - support include header file in ktap script, only for compiler
 - kernel 3.9(include previous kernel version) maintain, use same code base?
 - ktap -e "oneline scripting"
-- yum install ktap; apt-get install ktap
+- distro packages: yum install ktap, apt-get install ktap
 - conference
 - website in ktap.org (ROR on free hosting site? fast deployment)
 - systemtap integrate: compile into ktap bytecode, use same vm in kernel
