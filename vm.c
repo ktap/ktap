@@ -1061,7 +1061,6 @@ ktap_State *ktap_newstate(ktap_State **private_data)
 	G(ks)->seed = 201236; /* todo: make more random in */
 	G(ks)->task = current;
 	INIT_LIST_HEAD(&(G(ks)->timers));
-	INIT_LIST_HEAD(&(G(ks)->kprobes));
 
 	if (cfunction_cache_init(ks) < 0)
 		return NULL;
