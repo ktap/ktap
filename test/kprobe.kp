@@ -7,7 +7,7 @@ function failed() {
 #----------------------------------------#
 
 count = 0
-function eventfun () {
+function eventfun (e) {
 	count = count + 1
 }
 
