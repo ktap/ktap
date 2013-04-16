@@ -347,7 +347,7 @@ void ktap_event_handle(ktap_State *ks, void *e, int index, StkId ra)
 	} else
 		event_ftbl[index - EVENT_FIELD_BASE].func(ks, e, ra);
 }
-static struct list_head __percpu *perf_events_list;
+static LIST_HEAD(perf_events_list);
 
 /* Callback function for perf event subsystem */
 static void ktap_overflow_callback(struct perf_event *event,
@@ -407,7 +407,7 @@ static void enable_tracepoint_on_cpu(int cpu, struct perf_event_attr *attr,
 
 	ktap_pevent->event = event;
 	INIT_LIST_HEAD(&ktap_pevent->list);
-	list_add_tail(&ktap_pevent->list, per_cpu_ptr(perf_events_list, cpu));
+	list_add_tail(&ktap_pevent->list, &perf_events_list);
 
 	perf_event_enable(event);
 }
@@ -536,7 +536,8 @@ void end_probes(struct ktap_State *ks)
 {
 	struct list_head *kprobes_list = &(G(ks)->kprobes);
 	struct ktap_kprobe *kp, *tmp;
-	int cpu;
+	struct ktap_perf_event *ktap_pevent;
+	struct list_head *ltmp, *pos;
 
 	list_for_each_entry(kp, kprobes_list, list) {
 		unregister_kprobe(&kp->p);
@@ -549,37 +550,29 @@ void end_probes(struct ktap_State *ks)
 		ktap_free(ks, kp);
 	}
 
-	for_each_possible_cpu(cpu) {
-		struct ktap_perf_event *ktap_pevent;
-		struct list_head *head, *ltmp, *pos;
+	list_for_each(pos, &perf_events_list) {
+		ktap_pevent = container_of(pos, struct ktap_perf_event,
+					   list);
+		perf_event_disable(ktap_pevent->event);
+		perf_event_release_kernel(ktap_pevent->event);
+        }
+       	/*
+	 * Ensure our callback won't be called anymore. The buffers
+	 * will be freed after that.
+	 */
+       	tracepoint_synchronize_unregister();
 
-		head = per_cpu_ptr(perf_events_list, cpu);
-		list_for_each(pos, head) {
-			ktap_pevent = container_of(pos, struct ktap_perf_event,
-						   list);
-			perf_event_disable(ktap_pevent->event);
-			perf_event_release_kernel(ktap_pevent->event);
-        	}
-        	/*
-		 * Ensure our callback won't be called anymore. The buffers
-		 * will be freed after that.
-		 */
-        	tracepoint_synchronize_unregister();
-
-		list_for_each_safe(pos, ltmp, head) {
-			ktap_pevent = container_of(pos, struct ktap_perf_event,
-						   list);
-			list_del(&ktap_pevent->list);
-			ktap_free(ks, ktap_pevent);
-		}
+	list_for_each_safe(pos, ltmp, &perf_events_list) {
+		ktap_pevent = container_of(pos, struct ktap_perf_event,
+					   list);
+		list_del(&ktap_pevent->list);
+		ktap_free(ks, ktap_pevent);
 	}
 }
 
 void ktap_probe_exit(ktap_State *ks)
 {
 	end_probes(ks);
-	free_percpu(perf_events_list);
-	perf_events_list = NULL;
 
 	if (!G(ks)->trace_enabled)
 		return;
@@ -591,18 +584,6 @@ void ktap_probe_exit(ktap_State *ks)
 
 int ktap_probe_init(ktap_State *ks)
 {
-	struct list_head __percpu *list;
-	int cpu;
-
-	list = alloc_percpu(struct list_head);
-	if (!list)
-		return -1;
-
-	for_each_possible_cpu(cpu)
-		INIT_LIST_HEAD(per_cpu_ptr(list, cpu));
-
-	perf_events_list = list;
-
 	/* allocate percpu data */
 	if (!G(ks)->trace_enabled) {
 		percpu_trace_iterator = alloc_percpu(struct trace_iterator);
@@ -615,6 +596,8 @@ int ktap_probe_init(ktap_State *ks)
 	/* get ftrace_events global variable if ftrace_events not exported */
 	ftrace_events_ptr = kallsyms_lookup_name("ftrace_events");
 	if (!ftrace_events_ptr) {
+		G(ks)->trace_enabled = 0;
+		free_percpu(percpu_trace_iterator);
 		ktap_printf(ks, "cannot lookup ftrace_events in kallsyms\n");
 		return -1;
 	}
