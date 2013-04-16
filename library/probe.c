@@ -40,19 +40,26 @@ struct ktap_event {
 	int type;
 };
 
-struct ktap_perf_event {
-	struct perf_event *event;
+struct ktap_probe_event {
 	struct list_head list;
+	int type;
+	union {
+		struct perf_event *perf;
+		struct kprobe p;
+	} u;
 	ktap_State *ks;
 	Closure *cl;
-	int type;
+	void (*destructor)(struct ktap_probe_event *ktap_pevent);
 };
+
+static LIST_HEAD(probe_events_list);
 
 enum {
 	EVENT_TYPE_DEFAULT = 0,
 	EVENT_TYPE_SYSCALL_ENTER,
 	EVENT_TYPE_SYSCALL_EXIT,
-	EVENT_TYPE_TRACEPOINT_MAX
+	EVENT_TYPE_TRACEPOINT_MAX,
+	EVENT_TYPE_KPROBE
 };
 
 DEFINE_PER_CPU(bool, ktap_in_tracing);
@@ -77,18 +84,10 @@ static void ktap_call_probe_closure(ktap_State *mainthread, Closure *cl,
 	ktap_exitthread(ks);
 }
 
-
-struct ktap_kprobe {
-	struct list_head list;
-	struct kprobe p;
-	ktap_State *ks;
-	Closure *cl;
-};
-
 /* kprobe handler is called in interrupt disabled? */
 static int __kprobes pre_handler_kprobe(struct kprobe *p, struct pt_regs *regs)
 {
-	struct ktap_kprobe *kp;
+	struct ktap_probe_event *ktap_pevent;
 	ktap_State *ks;
 
 	if (unlikely(__this_cpu_read(ktap_in_tracing)))
@@ -96,13 +95,13 @@ static int __kprobes pre_handler_kprobe(struct kprobe *p, struct pt_regs *regs)
 
 	__this_cpu_write(ktap_in_tracing, true);
 
-	kp = container_of(p, struct ktap_kprobe, p);
+	ktap_pevent = container_of(p, struct ktap_probe_event, u.p);
 
-	if (same_thread_group(current, G(kp->ks)->task))
+	if (same_thread_group(current, G(ktap_pevent->ks)->task))
 		goto out;
 
-	ks = ktap_newthread(kp->ks);
-	setcllvalue(ks->top, kp->cl);
+	ks = ktap_newthread(ktap_pevent->ks);
+	setcllvalue(ks->top, ktap_pevent->cl);
 	incr_top(ks);
 	ktap_call(ks, ks->top - 1, 0);
 	ktap_exitthread(ks);
@@ -112,26 +111,33 @@ static int __kprobes pre_handler_kprobe(struct kprobe *p, struct pt_regs *regs)
 	return 0;
 }
 
+
+static void kprobe_destructor(struct ktap_probe_event *ktap_pevent)
+{
+	unregister_kprobe(&ktap_pevent->u.p);
+}
 static int start_kprobe(ktap_State *ks, const char *event_name, Closure *cl)
 {
-	struct ktap_kprobe *kp;
+	struct ktap_probe_event *ktap_pevent;
 
-	kp = ktap_zalloc(ks, sizeof(*kp));
-	kp->ks = ks;
-	kp->cl = cl;
+	ktap_pevent = ktap_zalloc(ks, sizeof(*ktap_pevent));
+	ktap_pevent->ks = ks;
+	ktap_pevent->cl = cl;
+	ktap_pevent->type = EVENT_TYPE_KPROBE;
 
-	INIT_LIST_HEAD(&kp->list);
-	list_add(&kp->list, &(G(ks)->kprobes));
+	INIT_LIST_HEAD(&ktap_pevent->list);
+	list_add_tail(&ktap_pevent->list, &probe_events_list);
 
-	kp->p.symbol_name = event_name;
-	kp->p.pre_handler = pre_handler_kprobe;
-	kp->p.post_handler = NULL;
-	kp->p.fault_handler = NULL;
-	kp->p.break_handler = NULL;
+	ktap_pevent->u.p.symbol_name = event_name;
+	ktap_pevent->u.p.pre_handler = pre_handler_kprobe;
+	ktap_pevent->u.p.post_handler = NULL;
+	ktap_pevent->u.p.fault_handler = NULL;
+	ktap_pevent->u.p.break_handler = NULL;
+	ktap_pevent->destructor = kprobe_destructor;
 
-	if (register_kprobe(&kp->p)) {
+	if (register_kprobe(&ktap_pevent->u.p)) {
 		ktap_printf(ks, "Cannot register probe: %s\n", event_name);
-		list_del(&kp->list);
+		list_del(&ktap_pevent->list);
 		return -1;
 	}
 
@@ -347,14 +353,13 @@ void ktap_event_handle(ktap_State *ks, void *e, int index, StkId ra)
 	} else
 		event_ftbl[index - EVENT_FIELD_BASE].func(ks, e, ra);
 }
-static LIST_HEAD(perf_events_list);
 
 /* Callback function for perf event subsystem */
 static void ktap_overflow_callback(struct perf_event *event,
 				   struct perf_sample_data *data,
 				   struct pt_regs *regs)
 {
-	struct ktap_perf_event *ktap_pevent;
+	struct ktap_probe_event *ktap_pevent;
 	ktap_State  *ks;
 	struct ktap_event e;
 	unsigned long irq_flags;
@@ -384,17 +389,23 @@ static void ktap_overflow_callback(struct perf_event *event,
 	local_irq_restore(irq_flags);
 }
 
+static void perf_destructor(struct ktap_probe_event *ktap_pevent)
+{
+	perf_event_disable(ktap_pevent->u.perf);
+	perf_event_release_kernel(ktap_pevent->u.perf);
+}
 static void enable_tracepoint_on_cpu(int cpu, struct perf_event_attr *attr,
 				     struct ftrace_event_call *call,
 				     struct ktap_trace_arg *arg, int type)
 {
-	struct ktap_perf_event *ktap_pevent;
+	struct ktap_probe_event *ktap_pevent;
 	struct perf_event *event;
 
 	ktap_pevent = ktap_zalloc(arg->ks, sizeof(*ktap_pevent));
 	ktap_pevent->ks = arg->ks;
 	ktap_pevent->cl = arg->cl;
 	ktap_pevent->type = type;
+	ktap_pevent->destructor = perf_destructor;
 	event = perf_event_create_kernel_counter(attr, cpu, NULL,
 						 ktap_overflow_callback, ktap_pevent);
 	if (IS_ERR(event)) {
@@ -405,9 +416,9 @@ static void enable_tracepoint_on_cpu(int cpu, struct perf_event_attr *attr,
 		return;
 	}
 
-	ktap_pevent->event = event;
+	ktap_pevent->u.perf = event;
 	INIT_LIST_HEAD(&ktap_pevent->list);
-	list_add_tail(&ktap_pevent->list, &perf_events_list);
+	list_add_tail(&ktap_pevent->list, &probe_events_list);
 
 	perf_event_enable(event);
 }
@@ -534,27 +545,13 @@ int start_probe(ktap_State *ks, const char *event_name, Closure *cl)
 
 void end_probes(struct ktap_State *ks)
 {
-	struct list_head *kprobes_list = &(G(ks)->kprobes);
-	struct ktap_kprobe *kp, *tmp;
-	struct ktap_perf_event *ktap_pevent;
-	struct list_head *ltmp, *pos;
+	struct ktap_probe_event *ktap_pevent;
+	struct list_head *tmp, *pos;
 
-	list_for_each_entry(kp, kprobes_list, list) {
-		unregister_kprobe(&kp->p);
-	}
-
-	synchronize_sched();
-
-	list_for_each_entry_safe(kp, tmp, kprobes_list, list) {
-		list_del(&kp->list);
-		ktap_free(ks, kp);
-	}
-
-	list_for_each(pos, &perf_events_list) {
-		ktap_pevent = container_of(pos, struct ktap_perf_event,
+	list_for_each(pos, &probe_events_list) {
+		ktap_pevent = container_of(pos, struct ktap_probe_event,
 					   list);
-		perf_event_disable(ktap_pevent->event);
-		perf_event_release_kernel(ktap_pevent->event);
+		ktap_pevent->destructor(ktap_pevent);
         }
        	/*
 	 * Ensure our callback won't be called anymore. The buffers
@@ -562,8 +559,8 @@ void end_probes(struct ktap_State *ks)
 	 */
        	tracepoint_synchronize_unregister();
 
-	list_for_each_safe(pos, ltmp, &perf_events_list) {
-		ktap_pevent = container_of(pos, struct ktap_perf_event,
+	list_for_each_safe(pos, tmp, &probe_events_list) {
+		ktap_pevent = container_of(pos, struct ktap_probe_event,
 					   list);
 		list_del(&ktap_pevent->list);
 		ktap_free(ks, ktap_pevent);
