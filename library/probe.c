@@ -88,7 +88,8 @@ static void ktap_call_probe_closure(ktap_State *mainthread, Closure *cl,
 static int __kprobes pre_handler_kprobe(struct kprobe *p, struct pt_regs *regs)
 {
 	struct ktap_probe_event *ktap_pevent;
-	ktap_State *ks;
+	struct ktap_event e;
+	
 
 	if (unlikely(__this_cpu_read(ktap_in_tracing)))
 		return 0;
@@ -97,14 +98,16 @@ static int __kprobes pre_handler_kprobe(struct kprobe *p, struct pt_regs *regs)
 
 	ktap_pevent = container_of(p, struct ktap_probe_event, u.p);
 
+	e.call = NULL;
+	e.entry = NULL;
+	e.entry_size = 0;
+	e.regs = regs;
+	e.type = ktap_pevent->type;
+
 	if (same_thread_group(current, G(ktap_pevent->ks)->task))
 		goto out;
 
-	ks = ktap_newthread(ktap_pevent->ks);
-	setcllvalue(ks->top, ktap_pevent->cl);
-	incr_top(ks);
-	ktap_call(ks, ks->top - 1, 0);
-	ktap_exitthread(ks);
+	ktap_call_probe_closure(ktap_pevent->ks, ktap_pevent->cl, &e);
 
  out:
 	__this_cpu_write(ktap_in_tracing, false);
