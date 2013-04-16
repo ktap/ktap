@@ -10,3 +10,50 @@ os.probe("tp:syscalls", eventfun)
 os.probe_end(function () {
 	histogram(hist)
 })
+
+#Result:
+#
+#[root@jovi ktap]# ./ktap scripts/syscalls_histogram.kp
+#
+#^C
+#              value ------------- Distribution ------------- count
+# sys_enter_gettim... |                                       1
+#sys_enter_mmap_pgoff |                                       2
+# sys_enter_rt_sig... |@@@@@@@                                205
+#       sys_exit_open |                                       4
+#    sys_enter_select |@@@                                    100
+# sys_enter_nanosleep |                                       9
+#     sys_enter_close |                                       3
+#    sys_exit_madvise |                                       1
+#      sys_exit_ioctl |                                       13
+#    sys_exit_fstat64 |                                       3
+#     sys_exit_munmap |                                       2
+# sys_exit_socketcall |                                       1
+#     sys_enter_write |@@                                     66
+#   sys_enter_fstat64 |                                       3
+#  sys_exit_nanosleep |                                       9
+#     sys_exit_select |@@@                                    100
+#       sys_exit_read |@@                                     72
+#      sys_enter_poll |@                                      31
+#     sys_enter_ioctl |                                       13
+#    sys_enter_munmap |                                       2
+#      sys_exit_close |                                       3
+#       sys_exit_poll |@                                      31
+#      sys_exit_write |@@                                     66
+#      sys_enter_read |@@                                     72
+# sys_enter_rt_sig... |@                                      33
+# sys_enter_clock_... |                                       5
+#       sys_exit_time |                                       4
+#      sys_enter_time |                                       4
+# sys_exit_gettime... |                                       1
+# sys_exit_clock_g... |                                       5
+# sys_exit_mmap_pgoff |                                       2
+#      sys_enter_exit |                                       1
+#      sys_exit_futex |                                       2
+#   sys_enter_madvise |                                       1
+# sys_exit_rt_sigp... |@@@@@@@                                205
+#      sys_enter_open |                                       4
+#     sys_enter_futex |                                       1
+# sys_exit_rt_siga... |@                                      33
+#sys_enter_socketcall |                                       1
+

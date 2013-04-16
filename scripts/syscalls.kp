@@ -7,3 +7,24 @@ os.probe("tp:syscalls", eventfun)
 os.probe_end(function () {
 	printf("probe end\n")
 })
+
+#Result:
+#
+#[root@jovi ktap]# ./ktap scripts/syscalls.kp
+#
+#0 819   sshd    sys_rt_sigprocmask(how: 0, nset: bf9b3a2c, oset: bf9b39ac, sigsetsize: 8)
+#0 819   sshd    sys_rt_sigprocmask -> 0x0
+#0 819   sshd    sys_rt_sigprocmask(how: 2, nset: bf9b39ac, oset: 0, sigsetsize: 8)
+#0 819   sshd    sys_rt_sigprocmask -> 0x0
+#0 819   sshd    sys_read(fd: a, buf: bf9af9bc, count: 4000)
+#0 819   sshd    sys_read -> 0xfff
+#1 605   iscsid  sys_poll -> 0x0
+#1 605   iscsid  sys_poll(ufds: bfc87310, nfds: 2, timeout_msecs: fa)
+#1 604   iscsid  sys_nanosleep -> 0x0
+#1 604   iscsid  sys_rt_sigprocmask(how: 0, nset: bfc87044, oset: bfc870c4, sigsetsize: 8)
+#1 604   iscsid  sys_rt_sigprocmask -> 0x0
+#1 604   iscsid  sys_rt_sigaction(sig: 11, act: 0, oact: bfc86f70, sigsetsize: 8)
+#1 604   iscsid  sys_rt_sigaction -> 0x0
+#1 604   iscsid  sys_rt_sigprocmask(how: 2, nset: bfc870c4, oset: 0, sigsetsize: 8)
+#
+#probe end
