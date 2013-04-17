@@ -20,6 +20,8 @@
  * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include <linux/module.h>
+#include <linux/version.h>
 #include <linux/perf_event.h>
 #include <linux/ftrace_event.h>
 #include <linux/kprobes.h>
@@ -246,7 +248,18 @@ EVENT_SC_ARGFUNC(4)
 EVENT_SC_ARGFUNC(5)
 EVENT_SC_ARGFUNC(6)
 
-#if 0
+/***************************/
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 9, 0)
+struct ftrace_event_field {
+	struct list_head        link;
+	const char              *name;
+	const char              *type;
+	int                     filter_type;
+	int                     offset;
+	int                     size;
+	int                     is_signed;
+};
+#endif
 
 /* e.narg */
 static void event_narg(ktap_State *ks, struct ktap_event *e, StkId ra)
@@ -302,7 +315,7 @@ static void event_field1(ktap_State *ks, struct ktap_event *e, StkId ra)
 {
 	event_field(ks, e, 1, ra);
 }
-#endif
+
 
 #define EVENT_FIELD_BASE	100
 
@@ -321,10 +334,8 @@ static struct event_field_tbl {
 	{"sc_arg5", event_sc_arg5},
 	{"sc_arg6", event_sc_arg6},
 	{"regstr", event_regstr},
-#if 0
 	{"allfield", event_allfield},
 	{"field1", event_field1}
-#endif
 };
 
 int ktap_event_get_index(const char *field)
