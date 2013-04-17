@@ -41,8 +41,8 @@ Building & Running
 
 	[root@jovi]# ./ktap scripts/syscalls.kp
 
-Example
--------
+Example of syscall tracing
+--------------------------
 
 syscalls.kp:  
 
