@@ -230,6 +230,18 @@ static void event_sc_nr(ktap_State *ks, struct ktap_event *e, StkId ra)
 	setnvalue(ra, entry->nr);
 }
 
+static void event_sc_is_enter(ktap_State *ks, struct ktap_event *e, StkId ra)
+{
+	struct syscall_trace_enter *entry = e->entry;
+
+	if (e->type == EVENT_TYPE_SYSCALL_ENTER) {
+		setbvalue(ra, 1);
+	} else {
+		setbvalue(ra, 0);
+	}
+}
+
+
 #define EVENT_SC_ARGFUNC(n) \
 static void event_sc_arg##n(ktap_State *ks, struct ktap_event *e, StkId ra)\
 { \
@@ -327,6 +339,7 @@ static struct event_field_tbl {
 	{"name", event_name},
 	{"print_fmt", event_print_fmt},
 	{"sc_nr", event_sc_nr},
+	{"sc_is_enter", event_sc_is_enter},
 	{"sc_arg1", event_sc_arg1},
 	{"sc_arg2", event_sc_arg2},
 	{"sc_arg3", event_sc_arg3},
