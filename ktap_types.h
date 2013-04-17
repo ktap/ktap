@@ -418,7 +418,7 @@ typedef int ktap_Number;
 
 #define ttisshrstring(o)	((o)->type == KTAP_TSHRSTR)
 #define ttisstring(o)		(((o)->type & 0x0F) == KTAP_TSTRING)
-#define ttisnumber(o)		((o)->type == KTAP_TNUMBER || (o)->type == KTAP_TNIL)
+#define ttisnumber(o)		((o)->type == KTAP_TNUMBER)
 #define ttisfunc(o)		((o)->type == KTAP_TFUNCTION)
 #define ttisnil(o)		((o)->type == KTAP_TNIL)
 #define ttisboolean(o)		((o)->type == KTAP_TBOOLEAN)
