@@ -1,8 +1,10 @@
 hist = {}
 
 function eventfun (e) {
-	local syscall_name = e.name
-	hist[syscall_name] = hist[syscall_name] + 1
+	if (e.sc_is_enter) {
+		local syscall_name = e.name
+		hist[syscall_name] = hist[syscall_name] + 1
+	}
 }
 
 os.probe("tp:syscalls", eventfun)
@@ -17,43 +19,49 @@ os.probe_end(function () {
 #
 #^C
 #              value ------------- Distribution ------------- count
-# sys_enter_gettim... |                                       1
-#sys_enter_mmap_pgoff |                                       2
-# sys_enter_rt_sig... |@@@@@@@                                205
-#       sys_exit_open |                                       4
-#    sys_enter_select |@@@                                    100
-# sys_enter_nanosleep |                                       9
-#     sys_enter_close |                                       3
-#    sys_exit_madvise |                                       1
-#      sys_exit_ioctl |                                       13
-#    sys_exit_fstat64 |                                       3
-#     sys_exit_munmap |                                       2
-# sys_exit_socketcall |                                       1
-#     sys_enter_write |@@                                     66
-#   sys_enter_fstat64 |                                       3
-#  sys_exit_nanosleep |                                       9
-#     sys_exit_select |@@@                                    100
-#       sys_exit_read |@@                                     72
-#      sys_enter_poll |@                                      31
-#     sys_enter_ioctl |                                       13
-#    sys_enter_munmap |                                       2
-#      sys_exit_close |                                       3
-#       sys_exit_poll |@                                      31
-#      sys_exit_write |@@                                     66
-#      sys_enter_read |@@                                     72
-# sys_enter_rt_sig... |@                                      33
-# sys_enter_clock_... |                                       5
-#       sys_exit_time |                                       4
-#      sys_enter_time |                                       4
-# sys_exit_gettime... |                                       1
-# sys_exit_clock_g... |                                       5
-# sys_exit_mmap_pgoff |                                       2
-#      sys_enter_exit |                                       1
-#      sys_exit_futex |                                       2
-#   sys_enter_madvise |                                       1
-# sys_exit_rt_sigp... |@@@@@@@                                205
-#      sys_enter_open |                                       4
-#     sys_enter_futex |                                       1
-# sys_exit_rt_siga... |@                                      33
+# sys_enter_gettim... |                                       2
+#sys_enter_mmap_pgoff |@                                      86
+# sys_enter_rt_sig... |@@@@@                                  341
+#  sys_enter_newuname |                                       2
+#    sys_enter_select |@@@@                                   260
+# sys_enter_nanosleep |                                       16
+#     sys_enter_close |@@@@                                   258
+#     sys_enter_lseek |                                       2
+#sys_enter_exit_group |                                       7
+#     sys_enter_clone |                                       7
+#     sys_enter_write |@                                      105
+#   sys_enter_fstat64 |                                       53
+#   sys_enter_getegid |                                       16
+#      sys_enter_poll |                                       49
+#     sys_enter_ioctl |                                       26
+#   sys_enter_geteuid |                                       17
+#      sys_enter_open |@@@                                    236
+#    sys_enter_capget |                                       21
+#    sys_enter_munmap |                                       14
+#   sys_enter_lstat64 |                                       44
+#    sys_enter_execve |                                       5
+#    sys_enter_openat |                                       2
+# sys_enter_getrlimit |                                       1
+# sys_enter_set_ro... |                                       1
+#  sys_enter_statfs64 |                                       4
+# sys_enter_set_ti... |                                       1
+# sys_enter_getgroups |                                       2
+#   sys_enter_setpgid |                                       2
+#      sys_enter_time |                                       14
+#   sys_enter_waitpid |                                       13
+#      sys_enter_pipe |                                       4
+#  sys_enter_getdents |                                       2
+#      sys_enter_dup2 |                                       7
+#    sys_enter_stat64 |@@                                     136
+#   sys_enter_fcntl64 |                                       7
+#  sys_enter_mprotect |                                       27
+#       sys_enter_brk |                                       18
+#      sys_enter_read |@@@@@                                  325
+#sys_enter_getdents64 |                                       2
+#    sys_enter_access |                                       21
+#    sys_enter_getuid |                                       16
+# sys_enter_rt_sig... |@@@                                    186
+#  sys_enter_getxattr |                                       21
+#    sys_enter_getgid |                                       16
 #sys_enter_socketcall |                                       1
 
