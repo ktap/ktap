@@ -14,9 +14,6 @@ so it doesn't depend upon GCC, doesn't require compiling a kernel module,
 have great portability, safe to use in production environment,
 fulfilling the embedd ecosystem's tracing needs.
 
-KTAP is built from scratch, with GPL licensed.  
-https://github.com/ktap/ktap.git
-
 More information can be found at doc/ directory.
 
 Building & Running
@@ -56,4 +53,9 @@ syscalls.kp:
 		printf("probe end\n")
 	})
 
+
+License
+-------
+KTAP is built from scratch, with GPL licensed.  
+https://github.com/ktap/ktap.git
 
