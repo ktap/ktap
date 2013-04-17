@@ -18,7 +18,7 @@ keep updating this file)
 - ktapio problem in all event tracepoints opened
 - ktapio support global and percpu mode
 - issue: trace_end function cannot print into ktapio	--- done
-- event library support
+- event library support(more type logic into compiler)
 - change comments sytle to "#"	--- done
 
 
@@ -76,6 +76,7 @@ keep updating this file)
 - change library/trace.c to use perf event mechanism, without change ftrace code
 
 - only tracing on cpu: ktap -c cpu *.kp
+- support trace dump only to relayfs, without to userspace when tracing
 - kernel_version() base function call
 
 [LOW]
@@ -96,4 +97,10 @@ keep updating this file)
 - website in ktap.org (ROR on free hosting site? fast deployment)
 - systemtap integrate: compile into ktap bytecode, use same vm in kernel
 - commit to kernel: staging first?
+
+
+
+- staticly typed virtual machine, it's more generic than dynamic typed vm
+  support map/splice/struct/closure
+  staticly typed is more faster than dynamic typed, with strict type checking
 
