@@ -6,42 +6,80 @@ keep updating this file)
 -------------------------------------------------------------------------
 
 [HIGH]
-- event based tracing infrastructure	--- done
-- Drop ftrace.patch			--- done
+- event based tracing infrastructure
+  ==COMPLETE==
+
+- Drop ftrace.patch
+  ==COMPLETE==
 - GC
+
 - read kernel memory by symbol
-- table stat showing			--- done
-- ktap memory allocation		--- done
-- per-cpu ktap_State for performance improvement	--- done
-- x86-64 support			--- done
+
+- table stat showing
+  ==COMPLETE==
+
+- ktap memory allocation
+  ==COMPLETE==
+
+- per-cpu ktap_State for performance improvement
+  ==COMPLETE==
+
+- x86-64 support
+  ==COMPLETE==
+
 - non-mainthread error exit problem(like printf arg mismatch)
+
 - ktapio problem in all event tracepoints opened
+
 - ktapio support global and percpu mode
-- issue: trace_end function cannot print into ktapio	--- done
+
+- issue: trace_end function cannot print into ktapio
+  ==COMPLETE==
+
 - event library support(more type logic into compiler)
-- change comments sytle to "#"	--- done
+
+- change comments sytle to "#"
+  ==COMPLETE==
 
 
 [NORMAL]
 - ARM support
-- All tracepoints support	--- done
-- Timer support		--- done
+
+- All tracepoints support
+  ==COMPLETE==
+
+- Timer support
+  ==COMPLETE==
+
 - kprobe/uprobe support
-- function call speedup	--- done
+
+- function call speedup
+  ==COMPLETE==
+
 - improve printf performance
-- dumpstack support		--- done
+
+- dumpstack support
+  ==COMPLETE==
+
 - script argument support
+
 - call ktap script in while loop shell script issue
+
 - maintaince different kernel version branch of ktap
+
 - splice io output
+
 - fast loading(not using temp file?)
+
 - Interval timer probes fire periodicalle
 	Available units: timer.s, jiffies, s/sec, ms/msec, us/usec, ns/nsec
         Add variation with .randomize(N)
     The profile timer runs on every systerm tick
         timer.profile
      runs on all CPUS, Includes context of interrupted process
+
 - kernel_string()/user_string()
+
 - More built-in functions:
     - Printing
     print(), println(), printd(), printf(),
@@ -54,7 +92,10 @@ keep updating this file)
     cpu(), execname(), tid(), pid(), uid(),
     backtrace(), print_stack(), print_backtrace(),
     pp(), probefunc(), probemod()
-- fibonacci in ktap	--- done
+
+- fibonacci in ktap
+  ==COMPLETE==
+
 - unified event probe interface:
   os.probe("tracepoint:xxx", eventfun);
   os.probe("tp:xxx", eventfun);
@@ -76,31 +117,59 @@ keep updating this file)
 - change library/trace.c to use perf event mechanism, without change ftrace code
 
 - only tracing on cpu: ktap -c cpu *.kp
+
+- support ktap -bl, show listing all bytecodes
+
 - support trace dump only to relayfs, without to userspace when tracing
+
 - kernel_version() base function call
 
 [LOW]
-- dead loop detaction		--- done
+- dead loop detaction
+  ==COMPLETE==
+
 - product more useful ktap script
-- test script for verification		--- done
+
+- test script for verification
+  ==COMPLETE==
+
 - not-tracing mode support(side effects mode)
-- making ktap syntax more C like	--- done
+
+- making ktap syntax more C like
+  ==COMPLETE==
+
 - ktap Manual/Doc/ppt/pdf/man writing
+
 - structure reference support in script like dtrace
+
 - more lightwight traceing infrastructure support
+
 - parrot research: use opcode generate like parrot
+
 - support include header file in ktap script, only for compiler
+
 - kernel 3.9(include previous kernel version) maintain, use same code base?
+  ==COMPLETE==
+
 - ktap -e "oneline scripting"
+
 - distro packages: yum install ktap, apt-get install ktap
+
 - conference
+
 - website in ktap.org (ROR on free hosting site? fast deployment)
+
 - systemtap integrate: compile into ktap bytecode, use same vm in kernel
+
 - commit to kernel: staging first?
 
 
+- integrate luajit, and use ffi library, to boost performance
 
 - staticly typed virtual machine, it's more generic than dynamic typed vm
   support map/splice/struct/closure
   staticly typed is more faster than dynamic typed, with strict type checking
+
+- request mailing list: ktap@freelist.org
+  ==COMPLETE==
 
