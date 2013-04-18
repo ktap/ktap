@@ -176,3 +176,4 @@ keep updating this file)
 - make compatibility with lua/luajit(histogram already breaked compatibility
   "1 + nil == 1" is not working in raw lua, but work in ktap
 
+- add atomic add operation ++ into ktap

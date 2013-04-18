@@ -341,6 +341,5 @@ static const ktap_Reg systemlib_funcs[] = {
 void ktap_init_oslib(ktap_State *ks)
 {
 	ktap_register_lib(ks, "os", oslib_funcs);
-	ktap_register_lib(ks, "system", oslib_funcs);
 }
 
