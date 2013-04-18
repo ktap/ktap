@@ -47,9 +47,9 @@ syscalls.kp:
 		printf("%d %d\t%s\t%s", cpu(), pid(), execname(), e.annotate)
 	}
 
-	os.probe("tp:syscalls", eventfun)
+	kdebug.probe("tp:syscalls", eventfun)
 
-	os.probe_end(function () {
+	kdebug.probe_end(function () {
 		printf("probe end\n")
 	})
 

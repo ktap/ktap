@@ -1079,6 +1079,7 @@ ktap_State *ktap_newstate(ktap_State **private_data)
 	/* init library */
 	ktap_init_baselib(ks);
 	ktap_init_oslib(ks);
+	ktap_init_kdebuglib(ks);
 
 	ktap_percpu_state = (ktap_State *)alloc_percpu(ktap_State);
 	if (!ktap_percpu_state)

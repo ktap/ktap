@@ -97,22 +97,22 @@ keep updating this file)
   ==COMPLETE==
 
 - unified event probe interface:
-  os.probe("tracepoint:xxx", eventfun);
-  os.probe("tp:xxx", eventfun);
-  os.probe("kprobes:xxx", eventfun);
-  os.probe("k:xxx", eventfun);
-  os.probe("k:xxx!", eventfun);  //kretprobe
-  os.probe("uprobes:xxx:yyy", eventfun);
-  os.probe("u:xxx:yyy", eventfun);
-  os.probe("u:xxx:yyy!", eventfun); //uretprobe
+  kdebug.probe("tracepoint:xxx", eventfun);
+  kdebug.probe("tp:xxx", eventfun);
+  kdebug.probe("kprobes:xxx", eventfun);
+  kdebug.probe("k:xxx", eventfun);
+  kdebug.probe("k:xxx!", eventfun);  //kretprobe
+  kdebug.probe("uprobes:xxx:yyy", eventfun);
+  kdebug.probe("u:xxx:yyy", eventfun);
+  kdebug.probe("u:xxx:yyy!", eventfun); //uretprobe
 
-  os.probe("cache-misses", eventfun) //Hardware event
-  os.probe("page-faults", eventfun) //Software event
-  os.probe("branch-load-misses", eventfun) //Hardware cache event
-  os.probe("mem:<addr>[:access]", eventfun) //Hardware breakpoint
-  os.probe("net:netif_rx", eventfun) //Tracepoint event
+  kdebug.probe("cache-misses", eventfun) //Hardware event
+  kdebug.probe("page-faults", eventfun) //Software event
+  kdebug.probe("branch-load-misses", eventfun) //Hardware cache event
+  kdebug.probe("mem:<addr>[:access]", eventfun) //Hardware breakpoint
+  kdebug.probe("net:netif_rx", eventfun) //Tracepoint event
 
-  os.probe("kprobes:xxx, uprobes:xxx:yyy, cache-misses", eventfun) //support multi-event
+  kdebug.probe("kprobes:xxx, uprobes:xxx:yyy, cache-misses", eventfun) //support multi-event
 
 - change library/trace.c to use perf event mechanism, without change ftrace code
 

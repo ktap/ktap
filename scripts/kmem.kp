@@ -1,25 +1,25 @@
 
 count1 = 0
-os.trace("kmem:kmalloc", function () {
+kdebug.probe("tp:kmem:kmalloc", function () {
 	count1 = count1 + 1
 })
 
 count2 = 0
-os.trace("kmem:kfree", function () {
+kdebug.probe("tp:kmem:kfree", function () {
 	count2 = count2 + 1
 })
 
 count3 = 0
-os.trace("kmem:mm_page_alloc", function () {
+kdebug.probe("tp:kmem:mm_page_alloc", function () {
 	count3 = count3 + 1
 })
 
 count4 = 0
-os.trace("kmem:mm_page_free", function () {
+kdebug.probe("tp:kmem:mm_page_free", function () {
 	count4 = count4 + 1
 })
 
-os.trace_end(function () {
+kdebug.probe_end(function () {
 	print("\n")
 	print("kmem:kmalloc:\t", count1)
 	print("kmem:kfree:\t", count2)

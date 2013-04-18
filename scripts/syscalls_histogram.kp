@@ -7,9 +7,9 @@ function eventfun (e) {
 	}
 }
 
-os.probe("tp:syscalls", eventfun)
+kdebug.probe("tp:syscalls", eventfun)
 
-os.probe_end(function () {
+kdebug.probe_end(function () {
 	histogram(hist)
 })
 
