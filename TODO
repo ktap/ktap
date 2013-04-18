@@ -173,3 +173,6 @@ keep updating this file)
 - request mailing list: ktap@freelist.org
   ==COMPLETE==
 
+- make compatibility with lua/luajit(histogram already breaked compatibility
+  "1 + nil == 1" is not working in raw lua, but work in ktap
+
