@@ -64,42 +64,6 @@ static int ktap_lib_info(ktap_State *ks)
 	return 0;
 }
 
-static DEFINE_PER_CPU(bool, ktap_in_dumpstack);
-
-void trace_console_func(void *__data, const char *text, size_t len)
-{
-	ktap_State *ks = __data;
-
-	if (likely(!__this_cpu_read(ktap_in_dumpstack)))
-		return;
-
-	/* cannot use ktap_printf here */
-	ktap_transport_write(ks, text, len);
-}
-
-/*
- * Some method:
- * 1) use console tracepoint
- * 2) register console driver
- * 3) hack printk function, like kdb does now.
- * 4) console_lock firstly, read log buffer, then console_unlock
- *
- * Note we cannot use console_lock/console_trylock here.
- * Issue: printk may not call call_console_drivers if console semaphore
- * is already held, in this case, ktap may output nothing.
- *
- * todo: not output to consoles.
- */
-static int ktap_lib_dumpstack(ktap_State *ks)
-{
-	__this_cpu_write(ktap_in_dumpstack, true);
-
-	dump_stack();
-
-	__this_cpu_write(ktap_in_dumpstack, false);
-	return 0;
-}
-
 static int ktap_lib_sleep(ktap_State *ks)
 {
 	Tvalue *time = GetArg(ks, 1);
@@ -259,61 +223,6 @@ void ktap_exit_timers(ktap_State *ks)
 	local_irq_restore(flags);
 }
 
-static int ktap_lib_probe(ktap_State *ks)
-{
-	Tvalue *evname = GetArg(ks, 1);
-	const char *event_name;
-	Tvalue *tracefunc;
-	Closure *cl;
-
-	if (GetArgN(ks) >= 2) {
-		tracefunc = GetArg(ks, 2);
-
-		if (ttisfunc(tracefunc))
-			cl = (Closure *)gcvalue(tracefunc);
-		else
-			cl = NULL;
-	} else
-		cl = NULL;
-
-	if (!cl)
-		return -1;
-
-	event_name = svalue(evname);
-	return start_probe(ks, event_name, cl);
-}
-
-static int ktap_lib_probe_end(ktap_State *ks)
-{
-	Tvalue *endfunc;
-	int no_wait = 0;
-
-	if (GetArgN(ks) == 0)
-		return 0;
-
-	endfunc = GetArg(ks, 1);
-	if (GetArgN(ks) >= 2)
-		no_wait = nvalue(GetArg(ks, 2));
-
-	if (!no_wait) {
-		set_current_state(TASK_INTERRUPTIBLE);
-		schedule();
-		if (fatal_signal_pending(current))
-			flush_signals(current);
-	}
-
-	end_probes(ks);
-
-	/* newline for handle CTRL+C display as ^C */
-	ktap_printf(ks, "\n");
-
-	setcllvalue(ks->top, clvalue(endfunc));
-	incr_top(ks);
-	
-	ktap_call(ks, ks->top - 1, 0);
-	return 0;
-}
-
 static int ktap_lib_dummy(ktap_State *ks)
 {
 	return 0;
@@ -322,19 +231,9 @@ static int ktap_lib_dummy(ktap_State *ks)
 static const ktap_Reg oslib_funcs[] = {
 	{"clock", ktap_lib_clock},
 	{"info", ktap_lib_info},
-	{"dumpstack", ktap_lib_dumpstack},
 	{"sleep", ktap_lib_sleep},
 	{"wait", ktap_lib_wait},
 	{"timer", ktap_lib_timer},
-//	{"trace", ktap_lib_trace},
-//	{"trace_end", ktap_lib_trace_end},
-	{"probe", ktap_lib_probe},
-	{"probe_end", ktap_lib_probe_end},
-	{NULL}
-};
-
-static const ktap_Reg systemlib_funcs[] = {
-	{"info", ktap_lib_dummy},
 	{NULL}
 };
 
