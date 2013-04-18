@@ -1,0 +1,29 @@
+
+function failed() {
+	printf("failed\n");
+	exit(-1);
+}
+
+#-----------------------------------------#
+
+if (false) {
+	failed()
+}
+
+if (nil) {
+	failed()
+}
+
+# ktap only think false and nil is "real false", number 0 is true
+# it's same as lua
+# Might change it in future, to make similar with C
+if (0) {
+	#failed()
+}
+
+#Note that below code is not working in lua, so it breaked compatibility
+#with lua, why? see table syscalls_histogram.kp
+#figure out a clean solution to fix this, try not break lua compatibility.
+if (1+nil != 1) {
+	failed()
+}
