@@ -1,0 +1,19 @@
+
+function failed() {
+	printf("failed\n");
+	exit(-1);
+}
+
+#-----------------------------------------#
+
+if (!arg[0]) {
+	failed()
+}
+
+if (arg[1] != 1) {
+	failed()
+}
+
+if (arg[2] != "testing") {
+	failed()
+}
