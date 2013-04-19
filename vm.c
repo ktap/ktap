@@ -45,6 +45,32 @@ typedef int ptrdiff_t;
 
 void ktap_call(ktap_State *ks, StkId func, int nresults);
 
+void ktap_concat(ktap_State *ks, int start, int end)
+{
+	int i, len = 0;
+	StkId top = ks->ci->u.l.base;
+	Tstring *ts;
+	char *ptr;
+
+	for (i = start; i <= end; i++) {
+		if (!ttisstring(top + i)) {
+			ktap_printf(ks, "cannot concat non-string\n");
+			return;
+		}
+
+		len += rawtsvalue(top + i)->tsv.len;
+	}
+	ts = tstring_newlstr(ks, svalue(top + start), len);
+	ptr = getstr(ts) + rawtsvalue(top + start)->tsv.len;
+
+	for (i = start + 1; i <= end; i++) {
+		int len = rawtsvalue(top + start)->tsv.len;
+		strncpy(ptr, svalue(top + i), len);
+		ptr += len;
+	}
+	setsvalue(top + start, ts);
+}
+
 /* todo: compare l == r if both is tstring type? */
 static int lessthan(ktap_State *ks, const Tvalue *l, const Tvalue *r)
 {
@@ -518,7 +544,12 @@ static void ktap_execute(ktap_State *ks)
 	case OP_LEN:
 		objlen(ks, ra, RB(instr));
 		break;
-	case OP_CONCAT:
+	case OP_CONCAT: {
+		int b = GETARG_B(instr);
+		int c = GETARG_C(instr);
+		ktap_concat(ks, b, c);
+		break;
+		}
 	case OP_JMP:
 		dojump(ci, instr, 0);
 		break;
@@ -931,7 +962,7 @@ static void ktap_init_arguments(ktap_State *ks, int argc, char **argv)
 	table_resize(ks, arg_tbl, 100, 100);
 
 	for (i = 0; i < argc; i++) {
-		int ret, res;
+		int res;
 		Tvalue val;
 
 		if (!kstrtoint(argv[i], 10, &res)) {
