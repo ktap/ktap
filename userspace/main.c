@@ -291,22 +291,25 @@ static void init_dummy_global_state()
 #define handle_error(str) do { perror(str); exit(-1); } while(0)
 
 
+
+static struct ktap_user_parm ktap_uparm = {.trunk_len = 1024};
+
 static char *ktap_trunk_mem;
 static int ktap_trunk_mem_len;
-static int ktap_trunk_mem_size = 1024;
+static int ktap_trunk_mem_size;
 
 static int ktapc_writer(const void* p, size_t sz, void* ud)
 {
 	int ret;
 
-	if (ktap_trunk_mem_len + sz > ktap_trunk_mem_size) {
+	if (ktap_uparm.trunk_len + sz > ktap_trunk_mem_size) {
 		int new_size = ktap_trunk_mem_size * 2;
-		ktap_trunk_mem = realloc(ktap_trunk_mem, new_size);
+		ktap_uparm.trunk = realloc(ktap_uparm->trunk, new_size);
 		ktap_trunk_mem_size = new_size;
 	}
 
-	memcpy(ktap_trunk_mem + ktap_trunk_mem_len, p, sz);
-	ktap_trunk_mem_len += sz;
+	memcpy(ktap_uparm->trunk + ktap_uparm->trunk_len, p, sz);
+	ktap_uparm->trunk_len += sz;
 
 	return 0;
 }
@@ -321,7 +324,7 @@ void ktap_user_complete_cb()
 
 #define KTAPVM_PATH "/sys/kernel/debug/ktap/ktapvm"
 
-static void run_ktapvm(struct ktap_user_parm *uparm_ptr)
+static void run_ktapvm()
 {
         int ktapvm_fd;
 
@@ -337,7 +340,7 @@ static void run_ktapvm(struct ktap_user_parm *uparm_ptr)
 
 	ktapio_create((void *)ktap_user_complete_cb);
 
-	ioctl(ktap_fd, KTAP_CMD_RUN, uparm_ptr);
+	ioctl(ktap_fd, KTAP_CMD_RUN, &ktap_uparm);
 
 	close(ktap_fd);
 	close(ktapvm_fd);
@@ -417,12 +420,9 @@ static void compile(const char *input)
 	if (verbose)
 		dump_function(1, cl->l.p);
 
-	/*
-	 * ktapc output
-	 * ktap_trunk_mem will be free when thread exit
-	 */
-	ktap_trunk_mem = malloc(ktap_trunk_mem_size);
-	if (!ktap_trunk_mem)
+	/* ktapc output */
+	ktap_uparm->trunk = malloc(ktap_trunk_mem_size);
+	if (!ktap_uparm->trunk)
 		handle_error("malloc failed");
 
 	ktapc_dump(cl->l.p, ktapc_writer, NULL, 0);
@@ -445,7 +445,6 @@ static void compile(const char *input)
 
 int main(int argc, char **argv)
 {
-	struct ktap_user_parm uparm;
 	char argstr[128];
 	char *ptr = argstr;
 	int src_argindex, i, pos = 0;
@@ -470,12 +469,10 @@ int main(int argc, char **argv)
 
 	*(ptr - 1) = '\0';
 
-	uparm.trunk = ktap_trunk_mem;
-	uparm.trunk_len = ktap_trunk_mem_len;
-	uparm.argstr = argstr;
-	uparm.arglen = ptr - argstr;
+	ktap_uparm.argstr = argstr;
+	ktap_uparm.arglen = ptr - argstr;
 
 	/* start running into kernel ktapvm */
-	run_ktapvm(&uparm);
+	run_ktapvm();
 }
 
