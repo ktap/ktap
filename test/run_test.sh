@@ -22,6 +22,7 @@ ktaprun fibonacci.kp
 ktaprun function.kp
 ktaprun if.kp
 ktaprun kprobe.kp
+ktaprun len.kp
 ktaprun looping.kp
 ktaprun table.kp
 ktaprun timer.kp
