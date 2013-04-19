@@ -130,17 +130,16 @@ static int ktap_main(struct file *file, char *cmdline)
 		return -EINVAL;
 	}
 
-//	if (parse_option(argc, argv, ks) < 0)
-//		print_usage();
-
 	ret = loadfile(argv[0], &buff);
+	if (ret) {
+		pr_err("cannot load file %s\n", argv[0]);
+		argv_free(argv);
+		return ret;
+	}
+
+	ks = ktap_newstate((ktap_State **)&file->private_data, argc, argv);
 
 	argv_free(argv);
-
-	if (ret)
-		return -EINVAL;
-
-	ks = ktap_newstate((ktap_State **)&file->private_data);
 	if (unlikely(!ks)) {
 		vfree(buff);
 		return -ENOEXEC;

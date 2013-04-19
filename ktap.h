@@ -11,7 +11,7 @@ typedef struct ktap_Reg {
         ktap_cfunction func;
 } ktap_Reg;
 
-ktap_State *ktap_newstate(ktap_State **ks);
+ktap_State *ktap_newstate(ktap_State **private_data, int argc, char **argv);
 void ktap_exit(ktap_State *ks);
 ktap_State *ktap_newthread(ktap_State *mainthread);
 void ktap_exitthread(ktap_State *ks);

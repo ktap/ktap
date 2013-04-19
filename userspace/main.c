@@ -429,7 +429,9 @@ static void compile(const char *input)
 
 int main(int argc, char **argv)
 {
-	int src_argindex;
+	char argstr[1024];
+	char *ptr = argstr;
+	int src_argindex, i, pos = 0;
 
 	if (argc == 1)
 		usage("");
@@ -438,7 +440,20 @@ int main(int argc, char **argv)
 
 	compile(argv[src_argindex]);
 
+	strcpy(ptr, output_filename);
+	ptr += strlen(output_filename);
+	*(ptr++) = ' ';
+
+	/* pass rest argv into ktapvm */
+	for (i = src_argindex + 1; i < argc; i++) {
+		strcpy(ptr, argv[i]);
+		ptr += strlen(argv[i]);
+		*(ptr++) = ' ';
+	}
+
+	*(ptr - 1) = '\0';
+
 	/* start running into kernel ktapvm */
-	run_ktapvm(output_filename);
+	run_ktapvm(argstr);
 }
 

@@ -911,6 +911,39 @@ static void ktap_init_registry(ktap_State *ks)
 	table_setint(ks, registry, KTAP_RIDX_GLOBALS, &mt);
 }
 
+static void ktap_init_arguments(ktap_State *ks, int argc, char **argv)
+{
+	const Tvalue *gt = table_getint(hvalue(&G(ks)->registry),
+			   KTAP_RIDX_GLOBALS);
+	Table *global_tbl = hvalue(gt);
+	Table *arg_tbl = table_new(ks);
+	Tvalue arg_tblval;
+	Tvalue arg_tsval;
+	int i;
+	
+	setsvalue(&arg_tsval, tstring_new(ks, "arg"));
+	sethvalue(&arg_tblval, arg_tbl);
+	setobj(ks, table_set(ks, global_tbl, &arg_tsval), &arg_tblval);
+
+	if (!argc)
+		return;
+
+	table_resize(ks, arg_tbl, 100, 100);
+
+	for (i = 0; i < argc; i++) {
+		int ret, res;
+		Tvalue val;
+
+		if (!kstrtoint(argv[i], 10, &res)) {
+			setnvalue(&val, res);
+		} else
+			setsvalue(&val, tstring_new(ks, argv[i]));
+
+		table_setint(ks, arg_tbl, i, &val);
+	}
+}
+
+
 #define KTAP_STACK_SIZE (BASIC_STACK_SIZE * sizeof(Tvalue))
 static void *percpu_ktap_stack;
 
@@ -1045,7 +1078,7 @@ void ktap_exit(ktap_State *ks)
 }
 
 /* ktap mainthread initization, main entry for ktap */
-ktap_State *ktap_newstate(ktap_State **private_data)
+ktap_State *ktap_newstate(ktap_State **private_data, int argc, char **argv)
 {
 	ktap_State *ks;
 	int ret;
@@ -1070,9 +1103,11 @@ ktap_State *ktap_newstate(ktap_State **private_data)
 	if (ret)
 		return NULL;
 
+	tstring_resize(ks, 512); /* set inital string hashtable size */
+
 	ktap_init_state(ks);
 	ktap_init_registry(ks);
-	tstring_resize(ks, 512); /* set inital string hashtable size */
+	ktap_init_arguments(ks, argc, argv);
 
 	ktap_probe_init(ks);
 
