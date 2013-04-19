@@ -504,7 +504,7 @@ void table_dump(ktap_State *ks, Table *t)
 		if (count)
 			ktap_printf(ks, ", ");
 
-		ktap_printf(ks, "(%d: ", i);
+		ktap_printf(ks, "(%d: ", i + 1);
 		showobj(ks, v);
 		ktap_printf(ks, ")");
 		count++;
@@ -554,7 +554,7 @@ void table_histogram(ktap_State *ks, Table *t)
 		if (!ttisnumber(v))
 			goto error;
 
-		setnvalue(&thr[count++].key, i);
+		setnvalue(&thr[count++].key, i + 1);
 		total += nvalue(v);
 	}
 
