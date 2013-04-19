@@ -568,7 +568,6 @@ void table_histogram(ktap_State *ks, Table *t)
 
 	thr = ktap_malloc(ks, sizeof(*thr) * (t->sizearray + sizenode(t)));
 
-	ktap_printf(ks, "%20s%s%s\n", "value ", DISTRIBUTION_STR, " count");
 	for (i = 0; i < t->sizearray; i++) {
 		Tvalue *v = &t->array[i];
 
@@ -599,6 +598,7 @@ void table_histogram(ktap_State *ks, Table *t)
 		total += nvalue(gval(n));
 	}
 
+	ktap_printf(ks, "%32s%s%s\n", "value ", DISTRIBUTION_STR, " count");
 	dist_str[sizeof(dist_str) - 1] = '\0';
 	for (i = 0; i < count; i++) {
 		Tvalue *key = &thr[i].key;
@@ -612,17 +612,17 @@ void table_histogram(ktap_State *ks, Table *t)
 			char buf[21] = {0};
 			char *keystr;
 
-			if (strlen(svalue(key)) > 20) {
-				strncpy(buf, svalue(key), 16);
-				memset(buf + 16, '.', 3);
+			if (strlen(svalue(key)) > 32) {
+				strncpy(buf, svalue(key), 32-4);
+				memset(buf + 32-4, '.', 3);
 				keystr = buf;
 			} else
 				keystr = svalue(key);
 
-			ktap_printf(ks, "%20s |%s%-10d\n", keystr, dist_str,
+			ktap_printf(ks, "%32s |%s%-10d\n", keystr, dist_str,
 					nvalue(val));
 		} else
-			ktap_printf(ks, "%20d | %s%-10d\n", nvalue(key),
+			ktap_printf(ks, "%32d | %s%-10d\n", nvalue(key),
 					dist_str, nvalue(val));
 	}
 
