@@ -8,19 +8,25 @@ if test $? -ne 0; then
 fi
 
 KTAP=../ktap
+function ktaprun {
+	echo "$KTAP $@"
+	$KTAP $@
+}
 
-for kp in `ls *.kp`
-do
-	echo "-----------------------------"
-	echo "executing $kp"
 
-	if test $kp == "zerodivide.kp"; then
-		$KTAP $kp > /dev/null
-	else
-		$KTAP $kp
-	fi
-done
 
+#####################################################
+ktaprun arg.kp 1 testing
+ktaprun fibonacci.kp
+ktaprun function.kp
+ktaprun if.kp
+ktaprun kprobe.kp
+ktaprun looping.kp
+ktaprun table.kp
+ktaprun timer.kp
+ktaprun tracepoint.kp
+ktaprun zerodivide.kp
+#####################################################
 rmmod ktapvm
 if test $? -ne 0; then
 	echo "Error in rmmod ../ktapvm.ko, leak module refcount?"
