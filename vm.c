@@ -50,7 +50,7 @@ void ktap_concat(ktap_State *ks, int start, int end)
 	int i, len = 0;
 	StkId top = ks->ci->u.l.base;
 	Tstring *ts;
-	char *ptr;
+	char *ptr, *buffer;
 
 	for (i = start; i <= end; i++) {
 		if (!ttisstring(top + i)) {
@@ -60,15 +60,22 @@ void ktap_concat(ktap_State *ks, int start, int end)
 
 		len += rawtsvalue(top + i)->tsv.len;
 	}
-	ts = tstring_newlstr(ks, svalue(top + start), len);
-	ptr = getstr(ts) + rawtsvalue(top + start)->tsv.len;
+	if (len <= sizeof(*ks->buff)) {
+		buffer = ks->buff;
+	} else
+		buffer = ktap_malloc(ks, len);
+	ptr = buffer;
 
-	for (i = start + 1; i <= end; i++) {
+	for (i = start; i <= end; i++) {
 		int len = rawtsvalue(top + start)->tsv.len;
 		strncpy(ptr, svalue(top + i), len);
 		ptr += len;
 	}
+	ts = tstring_newlstr(ks, buffer, len);
 	setsvalue(top + start, ts);
+
+	if (buffer != ks->buff)
+		ktap_free(ks, buffer);
 }
 
 /* todo: compare l == r if both is tstring type? */
