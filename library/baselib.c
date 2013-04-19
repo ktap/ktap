@@ -30,6 +30,18 @@
 #define GetArg(ks, n)	((ks)->ci->func + (n))
 #define GetArgN(ks)	((int)(ks->top - (ks->ci->func + 1)))
 
+static int ktap_lib_len(ktap_State *ks)
+{
+	int len = objlen(ks, GetArg(ks, 1));
+
+	if (len < 0)
+		return -1;
+
+	setnvalue(ks->top, len);
+	incr_top(ks);
+	return 1;
+}
+
 static int ktap_lib_print(ktap_State *ks)
 {
 	int i;
@@ -158,6 +170,7 @@ static const ktap_Reg base_funcs[] = {
 //	{"tonumber", ktap_tonumber},
 //	{"tostring", ktap_tostring},
 //	{"type", ktap_type},
+	{"len", ktap_lib_len},
 	{"print", ktap_lib_print},
 	{"printf", ktap_lib_printf},
 	{"in_interrupt", ktap_lib_in_interrupt},

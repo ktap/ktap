@@ -510,10 +510,13 @@ void table_setvalue(ktap_State *ks, Table *t, const Tvalue *key, Tvalue *val);
 void table_resize(ktap_State *ks, Table *t, int nasize, int nhsize);
 void table_resizearray(ktap_State *ks, Table *t, int nasize);
 void table_free(ktap_State *ks, Table *t);
+int table_length(ktap_State *ks, Table *t);
+void table_dump(ktap_State *ks, Table *t);
+void table_histogram(ktap_State *ks, Table *t);
 
 void obj_dump(ktap_State *ks, const Tvalue *v);
 void showobj(ktap_State *ks, const Tvalue *v);
-void objlen(ktap_State *ks, StkId ra, const Tvalue *rb);
+int objlen(ktap_State *ks, const Tvalue *rb);
 Gcobject *newobject(ktap_State *ks, int type, size_t size, Gcobject **list);
 int equalobjv(ktap_State *ks, const Tvalue *t1, const Tvalue *t2);
 Closure *ktap_newlclosure(ktap_State *ks, int n);

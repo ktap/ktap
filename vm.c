@@ -548,9 +548,13 @@ static void ktap_execute(ktap_State *ks)
 		res = isfalse(RB(instr));
 		setbvalue(ra, res);
 		break;
-	case OP_LEN:
-		objlen(ks, ra, RB(instr));
+	case OP_LEN: {
+		int len = objlen(ks, RB(instr));
+		if (len < 0)
+			return;
+		setnvalue(ra, len);
 		break;
+		}
 	case OP_CONCAT: {
 		int b = GETARG_B(instr);
 		int c = GETARG_C(instr);

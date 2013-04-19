@@ -480,6 +480,30 @@ void table_setint(ktap_State *ks, Table *t, int key, Tvalue *v)
 	setobj(ks, cell, v);
 }
 
+int table_length(ktap_State *ks, Table *t)
+{
+	int i, len = 0;
+
+	for (i = 0; i < t->sizearray; i++) {
+		Tvalue *v = &t->array[i];
+
+		if (isnil(v))
+			continue;
+		len++;
+	}
+
+	for (i = 0; i < sizenode(t); i++) {
+		Node *n = &t->node[i];
+
+		if (isnil(gkey(n)))
+			continue;
+
+		len++;
+	}
+	
+	return len;
+}
+
 void table_free(ktap_State *ks, Table *t)
 {
 	if (t->sizearray > 0)

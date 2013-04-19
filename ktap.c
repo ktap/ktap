@@ -167,8 +167,7 @@ static void print_version(void)
 static long ktap_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
 	char cmdline[64] = {0};
-	int argc, ret;
-	char **argv;
+	int ret;
 
 	switch (cmd) {
 	case KTAP_CMD_VERSION:
