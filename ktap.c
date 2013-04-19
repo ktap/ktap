@@ -25,7 +25,6 @@
 
 #include <linux/module.h>
 #include <linux/errno.h>
-#include <linux/namei.h>
 #include <linux/file.h>
 #include <linux/fcntl.h>
 #include <linux/sched.h>
@@ -34,103 +33,57 @@
 #include <linux/debugfs.h>
 #include "ktap.h"
 
-static void remove_file(struct file *file, const char *filename)
+static int load_trunk(struct ktap_user_parm *uparm_ptr, unsigned long **buff)
 {
-	int err;
-	struct path parent;
-
-	err = kern_path(filename, LOOKUP_PARENT, &parent);
-	if (err)
-                return;
-
-	dget(file->f_path.dentry);
-	err = vfs_unlink(parent.dentry->d_inode, file->f_path.dentry);
-	if (err && err != -ENOENT)
-		pr_warn("cannot unlink file %s\n", filename);
-
-	path_put(&parent);
-}
-
-static void need_remove_ktapc_out(struct file *file, const char *path)
-{
-	int pid, ret;
-
-	ret = sscanf(path, TEMP_KTAPC_OUT_PATH_FMT, &pid);
-	if ((ret > 0) && (pid == task_tgid_vnr(current))) {
-		/* remove ktapc.out file in /tmp */
-		remove_file(file, path);
-	}
-}
-
-static int loadfile(const char *path, unsigned long **buff)
-{
-	struct file *file;
-	struct kstat st;
 	int ret;
-	unsigned long *vmstart = NULL;
+	unsigned long *vmstart;
 
-	file = filp_open(path, O_RDONLY | O_LARGEFILE, 0);
-	if (IS_ERR(file))
-		return PTR_ERR(file);
+	vmstart = vmalloc(uparm_ptr->trunk_len);
+	if (!vmstart)
+		return -ENOMEM;
 
-	if (!S_ISREG(file->f_path.dentry->d_inode->i_mode)) {
-		ret = -EACCES;
-		goto out;
-	}
-
-	ret = vfs_getattr(&file->f_path, &st);
-	if (ret)
-		goto out;
-
-	if (st.size == 0) {
-		ret = -EINVAL;
-		goto out;
-	}
-		
-	vmstart = vmalloc(st.size);
-	if (!vmstart) {
-		ret = -ENOMEM;
-		goto out;
-	}
-
-	ret = kernel_read(file, 0, (char *)vmstart, st.size);
-	if (ret != st.size) {
+	ret = copy_from_user(vmstart, (void __user *)uparm_ptr->trunk,
+			     uparm_ptr->trunk_len);
+	if (ret < 0) {
 		vfree(vmstart);
-		goto out;
+		return -EFAULT;
 	}
 
-	ret = 0;
-
- out:
 	*buff = vmstart;
-
-	/*
-	 * remove /tmp/ktapc.out.$pid file before interpreter start
-	 * This will avoid file leak in /tmp if ktapvm crashed.
-	 */
-	need_remove_ktapc_out(file, path);
-
-	filp_close(file, NULL);
-	return ret;
+	return 0;
 }
 
 /* Ktap Main Entry */
-static int ktap_main(struct file *file, char *cmdline)
+static int ktap_main(struct file *file, struct ktap_user_parm *uparm_ptr)
 {
 	unsigned long *buff = NULL;
 	ktap_State *ks;
 	Closure *cl;
 	int argc;
-	char **argv;
+	char **argv, *argstr;
 	int ret;
 
-	argv = argv_split(GFP_KERNEL, cmdline, &argc);
-	if (!argv) {
-		pr_err("out of memory");
-		return -EINVAL;
+	argstr = kmalloc(uparm_ptr->arglen, GFP_KERNEL);
+	if (!argstr)
+		return -ENOMEM;
+
+	ret = copy_from_user(argstr, (void __user *)uparm_ptr->argstr,
+			     uparm_ptr->arglen);
+	if (ret < 0) {
+		kfree(argstr);
+		return -EFAULT;
 	}
 
-	ret = loadfile(argv[0], &buff);
+	argv = argv_split(GFP_KERNEL, argstr, &argc);
+	if (!argv) {
+		kfree(argstr);
+		pr_err("out of memory");
+		return -ENOMEM;
+	}
+
+	kfree(argstr);
+
+	ret = load_trunk(uparm_ptr, &buff);
 	if (ret) {
 		pr_err("cannot load file %s\n", argv[0]);
 		argv_free(argv);
@@ -166,7 +119,7 @@ static void print_version(void)
 
 static long ktap_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
-	char cmdline[64] = {0};
+	struct ktap_user_parm uparm;
 	int ret;
 
 	switch (cmd) {
@@ -174,12 +127,12 @@ static long ktap_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		print_version();
 		return 0;
 	case KTAP_CMD_RUN:
-		ret = copy_from_user(cmdline, (void __user *)arg, 64);
+		ret = copy_from_user(&uparm, (void __user *)arg,
+				     sizeof(struct ktap_user_parm));
 		if (ret < 0)
 			return -EFAULT;
 
-		ktap_main(file, cmdline);
-		break;
+		return ktap_main(file, &uparm);
 	case KTAP_CMD_USER_COMPLETE: {
 		ktap_State *ks = file->private_data;
 		ktap_user_complete(ks);

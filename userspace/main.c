@@ -291,14 +291,22 @@ static void init_dummy_global_state()
 #define handle_error(str) do { perror(str); exit(-1); } while(0)
 
 
+static char *ktap_trunk_mem;
+static int ktap_trunk_mem_len;
+static int ktap_trunk_mem_size = 1024;
+
 static int ktapc_writer(const void* p, size_t sz, void* ud)
 {
 	int ret;
-	int fdout = (int)ud;
 
-	ret = write(fdout, p, sz);
-	if (ret < 0)
-		return ret;
+	if (ktap_trunk_mem_len + sz > ktap_trunk_mem_size) {
+		int new_size = ktap_trunk_mem_size * 2;
+		ktap_trunk_mem = realloc(ktap_trunk_mem, new_size);
+		ktap_trunk_mem_size = new_size;
+	}
+
+	memcpy(ktap_trunk_mem + ktap_trunk_mem_len, p, sz);
+	ktap_trunk_mem_len += sz;
 
 	return 0;
 }
@@ -313,7 +321,7 @@ void ktap_user_complete_cb()
 
 #define KTAPVM_PATH "/sys/kernel/debug/ktap/ktapvm"
 
-static void run_ktapvm(const char *file_name)
+static void run_ktapvm(struct ktap_user_parm *uparm_ptr)
 {
         int ktapvm_fd;
 
@@ -329,13 +337,11 @@ static void run_ktapvm(const char *file_name)
 
 	ktapio_create((void *)ktap_user_complete_cb);
 
-	ioctl(ktap_fd, KTAP_CMD_RUN, file_name);
+	ioctl(ktap_fd, KTAP_CMD_RUN, uparm_ptr);
 
 	close(ktap_fd);
 	close(ktapvm_fd);
 }
-
-static int use_temp_ktapc_out = 1;
 
 static int verbose;
 static char output_filename[128];
@@ -361,7 +367,6 @@ static int parse_option(int argc, char **argv)
 		case 'o':
 			memset(output_filename, 0, sizeof(output_filename));
 			strncpy(output_filename, optarg, strlen(optarg));
-			use_temp_ktapc_out = 0;
 			break;
 		case 'V':
 			verbose = 1;
@@ -378,9 +383,6 @@ static int parse_option(int argc, char **argv)
 
 	if (optind >= argc)
 		usage("parse options failure\n");
-
-	if (use_temp_ktapc_out)
-		sprintf(output_filename, TEMP_KTAPC_OUT_PATH_FMT, (int)getpid());
 
 	return optind;
 }
@@ -415,21 +417,36 @@ static void compile(const char *input)
 	if (verbose)
 		dump_function(1, cl->l.p);
 
-	/* ktapc output */
-	fdout = open(output_filename, O_RDWR | O_CREAT | O_TRUNC, 0);
-	if (fdout < 0)
-		handle_error("open failed");
+	/*
+	 * ktapc output
+	 * ktap_trunk_mem will be free when thread exit
+	 */
+	ktap_trunk_mem = malloc(ktap_trunk_mem_size);
+	if (!ktap_trunk_mem)
+		handle_error("malloc failed");
 
-	ktapc_dump(cl->l.p, ktapc_writer, fdout, 0);
-	close(fdout);
+	ktapc_dump(cl->l.p, ktapc_writer, NULL, 0);
 
-	if (!use_temp_ktapc_out)
+	if (output_filename[0] != '\0') {
+		int ret;
+
+		fdout = open(output_filename, O_RDWR | O_CREAT | O_TRUNC, 0);
+		if (fdout < 0)
+			handle_error("open failed");
+
+		ret = write(fdout, ktap_trunk_mem, ktap_trunk_mem_len);
+		if (ret < 0)
+			handle_error("write failed");
+
+		close(fdout);
 		exit(0);
+	}
 }
 
 int main(int argc, char **argv)
 {
-	char argstr[1024];
+	struct ktap_user_parm uparm;
+	char argstr[128];
 	char *ptr = argstr;
 	int src_argindex, i, pos = 0;
 
@@ -440,8 +457,8 @@ int main(int argc, char **argv)
 
 	compile(argv[src_argindex]);
 
-	strcpy(ptr, output_filename);
-	ptr += strlen(output_filename);
+	strcpy(ptr, argv[src_argindex]);
+	ptr += strlen(argv[src_argindex]);
 	*(ptr++) = ' ';
 
 	/* pass rest argv into ktapvm */
@@ -453,7 +470,12 @@ int main(int argc, char **argv)
 
 	*(ptr - 1) = '\0';
 
+	uparm.trunk = ktap_trunk_mem;
+	uparm.trunk_len = ktap_trunk_mem_len;
+	uparm.argstr = argstr;
+	uparm.arglen = ptr - argstr;
+
 	/* start running into kernel ktapvm */
-	run_ktapvm(argstr);
+	run_ktapvm(&uparm);
 }
 

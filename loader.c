@@ -211,7 +211,7 @@ static int load_function(struct load_state *S, Proto *f)
 }
 
 
-#define error(S, why)	ktap_printf(S->ks, "load failed: %s precompiled chunk", why)
+#define error(S, why)	ktap_printf(S->ks, "load failed: %s precompiled chunk\n", why)
 
 #define N0	KTAPC_HEADERSIZE
 #define N1	(sizeof(KTAP_SIGNATURE) - sizeof(char))

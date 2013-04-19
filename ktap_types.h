@@ -11,7 +11,12 @@ typedef char u8;
 #include <string.h>
 #endif
 
-#define TEMP_KTAPC_OUT_PATH_FMT		"/tmp/ktapc.out.%d"
+struct ktap_user_parm {
+	const char *trunk;
+	int trunk_len;
+	const char *argstr;
+	int arglen;
+};
 
 enum {
 	KTAP_CMD_VERSION,
