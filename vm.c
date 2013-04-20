@@ -524,12 +524,17 @@ static void ktap_execute(ktap_State *ks)
 	case OP_DIV:
 		/* divide 0 checking */
 		if (!nvalue(RKC(instr))) {
-			ktap_printf(ks, "error: divide 0\n");
+			ktap_printf(ks, "error: divide 0 arith operation\n");
 			return;
 		}
 		arith_op(NUMDIV);
 		break;
 	case OP_MOD:
+		/* divide 0 checking */
+		if (!nvalue(RKC(instr))) {
+			ktap_printf(ks, "error: mod 0 arith operation\n");
+			return;
+		}
 		arith_op(NUMMOD);
 		break;
 	case OP_POW:
