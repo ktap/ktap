@@ -126,6 +126,9 @@ keep updating this file)
 
 - kernel_version() base function call
 
+- support ktap -c cmd, ktap -p $pid
+
+
 [LOW]
 - dead loop detaction
   ==COMPLETE==
