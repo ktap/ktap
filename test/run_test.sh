@@ -17,6 +17,7 @@ function ktaprun {
 
 #####################################################
 ktaprun arg.kp 1 testing
+ktaprun arith.kp
 ktaprun concat.kp
 ktaprun fibonacci.kp
 ktaprun function.kp
