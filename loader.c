@@ -43,6 +43,8 @@ struct load_state {
 	} while(0)
 
 #define NEW_VECTOR(S, size)	ktap_malloc(S->ks, size)
+#define GET_CURRENT(S)		&S->buff[S->pos]
+#define ADD_POS(S, size)	S->pos += size
 
 
 static int load_function(struct load_state *S, Proto *f);
@@ -74,11 +76,9 @@ static Tstring *load_string(struct load_state *S)
 	if (!size)
 		return NULL;
 	else {
-		/* todo: actully don't need to malloc here, pass the pointer*/
-		char *s = NEW_VECTOR(S, size);
-		READ_VECTOR(S, s, size * sizeof(char));
+		char *s = GET_CURRENT(S);
+		ADD_POS(S, size);
 		ts = tstring_newlstr(S->ks, s, size - 1); /* remove trailing '\0' */
-		ktap_free(S->ks, s);
 		return ts;
 	}
 }
