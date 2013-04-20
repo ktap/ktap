@@ -16,52 +16,40 @@ kdebug.probe_end(function () {
 #Result:
 #
 #[root@jovi ktap]# ./ktap scripts/syscalls_histogram.kp
-#
-#^C
-#              value ------------- Distribution ------------- count
-# sys_enter_gettim... |                                       2
-#sys_enter_mmap_pgoff |@                                      86
-# sys_enter_rt_sig... |@@@@@                                  341
-#  sys_enter_newuname |                                       2
-#    sys_enter_select |@@@@                                   260
-# sys_enter_nanosleep |                                       16
-#     sys_enter_close |@@@@                                   258
-#     sys_enter_lseek |                                       2
-#sys_enter_exit_group |                                       7
-#     sys_enter_clone |                                       7
-#     sys_enter_write |@                                      105
-#   sys_enter_fstat64 |                                       53
-#   sys_enter_getegid |                                       16
-#      sys_enter_poll |                                       49
-#     sys_enter_ioctl |                                       26
-#   sys_enter_geteuid |                                       17
-#      sys_enter_open |@@@                                    236
-#    sys_enter_capget |                                       21
-#    sys_enter_munmap |                                       14
-#   sys_enter_lstat64 |                                       44
-#    sys_enter_execve |                                       5
-#    sys_enter_openat |                                       2
-# sys_enter_getrlimit |                                       1
-# sys_enter_set_ro... |                                       1
-#  sys_enter_statfs64 |                                       4
-# sys_enter_set_ti... |                                       1
-# sys_enter_getgroups |                                       2
-#   sys_enter_setpgid |                                       2
-#      sys_enter_time |                                       14
-#   sys_enter_waitpid |                                       13
-#      sys_enter_pipe |                                       4
-#  sys_enter_getdents |                                       2
-#      sys_enter_dup2 |                                       7
-#    sys_enter_stat64 |@@                                     136
-#   sys_enter_fcntl64 |                                       7
-#  sys_enter_mprotect |                                       27
-#       sys_enter_brk |                                       18
-#      sys_enter_read |@@@@@                                  325
-#sys_enter_getdents64 |                                       2
-#    sys_enter_access |                                       21
-#    sys_enter_getuid |                                       16
-# sys_enter_rt_sig... |@@@                                    186
-#  sys_enter_getxattr |                                       21
-#    sys_enter_getgid |                                       16
-#sys_enter_socketcall |                                       1
+#                          value ------------- Distribution ------------- count
+#          sys_enter_gettimeofday |                                       5
+#                sys_enter_stat64 |@@@@                                   364
+#        sys_enter_rt_sigprocmask |@@                                     219
+#              sys_enter_newuname |                                       1
+#              sys_enter_getdents |                                       8
+#             sys_enter_nanosleep |                                       14
+#                 sys_enter_close |@@@@@@@@                               748
+#                 sys_enter_lseek |                                       9
+#            sys_enter_exit_group |                                       1
+#                 sys_enter_clone |                                       1
+#                 sys_enter_alarm |                                       54
+#                 sys_enter_write |                                       59
+#               sys_enter_fstat64 |                                       23
+#                sys_enter_execve |                                       1
+#                  sys_enter_poll |                                       47
+#                 sys_enter_ioctl |                                       29
+#                sys_enter_munmap |                                       13
+#                sys_enter_openat |                                       4
+#                  sys_enter_time |                                       15
+#                sys_enter_statfs |                                       1
+#                  sys_enter_pipe |                                       1
+#               sys_enter_fcntl64 |                                       51
+#                sys_enter_select |                                       87
+#            sys_enter_mmap_pgoff |                                       31
+#                sys_enter_getuid |                                       1
+#               sys_enter_setpgid |                                       2
+#               sys_enter_waitpid |                                       2
+#                  sys_enter_read |@@@@@@@@@                              826
+#                   sys_enter_brk |                                       9
+#              sys_enter_mprotect |                                       6
+#                  sys_enter_open |@@@@@@@@                               745
+#          sys_enter_rt_sigaction |@                                      106
+#                sys_enter_llseek |                                       8
+#                sys_enter_access |                                       6
+#            sys_enter_socketcall |                                       5
 
