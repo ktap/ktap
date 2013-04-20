@@ -1,0 +1,5 @@
+Syntax
+------
+   dynamic typed language, C language syntax frendly
+
+
