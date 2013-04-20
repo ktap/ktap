@@ -800,6 +800,9 @@ static int constfolding(OpCode op, expdesc *e1, expdesc *e2)
 	if ((op == OP_DIV || op == OP_MOD) && e2->u.nval == 0)
 		return 0;  /* do not attempt to divide by 0 */
 
+	if (op == OP_POW)
+		return 0; /* ktap current do not suppor pow arith */
+
 	r = ktapc_arith(op - OP_ADD + KTAP_OPADD, e1->u.nval, e2->u.nval);
 	e1->u.nval = r;
 	return 1;
