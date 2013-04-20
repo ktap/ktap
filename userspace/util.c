@@ -90,7 +90,7 @@ ktap_Number ktapc_arith(int op, ktap_Number v1, ktap_Number v2)
 	case KTAP_OPSUB: return NUMSUB(v1, v2);
 	case KTAP_OPMUL: return NUMMUL(v1, v2);
 	case KTAP_OPDIV: return NUMDIV(v1, v2);
-	//  case KTAP_OPMOD: return NUMMOD(v1, v2);
+	case KTAP_OPMOD: return NUMMOD(v1, v2);
 	//  case KTAP_OPPOW: return NUMPOW(v1, v2);
 	case KTAP_OPUNM: return NUMUNM(v1);
 	default: ktap_assert(0); return 0;

@@ -530,8 +530,7 @@ static void ktap_execute(ktap_State *ks)
 		arith_op(NUMDIV);
 		break;
 	case OP_MOD:
-		/* todo: floor and pow in kernel */
-		//arith_op(NUMMOD);
+		arith_op(NUMMOD);
 		break;
 	case OP_POW:
 		//arith_op(NUMPOW);

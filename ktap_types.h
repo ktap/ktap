@@ -490,7 +490,7 @@ typedef int ktap_Number;
 #define NUMISNAN(a)     (!NUMEQ((a), (a)))
 
 /* todo: floor and pow in kernel */
-#define NUMMOD(a, b)    ((a) - floor((a) / (b)) * (b))
+#define NUMMOD(a, b)    ((a) % (b))
 #define NUMPOW(a, b)    (pow(a, b))
 
 
