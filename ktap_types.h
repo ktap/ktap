@@ -12,9 +12,9 @@ typedef char u8;
 #endif
 
 struct ktap_user_parm {
-	const char *trunk;
+	char *trunk;
 	int trunk_len;
-	const char *argstr;
+	char *argstr;
 	int arglen;
 };
 

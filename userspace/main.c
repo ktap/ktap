@@ -292,11 +292,8 @@ static void init_dummy_global_state()
 
 
 
-static struct ktap_user_parm ktap_uparm = {.trunk_len = 1024};
-
-static char *ktap_trunk_mem;
-static int ktap_trunk_mem_len;
-static int ktap_trunk_mem_size;
+static struct ktap_user_parm ktap_uparm;
+static int ktap_trunk_mem_size = 1024;
 
 static int ktapc_writer(const void* p, size_t sz, void* ud)
 {
@@ -304,12 +301,12 @@ static int ktapc_writer(const void* p, size_t sz, void* ud)
 
 	if (ktap_uparm.trunk_len + sz > ktap_trunk_mem_size) {
 		int new_size = ktap_trunk_mem_size * 2;
-		ktap_uparm.trunk = realloc(ktap_uparm->trunk, new_size);
+		ktap_uparm.trunk = realloc(ktap_uparm.trunk, new_size);
 		ktap_trunk_mem_size = new_size;
 	}
 
-	memcpy(ktap_uparm->trunk + ktap_uparm->trunk_len, p, sz);
-	ktap_uparm->trunk_len += sz;
+	memcpy(ktap_uparm.trunk + ktap_uparm.trunk_len, p, sz);
+	ktap_uparm.trunk_len += sz;
 
 	return 0;
 }
@@ -421,8 +418,8 @@ static void compile(const char *input)
 		dump_function(1, cl->l.p);
 
 	/* ktapc output */
-	ktap_uparm->trunk = malloc(ktap_trunk_mem_size);
-	if (!ktap_uparm->trunk)
+	ktap_uparm.trunk = malloc(ktap_trunk_mem_size);
+	if (!ktap_uparm.trunk)
 		handle_error("malloc failed");
 
 	ktapc_dump(cl->l.p, ktapc_writer, NULL, 0);
@@ -434,7 +431,7 @@ static void compile(const char *input)
 		if (fdout < 0)
 			handle_error("open failed");
 
-		ret = write(fdout, ktap_trunk_mem, ktap_trunk_mem_len);
+		ret = write(fdout, ktap_uparm.trunk, ktap_uparm.trunk_len);
 		if (ret < 0)
 			handle_error("write failed");
 
