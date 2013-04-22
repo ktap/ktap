@@ -32,7 +32,6 @@
 #include <trace/events/printk.h>
 #include "ktap.h"
 
-typedef int ptrdiff_t;
 #define KTAP_MINSTACK 20
 
 /* todo: enlarge maxstack for big system like 64-bit */
