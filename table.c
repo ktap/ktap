@@ -609,7 +609,7 @@ void table_histogram(ktap_State *ks, Table *t)
 		memset(dist_str, '@', ratio);
 
 		if (ttisstring(key)) {
-			char buf[21] = {0};
+			char buf[32 + 1] = {0};
 			char *keystr;
 
 			if (strlen(svalue(key)) > 32) {
