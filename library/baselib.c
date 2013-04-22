@@ -159,7 +159,11 @@ static int ktap_lib_inplace_inc(ktap_State *ks)
 	Tvalue *v;
 
 	v = table_set(ks, tbl, k);
-	setnvalue(v, nvalue(v) + 1);
+	if (unlikely(isnil(v))) {
+		setnvalue(v, 1);
+	} else
+		setnvalue(v, nvalue(v) + 1);
+
 	return 0;
 }
 

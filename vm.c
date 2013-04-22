@@ -391,7 +391,7 @@ static int precall(ktap_State *ks, StkId func, int nresults)
 #define arith_op(op) { \
 	Tvalue *rb = RKB(instr); \
 	Tvalue *rc = RKC(instr); \
-	if ((ttisnumber(rb)|| ttisnil(rb)) && (ttisnumber(rc) || ttisnil(rc))) { \
+	if (ttisnumber(rb) && ttisnumber(rc)) { \
 		ktap_Number nb = nvalue(rb), nc = nvalue(rc); \
 		setnvalue(ra, op(nb, nc)); \
 	} }

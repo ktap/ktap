@@ -21,9 +21,6 @@ if (0) {
 	#failed()
 }
 
-#Note that below code is not working in lua, so it breaked compatibility
-#with lua, why? see table syscalls_histogram.kp
-#figure out a clean solution to fix this, try not break lua compatibility.
-if (1+nil != 1) {
+if (1+nil != nil) {
 	failed()
 }
