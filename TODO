@@ -41,6 +41,8 @@ keep updating this file)
 - change comments sytle to "#"
   ==COMPLETE==
 
+- backport to 3.4 kernel
+  ==COMPLETE==
 
 [NORMAL]
 - ARM support
@@ -127,6 +129,8 @@ keep updating this file)
 - kernel_version() base function call
 
 - support ktap -c cmd, ktap -p $pid
+
+- optimize tracepoints_histogram.kp, use perf event id as key index, boost performance
 
 
 [LOW]
