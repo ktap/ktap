@@ -22,8 +22,13 @@
 
 #ifdef __KERNEL__
 #include "ktap.h"
+#include <linux/sort.h>
 #else
 #include "ktap_types.h"
+static inline void sort(void *base, size_t num, size_t size,
+			int (*cmp_func)(const void *, const void *),
+			void (*swap_func)(void *, void *, int size))
+{}
 #endif
 
 
@@ -558,6 +563,19 @@ struct table_hist_record {
 	Tvalue val;
 };
 
+static int hist_record_cmp(const void *r1, const void *r2)
+{
+	const struct table_hist_record *i = r1;
+	const struct table_hist_record *j = r2;
+
+	if ((nvalue(&i->val) == nvalue(&j->val))) {
+		return 0;
+	} else if ((nvalue(&i->val) < nvalue(&j->val))) {
+		return 1;
+	} else
+		return -1;
+}
+
 #define DISTRIBUTION_STR "------------- Distribution -------------"
 /* histogram: key should be number or string, value must be number */
 void table_histogram(ktap_State *ks, Table *t)
@@ -597,6 +615,8 @@ void table_histogram(ktap_State *ks, Table *t)
 		count++;
 		total += nvalue(gval(n));
 	}
+
+	sort(thr, count, sizeof(struct table_hist_record), hist_record_cmp, NULL);
 
 	ktap_printf(ks, "%32s%s%s\n", "value ", DISTRIBUTION_STR, " count");
 	dist_str[sizeof(dist_str) - 1] = '\0';
