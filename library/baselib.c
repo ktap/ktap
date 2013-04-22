@@ -152,6 +152,17 @@ static int ktap_lib_user_string(ktap_State *ks)
 	return 1;
 }
 
+static int ktap_lib_inplace_inc(ktap_State *ks)
+{
+	Table *tbl = hvalue(GetArg(ks, 1));
+	Tvalue *k = GetArg(ks, 2);
+	Tvalue *v;
+
+	v = table_set(ks, tbl, k);
+	setnvalue(v, nvalue(v) + 1);
+	return 0;
+}
+
 static int ktap_lib_histogram(ktap_State *ks)
 {
 	table_histogram(ks, hvalue(GetArg(ks, 1))); /* need to check firstly */
@@ -181,6 +192,7 @@ static const ktap_Reg base_funcs[] = {
 	{"arch", ktap_lib_arch},
 	{"kernel_v", ktap_lib_kernel_v},
 	{"user_string", ktap_lib_user_string},
+	{"inplace_inc", ktap_lib_inplace_inc},
 	{"histogram", ktap_lib_histogram},
 	{NULL}
 };
