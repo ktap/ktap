@@ -1,0 +1,125 @@
+
+# showing all tracepoints in histogram style
+
+hist = {}
+
+function eventfun (e) {
+	inplace_inc(hist, e.name)
+}
+
+kdebug.probe("tp:", eventfun)
+
+kdebug.probe_end(function () {
+	histogram(hist)
+})
+
+#Results:
+#^C
+#                          value ------------- Distribution ------------- count
+#          sys_enter_gettimeofday |                                       3
+#            sys_enter_mmap_pgoff |                                       8
+#                   sys_exit_open |                                       14
+#                 block_rq_insert |                                       16
+#                     timer_start |@@                                     43128
+#             sys_enter_nanosleep |                                       23
+#                 sys_enter_close |                                       12
+#                  hrtimer_cancel |@                                      31624
+#                  sys_exit_ioctl |                                       1
+#              sched_migrate_task |                                       734
+#                 sys_exit_munmap |                                       8
+#                    mm_page_free |                                       60
+#         workqueue_activate_work |                                       110
+#                   mm_page_alloc |                                       8
+#          scsi_dispatch_cmd_done |                                       16
+#              sched_stat_runtime |                                       2617
+#                        cpu_idle |@@                                     54476
+#                  sys_enter_poll |                                       77
+#                           kfree |                                       1447
+#                        sys_exit |                                       781
+#                       kfree_skb |                                       146
+#             hrtimer_expire_exit |@                                      24249
+#                  sys_exit_close |                                       12
+#                  sys_exit_write |                                       94
+#            hrtimer_expire_entry |@                                      24240
+#               writeback_written |                                       4
+#             sys_exit_mmap_pgoff |                                       8
+#                 signal_generate |                                       1
+#                    hrtimer_init |                                       113
+#               timer_expire_exit |@@                                     42400
+#                sys_enter_stat64 |                                       1
+#                 sys_exit_stat64 |                                       1
+#                     consume_skb |                                       148
+#         workqueue_execute_start |                                       716
+#              block_bio_complete |                                       42
+#                    timer_cancel |@@                                     43160
+#          writeback_single_inode |                                       2
+#           sys_exit_rt_sigaction |                                       22
+#                       napi_poll |                                       155
+#             credit_entropy_bits |                                       9
+#           mix_pool_bytes_nolock |                                       8
+#                      block_plug |                                       1
+#                       sys_enter |                                       781
+#                      timer_init |                                       873
+#               block_rq_complete |                                       16
+#        sys_enter_rt_sigprocmask |                                       328
+#                    softirq_exit |@                                      35951
+#              writeback_queue_io |                                       4
+#           writeback_write_inode |                                       1
+#                sys_enter_select |                                       204
+#                 kmem_cache_free |                                       389
+#                   softirq_raise |@                                      35963
+#                 rcu_utilization |@@@@@@                                 114620
+#              ext4_da_writepages |                                       1
+#         scsi_dispatch_cmd_start |                                       16
+#                  block_rq_issue |                                       16
+#            mm_page_free_batched |                                       8
+#                    block_unplug |                                       1
+#              sched_stat_blocked |                                       682
+#                sys_exit_fstat64 |                                       12
+#             block_bio_backmerge |                                       5
+#                     block_getrq |                                       16
+#                 block_bio_remap |                                       42
+#                   wbc_writepage |                                       21
+#                 sys_enter_write |                                       94
+#                   hrtimer_start |@                                      31368
+#              sys_exit_nanosleep |                                       23
+#                 block_bio_queue |                                       42
+#    writeback_single_inode_start |                                       2
+#                 sys_exit_select |                                       204
+#                 writeback_start |                                       4
+#            workqueue_queue_work |                                       110
+#                sys_enter_munmap |                                       8
+#                 sys_enter_ioctl |                                       1
+#              global_dirty_state |                                       5
+#               sys_enter_fstat64 |                                       12
+#                         kmalloc |                                       30
+#                  sys_enter_open |                                       14
+#                    sched_switch |@                                      29120
+#                    sched_wakeup |@@                                     43135
+#                   sys_exit_time |                                       11
+#                  sys_enter_time |                                       11
+#                 sched_stat_wait |@                                      27891
+#           kmem_cache_alloc_node |                                       60
+#                    net_dev_xmit |                                       148
+#                    kmalloc_node |                                       61
+#                irq_handler_exit |                                       61
+#               irq_handler_entry |                                       61
+#                  sys_enter_read |                                       113
+#     writeback_write_inode_start |                                       1
+#                   sys_exit_read |                                       113
+#              timer_expire_entry |@@                                     42391
+#         writeback_pages_written |                                       3
+#                   sys_exit_poll |                                       77
+#           sys_exit_gettimeofday |                                       3
+#               netif_receive_skb |                                       147
+#         skb_copy_datagram_iovec |                                       27
+#                kmem_cache_alloc |                                       331
+#                   net_dev_queue |                                       148
+#                   softirq_entry |@                                      35938
+#         sys_exit_rt_sigprocmask |                                       328
+#          sys_enter_rt_sigaction |                                       22
+#                sched_stat_sleep |@@                                     42202
+#                  mix_pool_bytes |                                       16
+#           workqueue_execute_end |                                       716
+
+
