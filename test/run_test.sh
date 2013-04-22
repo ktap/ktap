@@ -22,6 +22,7 @@ ktaprun concat.kp
 ktaprun fibonacci.kp
 ktaprun function.kp
 ktaprun if.kp
+ktaprun inplace_inc.kp
 ktaprun kprobe.kp
 ktaprun len.kp
 ktaprun looping.kp

@@ -1,0 +1,21 @@
+
+function failed() {
+	printf("failed\n");
+	exit(-1);
+}
+
+#---------------------------------------#
+
+t = {}
+
+inplace_inc(t, "key")
+
+if (t["key"] != 1) {
+	failed()
+}
+
+inplace_inc(t, "key")
+
+if (t["key"] != 2) {
+	failed()
+}
