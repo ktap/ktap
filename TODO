@@ -44,6 +44,9 @@ keep updating this file)
 - backport to 3.4 kernel
   ==COMPLETE==
 
+- support paris(t) in table
+  ==COMPLETE==
+
 [NORMAL]
 - ARM support
 

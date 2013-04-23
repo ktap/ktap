@@ -163,6 +163,62 @@ static int arrayindex(const Tvalue *key)
 	return -1;  /* `key' did not match some condition */
 }
 
+/*
+ * returns the index of a `key' for table traversals. First goes all
+ * elements in the array part, then elements in the hash part. The
+ * beginning of a traversal is signaled by -1.
+ */
+static int findindex(ktap_State *ks, Table *t, StkId key)
+{
+	int i;
+
+	if (ttisnil(key))
+		return -1;  /* first iteration */
+
+	i = arrayindex(key);
+	if (i > 0 && i <= t->sizearray)  /* is `key' inside array part? */
+		return i - 1;  /* yes; that's the index (corrected to C) */
+	else {
+		Node *n = mainposition(t, key);
+		for (;;) {  /* check whether `key' is somewhere in the chain */
+			/* key may be dead already, but it is ok to use it in `next' */
+			if (equalobjv(ks, gkey(n), key)) {
+				i = n - gnode(t, 0);  /* key index in hash table */
+				/* hash elements are numbered after array ones */
+				return i + t->sizearray;
+			} else
+				n = gnext(n);
+
+			if (n == NULL)
+				/* key not found */
+				ktap_runerror(ks, "invalid key to next");
+		}
+	}
+}
+
+int table_next(ktap_State *ks, Table *t, StkId key)
+{
+	int i = findindex(ks, t, key);  /* find original element */
+
+	for (i++; i < t->sizearray; i++) {  /* try first array part */
+	        if (!ttisnil(&t->array[i])) {  /* a non-nil value? */
+			setnvalue(key, i+1);
+			setobj(ks, key+1, &t->array[i]);
+			return 1;
+		}
+	}
+
+	for (i -= t->sizearray; i < sizenode(t); i++) {  /* then hash part */
+		if (!ttisnil(gval(gnode(t, i)))) {  /* a non-nil value? */
+			setobj(ks, key, gkey(gnode(t, i)));
+			setobj(ks, key+1, gval(gnode(t, i)));
+			return 1;
+		}
+	}
+
+	return 0;  /* no more elements */
+}
+
 
 
 static int computesizes (int nums[], int *narray)

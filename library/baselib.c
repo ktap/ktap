@@ -30,6 +30,29 @@
 #define GetArg(ks, n)	((ks)->ci->func + (n))
 #define GetArgN(ks)	((int)(ks->top - (ks->ci->func + 1)))
 
+static int ktap_lib_next(ktap_State *ks)
+{
+	Table *t = hvalue(ks->top - 2);
+
+	if (table_next(ks, t, ks->top)) {
+		ks->top += 2;
+		return 2;
+	} else {
+		setnilvalue(ks->top++);
+		return 1;
+	}
+}
+
+static int ktap_lib_pairs(ktap_State *ks)
+{
+	Table *t = hvalue(GetArg(ks, 1));
+
+	setfvalue(ks->top++, ktap_lib_next);
+	sethvalue(ks->top++, t);
+	setnilvalue(ks->top++);
+	return 3;
+}
+
 static int ktap_lib_len(ktap_State *ks)
 {
 	int len = objlen(ks, GetArg(ks, 1));
@@ -181,7 +204,7 @@ static const ktap_Reg base_funcs[] = {
 //	{"setmetatable", ktap_setmetatable},
 //	{"ipairs", ktap_ipairs},
 //	{"next", ktap_next},
-//	{"pairs", ktap_pairs},
+	{"pairs", ktap_lib_pairs},
 //	{"tonumber", ktap_tonumber},
 //	{"tostring", ktap_tostring},
 //	{"type", ktap_type},
