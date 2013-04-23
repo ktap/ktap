@@ -188,6 +188,9 @@ static void decode_instruction(Proto *f, int instr)
 		printf("\t");
 		print_base(GETARG_A(instr));
 		break;
+	case OP_JMP:
+		printf("\t%d", GETARG_sBx(instr));
+		break;
 	default:
 		break;
 	}
