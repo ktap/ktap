@@ -200,12 +200,14 @@ static void event_regstr(ktap_State *ks, struct ktap_event *e, StkId ra)
 	struct pt_regs *regs = e->regs;
 	char str[256] = {0};
 
+#ifdef CONFIG_X86_32
 	sprintf(str, "{ax: 0x%lx, orig_ax: 0x%lx, bx: 0x%lx, cx: 0x%lx, dx: 0x%lx, "
 		"si: 0x%lx, di: 0x%lx, bp: 0x%lx, ds: 0x%lx, es: 0x%lx, fs: 0x%lx, "
 		"gs: 0x%lx, ip: 0x%lx, cs: 0x%lx, flags: 0x%lx, sp: 0x%lx, ss: 0x%lx}\n",
 		regs->ax, regs->orig_ax, regs->bx, regs->cx, regs->dx,
 		regs->si, regs->di, regs->bp, regs->ds, regs->es, regs->fs,
 		regs->gs, regs->ip, regs->cs, regs->flags, regs->sp, regs->ss);
+#endif
 	setsvalue(ra, tstring_new(ks, str));
 }
 
