@@ -433,7 +433,7 @@ typedef int ktap_Number;
 
 
 
-#define setnilvalue(obj) {settype(obj, KTAP_TNIL), (obj)->val.n = 0;}
+#define setnilvalue(obj) {Tvalue *io = (obj); settype(io, KTAP_TNIL);}
 
 #define setbvalue(obj, x) \
   {Tvalue *io = (obj); io->val.b = (x); settype(io, KTAP_TBOOLEAN); }
@@ -518,6 +518,7 @@ void table_free(ktap_State *ks, Table *t);
 int table_length(ktap_State *ks, Table *t);
 void table_dump(ktap_State *ks, Table *t);
 void table_histogram(ktap_State *ks, Table *t);
+int table_next(ktap_State *ks, Table *t, StkId key);
 
 void obj_dump(ktap_State *ks, const Tvalue *v);
 void showobj(ktap_State *ks, const Tvalue *v);
