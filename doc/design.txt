@@ -1,6 +1,95 @@
-Design
-------
-   bytecode desgin
-   Mulit-user running at same time.
+Q: Why use bytecode design?
+A: Using bytecode would be a clean and lightweight solution,
+   you don't need gcc toolchain to compile every scripts, all you
+   need is a ktapvm kernel modules and userspace tool called ktap.
+   since its language virtual machine design, it have great portability,
+   suppose you are working at a multi-arch cluster, if you want to run
+   a tracing script on each board, you won't need cross-compile tracing
+   script onto all board, what you really need to do is use ktap tool
+   to run script just in time.
+
+   Reality already showing that systemtap is not widely used in embedd Linux,
+   caused by problem of systemtap's architecture design choice, it's a natual
+   design for Rehat and IBM, because Redhat/IBM is focusing on server area,
+   not embedd area.
+
+Q: What's the differences with Systemtap or Dtrace?
+A: For systemtap, the answer is already mentioned at above question,
+   systemtap use translator design, for trade-off on performance with usability.
+
+   for dtrace, one common design with dtrace is also use bytecode, so basically dtrace
+   and ktap is on the same road. there have some projects porting dtrace from Solaris
+   to Linux, but the result is not good, dtrace is rooted in solaris, and there have
+   many huge differences between solaris tracing infrastructure with Linux's, it's
+   hard to let Linux user to comfortable use sloaris the tracing provider, and it's
+   impossible to let Linux kernel support million tracepoints like solaris.
+   dtrace is not suit for Linux, whatever the porting work is well done.
+
+   dtrace is based on D language, a language subset of C, it's a simple language
+   removed a lot of generic language elements, we are still not sure it is a good
+   design choice.
+
+
+Q: Why use dynamically typed language? but not statically typed language?
+A: It's hard to say which one is more better than other, dynamically typed language
+   bring efficiency and fast prototype production, but loosing type check at compile
+   phase, and easy to make mistake in runtime, also it's need many runtime checking.
+   In contrasty, statically typed language win on programing safety, and performance.
+
+   ktap choose dynamically typed language as implementation.
+
+
+Q: Why we need ktap for event tracing? there already have a built-in ftrace in kernel
+A: This also is a common question for all dynamic tracing tool, not only ktap.
+   ktap provide more flexibility than built-in tracing infrastructure. suppose you
+   need print a global variable when tracepoint hit, or you want print backtrace,
+   even more, you want to store some info into hashtable, display when tracing finish,
+   in these case, some of them ftrace can take it, some of them ftrace cannot.
+   In all, ktap provide you with great flexibility to scripting your own trace need.
+
+
+Q: How about the performance? is ktap slow?
+A: ktap is not slow, the bytecode is very high-level, the language virtual machine is
+   register-based(compare with stack-based), with little instruction, the table data
+   structure is heavily optimized in ktapvm.
+   ktap use per-cpu allocation in many place, without global locking scheme, it's very
+   fast when executing tracepoint callback.
+   Performance benchmark showing that the overhead of ktap running is below 10%, compare
+   with full speed running without any tracepoint enabled.
+   In future, ktap will embed jit(Just In Time) implementation into ktapvm, at that time,
+   ktap will faster than now, hopefully the overhead will decrease to little than 5%, or 3%
+
+
+Q: Why not porting a high level language implementation into kernel directly? like python?
+A: I take serious on the size of vm and memory footprint. python vm is large, it's not
+   suit to embed into kernel, and python have some functionality which we don't need.
+   The bytecode of other high level language is also big, ktap only have 32 bytecodes,
+   python/java/erlang have one or two hundred bytecodes.
+   There also have some problems when porting those language into kernel, userspace
+   programming have many differences with kernel programming, like float numbers, handle
+   sleeping code carefully in kernel, deadloop is not allowed in kernel, multi-thread
+   management, etc.., so it's impossible to porting language implementation into kernel
+   with little adaption work.
+
+
+
+Q: What's the status of ktap now?
+A: Basically it works on x86-32, x86-64, it also could work for other hardware architecture,
+   but not proven yet(I don't have enough hardware to test)
+   There may have some bugs, but software always have bugs :)
+   If you found some bug, fix it on you own programming skill, or report to me.
+
+
+Q: How to hack ktap? I want to write some extensions onto ktap.
+A: welcome hacking.
+   You can write your own library to fulfill your specific need, you can write any script
+   as you want.
+
+
+Q: What's the plan of ktap? any roadmap?
+A: the current plan is deliver more ktap script, and bugfix.
+   Also I will work on ktap JIT interpreter, to boost performance heavily, also integrate
+   ffi library into ktap, then we can operate kernel data structure or function directly,
+   this maybe happens before ktap v2.0
 
 
