@@ -26,6 +26,7 @@ ktaprun inplace_inc.kp
 ktaprun kprobe.kp
 ktaprun len.kp
 ktaprun looping.kp
+ktaprun pairs.kp
 ktaprun table.kp
 ktaprun timer.kp
 ktaprun tracepoint.kp
