@@ -74,10 +74,17 @@ KTAP Standard Libraries
  os.info:
  os.sleep:
  os.wait:
- os.timer:
 
 6. timer Functions
 ------------------
+  timer.s   (N, func)
+  timer.sec (N, func)
+  timer.ms  (N, func)
+  timer.msec(N, func)
+  timer.us  (N, func)
+  timer.usec(N, func)
+  timer.ns  (N, func)
+  timer.nsec(N, func)
 
 7. Kdebug Library
 -----------------
