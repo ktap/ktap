@@ -30,6 +30,7 @@ keep updating this file)
 - non-mainthread error exit problem(like printf arg mismatch)
 
 - ktapio problem in all event tracepoints opened
+  ==COMPLETE== (fixed by patch "relay: fix timer madness" merge in 3.10)
 
 - ktapio support global and percpu mode
 
