@@ -339,8 +339,8 @@ static struct event_field_tbl {
 	char *name;
 	void (*func)(ktap_State *ks, struct ktap_event *e, StkId ra);	
 } event_ftbl[] = {
-	{"annotate", event_annotate},
 	{"name", event_name},
+	{"annotate", event_annotate},
 	{"print_fmt", event_print_fmt},
 	{"sc_nr", event_sc_nr},
 	{"sc_is_enter", event_sc_is_enter},
