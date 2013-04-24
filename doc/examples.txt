@@ -1,14 +1,8 @@
-Script Examples
----------------
-   trace
-   timer
-   kprobe
-   uprobe
 
-Example of syscall tracing
---------------------------
+KTAP Script Examples
+--------------------
 
-syscalls.kp:  
+1. syscall tracing example
 
 	function eventfun (e) {
 		printf("%d %d\t%s\t%s", cpu(), pid(), execname(), e.annotate)
@@ -19,3 +13,18 @@ syscalls.kp:
 	kdebug.probe_end(function () {
 
 
+2. timer example
+	os.timer("1s", function () {
+		printf("1s timer hit\n");
+	})
+
+	os.wait()
+
+3. kprobe example:
+	kdebug.probe("kprobe:schedule", function (e) {
+		printf("kprobe schedule hit\n");
+	});
+
+	kdebug.probe_end(function () {
+		printf("kprobe ending\n");
+	})
