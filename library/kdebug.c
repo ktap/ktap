@@ -1,5 +1,5 @@
 /*
- * probe.c - ktap probing core implementation
+ * kdebug.c - ktap probing core implementation
  *
  * Copyright (C) 2012 Jovi Zhang <bookjovi@gmail.com>
  *
