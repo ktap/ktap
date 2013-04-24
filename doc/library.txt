@@ -1,0 +1,89 @@
+
+KTAP Standard Libraries
+-----------------------
+
+
+1. Basic functions
+------------------
+
+1) print (...)
+ Receives any number of arguments, and prints their values,
+ print is not intended for formatted output, but only as a
+ quick way to show a value, typically for debugging.
+ For formatted output, use printf.
+
+2) printf (fmt, ...)
+ Similar with C printf, use for format string output.
+
+3) pairs (t)
+  Returns three values: the next function, the table t, and nil,
+  so that the construction
+  for (k,v in pairs(t)) { body }
+  will iterate over all key-value pairs of table t.
+
+4) len (t) /len (s)
+  If the argument is string, return length of string,
+  if the argument is table, return counts of table pairs.
+
+5) in_interrupt ()
+  checking is context is interrupt context
+  
+6) exit ()
+  quit ktap executing, simile exit syscall
+
+7) pid ()
+  return current process pid
+
+8) execname ()
+  return current process exec name string
+
+9) cpu ()
+  return current cpu id
+
+10) arch ()
+ return machine architecture, like x86, arm, etc.
+
+11) kernel_v ()
+ return Linux kernel version string, like 3.9, etc.
+
+12) user_string (addr)
+ Receive userspace address, read string from usersapce, return string.
+
+13) inplace_inc (t, key)
+ Receive table and key, atomic add into table value map with key.
+
+14) histogam (t)
+ Receive table, output table histogram to user.
+
+
+2. Table Manipulation
+---------------------
+
+3. String Manipulation
+----------------------
+
+4. Mathematical Functions
+-------------------------
+
+5. Input and Output Facilities
+------------------------------
+
+5. Operating System Facilities
+------------------------------
+ os.clock: 
+ os.info:
+ os.sleep:
+ os.wait:
+ os.timer:
+
+6. timer Functions
+------------------
+
+7. Kdebug Library
+-----------------
+for kdebug library, see another detail doc: ktap_tracing.txt
+
+
+
+
+
