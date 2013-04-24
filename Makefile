@@ -2,7 +2,7 @@
 LIBDIR = library
 
 LIBOBJS = 
-LIBOBJS += $(LIBDIR)/baselib.o $(LIBDIR)/oslib.o $(LIBDIR)/kdebug.o 
+LIBOBJS += $(LIBDIR)/baselib.o $(LIBDIR)/oslib.o $(LIBDIR)/kdebug.o $(LIBDIR)/timer.o
 
 
 obj-m		+= ktapvm.o

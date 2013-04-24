@@ -9,11 +9,11 @@ function failed() {
 count1 = 0
 count2 = 0
 
-os.timer("1s", function () {
+timer.s(1, function () {
 	count1 = count1 + 1
 })
 
-os.timer("2s", function () {
+timer.s(2, function () {
 	count2 = count2 + 1
 })
 

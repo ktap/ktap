@@ -23,6 +23,7 @@ void ktap_register_lib(ktap_State *ks, const char *libname, const ktap_Reg *func
 void ktap_init_baselib(ktap_State *ks);
 void ktap_init_oslib(ktap_State *ks);
 void ktap_init_kdebuglib(ktap_State *ks);
+void ktap_init_timerlib(ktap_State *ks);
 
 void ktap_event_handle(ktap_State *ks, void *e, int field, StkId ra);
 int ktap_probe_init(ktap_State *ks);
