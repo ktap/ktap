@@ -19,6 +19,12 @@ have great portability, safe to use in production environment,
 fulfilling the embedd ecosystem's tracing needs.
 
 
+Requirements
+------------
+- 3.4 or above Linux kernel header(kernel version below 3.4 is not tested)
+- CONFIG_EVENT_TRACING enabled
+
+
 Building & Running
 ------------------
 
