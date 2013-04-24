@@ -1,0 +1,76 @@
+
+KTAP TRACING
+------------
+
+1. kdebug.probe (event_description, func)
+ This function receive two argument, event_description string could be:
+ tracepoint, k(ret)probe, u(ret)probe, hardware events, breakpoint/watchpoint, etc,
+ these events description is similar with perf events, actually backend
+ implementation of ktap tracing mostly is based on perf events, so use the common
+ interface with perf is not surprise.
+
+ kdebug.probe("tracepoint:xxx", eventfun); #tracepoint
+ kdebug.probe("tp:xxx", eventfun);
+ kdebug.probe("kprobes:xxx", eventfun); #kprobe
+ kdebug.probe("k:xxx", eventfun);
+ kdebug.probe("k:xxx!", eventfun);  #kretprobe
+ kdebug.probe("uprobes:xxx:yyy", eventfun); #uprobe
+ kdebug.probe("u:xxx:yyy", eventfun);
+ kdebug.probe("u:xxx:yyy!", eventfun); #uretprobe
+ kdebug.probe("cache-misses", eventfun) #Hardware event
+ kdebug.probe("page-faults", eventfun) #Software event
+ kdebug.probe("branch-load-misses", eventfun) #Hardware cache event
+ kdebug.probe("mem:<addr>[:access]", eventfun) #Hardware breakpoint
+ kdebug.probe("kprobes:xxx, uprobes:xxx:yyy, cache-misses", eventfun) #support multi-event
+
+ Note that the second argument in above examples is a function:
+
+ function eventfun (e) { body }
+
+ the argument of eventfun is a event object, we can operate on this object via several ways:
+ e.name
+     event name, each event have a name associated with it.
+ e.annotate
+     this method is suit for tracepoint events, it will parse tracepoint events raw data
+     into human readable string.
+     the result is mostly same as each entry of /sys/kernel/debug/tracing/trace
+ e.print_fmt
+     this method is suit for tracepoint events, it's a inmutable string for each event,
+     see /sys/kernel/debug/tracing/events/*/*/format
+ e.sc_nr
+     get syscall number of event, only valid for syscall events.
+ e.sc_is_enter
+     check if this is syscall enter event, only valid for syscall events.
+ e.sc_arg1
+     get argument 1 of syscall enter event.
+ e.sc_arg2
+     get argument 2 of syscall enter event.
+ e.sc_arg3
+     get argument 3 of syscall enter event.
+ e.sc_arg4
+     get argument 4 of syscall enter event.
+ e.sc_arg5
+     get argument 5 of syscall enter event.
+ e.sc_arg6
+     get argument 6 of syscall enter event.
+ e.regstr
+     return registers string
+ e.allfield
+     return all fields of events, only valid for tracepoints.
+
+
+2. kdebug.probe_end (endfunc)
+ This function is used for invoking a function when tracing end, it will wait unitl
+ user press CTRL+C to stop tracing, then ktap will call endfunc function, user could
+ show tracing results in that function, or do other things.
+
+ If user don't want to wait in that function, to force tracing end, user can set
+ second argument of kdebug.probe_end function:
+
+ kdebug.probe_end (endfunc, 1)
+
+ Normally this usage mainly purpose for end tracing after some timer expired.
+
+3. kdebug.dumpstack ()
+ This function dump current thread stack into user.
+
