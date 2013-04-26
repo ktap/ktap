@@ -4,8 +4,8 @@ function eventfun(e) {
 	kdebug.dumpstack()
 }
 
-kdebug.trace("syscalls:sys_enter_open", eventfun);
+kdebug.probe("tp:syscalls:sys_enter_open", eventfun);
 
-kdebug.trace_end(function () {
+kdebug.probe_end(function () {
 	print("trace ending\n")
 })

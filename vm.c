@@ -29,7 +29,6 @@
 #include <linux/sched.h>
 #include <linux/completion.h>
 #include <linux/freezer.h>
-#include <trace/events/printk.h>
 #include "ktap.h"
 
 #define KTAP_MINSTACK 20

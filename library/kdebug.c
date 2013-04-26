@@ -24,6 +24,7 @@
 #include <linux/version.h>
 #include <linux/perf_event.h>
 #include <linux/ftrace_event.h>
+#include <trace/events/printk.h>
 #include <linux/kprobes.h>
 #include "../ktap.h"
 
@@ -674,50 +675,6 @@ static void end_probes(struct ktap_State *ks)
 	}
 }
 
-void ktap_probe_exit(ktap_State *ks)
-{
-	end_probes(ks);
-
-	if (!G(ks)->trace_enabled)
-		return;
-
-	free_percpu(percpu_trace_iterator);
-
-	G(ks)->trace_enabled = 0;
-
-	//unregister_trace_console(trace_console_func, ks);
-}
-
-int ktap_probe_init(ktap_State *ks)
-{
-	INIT_LIST_HEAD(&(G(ks)->probe_events_head));
-
-	/* allocate percpu data */
-	if (!G(ks)->trace_enabled) {
-		percpu_trace_iterator = alloc_percpu(struct trace_iterator);
-		if (!percpu_trace_iterator)
-			return -1;
-
-		G(ks)->trace_enabled = 1;
-	}
-
-	/* get ftrace_events global variable if ftrace_events not exported */
-	ftrace_events_ptr = kallsyms_lookup_name("ftrace_events");
-	if (!ftrace_events_ptr) {
-		G(ks)->trace_enabled = 0;
-		free_percpu(percpu_trace_iterator);
-		ktap_printf(ks, "cannot lookup ftrace_events in kallsyms\n");
-		return -1;
-	}
-#if 0
-	ret = register_trace_console(trace_console_func, ks);
-	if (ret)
-		return NULL;
-#endif
-
-	return 0;
-}
-
 static int ktap_lib_probe(ktap_State *ks)
 {
 	Tvalue *evname = GetArg(ks, 1);
@@ -775,7 +732,12 @@ static int ktap_lib_probe_end(ktap_State *ks)
 
 static DEFINE_PER_CPU(bool, ktap_in_dumpstack);
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 9, 0)
+void trace_console_func(void *__data, const char *text, unsigned start,
+			unsigned end, size_t len)
+#else
 void trace_console_func(void *__data, const char *text, size_t len)
+#endif
 {
 	ktap_State *ks = __data;
 
@@ -808,6 +770,51 @@ static int ktap_lib_dumpstack(ktap_State *ks)
 	__this_cpu_write(ktap_in_dumpstack, false);
 	return 0;
 }
+
+void ktap_probe_exit(ktap_State *ks)
+{
+	end_probes(ks);
+
+	if (!G(ks)->trace_enabled)
+		return;
+
+	free_percpu(percpu_trace_iterator);
+
+	unregister_trace_console(trace_console_func, ks);
+
+	G(ks)->trace_enabled = 0;
+}
+
+int ktap_probe_init(ktap_State *ks)
+{
+	INIT_LIST_HEAD(&(G(ks)->probe_events_head));
+
+	/* allocate percpu data */
+	if (!G(ks)->trace_enabled) {
+		percpu_trace_iterator = alloc_percpu(struct trace_iterator);
+		if (!percpu_trace_iterator)
+			return -1;
+
+	}
+
+	/* get ftrace_events global variable if ftrace_events not exported */
+	ftrace_events_ptr = kallsyms_lookup_name("ftrace_events");
+	if (!ftrace_events_ptr) {
+		free_percpu(percpu_trace_iterator);
+		ktap_printf(ks, "cannot lookup ftrace_events in kallsyms\n");
+		return -1;
+	}
+
+	if (register_trace_console(trace_console_func, ks)) {
+		free_percpu(percpu_trace_iterator);
+		ktap_printf(ks, "cannot register trace console\n");
+		return -1;
+	}
+
+	G(ks)->trace_enabled = 1;
+	return 0;
+}
+
 
 static const ktap_Reg kdebuglib_funcs[] = {
 	{"dumpstack", ktap_lib_dumpstack},
