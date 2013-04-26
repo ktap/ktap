@@ -684,6 +684,8 @@ void ktap_probe_exit(ktap_State *ks)
 	free_percpu(percpu_trace_iterator);
 
 	G(ks)->trace_enabled = 0;
+
+	//unregister_trace_console(trace_console_func, ks);
 }
 
 int ktap_probe_init(ktap_State *ks)
@@ -707,6 +709,11 @@ int ktap_probe_init(ktap_State *ks)
 		ktap_printf(ks, "cannot lookup ftrace_events in kallsyms\n");
 		return -1;
 	}
+#if 0
+	ret = register_trace_console(trace_console_func, ks);
+	if (ret)
+		return NULL;
+#endif
 
 	return 0;
 }

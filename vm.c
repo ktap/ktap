@@ -1099,8 +1099,6 @@ void ktap_exit(ktap_State *ks)
 	/* we need to flush all signals */
 	flush_signals(current);
 
-	//unregister_trace_console(trace_console_func, ks);
-
 	ktap_probe_exit(ks);
 	ktap_exit_timers(ks);
 
@@ -1172,11 +1170,6 @@ ktap_State *ktap_newstate(ktap_State **private_data, int argc, char **argv)
 	if (!percpu_ktap_stack)
 		return NULL;
 
-#if 0
-	ret = register_trace_console(trace_console_func, ks);
-	if (ret)
-		return NULL;
-#endif
 	return ks;
 }
 

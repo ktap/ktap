@@ -43,7 +43,6 @@ int ktap_transport_init(ktap_State *ks);
 
 void ktap_user_complete(ktap_State *ks);
 
-void trace_console_func(void *__data, const char *text, size_t len);
 void ktap_exit_timers(ktap_State *ks);
 
 extern DEFINE_PER_CPU(bool, ktap_in_tracing);
