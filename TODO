@@ -136,8 +136,6 @@ keep updating this file)
 
 - optimize tracepoints_histogram.kp, use perf event id as key index, boost performance
 
-- make CC=clang, fix the error
-
 
 [LOW]
 - dead loop detaction
@@ -192,3 +190,11 @@ keep updating this file)
   "1 + nil == 1" is not working in raw lua, but work in ktap
 
 - add atomic add operation ++ into ktap
+
+- make CC=clang, fix the error
+ glang don't support global register variable
+	current_stack_pointer in arch/x86/include/asm/thread_info.h
+ [   98.329164] kernel tried to execute NX-protected page - exploit attempt? (uid: 0)
+ [   98.330895] BUG: unable to handle kernel paging request at f53f3680
+
+
