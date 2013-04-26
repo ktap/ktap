@@ -136,6 +136,8 @@ keep updating this file)
 
 - optimize tracepoints_histogram.kp, use perf event id as key index, boost performance
 
+- make CC=clang, fix the error
+
 
 [LOW]
 - dead loop detaction
