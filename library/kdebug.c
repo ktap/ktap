@@ -39,6 +39,7 @@ struct ktap_trace_arg {
 
 /* this structure allocate on stack */
 struct ktap_event {
+	struct ktap_probe_event *pevent;
 	struct ftrace_event_call *call;
 	void *entry;
 	int entry_size;
@@ -49,9 +50,10 @@ struct ktap_event {
 struct ktap_probe_event {
 	struct list_head list;
 	int type;
+	const char *name;
 	union {
 		struct perf_event *perf;
-		struct kprobe p;
+		struct kretprobe p;
 	} u;
 	ktap_State *ks;
 	Closure *cl;
@@ -63,7 +65,8 @@ enum {
 	EVENT_TYPE_SYSCALL_ENTER,
 	EVENT_TYPE_SYSCALL_EXIT,
 	EVENT_TYPE_TRACEPOINT_MAX,
-	EVENT_TYPE_KPROBE
+	EVENT_TYPE_KPROBE,
+	EVENT_TYPE_KRETPROBE,
 };
 
 DEFINE_PER_CPU(bool, ktap_in_tracing);
@@ -93,15 +96,15 @@ static int __kprobes pre_handler_kprobe(struct kprobe *p, struct pt_regs *regs)
 {
 	struct ktap_probe_event *ktap_pevent;
 	struct ktap_event e;
-	
 
 	if (unlikely(__this_cpu_read(ktap_in_tracing)))
 		return 0;
 
 	__this_cpu_write(ktap_in_tracing, true);
 
-	ktap_pevent = container_of(p, struct ktap_probe_event, u.p);
+	ktap_pevent = container_of(p, struct ktap_probe_event, u.p.kp);
 
+	e.pevent = ktap_pevent;
 	e.call = NULL;
 	e.entry = NULL;
 	e.entry_size = 0;
@@ -118,37 +121,95 @@ static int __kprobes pre_handler_kprobe(struct kprobe *p, struct pt_regs *regs)
 	return 0;
 }
 
-
 static void kprobe_destructor(struct ktap_probe_event *ktap_pevent)
 {
-	unregister_kprobe(&ktap_pevent->u.p);
+	unregister_kprobe(&ktap_pevent->u.p.kp);
 }
+
+/* kretprobe handler is called in interrupt disabled? */
+static int ret_handler(struct kretprobe_instance *ri, struct pt_regs *regs)
+{
+	struct ktap_probe_event *ktap_pevent;
+	struct kretprobe *rp = ri->rp;
+	struct ktap_event e;
+	
+	if (unlikely(__this_cpu_read(ktap_in_tracing)))
+		return 0;
+
+	__this_cpu_write(ktap_in_tracing, true);
+
+	ktap_pevent = container_of(rp, struct ktap_probe_event, u.p);
+
+	e.pevent = ktap_pevent;
+	e.call = NULL;
+	e.entry = NULL;
+	e.entry_size = 0;
+	e.regs = regs;
+	e.type = ktap_pevent->type;
+
+	if (same_thread_group(current, G(ktap_pevent->ks)->task))
+		goto out;
+
+	ktap_call_probe_closure(ktap_pevent->ks, ktap_pevent->cl, &e);
+
+ out:
+	__this_cpu_write(ktap_in_tracing, false);
+	return 0;
+}
+
+static void kretprobe_destructor(struct ktap_probe_event *ktap_pevent)
+{
+	unregister_kretprobe(&ktap_pevent->u.p);
+	ktap_free(ktap_pevent->ks, ktap_pevent->u.p.kp.symbol_name);
+}
+
 static int start_kprobe(ktap_State *ks, const char *event_name, Closure *cl)
 {
 	struct ktap_probe_event *ktap_pevent;
+	int len = strlen(event_name);
 
 	ktap_pevent = ktap_zalloc(ks, sizeof(*ktap_pevent));
 	ktap_pevent->ks = ks;
 	ktap_pevent->cl = cl;
-	ktap_pevent->type = EVENT_TYPE_KPROBE;
 
 	INIT_LIST_HEAD(&ktap_pevent->list);
 	list_add_tail(&ktap_pevent->list, &G(ks)->probe_events_head);
 
-	ktap_pevent->u.p.symbol_name = event_name;
-	ktap_pevent->u.p.pre_handler = pre_handler_kprobe;
-	ktap_pevent->u.p.post_handler = NULL;
-	ktap_pevent->u.p.fault_handler = NULL;
-	ktap_pevent->u.p.break_handler = NULL;
-	ktap_pevent->destructor = kprobe_destructor;
+	ktap_pevent->name = event_name;
 
-	if (register_kprobe(&ktap_pevent->u.p)) {
-		ktap_printf(ks, "Cannot register probe: %s\n", event_name);
-		list_del(&ktap_pevent->list);
-		return -1;
+	if (event_name[len - 1] == '!') {
+		char *symbol_name = kstrdup(event_name, GFP_KERNEL);
+		symbol_name[len - 1] = '\0';
+
+		ktap_pevent->type = EVENT_TYPE_KRETPROBE;
+		ktap_pevent->u.p.kp.symbol_name = (const char *)symbol_name;
+		ktap_pevent->u.p.handler = ret_handler;
+		ktap_pevent->destructor = kretprobe_destructor;
+		if (register_kretprobe(&ktap_pevent->u.p)) {
+			ktap_free(ks, symbol_name);
+			ktap_printf(ks, "Cannot register retprobe: %s\n", event_name);
+			goto error;
+		}
+	} else {
+		ktap_pevent->type = EVENT_TYPE_KPROBE;
+		ktap_pevent->u.p.kp.symbol_name = event_name;
+		ktap_pevent->u.p.kp.pre_handler = pre_handler_kprobe;
+		ktap_pevent->u.p.kp.post_handler = NULL;
+		ktap_pevent->u.p.kp.fault_handler = NULL;
+		ktap_pevent->u.p.kp.break_handler = NULL;
+		ktap_pevent->destructor = kprobe_destructor;
+		if (register_kprobe(&ktap_pevent->u.p.kp)) {
+			ktap_printf(ks, "Cannot register probe: %s\n", event_name);
+			goto error;
+		}
 	}
 
 	return 0;
+
+ error:
+	list_del(&ktap_pevent->list);
+	ktap_free(ks, ktap_pevent);
+	return -1;
 }
 
 static struct trace_iterator *percpu_trace_iterator;
@@ -185,7 +246,7 @@ static void event_annotate(ktap_State *ks, struct ktap_event *e, StkId ra)
 
 static void event_name(ktap_State *ks, struct ktap_event *e, StkId ra)
 {
-	setsvalue(ra, tstring_new(ks, e->call->name));
+	setsvalue(ra, tstring_new(ks, e->pevent->name));
 }
 
 static void event_print_fmt(ktap_State *ks, struct ktap_event *e, StkId ra)
@@ -210,6 +271,19 @@ static void event_regstr(ktap_State *ks, struct ktap_event *e, StkId ra)
 #endif
 	setsvalue(ra, tstring_new(ks, str));
 }
+
+static void event_retval(ktap_State *ks, struct ktap_event *e, StkId ra)
+{
+	struct pt_regs *regs = e->regs;
+
+	if (e->type != EVENT_TYPE_KRETPROBE) {
+		setnilvalue(ra);
+		return;
+	}
+
+	setnvalue(ra, regs_return_value(regs));
+}
+
 
 #define ENTRY_HEADSIZE sizeof(struct trace_entry)
 struct syscall_trace_enter {
@@ -351,6 +425,7 @@ static struct event_field_tbl {
 	{"sc_arg5", event_sc_arg5},
 	{"sc_arg6", event_sc_arg6},
 	{"regstr", event_regstr},
+	{"retval", event_retval},
 	{"allfield", event_allfield},
 	{"field1", event_field1}
 };
@@ -399,6 +474,7 @@ static void ktap_overflow_callback(struct perf_event *event,
 	ktap_pevent = event->overflow_handler_context;
 	ks = ktap_pevent->ks;
 
+	e.pevent = ktap_pevent;
 	e.call = event->tp_event;
 	e.entry = data->raw->data;
 	e.entry_size = data->raw->size;
@@ -431,6 +507,7 @@ static void enable_tracepoint_on_cpu(int cpu, struct perf_event_attr *attr,
 	struct perf_event *event;
 
 	ktap_pevent = ktap_zalloc(arg->ks, sizeof(*ktap_pevent));
+	ktap_pevent->name = call->name;
 	ktap_pevent->ks = arg->ks;
 	ktap_pevent->cl = arg->cl;
 	ktap_pevent->type = type;

@@ -55,6 +55,8 @@ KTAP TRACING
      get argument 6 of syscall enter event.
  e.regstr
      return registers string
+ e.retval
+     [k/u]retprobe return value or syscall exit return value
  e.allfield
      return all fields of events, only valid for tracepoints.
 

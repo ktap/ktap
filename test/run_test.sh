@@ -24,6 +24,7 @@ ktaprun function.kp
 ktaprun if.kp
 ktaprun inplace_inc.kp
 ktaprun kprobe.kp
+ktaprun kretprobe.kp
 ktaprun len.kp
 ktaprun looping.kp
 ktaprun pairs.kp
