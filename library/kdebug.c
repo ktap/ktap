@@ -632,7 +632,7 @@ static int start_tracepoint(ktap_State *ks, const char *event_name, Closure *cl)
 	return 0;
 }
 
-int start_probe(ktap_State *ks, const char *event_name, Closure *cl)
+static int start_probe(ktap_State *ks, const char *event_name, Closure *cl)
 {
 	if (!strncmp(event_name, "kprobe:", 7)) {
 		return start_kprobe(ks, event_name + 7, cl);
@@ -649,7 +649,7 @@ int start_probe(ktap_State *ks, const char *event_name, Closure *cl)
 
 }
 
-void end_probes(struct ktap_State *ks)
+static void end_probes(struct ktap_State *ks)
 {
 	struct ktap_probe_event *ktap_pevent;
 	struct list_head *tmp, *pos;
