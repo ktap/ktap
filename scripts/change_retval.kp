@@ -1,0 +1,13 @@
+
+function eventfun (e) {
+	if (execname() == "ls") {
+		e.set_retval(-1)
+	}
+}
+
+kdebug.probe("kprobe:do_sys_open!", eventfun);
+
+kdebug.probe_end(function () {
+	printf("probe ending\n");
+})
+

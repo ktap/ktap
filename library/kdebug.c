@@ -285,6 +285,27 @@ static void event_retval(ktap_State *ks, struct ktap_event *e, StkId ra)
 	setnvalue(ra, regs_return_value(regs));
 }
 
+static int ktap_function_set_retval(ktap_State *ks)
+{
+	struct ktap_event *e = ks->current_event;
+	int n = nvalue(GetArg(ks, 1));
+
+	/* use syscall_set_return_value as generic return value set macro */
+	syscall_set_return_value(current, e->regs, n, 0);
+
+	return 0;
+}
+
+static void event_set_retval(ktap_State *ks, struct ktap_event *e, StkId ra)
+{
+	if (e->type != EVENT_TYPE_KRETPROBE) {
+		setnilvalue(ra);
+		return;
+	}
+	ks->current_event = e;
+	setfvalue(ra, ktap_function_set_retval);
+}
+
 
 #define ENTRY_HEADSIZE sizeof(struct trace_entry)
 struct syscall_trace_enter {
@@ -427,6 +448,7 @@ static struct event_field_tbl {
 	{"sc_arg6", event_sc_arg6},
 	{"regstr", event_regstr},
 	{"retval", event_retval},
+	{"set_retval", event_set_retval},
 	{"allfield", event_allfield},
 	{"field1", event_field1}
 };

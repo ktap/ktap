@@ -301,6 +301,9 @@ typedef struct ktap_State {
 
 	Gcobject *localgc; /* list of temp collectable objects, free when thread exit */
 	char buff[128];  /* temporary buffer for string concatentation */
+#ifdef __KERNEL__
+	struct ktap_event *current_event;
+#endif
 } ktap_State;
 
 
