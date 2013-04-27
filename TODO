@@ -138,6 +138,8 @@ keep updating this file)
 
 - support thread local based variable/map, and cpu variables
 
+- support ktap thread exit, but need to probe_end function before exit
+
 
 [LOW]
 - dead loop detaction
