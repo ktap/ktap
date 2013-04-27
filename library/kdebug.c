@@ -299,7 +299,7 @@ static int ktap_function_set_retval(ktap_State *ks)
 
 static void event_set_retval(ktap_State *ks, struct ktap_event *e, StkId ra)
 {
-	if (e->type != EVENT_TYPE_KRETPROBE) {
+	if (e->type != EVENT_TYPE_KRETPROBE && e->type != EVENT_TYPE_SYSCALL_EXIT) {
 		setnilvalue(ra);
 		return;
 	}

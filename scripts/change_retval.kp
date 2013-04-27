@@ -5,7 +5,9 @@ function eventfun (e) {
 	}
 }
 
-kdebug.probe("kprobe:do_sys_open!", eventfun);
+# below two is same for changing return value in open syscalling
+#kdebug.probe("kprobe:do_sys_open!", eventfun);
+kdebug.probe("tp:syscalls:sys_exit_open", eventfun);
 
 kdebug.probe_end(function () {
 	printf("probe ending\n");
