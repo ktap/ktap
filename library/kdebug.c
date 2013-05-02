@@ -89,6 +89,8 @@ static void ktap_call_probe_closure(ktap_State *mainthread, Closure *cl,
 		incr_top(ks);
 	}
 
+	ks->current_event = e;
+
 	ktap_call(ks, func, 0);
 	ktap_exitthread(ks);
 }
@@ -303,7 +305,6 @@ static void event_set_retval(ktap_State *ks, struct ktap_event *e, StkId ra)
 		setnilvalue(ra);
 		return;
 	}
-	ks->current_event = e;
 	setfvalue(ra, ktap_function_set_retval);
 }
 
