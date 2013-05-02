@@ -362,7 +362,7 @@ EVENT_SC_ARGFUNC(5)
 EVENT_SC_ARGFUNC(6)
 
 /***************************/
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 9, 0)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 11, 0)
 struct ftrace_event_field {
 	struct list_head        link;
 	const char              *name;
