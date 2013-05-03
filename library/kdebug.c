@@ -92,6 +92,8 @@ static void ktap_call_probe_closure(ktap_State *mainthread, Closure *cl,
 	ks->current_event = e;
 
 	ktap_call(ks, func, 0);
+
+	ks->current_event = NULL;
 	ktap_exitthread(ks);
 }
 
