@@ -1,93 +1,74 @@
-Todo list of ktap:
 
-(You can make this todo list as ktap's implementation backlog
-keep updating this file)
+			Todo list of ktap project
+			
 
--------------------------------------------------------------------------
+Implementing
+------------
 
-[HIGH]
-- event based tracing infrastructure
-  ==COMPLETE==
-
-- Drop ftrace.patch
-  ==COMPLETE==
 - GC
-
 - read kernel memory by symbol
-
-- table stat showing
-  ==COMPLETE==
-
-- ktap memory allocation
-  ==COMPLETE==
-
-- per-cpu ktap_State for performance improvement
-  ==COMPLETE==
-
-- x86-64 support
-  ==COMPLETE==
-
 - non-mainthread error exit problem(like printf arg mismatch)
-
-- ktapio problem in all event tracepoints opened
-  ==COMPLETE== (fixed by patch "relay: fix timer madness" merge in 3.10)
-
 - ktapio support global and percpu mode
-
-- issue: trace_end function cannot print into ktapio
-  ==COMPLETE==
-
 - event library support(more type logic into compiler)
-
-- change comments sytle to "#"
-  ==COMPLETE==
-
-- backport to 3.4 kernel
-  ==COMPLETE==
-
-- support paris(t) in table
-  ==COMPLETE==
-
-[NORMAL]
 - ARM support
-
-- All tracepoints support
-  ==COMPLETE==
-
-- Timer support
-  ==COMPLETE==
-
 - kprobe/uprobe support
-
-- function call speedup
-  ==COMPLETE==
-
 - improve printf performance
-
-- dumpstack support
-  ==COMPLETE==
-
-- script argument support
-  ==COMPLETE==
-
 - call ktap script in while loop shell script issue
-
 - maintaince different kernel version branch of ktap
-
 - splice io output
+- kernel_string()/user_string()
+- only tracing on cpu: ktap -c cpu *.kp
+- support ktap -bl, show listing all bytecodes
+- support trace dump only to relayfs, without to userspace when tracing
+- support ktap -c cmd, ktap -p $pid
+- optimize tracepoints_histogram.kp, use perf event id as key index, boost performance
+- support thread local based variable/map, and cpu variables
+- support ktap thread exit, but need to probe_end function before exit
+- unified extendable library interface
+- product more useful ktap script
+- not-tracing mode support(side effects mode)
+- ktap Manual/Doc/ppt/pdf/man writing
+- more lightwight traceing infrastructure support
+- parrot research: use opcode generate like parrot?
+- ktap -e "oneline scripting"
+- distro packages: yum install ktap, apt-get install ktap
+- website in ktap.org (ROR on free hosting site? fast deployment)
+- conference
+- commit to kernel: staging first?
+- integrate luajit, and use ffi library, to boost performance
+- add atomic add operation ++ into ktap(inplace_inc)
+- staticly typed virtual machine, it's more generic than dynamic typed vm
+  support map/splice/struct/closure
+  staticly typed is more faster than dynamic typed, with strict type checking
 
-- fast loading(not using temp file?)
-  ==COMPLETE==
 
+Completed
+---------
+
+- event based tracing infrastructure
+- Drop ftrace.patch
+- table stat showing
+- ktap memory allocation
+- per-cpu ktap_State for performance improvement
+- x86-64 support
+- ktapio problem in all event tracepoints opened
+  (fixed by patch "relay: fix timer madness" merge in 3.10)
+- issue: trace_end function cannot print into ktapio
+- change comments sytle to "#"
+- backport to 3.4 kernel
+- support paris(t) in table
+- All tracepoints support
+- Timer support
+- function call speedup
+- dumpstack support
+- script argument support
+- fast loading
 - Interval timer probes fire periodicalle
 	Available units: timer.s, jiffies, s/sec, ms/msec, us/usec, ns/nsec
         Add variation with .randomize(N)
     The profile timer runs on every systerm tick
         timer.profile
      runs on all CPUS, Includes context of interrupted process
-
-- kernel_string()/user_string()
-
 - More built-in functions:
     - Printing
     print(), println(), printd(), printf(),
@@ -102,7 +83,6 @@ keep updating this file)
     pp(), probefunc(), probemod()
 
 - fibonacci in ktap
-  ==COMPLETE==
 
 - unified event probe interface:
   kdebug.probe("tracepoint:xxx", eventfun);
@@ -122,85 +102,13 @@ keep updating this file)
 
   kdebug.probe("kprobes:xxx, uprobes:xxx:yyy, cache-misses", eventfun) //support multi-event
 
-- change library/trace.c to use perf event mechanism, without change ftrace code
-
-- only tracing on cpu: ktap -c cpu *.kp
-
-- support ktap -bl, show listing all bytecodes
-
-- support trace dump only to relayfs, without to userspace when tracing
-
 - kernel_version() base function call
 
-- support ktap -c cmd, ktap -p $pid
-
-- optimize tracepoints_histogram.kp, use perf event id as key index, boost performance
-
-- support thread local based variable/map, and cpu variables
-
-- support ktap thread exit, but need to probe_end function before exit
-
-- unified extendable library interface
-
-
-[LOW]
 - dead loop detaction
-  ==COMPLETE==
-
-- product more useful ktap script
-
 - test script for verification
-  ==COMPLETE==
-
-- not-tracing mode support(side effects mode)
 
 - making ktap syntax more C like
-  ==COMPLETE==
-
-- ktap Manual/Doc/ppt/pdf/man writing
-
-- structure reference support in script like dtrace
-
-- more lightwight traceing infrastructure support
-
-- parrot research: use opcode generate like parrot
-
-- support include header file in ktap script, only for compiler
-
-- kernel 3.9(include previous kernel version) maintain, use same code base?
-  ==COMPLETE==
-
-- ktap -e "oneline scripting"
-
-- distro packages: yum install ktap, apt-get install ktap
-
-- conference
-
-- website in ktap.org (ROR on free hosting site? fast deployment)
-
-- systemtap integrate: compile into ktap bytecode, use same vm in kernel
-
-- commit to kernel: staging first?
-
-
-- integrate luajit, and use ffi library, to boost performance
-
-- staticly typed virtual machine, it's more generic than dynamic typed vm
-  support map/splice/struct/closure
-  staticly typed is more faster than dynamic typed, with strict type checking
 
 - request mailing list: ktap@freelist.org
-  ==COMPLETE==
-
-- make compatibility with lua/luajit(histogram already breaked compatibility
-  "1 + nil == 1" is not working in raw lua, but work in ktap
-
-- add atomic add operation ++ into ktap
-
-- make CC=clang, fix the error
- glang don't support global register variable
-	current_stack_pointer in arch/x86/include/asm/thread_info.h
- [   98.329164] kernel tried to execute NX-protected page - exploit attempt? (uid: 0)
- [   98.330895] BUG: unable to handle kernel paging request at f53f3680
 
 
