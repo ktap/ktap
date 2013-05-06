@@ -140,6 +140,8 @@ keep updating this file)
 
 - support ktap thread exit, but need to probe_end function before exit
 
+- unified extendable library interface
+
 
 [LOW]
 - dead loop detaction
