@@ -592,6 +592,8 @@ static void ftrace_on_event_call(const char *buf, ftrace_call_func actor,
 	char *event = NULL, *sub = NULL, *match, *buf_ptr = NULL;
 	char new_buf[32] = {0};
 	struct ftrace_event_call *call;
+	ktap_State *ks = ((struct ktap_trace_arg *)data)->ks;
+	int total = 0;
 
 	if (buf) {
 		/* argument buf is const, so we need to prepare a changeable buff */
@@ -624,7 +626,6 @@ static void ftrace_on_event_call(const char *buf, ftrace_call_func actor,
 	}
 
 	list_for_each_entry(call, ftrace_events_ptr, list) {
-
 		if (!call->name || !call->class || !call->class->reg)
 			continue;
 
@@ -643,7 +644,9 @@ static void ftrace_on_event_call(const char *buf, ftrace_call_func actor,
 			continue;
 
 		(*actor)(call, data);
+		total++;
 	}
+	ktap_printf(ks, "total enabled %d events\n", total);
 }
 
 static int start_tracepoint(ktap_State *ks, const char *event_name, Closure *cl)
