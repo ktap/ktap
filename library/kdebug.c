@@ -738,6 +738,7 @@ static int ktap_lib_probe_end(ktap_State *ks)
 		no_wait = nvalue(GetArg(ks, 2));
 
 	if (!no_wait) {
+		ktap_printf(ks, "Press Control-C to stop.\n");
 		set_current_state(TASK_INTERRUPTIBLE);
 		schedule();
 		if (fatal_signal_pending(current))
