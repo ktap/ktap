@@ -30,7 +30,7 @@ KTAP TRACING
  the argument of eventfun is a event object, we can operate on this object via several ways:
  e.name
      event name, each event have a name associated with it.
- e.annotate
+ e.tostring()
      this method is suit for tracepoint events, it will parse tracepoint events raw data
      into human readable string.
      the result is mostly same as each entry of /sys/kernel/debug/tracing/trace

@@ -219,15 +219,13 @@ static int start_kprobe(ktap_State *ks, const char *event_name, Closure *cl)
 }
 
 static struct trace_iterator *percpu_trace_iterator;
-static void event_annotate(ktap_State *ks, struct ktap_event *e, StkId ra)
+static int event_function_tostring(ktap_State *ks)
 {
+	struct ktap_event *e = ks->current_event;
 	struct trace_iterator *iter;
 	struct trace_event *ev;
 	enum print_line_t ret = TRACE_TYPE_NO_CONSUME;
 
-	if (e->type >= EVENT_TYPE_TRACEPOINT_MAX)
-		setnilvalue(ra);
-		
 	/* Simulate the iterator */
 
 	/* iter can be a bit big for the stack, use percpu*/
@@ -245,9 +243,21 @@ static void event_annotate(ktap_State *ks, struct ktap_event *e, StkId ra)
 		int len = s->len >= PAGE_SIZE ? PAGE_SIZE - 1 : s->len;
 
 		s->buffer[len] = '\0';
-		setsvalue(ra, tstring_assemble(ks, s->buffer, len + 1));
+		setsvalue(ks->top, tstring_assemble(ks, s->buffer, len + 1));
 	} else
+		setnilvalue(ks->top);
+
+	incr_top(ks);
+
+	return 1;
+}
+
+static void event_tostring(ktap_State *ks, struct ktap_event *e, StkId ra)
+{
+	if (e->type >= EVENT_TYPE_TRACEPOINT_MAX)
 		setnilvalue(ra);
+		
+	setfvalue(ra, event_function_tostring);
 }
 
 static void event_name(ktap_State *ks, struct ktap_event *e, StkId ra)
@@ -440,7 +450,7 @@ static struct event_field_tbl {
 	void (*func)(ktap_State *ks, struct ktap_event *e, StkId ra);	
 } event_ftbl[] = {
 	{"name", event_name},
-	{"annotate", event_annotate},
+	{"tostring", event_tostring},
 	{"print_fmt", event_print_fmt},
 	{"sc_nr", event_sc_nr},
 	{"sc_is_enter", event_sc_is_enter},
