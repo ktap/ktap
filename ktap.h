@@ -45,4 +45,5 @@ void ktap_exit_timers(ktap_State *ks);
 
 extern DEFINE_PER_CPU(bool, ktap_in_tracing);
 
+void kp_show_event(ktap_State *ks);
 #endif /* __KTAP_H__ */

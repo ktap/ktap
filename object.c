@@ -89,6 +89,9 @@ void showobj(ktap_State *ks, const Tvalue *v)
 	case KTAP_TTABLE:
 		table_dump(ks, hvalue(v));
 		break;
+	case KTAP_TEVENT:
+		kp_show_event(ks);
+		break;
         default:
 		ktap_printf(ks, "[unknown value type: %d]", ttype(v));
 		break;

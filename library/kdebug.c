@@ -259,6 +259,15 @@ static void event_tostring(ktap_State *ks, struct ktap_event *e, StkId ra)
 		
 	setfvalue(ra, event_function_tostring);
 }
+/*
+ * called when print(e)
+ */
+void kp_show_event(ktap_State *ks)
+{
+	event_function_tostring(ks);
+	ks->top--;
+	ktap_printf(ks, "%s", getstr(rawtsvalue(ks->top)));
+}
 
 static void event_name(ktap_State *ks, struct ktap_event *e, StkId ra)
 {
