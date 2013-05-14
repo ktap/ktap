@@ -90,7 +90,7 @@ static int ktap_main(struct file *file, struct ktap_user_parm *uparm_ptr)
 		return ret;
 	}
 
-	ks = ktap_newstate((ktap_State **)&file->private_data, argc, argv);
+	ks = kp_newstate((ktap_State **)&file->private_data, argc, argv);
 
 	argv_free(argv);
 	if (unlikely(!ks)) {
@@ -98,17 +98,17 @@ static int ktap_main(struct file *file, struct ktap_user_parm *uparm_ptr)
 		return -ENOEXEC;
 	}
 
-	cl = ktap_load(ks, (unsigned char *)buff);
+	cl = kp_load(ks, (unsigned char *)buff);
 
 	vfree(buff);
 
 	if (cl) {
 		/* optimize bytecode before excuting */
-		ktap_optimize_code(ks, 0, cl->l.p);
-		ktap_call(ks, ks->top - 1, 0);
+		kp_optimize_code(ks, 0, cl->l.p);
+		kp_call(ks, ks->top - 1, 0);
 	}
 
-	ktap_exit(ks);
+	kp_exit(ks);
 	return 0;
 }
 
@@ -135,7 +135,7 @@ static long ktap_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		return ktap_main(file, &uparm);
 	case KTAP_CMD_USER_COMPLETE: {
 		ktap_State *ks = file->private_data;
-		ktap_user_complete(ks);
+		kp_user_complete(ks);
 		break;
 		}
 	default:

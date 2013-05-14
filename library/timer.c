@@ -53,11 +53,11 @@ static enum hrtimer_restart hrtimer_ktap_fn(struct hrtimer *timer)
 
 	t = container_of(timer, struct hrtimer_ktap, timer);
 
-	ks = ktap_newthread(t->ks);
+	ks = kp_newthread(t->ks);
 	setcllvalue(ks->top, t->cl);
 	incr_top(ks);
-	ktap_call(ks, ks->top - 1, 0);
-	ktap_exitthread(ks);
+	kp_call(ks, ks->top - 1, 0);
+	kp_exitthread(ks);
 
 	hrtimer_add_expires_ns(timer, t->ns);
 
@@ -89,7 +89,7 @@ static int set_timer(ktap_State *ks, int factor)
 	if (!cl)
 		return -1;
 
-	t = ktap_malloc(ks, sizeof(*t));
+	t = kp_malloc(ks, sizeof(*t));
 	t->ks = ks;
 	t->cl = cl;
 	t->ns = period;
@@ -133,7 +133,7 @@ static int ktap_lib_profile(ktap_State *ks)
 	return 0;
 }
 
-void ktap_exit_timers(ktap_State *ks)
+void kp_exit_timers(ktap_State *ks)
 {
 	struct hrtimer_ktap *t, *tmp;
 	struct list_head *timers_list = &(G(ks)->timers);
@@ -144,7 +144,7 @@ void ktap_exit_timers(ktap_State *ks)
 
 	list_for_each_entry_safe(t, tmp, timers_list, list) {
 		hrtimer_cancel(&t->timer);
-		ktap_free(ks, t);
+		kp_free(ks, t);
 	}
 
 	local_irq_restore(flags);
@@ -163,8 +163,8 @@ static const ktap_Reg timerlib_funcs[] = {
 	{NULL}
 };
 
-void ktap_init_timerlib(ktap_State *ks)
+void kp_init_timerlib(ktap_State *ks)
 {
-	ktap_register_lib(ks, "timer", timerlib_funcs);
+	kp_register_lib(ks, "timer", timerlib_funcs);
 }
 

@@ -34,7 +34,7 @@ static int ktap_lib_next(ktap_State *ks)
 {
 	Table *t = hvalue(ks->top - 2);
 
-	if (table_next(ks, t, ks->top)) {
+	if (kp_table_next(ks, t, ks->top)) {
 		ks->top += 2;
 		return 2;
 	} else {
@@ -55,7 +55,7 @@ static int ktap_lib_pairs(ktap_State *ks)
 
 static int ktap_lib_len(ktap_State *ks)
 {
-	int len = objlen(ks, GetArg(ks, 1));
+	int len = kp_objlen(ks, GetArg(ks, 1));
 
 	if (len < 0)
 		return -1;
@@ -73,11 +73,11 @@ static int ktap_lib_print(ktap_State *ks)
 	for (i = 1; i <= n; i++) {
 		Tvalue *arg = GetArg(ks, i);
 		if (i > 1)
-			ktap_printf(ks, "\t");
-		showobj(ks, arg);
+			kp_printf(ks, "\t");
+		kp_showobj(ks, arg);
 	}
 
-	ktap_printf(ks, "\n");
+	kp_printf(ks, "\n");
 
 	return 0;
 }
@@ -97,19 +97,19 @@ static int ktap_lib_printf(ktap_State *ks)
 	}
 
 	trace_seq_init(seq);
-	if (ktap_strfmt(ks, seq)) {
+	if (kp_strfmt(ks, seq)) {
 		return 0;
 	}
 
 	seq->buffer[seq->len] = '\0';
-	ktap_transport_write(ks, seq->buffer, seq->len);
+	kp_transport_write(ks, seq->buffer, seq->len);
 
 	return 0;
 }
 
 static int ktap_lib_exit(ktap_State *ks)
 {
-	ktap_exit(ks);
+	kp_exit(ks);
 	return 0;
 }
 
@@ -124,7 +124,7 @@ static int ktap_lib_pid(ktap_State *ks)
 
 static int ktap_lib_execname(ktap_State *ks)
 {
-	Tstring *ts = tstring_new(ks, current->comm);
+	Tstring *ts = kp_tstring_new(ks, current->comm);
 	setsvalue(ks->top, ts);
 	incr_top(ks);
 	return 1;
@@ -148,14 +148,14 @@ static int ktap_lib_in_interrupt(ktap_State *ks)
 
 static int ktap_lib_arch(ktap_State *ks)
 {
-	setsvalue(ks->top, tstring_new(ks, utsname()->machine));
+	setsvalue(ks->top, kp_tstring_new(ks, utsname()->machine));
 	incr_top(ks);
 	return 1;
 }
 
 static int ktap_lib_kernel_v(ktap_State *ks)
 {
-	setsvalue(ks->top, tstring_new(ks, utsname()->release));
+	setsvalue(ks->top, kp_tstring_new(ks, utsname()->release));
 	incr_top(ks);
 	return 1;
 }
@@ -169,7 +169,7 @@ static int ktap_lib_user_string(ktap_State *ks)
 	__copy_from_user_inatomic((void *)str, (const void *)addr, 256);
 	pagefault_enable();
 	str[255] = '\0';
-	setsvalue(ks->top, tstring_new(ks, str));
+	setsvalue(ks->top, kp_tstring_new(ks, str));
 
 	incr_top(ks);
 	return 1;
@@ -181,7 +181,7 @@ static int ktap_lib_inplace_inc(ktap_State *ks)
 	Tvalue *k = GetArg(ks, 2);
 	Tvalue *v;
 
-	v = table_set(ks, tbl, k);
+	v = kp_table_set(ks, tbl, k);
 	if (unlikely(isnil(v))) {
 		setnvalue(v, 1);
 	} else
@@ -192,7 +192,7 @@ static int ktap_lib_inplace_inc(ktap_State *ks)
 
 static int ktap_lib_histogram(ktap_State *ks)
 {
-	table_histogram(ks, hvalue(GetArg(ks, 1))); /* need to check firstly */
+	kp_table_histogram(ks, hvalue(GetArg(ks, 1))); /* need to check firstly */
 	return 0;
 }
 
@@ -224,7 +224,7 @@ static const ktap_Reg base_funcs[] = {
 	{NULL}
 };
 
-void ktap_init_baselib(ktap_State *ks)
+void kp_init_baselib(ktap_State *ks)
 {
-	ktap_register_lib(ks, NULL, base_funcs); 
+	kp_register_lib(ks, NULL, base_funcs); 
 }

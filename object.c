@@ -27,73 +27,75 @@
 #endif
 
 
-void obj_dump(ktap_State *ks, const Tvalue *v)
+void kp_obj_dump(ktap_State *ks, const Tvalue *v)
 {
 	switch (ttype(v)) {
 	case KTAP_TNIL:
-		ktap_printf(ks, "NIL");
+		kp_printf(ks, "NIL");
 		break;
 	case KTAP_TNUMBER:
-		ktap_printf(ks, "NUMBER %d", nvalue(v));
+		kp_printf(ks, "NUMBER %d", nvalue(v));
 		break;
 	case KTAP_TBOOLEAN:
-		ktap_printf(ks, "BOOLEAN %d", bvalue(v));
+		kp_printf(ks, "BOOLEAN %d", bvalue(v));
 		break;
 	case KTAP_TLIGHTUSERDATA:
-		ktap_printf(ks, "LIGHTUSERDATA %d", pvalue(v));
+		kp_printf(ks, "LIGHTUSERDATA %d", pvalue(v));
 		break;
 	case KTAP_TLCF:
-		ktap_printf(ks, "LIGHTCFCUNTION 0x%x", fvalue(v));
+		kp_printf(ks, "LIGHTCFCUNTION 0x%x", fvalue(v));
 		break;
 	case KTAP_TSHRSTR:
 	case KTAP_TLNGSTR:
-		ktap_printf(ks, "SHRSTR #%s", svalue(v));
+		kp_printf(ks, "SHRSTR #%s", svalue(v));
 		break;
 	case KTAP_TUSERDATA:
-		ktap_printf(ks, "USERDATA %d", uvalue(v));
+		kp_printf(ks, "USERDATA %d", uvalue(v));
 		break;
 	case KTAP_TTABLE:
-		ktap_printf(ks, "TABLE 0x%x", hvalue(v));
+		kp_printf(ks, "TABLE 0x%x", hvalue(v));
 		break;
         default:
-		ktap_printf(ks, "GCVALUE 0x%x", gcvalue(v));
+		kp_printf(ks, "GCVALUE 0x%x", gcvalue(v));
 		break;
 	}
 }
 
-void showobj(ktap_State *ks, const Tvalue *v)
+void kp_showobj(ktap_State *ks, const Tvalue *v)
 {
 	switch (ttype(v)) {
 	case KTAP_TNIL:
-		ktap_printf(ks, "nil");
+		kp_printf(ks, "nil");
 		break;
 	case KTAP_TNUMBER:
-		ktap_printf(ks, "%d", nvalue(v));
+		kp_printf(ks, "%d", nvalue(v));
 		break;
 	case KTAP_TBOOLEAN:
-		ktap_printf(ks, "%s", (bvalue(v) == 1) ? "true" : "false");
+		kp_printf(ks, "%s", (bvalue(v) == 1) ? "true" : "false");
 		break;
 	case KTAP_TLIGHTUSERDATA:
-		ktap_printf(ks, "%d", pvalue(v));
+		kp_printf(ks, "%d", pvalue(v));
 		break;
 	case KTAP_TLCF:
-		ktap_printf(ks, "0x%x", fvalue(v));
+		kp_printf(ks, "0x%x", fvalue(v));
 		break;
 	case KTAP_TSHRSTR:
 	case KTAP_TLNGSTR:
-		ktap_printf(ks, "\"%s\"", getstr(rawtsvalue(v)));
+		kp_printf(ks, "\"%s\"", getstr(rawtsvalue(v)));
 		break;
 	case KTAP_TUSERDATA:
-		ktap_printf(ks, "%d", uvalue(v));
+		kp_printf(ks, "%d", uvalue(v));
 		break;
 	case KTAP_TTABLE:
-		table_dump(ks, hvalue(v));
+		kp_table_dump(ks, hvalue(v));
 		break;
+#ifdef __KERNEL__
 	case KTAP_TEVENT:
 		kp_show_event(ks);
 		break;
+#endif
         default:
-		ktap_printf(ks, "[unknown value type: %d]", ttype(v));
+		kp_printf(ks, "[unknown value type: %d]", ttype(v));
 		break;
 	}
 }
@@ -102,7 +104,7 @@ void showobj(ktap_State *ks, const Tvalue *v)
 /*
  * equality of ktap values. ks == NULL means raw equality
  */
-int equalobjv(ktap_State *ks, const Tvalue *t1, const Tvalue *t2)
+int kp_equalobjv(ktap_State *ks, const Tvalue *t1, const Tvalue *t2)
 {
 	switch (ttype(t1)) {
 	case KTAP_TNIL:
@@ -118,7 +120,7 @@ int equalobjv(ktap_State *ks, const Tvalue *t1, const Tvalue *t2)
 	case KTAP_TSHRSTR:
 		return eqshrstr(rawtsvalue(t1), rawtsvalue(t2));
 	case KTAP_TLNGSTR:
-		return tstring_eqlngstr(rawtsvalue(t1), rawtsvalue(t2));
+		return kp_tstring_eqlngstr(rawtsvalue(t1), rawtsvalue(t2));
 	case KTAP_TUSERDATA:
 		if (uvalue(t1) == uvalue(t2))
 			return 1;
@@ -155,15 +157,15 @@ int equalobjv(ktap_State *ks, const Tvalue *t1, const Tvalue *t2)
  * any of the indices that directly precedes a nil value
  * (that is, it may consider any such nil value as the end of the array).
  */
-int objlen(ktap_State *ks, const Tvalue *v)
+int kp_objlen(ktap_State *ks, const Tvalue *v)
 {
 	switch(v->type) {
 	case KTAP_TTABLE:
-		return table_length(ks, hvalue(v));
+		return kp_table_length(ks, hvalue(v));
 	case KTAP_TSTRING:
 		return rawtsvalue(v)->tsv.len;
 	default:
-		ktap_printf(ks, "cannot get length of type %d\n", v->type);
+		kp_printf(ks, "cannot get length of type %d\n", v->type);
 		return -1;
 	}
 	return 0;
@@ -171,11 +173,11 @@ int objlen(ktap_State *ks, const Tvalue *v)
 
 
 /* need to protect allgc field? */
-Gcobject *newobject(ktap_State *ks, int type, size_t size, Gcobject **list)
+Gcobject *kp_newobject(ktap_State *ks, int type, size_t size, Gcobject **list)
 {
 	Gcobject *o;
 
-	o = ktap_malloc(ks, sizeof(Gcobject) + size);
+	o = kp_malloc(ks, sizeof(Gcobject) + size);
 	if (list == NULL)
 		list = &G(ks)->allgc;
 
@@ -187,22 +189,22 @@ Gcobject *newobject(ktap_State *ks, int type, size_t size, Gcobject **list)
 	return o;
 }
 
-Upval *ktap_newupval(ktap_State *ks)
+Upval *kp_newupval(ktap_State *ks)
 {
 	Upval *uv;
 
-	uv = &newobject(ks, KTAP_TUPVAL, sizeof(Upval), NULL)->uv;
+	uv = &kp_newobject(ks, KTAP_TUPVAL, sizeof(Upval), NULL)->uv;
 	uv->v = &uv->u.value;
 	setnilvalue(uv->v);
 	return uv;
 }
 
 
-Closure *ktap_newlclosure(ktap_State *ks, int n)
+Closure *kp_newlclosure(ktap_State *ks, int n)
 {
 	Closure *cl;
 
-	cl = (Closure *)newobject(ks, KTAP_TLCL, sizeof(*cl), NULL);
+	cl = (Closure *)kp_newobject(ks, KTAP_TLCL, sizeof(*cl), NULL);
 	cl->l.p = NULL;
 	cl->l.nupvalues = n;
 	while (n--)
@@ -213,19 +215,19 @@ Closure *ktap_newlclosure(ktap_State *ks, int n)
 
 static void free_proto(ktap_State *ks, Proto *f)
 {
-	ktap_free(ks, f->code);
-	ktap_free(ks, f->p);
-	ktap_free(ks, f->k);
-	ktap_free(ks, f->lineinfo);
-	ktap_free(ks, f->locvars);
-	ktap_free(ks, f->upvalues);
-	ktap_free(ks, f);
+	kp_free(ks, f->code);
+	kp_free(ks, f->p);
+	kp_free(ks, f->k);
+	kp_free(ks, f->lineinfo);
+	kp_free(ks, f->locvars);
+	kp_free(ks, f->upvalues);
+	kp_free(ks, f);
 }
 
-Proto *ktap_newproto(ktap_State *ks)
+Proto *kp_newproto(ktap_State *ks)
 {
 	Proto *f;
-	f = (Proto *)newobject(ks, KTAP_TPROTO, sizeof(*f), NULL);
+	f = (Proto *)kp_newobject(ks, KTAP_TPROTO, sizeof(*f), NULL);
 	f->k = NULL;
  	f->sizek = 0;
 	f->p = NULL;
@@ -248,25 +250,25 @@ Proto *ktap_newproto(ktap_State *ks)
 	return f;
 }
 
-static Udata *ktap_newudata(ktap_State *ks, size_t s)
+static Udata *newudata(ktap_State *ks, size_t s)
 {
 	Udata *u;
 
-	u = &newobject(ks, KTAP_TUSERDATA, sizeof(Udata) + s, NULL)->u;
+	u = &kp_newobject(ks, KTAP_TUSERDATA, sizeof(Udata) + s, NULL)->u;
 	u->uv.len = s;
 	return u;
 }
 
-void *ktap_newuserdata(ktap_State *ks, size_t size)
+void *kp_newuserdata(ktap_State *ks, size_t size)
 {
 	Udata *u;
 
-	u = ktap_newudata(ks, size);
+	u = newudata(ks, size);
 	return u + 1;
 }
 
 
-void free_all_gcobject(ktap_State *ks)
+void kp_free_all_gcobject(ktap_State *ks)
 {
 	Gcobject *o = G(ks)->allgc;
 	Gcobject *next;
@@ -275,109 +277,19 @@ void free_all_gcobject(ktap_State *ks)
 		next = gch(o)->next;
 		switch (gch(o)->tt) {
 		case KTAP_TTABLE:
-			table_free(ks, (Table *)o);
+			kp_table_free(ks, (Table *)o);
 			break;
 		case KTAP_TPROTO:
 			free_proto(ks, (Proto *)o);
 			break;
 		default:
-			ktap_free(ks, o);
+			kp_free(ks, o);
 		}
 		o = next;
 	}
 
 	G(ks)->allgc = NULL;
 }
-
-/******************************************************************************/
-/*
- * Generic Buffer manipulation
- */
-
-/*
- * ** check whether buffer is using a userdata on the stack as a temporary
- * ** buffer
- * */
-#define buffonstack(B)  ((B)->b != (B)->initb)
-
-
-/*
- * returns a pointer to a free area with at least 'sz' bytes
- */
-char *ktap_prepbuffsize(ktap_Buffer *B, size_t sz)
-{
-	ktap_State *ks = B->ks;
-
-	if (B->size - B->n < sz) {  /* not enough space? */
-		char *newbuff;
-		size_t newsize = B->size * 2;  /* double buffer size */
-
-		if (newsize - B->n < sz)  /* not bit enough? */
-			newsize = B->n + sz;
-
-		if (newsize < B->n || newsize - B->n < sz)
-			ktap_runerror(ks, "buffer too large");
-
-		/* create larger buffer */
-		//newbuff = (char *)ktap_newuserdata(ks, newsize * sizeof(char));
-		newbuff = (char *)ktap_malloc(ks, newsize * sizeof(char));
-		/* move content to new buffer */
-		memcpy(newbuff, B->b, B->n * sizeof(char));
-		/* todo: remove old buffer now, cannot use ktap_free directly */
-		#if 0
-		if (buffonstack(B))
-			ktap_remove(ks, -2);  /* remove old buffer */
-		#endif
-		B->b = newbuff;
-		B->size = newsize;
-	}
-	return &B->b[B->n];
-}
-
-
-void ktap_addlstring(ktap_Buffer *B, const char *s, size_t l)
-{
-	char *b = ktap_prepbuffsize(B, l);
-	memcpy(b, s, l * sizeof(char));
-	ktap_addsize(B, l);
-}
-
-
-void ktap_addstring(ktap_Buffer *B, const char *s)
-{
-	ktap_addlstring(B, s, strlen(s));
-}
-
-
-void ktap_pushresult(ktap_Buffer *B)
-{
-	ktap_State *ks = B->ks;
-
-	setsvalue(ks->top, tstring_newlstr(ks, B->b, B->n));
-        incr_top(ks);
-
-	/* todo: remove old buffer now, cannot use ktap_free directly */
-	#if 0
-	if (buffonstack(B))
-		ktap_remove(ks, -2);  /* remove old buffer */
-	#endif
-}
-
-
-void ktap_buffinit(ktap_State *ks, ktap_Buffer *B)
-{
-	B->ks = ks;
-	B->b = B->initb;
-	B->n = 0;
-	B->size = KTAP_BUFFERSIZE;
-}
-
-void ktap_bufffree(ktap_State *ks, ktap_Buffer *B)
-{
-	if (B->b != B->initb)
-		ktap_free(ks, B->b);
-}
-
 
 /******************************************************************************/
 
@@ -387,7 +299,7 @@ void ktap_bufffree(ktap_State *ks, ktap_Buffer *B)
  * if you change the code below be sure to update load_header and FORMAT above
  * and KTAPC_HEADERSIZE in ktap_types.h
  */
-void ktap_header(u8 *h)
+void kp_header(u8 *h)
 {
 	int x = 1;
 

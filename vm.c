@@ -41,7 +41,7 @@
 
 #define isktapfunc(ci)	((ci)->callstatus & CIST_KTAP)
 
-void ktap_call(ktap_State *ks, StkId func, int nresults);
+void kp_call(ktap_State *ks, StkId func, int nresults);
 
 void ktap_concat(ktap_State *ks, int start, int end)
 {
@@ -52,7 +52,7 @@ void ktap_concat(ktap_State *ks, int start, int end)
 
 	for (i = start; i <= end; i++) {
 		if (!ttisstring(top + i)) {
-			ktap_printf(ks, "cannot concat non-string\n");
+			kp_printf(ks, "cannot concat non-string\n");
 			return;
 		}
 
@@ -61,7 +61,7 @@ void ktap_concat(ktap_State *ks, int start, int end)
 	if (len <= sizeof(*ks->buff)) {
 		buffer = ks->buff;
 	} else
-		buffer = ktap_malloc(ks, len);
+		buffer = kp_malloc(ks, len);
 	ptr = buffer;
 
 	for (i = start; i <= end; i++) {
@@ -69,11 +69,11 @@ void ktap_concat(ktap_State *ks, int start, int end)
 		strncpy(ptr, svalue(top + i), len);
 		ptr += len;
 	}
-	ts = tstring_newlstr(ks, buffer, len);
+	ts = kp_tstring_newlstr(ks, buffer, len);
 	setsvalue(top + start, ts);
 
 	if (buffer != ks->buff)
-		ktap_free(ks, buffer);
+		kp_free(ks, buffer);
 }
 
 /* todo: compare l == r if both is tstring type? */
@@ -82,7 +82,7 @@ static int lessthan(ktap_State *ks, const Tvalue *l, const Tvalue *r)
 	if (ttisnumber(l) && ttisnumber(r))
 		return NUMLT(nvalue(l), nvalue(r));
 	else if (ttisstring(l) && ttisstring(r))
-		return tstring_cmp(rawtsvalue(l), rawtsvalue(r)) < 0;
+		return kp_tstring_cmp(rawtsvalue(l), rawtsvalue(r)) < 0;
 
 	return 0;
 }
@@ -92,7 +92,7 @@ static int lessequal(ktap_State *ks, const Tvalue *l, const Tvalue *r)
 	if (ttisnumber(l) && ttisnumber(r))
 		return NUMLE(nvalue(l), nvalue(r));
 	else if (ttisstring(l) && ttisstring(r))
-		return tstring_cmp(rawtsvalue(l), rawtsvalue(r)) <= 0;
+		return kp_tstring_cmp(rawtsvalue(l), rawtsvalue(r)) <= 0;
 
 	return 0;
 }
@@ -142,7 +142,7 @@ static Upval *findupval(ktap_State *ks, StkId level)
 	}
 
 	/* not found: create a new one */
-	uv = &newobject(ks, KTAP_TUPVAL, sizeof(Upval), pp)->uv;
+	uv = &kp_newobject(ks, KTAP_TUPVAL, sizeof(Upval), pp)->uv;
 	uv->v = level;  /* current value lives in the stack */
 	uv->u.l.prev = &g->uvhead;  /* double link it in `uvhead' list */
 	uv->u.l.next = g->uvhead.u.l.next;
@@ -163,7 +163,7 @@ static void pushclosure(ktap_State *ks, Proto *p, Upval **encup, StkId base,
 	int nup = p->sizeupvalues;
 	Upvaldesc *uv = p->upvalues;
 	int i;
-	Closure *ncl = ktap_newlclosure(ks, nup);
+	Closure *ncl = kp_newlclosure(ks, nup);
 
 	ncl->l.p = p;
 	setcllvalue(ra, ncl);  /* anchor new closure in stack */
@@ -183,17 +183,15 @@ static void pushclosure(ktap_State *ks, Proto *p, Upval **encup, StkId base,
 
 static void gettable(ktap_State *ks, const Tvalue *t, Tvalue *key, StkId val)
 {
-	setobj(ks, val, table_get(hvalue(t), key));
+	setobj(ks, val, kp_table_get(hvalue(t), key));
 }
 
 static void settable(ktap_State *ks, const Tvalue *t, Tvalue *key, StkId val)
 {
-	table_setvalue(ks, hvalue(t), key, val);
+	kp_table_setvalue(ks, hvalue(t), key, val);
 }
 
-
-
-void growstack(ktap_State *ks, int n)
+static void growstack(ktap_State *ks, int n)
 {
 	Tvalue *oldstack;
 	int lim;
@@ -210,14 +208,14 @@ void growstack(ktap_State *ks, int n)
 		newsize = needed;
 
 	if (newsize > KTAP_MAXSTACK) {  /* stack overflow? */
-		ktap_runerror(ks, "stack overflow");
+		kp_runerror(ks, "stack overflow");
 		return;
 	}
 
 	/* realloc stack */
 	oldstack = ks->stack;
 	lim = ks->stacksize;
-	ktap_realloc(ks, ks->stack, ks->stacksize, newsize, Tvalue);
+	kp_realloc(ks, ks->stack, ks->stacksize, newsize, Tvalue);
 
 	for (; lim < newsize; lim++)
 		setnilvalue(ks->stack + lim);
@@ -291,7 +289,7 @@ static Callinfo *extend_ci(ktap_State *ks)
 {
 	Callinfo *ci;
 
-	ci = ktap_malloc(ks, sizeof(Callinfo));
+	ci = kp_malloc(ks, sizeof(Callinfo));
 	ks->ci->next = ci;
 	ci->prev = ks->ci;
 	ci->next = NULL;
@@ -311,7 +309,7 @@ static void free_ci(ktap_State *ks)
 	ci->next = NULL;
 	while ((ci = next) != NULL) {
 		next = ci->next;
-		ktap_free(ks, ci);
+		kp_free(ks, ci);
 	}
 }
 
@@ -366,7 +364,7 @@ static int precall(ktap_State *ks, StkId func, int nresults)
 		ks->top = ci->top;
 		return 0;
 	default:
-		ktap_printf(ks, "cannot calling nil function\n");
+		kp_printf(ks, "cannot calling nil function\n");
 		return -1;
 	}
 
@@ -439,7 +437,7 @@ static void ktap_execute(ktap_State *ks)
 	/* ra is target register */
 	ra = RA(instr);
 
-//	ktap_printf(ks, "execute instruction: %s\n", ktap_opnames[opcode]);
+//	kp_printf(ks, "execute instruction: %s\n", ktap_opnames[opcode]);
 
 	switch (opcode) {
 	case OP_MOVE:
@@ -496,10 +494,10 @@ static void ktap_execute(ktap_State *ks)
 	case OP_NEWTABLE: {
 		int b = GETARG_B(instr);
 		int c = GETARG_C(instr);
-		Table *t = table_new(ks);
+		Table *t = kp_table_new(ks);
 		sethvalue(ra, t);
 		if (b != 0 || c != 0)
-			table_resize(ks, t, fb2int(b), fb2int(c));
+			kp_table_resize(ks, t, fb2int(b), fb2int(c));
 		//checkGC(ks, ra + 1);
 		break;
 		}
@@ -522,7 +520,7 @@ static void ktap_execute(ktap_State *ks)
 	case OP_DIV:
 		/* divide 0 checking */
 		if (!nvalue(RKC(instr))) {
-			ktap_printf(ks, "error: divide 0 arith operation, exit\n");
+			kp_printf(ks, "error: divide 0 arith operation, exit\n");
 			return;
 		}
 		arith_op(NUMDIV);
@@ -530,13 +528,13 @@ static void ktap_execute(ktap_State *ks)
 	case OP_MOD:
 		/* divide 0 checking */
 		if (!nvalue(RKC(instr))) {
-			ktap_printf(ks, "error: mod 0 arith operation, exit\n");
+			kp_printf(ks, "error: mod 0 arith operation, exit\n");
 			return;
 		}
 		arith_op(NUMMOD);
 		break;
 	case OP_POW:
-		ktap_printf(ks, "ktap don't support pow arith in kernel, exit\n");
+		kp_printf(ks, "ktap don't support pow arith in kernel, exit\n");
 		return;
 		//arith_op(NUMPOW);
 		break;
@@ -553,7 +551,7 @@ static void ktap_execute(ktap_State *ks)
 		setbvalue(ra, res);
 		break;
 	case OP_LEN: {
-		int len = objlen(ks, RB(instr));
+		int len = kp_objlen(ks, RB(instr));
 		if (len < 0)
 			return;
 		setnvalue(ra, len);
@@ -702,11 +700,11 @@ static void ktap_execute(ktap_State *ks)
 		const Tvalue *pstep = ra + 2;
 
 		if (!ktap_tonumber(init, ra))
-			ktap_runerror(ks, KTAP_QL("for") " initial value must be a number");
+			kp_runerror(ks, KTAP_QL("for") " initial value must be a number");
 		else if (!ktap_tonumber(plimit, ra + 1))
-			ktap_runerror(ks, KTAP_QL("for") " limit must be a number");
+			kp_runerror(ks, KTAP_QL("for") " limit must be a number");
 		else if (!ktap_tonumber(pstep, ra + 2))
-			ktap_runerror(ks, KTAP_QL("for") " step must be a number");
+			kp_runerror(ks, KTAP_QL("for") " step must be a number");
 
 		setnvalue(ra, NUMSUB(nvalue(ra), nvalue(pstep)));
 		ci->u.l.savedpc += GETARG_sBx(instr);
@@ -718,7 +716,7 @@ static void ktap_execute(ktap_State *ks)
 		setobj(ks, cb + 1, ra + 1);
 		setobj(ks, cb, ra);
 		ks->top = cb + 3;  /* func. + 2 args (state and index) */
-		ktap_call(ks, cb, GETARG_C(instr));
+		kp_call(ks, cb, GETARG_C(instr));
 		base = ci->u.l.base;
 		ks->top = ci->top;
 		instr = *(ci->u.l.savedpc++);  /* go to next instruction */
@@ -745,11 +743,11 @@ static void ktap_execute(ktap_State *ks)
 		h = hvalue(ra);
 		last = ((c - 1) * LFIELDS_PER_FLUSH) + n;
 		if (last > h->sizearray)  /* needs more space? */
-			table_resizearray(ks, h, last);  /* pre-allocate it at once */
+			kp_table_resizearray(ks, h, last);  /* pre-allocate it at once */
 
 		for (; n > 0; n--) {
 			Tvalue *val = ra+n;
-			table_setint(ks, h, last--, val);
+			kp_table_setint(ks, h, last--, val);
 		}
 		ks->top = ci->top;  /* correct top (in case of previous open call) */
 		break;
@@ -785,10 +783,10 @@ static void ktap_execute(ktap_State *ks)
 	case OP_EVENT: {
 		Tvalue *b = RB(instr);
 		if ((GETARG_B(instr) == 0) && ttisevent(b)) {
-			ktap_event_handle(ks, evalue(b), GETARG_C(instr), ra);
+			kp_event_handle(ks, evalue(b), GETARG_C(instr), ra);
 		} else {
 			/* normal OP_GETTABLE operation */
-			setsvalue(RKC(instr), ktap_event_get_ts(ks, GETARG_C(instr)));
+			setsvalue(RKC(instr), kp_event_get_ts(ks, GETARG_C(instr)));
 
 			gettable(ks, RB(instr), RKC(instr), ra);
 			base = ci->u.l.base;
@@ -806,7 +804,7 @@ static void ktap_execute(ktap_State *ks)
 	goto mainloop;
 }
 
-void ktap_call(ktap_State *ks, StkId func, int nresults)
+void kp_call(ktap_State *ks, StkId func, int nresults)
 {
 	if (!precall(ks, func, nresults))
 		ktap_execute(ks);
@@ -819,7 +817,7 @@ static int cfunction_cache_getindex(ktap_State *ks, Tvalue *fname);
  *
  * This function must be called before all code loaded.
  */
-void ktap_optimize_code(ktap_State *ks, int level, Proto *f)
+void kp_optimize_code(ktap_State *ks, int level, Proto *f)
 {
 	int i;
 
@@ -832,7 +830,7 @@ void ktap_optimize_code(ktap_State *ks, int level, Proto *f)
 			if ((GETARG_B(instr) == 0) && ISK(GETARG_C(instr))) {
 				Tvalue *field = k + INDEXK(GETARG_C(instr));
 				if (ttype(field) == KTAP_TSTRING) {
-					int index = ktap_event_get_index(svalue(field));
+					int index = kp_event_get_index(svalue(field));
 					if (index == -1)
 						break;
 
@@ -863,7 +861,7 @@ void ktap_optimize_code(ktap_State *ks, int level, Proto *f)
 
 	/* continue optimize sub functions */
 	for (i = 0; i < f->sizep; i++)
-		ktap_optimize_code(ks, level + 1, f->p[i]);
+		kp_optimize_code(ks, level + 1, f->p[i]);
 }
 
 static Tvalue *cfunction_cache_get(ktap_State *ks, int index)
@@ -873,13 +871,13 @@ static Tvalue *cfunction_cache_get(ktap_State *ks, int index)
 
 static int cfunction_cache_getindex(ktap_State *ks, Tvalue *fname)
 {
-	const Tvalue *gt = table_getint(hvalue(&G(ks)->registry),
+	const Tvalue *gt = kp_table_getint(hvalue(&G(ks)->registry),
 				KTAP_RIDX_GLOBALS);
 	Tvalue *cfunc;
 	int nr, i;
 
 	nr = G(ks)->nr_builtin_cfunction;
-	cfunc = table_get(hvalue(gt), fname);
+	cfunc = kp_table_get(hvalue(gt), fname);
 
 	for (i = 0; i < nr; i++) {
 		if (rawequalobj(&G(ks)->cfunction_tbl[i], cfunc))
@@ -898,12 +896,12 @@ static void cfunction_cache_add(ktap_State *ks, Tvalue *func)
 
 static void cfunction_cache_exit(ktap_State *ks)
 {
-	ktap_free(ks, G(ks)->cfunction_tbl);
+	kp_free(ks, G(ks)->cfunction_tbl);
 }
 
 static int cfunction_cache_init(ktap_State *ks)
 {
-	G(ks)->cfunction_tbl = ktap_zalloc(ks, sizeof(Tvalue) * 128);
+	G(ks)->cfunction_tbl = kp_zalloc(ks, sizeof(Tvalue) * 128);
 	if (!G(ks)->cfunction_tbl)
 		return -ENOMEM;
 
@@ -911,11 +909,11 @@ static int cfunction_cache_init(ktap_State *ks)
 }
 
 /* function for register library */
-void ktap_register_lib(ktap_State *ks, const char *libname, const ktap_Reg *funcs)
+void kp_register_lib(ktap_State *ks, const char *libname, const ktap_Reg *funcs)
 {
 	int i;
 	Table *target_tbl;
-	const Tvalue *gt = table_getint(hvalue(&G(ks)->registry), KTAP_RIDX_GLOBALS);
+	const Tvalue *gt = kp_table_getint(hvalue(&G(ks)->registry), KTAP_RIDX_GLOBALS);
 
 	/* lib is null when register baselib function */
 	if (libname == NULL)
@@ -923,20 +921,20 @@ void ktap_register_lib(ktap_State *ks, const char *libname, const ktap_Reg *func
 	else {
 		Tvalue key, val;
 
-		target_tbl = table_new(ks);
-		table_resize(ks, target_tbl, 0, sizeof(*funcs) / sizeof(ktap_Reg));
+		target_tbl = kp_table_new(ks);
+		kp_table_resize(ks, target_tbl, 0, sizeof(*funcs) / sizeof(ktap_Reg));
 
-		setsvalue(&key, tstring_new(ks, libname));
+		setsvalue(&key, kp_tstring_new(ks, libname));
 		sethvalue(&val, target_tbl);
-		table_setvalue(ks, hvalue(gt), &key, &val);
+		kp_table_setvalue(ks, hvalue(gt), &key, &val);
 	}
 
 	for (i = 0; funcs[i].name != NULL; i++) {
 		Tvalue func_name, cl;
 
-		setsvalue(&func_name, tstring_new(ks, funcs[i].name));
+		setsvalue(&func_name, kp_tstring_new(ks, funcs[i].name));
 		setfvalue(&cl, funcs[i].func);
-		table_setvalue(ks, target_tbl, &func_name, &cl);
+		kp_table_setvalue(ks, target_tbl, &func_name, &cl);
 
 		cfunction_cache_add(ks, &cl);
 	}
@@ -947,34 +945,34 @@ void ktap_register_lib(ktap_State *ks, const char *libname, const ktap_Reg *func
 static void ktap_init_registry(ktap_State *ks)
 {
 	Tvalue mt;
-	Table *registry = table_new(ks);
+	Table *registry = kp_table_new(ks);
 
 	sethvalue(&G(ks)->registry, registry);
-	table_resize(ks, registry, KTAP_RIDX_LAST, 0);
+	kp_table_resize(ks, registry, KTAP_RIDX_LAST, 0);
 	setthvalue(ks, &mt, ks);
-	table_setint(ks, registry, KTAP_RIDX_MAINTHREAD, &mt);
-	setthvalue(ks, &mt, table_new(ks));
-	table_setint(ks, registry, KTAP_RIDX_GLOBALS, &mt);
+	kp_table_setint(ks, registry, KTAP_RIDX_MAINTHREAD, &mt);
+	setthvalue(ks, &mt, kp_table_new(ks));
+	kp_table_setint(ks, registry, KTAP_RIDX_GLOBALS, &mt);
 }
 
 static void ktap_init_arguments(ktap_State *ks, int argc, char **argv)
 {
-	const Tvalue *gt = table_getint(hvalue(&G(ks)->registry),
+	const Tvalue *gt = kp_table_getint(hvalue(&G(ks)->registry),
 			   KTAP_RIDX_GLOBALS);
 	Table *global_tbl = hvalue(gt);
-	Table *arg_tbl = table_new(ks);
+	Table *arg_tbl = kp_table_new(ks);
 	Tvalue arg_tblval;
 	Tvalue arg_tsval;
 	int i;
 	
-	setsvalue(&arg_tsval, tstring_new(ks, "arg"));
+	setsvalue(&arg_tsval, kp_tstring_new(ks, "arg"));
 	sethvalue(&arg_tblval, arg_tbl);
-	setobj(ks, table_set(ks, global_tbl, &arg_tsval), &arg_tblval);
+	setobj(ks, kp_table_set(ks, global_tbl, &arg_tsval), &arg_tblval);
 
 	if (!argc)
 		return;
 
-	table_resize(ks, arg_tbl, 100, 100);
+	kp_table_resize(ks, arg_tbl, 100, 100);
 
 	for (i = 0; i < argc; i++) {
 		int res;
@@ -983,9 +981,9 @@ static void ktap_init_arguments(ktap_State *ks, int argc, char **argv)
 		if (!kstrtoint(argv[i], 10, &res)) {
 			setnvalue(&val, res);
 		} else
-			setsvalue(&val, tstring_new(ks, argv[i]));
+			setsvalue(&val, kp_tstring_new(ks, argv[i]));
 
-		table_setint(ks, arg_tbl, i, &val);
+		kp_table_setint(ks, arg_tbl, i, &val);
 	}
 }
 
@@ -999,9 +997,9 @@ static void ktap_init_state(ktap_State *ks)
 	int i;
 
 	if (ks == G(ks)->mainthread) {
-		ks->stack = ktap_malloc(ks, KTAP_STACK_SIZE);
+		ks->stack = kp_malloc(ks, KTAP_STACK_SIZE);
 		if (!ks->stack) {
-			ktap_printf(ks, "cannot alloc stack %d\n",
+			kp_printf(ks, "cannot alloc stack %d\n",
 				    KTAP_STACK_SIZE);
 			return;
 		}
@@ -1026,7 +1024,7 @@ static void ktap_init_state(ktap_State *ks)
 	ks->ci = ci;
 }
 
-void ktap_exitthread(ktap_State *ks)
+void kp_exitthread(ktap_State *ks)
 {
 	Gcobject *o = ks->localgc;
 	Gcobject *next;
@@ -1034,18 +1032,18 @@ void ktap_exitthread(ktap_State *ks)
 	free_ci(ks);
 
 	if (ks == G(ks)->mainthread)
-		ktap_free(ks, ks->stack);
+		kp_free(ks, ks->stack);
 
 	/* free local allocation objects, like annotate strings */
 	while (o) {
 		next = gch(o)->next;
-		ktap_free(ks, o);
+		kp_free(ks, o);
 		o = next;
 	}
 }
 
 static ktap_State *ktap_percpu_state;
-ktap_State *ktap_newthread(ktap_State *mainthread)
+ktap_State *kp_newthread(ktap_State *mainthread)
 {
 	ktap_State *ks;
 	global_State *g = G(mainthread);
@@ -1060,7 +1058,7 @@ ktap_State *ktap_newthread(ktap_State *mainthread)
 	return ks;
 }
 
-void ktap_user_complete(ktap_State *ks)
+void kp_user_complete(ktap_State *ks)
 {
 	if (!ks || !G(ks)->user_completion)
 		return;
@@ -1087,42 +1085,41 @@ static int wait_user_completion(ktap_State *ks)
 }
 
 
-/* todo: move this ktap_exit to other location */
 /* todo: how to process not-mainthread exit? */
-void ktap_exit(ktap_State *ks)
+void kp_exit(ktap_State *ks)
 {
 	if (ks != G(ks)->mainthread) {
-		ktap_printf(ks, "Error: ktap_exit called by non mainthread\n");
+		kp_printf(ks, "Error: ktap_exit called by non mainthread\n");
 		return;
 	}
 	/* we need to flush all signals */
 	flush_signals(current);
 
-	ktap_probe_exit(ks);
-	ktap_exit_timers(ks);
+	kp_probe_exit(ks);
+	kp_exit_timers(ks);
 
 	free_percpu(ktap_percpu_state);
 	free_percpu(percpu_ktap_stack);
 
 	/* free all resources got by ktap */
-	tstring_freeall(ks);
-	free_all_gcobject(ks);
+	kp_tstring_freeall(ks);
+	kp_free_all_gcobject(ks);
 	cfunction_cache_exit(ks);
 
 	wait_user_completion(ks);
 	flush_signals(current);
 
-	ktap_transport_exit(ks);
+	kp_transport_exit(ks);
 
-	ktap_exitthread(ks);
-	ktap_free(ks, ks);
+	kp_exitthread(ks);
+	kp_free(ks, ks);
 
 	/* life ending, no return anymore*/
 	do_exit(0);
 }
 
 /* ktap mainthread initization, main entry for ktap */
-ktap_State *ktap_newstate(ktap_State **private_data, int argc, char **argv)
+ktap_State *kp_newstate(ktap_State **private_data, int argc, char **argv)
 {
 	ktap_State *ks;
 	int ret;
@@ -1143,23 +1140,23 @@ ktap_State *ktap_newstate(ktap_State **private_data, int argc, char **argv)
 		return NULL;
 
 
-	ret = ktap_transport_init(ks);
+	ret = kp_transport_init(ks);
 	if (ret)
 		return NULL;
 
-	tstring_resize(ks, 512); /* set inital string hashtable size */
+	kp_tstring_resize(ks, 512); /* set inital string hashtable size */
 
 	ktap_init_state(ks);
 	ktap_init_registry(ks);
 	ktap_init_arguments(ks, argc, argv);
 
-	ktap_probe_init(ks);
+	kp_probe_init(ks);
 
 	/* init library */
-	ktap_init_baselib(ks);
-	ktap_init_oslib(ks);
-	ktap_init_kdebuglib(ks);
-	ktap_init_timerlib(ks);
+	kp_init_baselib(ks);
+	kp_init_oslib(ks);
+	kp_init_kdebuglib(ks);
+	kp_init_timerlib(ks);
 
 	ktap_percpu_state = (ktap_State *)alloc_percpu(ktap_State);
 	if (!ktap_percpu_state)

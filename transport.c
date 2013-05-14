@@ -60,17 +60,17 @@ static struct rchan_callbacks relay_callbacks = {
 	.remove_buf_file        = remove_buf_file_callback,
 };
 
-void ktap_transport_write(ktap_State *ks, const void *data, size_t length)
+void kp_transport_write(ktap_State *ks, const void *data, size_t length)
 {
 	__relay_write(G(ks)->ktap_chan, data, length);
 }
 
-void *ktap_transport_reserve(ktap_State *ks, size_t length)
+void *kp_transport_reserve(ktap_State *ks, size_t length)
 {
 	return relay_reserve(G(ks)->ktap_chan, length);
 }
 
-void ktap_transport_exit(ktap_State *ks)
+void kp_transport_exit(ktap_State *ks)
 {
 	if (G(ks)->ktap_chan)
 		relay_close(G(ks)->ktap_chan);
@@ -78,7 +78,7 @@ void ktap_transport_exit(ktap_State *ks)
 
 extern struct dentry *ktap_dir;
 
-int ktap_transport_init(ktap_State *ks)
+int kp_transport_init(ktap_State *ks)
 {
 	char prefix[32] = {0};
 

@@ -35,7 +35,7 @@
  * you terminal
  * Use this function in raw pts terminal
  */
-void ktap_printf(ktap_State *ks, const char *fmt, ...)
+void kp_printf(ktap_State *ks, const char *fmt, ...)
 {
 	char buff[512];
 	va_list args;
@@ -45,7 +45,7 @@ void ktap_printf(ktap_State *ks, const char *fmt, ...)
 	len = vscnprintf(buff, 512, fmt, args);
 	va_end(args);
 
-	ktap_transport_write(ks, buff, len);
+	kp_transport_write(ks, buff, len);
 }
 
 
@@ -55,7 +55,7 @@ void ktap_printf(ktap_State *ks, const char *fmt, ...)
 
 static int ktap_lib_clock(ktap_State *ks)
 {
-	ktap_printf(ks, "ktap_clock\n");
+	kp_printf(ks, "ktap_clock\n");
 	return 0;
 }
 
@@ -76,7 +76,7 @@ static int ktap_lib_sleep(ktap_State *ks)
 	msleep_interruptible(nvalue(time));
 
 	if (fatal_signal_pending(current))
-		ktap_exit(ks);
+		kp_exit(ks);
 	return 0;
 }
 
@@ -86,7 +86,7 @@ static int ktap_lib_wait(ktap_State *ks)
 	set_current_state(TASK_INTERRUPTIBLE);
 	schedule();
 	if (fatal_signal_pending(current))
-		ktap_exit(ks);
+		kp_exit(ks);
 
 	return 0;
 }
@@ -99,8 +99,8 @@ static const ktap_Reg oslib_funcs[] = {
 	{NULL}
 };
 
-void ktap_init_oslib(ktap_State *ks)
+void kp_init_oslib(ktap_State *ks)
 {
-	ktap_register_lib(ks, "os", oslib_funcs);
+	kp_register_lib(ks, "os", oslib_funcs);
 }
 

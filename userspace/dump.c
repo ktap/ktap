@@ -164,7 +164,7 @@ static void DumpHeader(DumpState *D)
 {
 	u8 h[KTAPC_HEADERSIZE];
 
-	ktap_header(h);
+	kp_header(h);
 	DumpBlock(h, KTAPC_HEADERSIZE, D);
 }
 

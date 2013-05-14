@@ -42,7 +42,7 @@ struct load_state {
 		S->pos += size;	\
 	} while(0)
 
-#define NEW_VECTOR(S, size)	ktap_malloc(S->ks, size)
+#define NEW_VECTOR(S, size)	kp_malloc(S->ks, size)
 #define GET_CURRENT(S)		&S->buff[S->pos]
 #define ADD_POS(S, size)	S->pos += size
 
@@ -78,7 +78,7 @@ static Tstring *load_string(struct load_state *S)
 	else {
 		char *s = GET_CURRENT(S);
 		ADD_POS(S, size);
-		ts = tstring_newlstr(S->ks, s, size - 1); /* remove trailing '\0' */
+		ts = kp_tstring_newlstr(S->ks, s, size - 1); /* remove trailing '\0' */
 		return ts;
 	}
 }
@@ -125,7 +125,7 @@ static int load_constants(struct load_state *S, Proto *f)
 			setsvalue(o, READ_STRING(S));
 			break;
 		default:
-			ktap_printf(S->ks, "ktap: load_constants: unknow Tvalue\n");
+			kp_printf(S->ks, "ktap: load_constants: unknow Tvalue\n");
 			return -1;
 			
 		}
@@ -137,7 +137,7 @@ static int load_constants(struct load_state *S, Proto *f)
 	for (i = 0; i < n; i++)
 		f->p[i] = NULL;
 	for (i = 0; i < n; i++) {
-		f->p[i] = ktap_newproto(S->ks);
+		f->p[i] = kp_newproto(S->ks);
 		if (load_function(S, f->p[i]))
 			return -1;
 	}
@@ -211,7 +211,7 @@ static int load_function(struct load_state *S, Proto *f)
 }
 
 
-#define error(S, why)	ktap_printf(S->ks, "load failed: %s precompiled chunk\n", why)
+#define error(S, why)	kp_printf(S->ks, "load failed: %s precompiled chunk\n", why)
 
 #define N0	KTAPC_HEADERSIZE
 #define N1	(sizeof(KTAP_SIGNATURE) - sizeof(char))
@@ -223,7 +223,7 @@ static int load_header(struct load_state *S)
 	u8 h[KTAPC_HEADERSIZE];
 	u8 s[KTAPC_HEADERSIZE];
 
-	ktap_header(h);
+	kp_header(h);
 	READ_VECTOR(S, s, KTAPC_HEADERSIZE);
 
 	if (memcmp(h, s, N0) == 0)
@@ -248,7 +248,7 @@ static int verify_code(struct load_state *S, Proto *f)
 }
 
 
-Closure *ktap_load(ktap_State *ks, unsigned char *buff)
+Closure *kp_load(ktap_State *ks, unsigned char *buff)
 {
 	struct load_state S;
 	Closure *cl;
@@ -263,7 +263,7 @@ Closure *ktap_load(ktap_State *ks, unsigned char *buff)
 	if (ret)
 		return NULL;
 
-	cl = ktap_newlclosure(ks, 1);
+	cl = kp_newlclosure(ks, 1);
 	if (!cl)
 		return cl;
 
@@ -271,27 +271,27 @@ Closure *ktap_load(ktap_State *ks, unsigned char *buff)
 	setcllvalue(ks->top, cl);
 	incr_top(ks);
 
-	cl->l.p = ktap_newproto(ks);
+	cl->l.p = kp_newproto(ks);
 	if (load_function(&S, cl->l.p))
 		return NULL;
 
 	if (cl->l.p->sizeupvalues != 1) {
 		Proto *p = cl->l.p;
-		cl = ktap_newlclosure(ks, cl->l.p->sizeupvalues);
+		cl = kp_newlclosure(ks, cl->l.p->sizeupvalues);
 		cl->l.p = p;
 		setcllvalue(ks->top - 1, cl);
 	}
 
 	f = &cl->l;
 	for (i = 0; i < f->nupvalues; i++) {  /* initialize upvalues */
-		Upval *up = ktap_newupval(ks);
+		Upval *up = kp_newupval(ks);
 		f->upvals[i] = up;
 	}
 
 	/* set global table as 1st upvalue of 'f' */
 	if (f->nupvalues == 1) {
 		Table *reg = hvalue(&G(ks)->registry);
-		const Tvalue *gt = table_getint(reg, KTAP_RIDX_GLOBALS);
+		const Tvalue *gt = kp_table_getint(reg, KTAP_RIDX_GLOBALS);
 		setobj(ks, f->upvals[0]->v, gt);
 	}
 

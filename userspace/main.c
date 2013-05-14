@@ -39,42 +39,42 @@
 
 void *ktapc_reallocv(void *block, size_t osize, size_t nsize)
 {
-	return ktap_reallocv(NULL, block, osize, nsize);
+	return kp_reallocv(NULL, block, osize, nsize);
 }
 
 Closure *ktapc_newlclosure(int n)
 {
-	return ktap_newlclosure(NULL, n);
+	return kp_newlclosure(NULL, n);
 }
 
 Proto *ktapc_newproto()
 {
-	return ktap_newproto(NULL);
+	return kp_newproto(NULL);
 }
 
 Tvalue *ktapc_table_set(Table *t, const Tvalue *key)
 {
-	return table_set(NULL, t, key);
+	return kp_table_set(NULL, t, key);
 }
 
 Table *ktapc_table_new()
 {
-	return table_new(NULL);
+	return kp_table_new(NULL);
 }
 
 Tstring *ktapc_ts_newlstr(const char *str, size_t l)
 {
-	return tstring_newlstr(NULL, str, l);
+	return kp_tstring_newlstr(NULL, str, l);
 }
 
 Tstring *ktapc_ts_new(const char *str)
 {
-	return tstring_new(NULL, str);
+	return kp_tstring_new(NULL, str);
 }
 
 int ktapc_ts_eqstr(Tstring *a, Tstring *b)
 {
-	return tstring_eqstr(a, b);
+	return kp_tstring_eqstr(a, b);
 }
 
 static void ktapc_runerror(const char *err_msg, const char *what, int limit)
@@ -139,7 +139,7 @@ void *ktapc_growaux(void *block, int *size, size_t size_elems, int limit,
 #define print_RKC(instr)	\
 	do {	\
 		if (ISK(GETARG_C(instr))) \
-			showobj(NULL, k + INDEXK(GETARG_C(instr))); \
+			kp_showobj(NULL, k + INDEXK(GETARG_C(instr))); \
 		else \
 			print_base(GETARG_C(instr)); \
 	} while (0)
@@ -182,7 +182,7 @@ static void decode_instruction(Proto *f, int instr)
 		print_base(GETARG_A(instr));
 		printf(" <- ");
 
-		showobj(NULL, k + GETARG_Bx(instr));
+		kp_showobj(NULL, k + GETARG_Bx(instr));
 		break;
 	case OP_CALL:
 		printf("\t");
@@ -287,7 +287,7 @@ static void init_dummy_global_state()
 	memset(&dummy_global_state, 0, sizeof(global_State));
 	dummy_global_state.seed = 201236;
 
-        tstring_resize(NULL, 32); /* set inital string hashtable size */
+        kp_tstring_resize(NULL, 32); /* set inital string hashtable size */
 }
 
 

@@ -67,8 +67,6 @@ static const Node dummynode_ = {
 
 
 
-Tvalue *table_set(ktap_State *ks, Table *t, const Tvalue *key);
-void table_setint(ktap_State *ks, Table *t, int key, Tvalue *v);
 static void setnodevector(ktap_State *ks, Table *t, int size);
 
 
@@ -93,9 +91,9 @@ static int ceillog2(unsigned int x)
 }
 
 
-Table *table_new(ktap_State *ks)
+Table *kp_table_new(ktap_State *ks)
 {
-	Table *t = &newobject(ks, KTAP_TTABLE, sizeof(Table), NULL)->h;
+	Table *t = &kp_newobject(ks, KTAP_TTABLE, sizeof(Table), NULL)->h;
 
 	t->flags = (u8)(~0);
 	t->array = NULL;
@@ -106,7 +104,7 @@ Table *table_new(ktap_State *ks)
 	return t;
 }
 
-const Tvalue *table_getint(Table *t, int key)
+const Tvalue *kp_table_getint(Table *t, int key)
 {
 	Node *n;
 
@@ -133,7 +131,7 @@ static Node *mainposition (const Table *t, const Tvalue *key)
 	case KTAP_TLNGSTR: {
 		Tstring *s = rawtsvalue(key);
 		if (s->tsv.extra == 0) {  /* no hash? */
-			s->tsv.hash = string_hash(getstr(s), s->tsv.len, s->tsv.hash);
+			s->tsv.hash = kp_string_hash(getstr(s), s->tsv.len, s->tsv.hash);
 			s->tsv.extra = 1;  /* now it has its hash */
 		}
 		return hashstr(t, rawtsvalue(key));
@@ -182,7 +180,7 @@ static int findindex(ktap_State *ks, Table *t, StkId key)
 		Node *n = mainposition(t, key);
 		for (;;) {  /* check whether `key' is somewhere in the chain */
 			/* key may be dead already, but it is ok to use it in `next' */
-			if (equalobjv(ks, gkey(n), key)) {
+			if (kp_equalobjv(ks, gkey(n), key)) {
 				i = n - gnode(t, 0);  /* key index in hash table */
 				/* hash elements are numbered after array ones */
 				return i + t->sizearray;
@@ -191,12 +189,12 @@ static int findindex(ktap_State *ks, Table *t, StkId key)
 
 			if (n == NULL)
 				/* key not found */
-				ktap_runerror(ks, "invalid key to next");
+				kp_runerror(ks, "invalid key to next");
 		}
 	}
 }
 
-int table_next(ktap_State *ks, Table *t, StkId key)
+int kp_table_next(ktap_State *ks, Table *t, StkId key)
 {
 	int i = findindex(ks, t, key);  /* find original element */
 
@@ -310,7 +308,7 @@ static void setarrayvector(ktap_State *ks, Table *t, int size)
 {
 	int i;
 
-	ktap_realloc(ks, t->array, t->sizearray, size, Tvalue);
+	kp_realloc(ks, t->array, t->sizearray, size, Tvalue);
 	for (i = t->sizearray; i < size; i++)
 		setnilvalue(&t->array[i]);
 
@@ -328,9 +326,9 @@ static void setnodevector(ktap_State *ks, Table *t, int size)
 		int i;
 		lsize = ceillog2(size);
 		if (lsize > MAXBITS)
-			ktap_runerror(ks, "table overflow");
+			kp_runerror(ks, "table overflow");
 		size = twoto(lsize);
-		t->node = ktap_malloc(ks, size * sizeof(Node));
+		t->node = kp_malloc(ks, size * sizeof(Node));
 		for (i = 0; i < size; i++) {
 			Node *n = gnode(t, i);
 			gnext(n) = NULL;
@@ -343,7 +341,7 @@ static void setnodevector(ktap_State *ks, Table *t, int size)
 	t->lastfree = gnode(t, size);  /* all positions are free */
 }
 
-void table_resize(ktap_State *ks, Table *t, int nasize, int nhsize)
+void kp_table_resize(ktap_State *ks, Table *t, int nasize, int nhsize)
 {
 	int i;
 	int oldasize = t->sizearray;
@@ -361,11 +359,11 @@ void table_resize(ktap_State *ks, Table *t, int nasize, int nhsize)
 		/* re-insert elements from vanishing slice */
 		for (i=nasize; i<oldasize; i++) {
 			if (!ttisnil(&t->array[i]))
-				table_setint(ks, t, i + 1, &t->array[i]);
+				kp_table_setint(ks, t, i + 1, &t->array[i]);
 		}
 
 		/* shrink array */
-		ktap_realloc(ks, t->array, oldasize, nasize, Tvalue);
+		kp_realloc(ks, t->array, oldasize, nasize, Tvalue);
 	}
 
 	/* re-insert elements from hash part */
@@ -375,18 +373,18 @@ void table_resize(ktap_State *ks, Table *t, int nasize, int nhsize)
 			/* doesn't need barrier/invalidate cache, as entry was
 			 * already present in the table
 			 */
-			setobj(ks, table_set(ks, t, gkey(old)), gval(old));
+			setobj(ks, kp_table_set(ks, t, gkey(old)), gval(old));
 		}
 	}
 
 	if (!isdummy(nold))
-		ktap_free(ks, nold); /* free old array */
+		kp_free(ks, nold); /* free old array */
 }
 
-void table_resizearray(ktap_State *ks, Table *t, int nasize)
+void kp_table_resizearray(ktap_State *ks, Table *t, int nasize)
 {
 	int nsize = isdummy(t->node) ? 0 : sizenode(t);
-	table_resize(ks, t, nasize, nsize);
+	kp_table_resize(ks, t, nasize, nsize);
 }
 
 static void rehash(ktap_State *ks, Table *t, const Tvalue *ek)
@@ -408,7 +406,7 @@ static void rehash(ktap_State *ks, Table *t, const Tvalue *ek)
 	/* compute new size for array part */
 	na = computesizes(nums, &nasize);
 	/* resize the table to new computed sizes */
-	table_resize(ks, t, nasize, totaluse - na);
+	kp_table_resize(ks, t, nasize, totaluse - na);
 }
 
 
@@ -434,7 +432,7 @@ static Tvalue *table_newkey(ktap_State *ks, Table *t, const Tvalue *key)
 		if (n == NULL) {  /* cannot find a free place? */
 			rehash(ks, t, key);  /* grow table */
 			/* whatever called 'newkey' take care of TM cache and GC barrier */
-			return table_set(ks, t, key);  /* insert key into grown table */
+			return kp_table_set(ks, t, key);  /* insert key into grown table */
 		}
 
 		othern = mainposition(t, gkey(mp));
@@ -461,7 +459,7 @@ static Tvalue *table_newkey(ktap_State *ks, Table *t, const Tvalue *key)
 /*
  * search function for short strings
  */
-const Tvalue *table_getstr(Table *t, Tstring *key)
+const Tvalue *kp_table_getstr(Table *t, Tstring *key)
 {
 	Node *n = hashstr(t, key);
 
@@ -479,18 +477,18 @@ const Tvalue *table_getstr(Table *t, Tstring *key)
 /*
  * main search function
  */
-const Tvalue *table_get(Table *t, const Tvalue *key)
+const Tvalue *kp_table_get(Table *t, const Tvalue *key)
 {
 	switch (ttype(key)) {
 	case KTAP_TNIL:
 		return ktap_nilobject;
 	case KTAP_TSHRSTR:
-		return table_getstr(t, rawtsvalue(key));
+		return kp_table_getstr(t, rawtsvalue(key));
 	case KTAP_TNUMBER: {
 		ktap_Number n = nvalue(key);
 		int k = (int)n;
 		if ((ktap_Number)k == nvalue(key)) /* index is int? */
-			return table_getint(t, k);  /* use specialized version */
+			return kp_table_getint(t, k);  /* use specialized version */
 		/* else go through */
 	}
 	default: {
@@ -508,9 +506,9 @@ const Tvalue *table_get(Table *t, const Tvalue *key)
 }
 
 
-Tvalue *table_set(ktap_State *ks, Table *t, const Tvalue *key)
+Tvalue *kp_table_set(ktap_State *ks, Table *t, const Tvalue *key)
 {
-	const Tvalue *p = table_get(t, key);
+	const Tvalue *p = kp_table_get(t, key);
 
 	if (p != ktap_nilobject)
 		return (Tvalue *)p;
@@ -519,15 +517,15 @@ Tvalue *table_set(ktap_State *ks, Table *t, const Tvalue *key)
 }
 
 
-void table_setvalue(ktap_State *ks, Table *t, const Tvalue *key, Tvalue *val)
+void kp_table_setvalue(ktap_State *ks, Table *t, const Tvalue *key, Tvalue *val)
 {
-	setobj(ks, table_set(ks, t, key), val);
+	setobj(ks, kp_table_set(ks, t, key), val);
 }
 
 
-void table_setint(ktap_State *ks, Table *t, int key, Tvalue *v)
+void kp_table_setint(ktap_State *ks, Table *t, int key, Tvalue *v)
 {
-	const Tvalue *p = table_getint(t, key);
+	const Tvalue *p = kp_table_getint(t, key);
 	Tvalue *cell;
 
 	if (p != ktap_nilobject)
@@ -541,7 +539,7 @@ void table_setint(ktap_State *ks, Table *t, int key, Tvalue *v)
 	setobj(ks, cell, v);
 }
 
-int table_length(ktap_State *ks, Table *t)
+int kp_table_length(ktap_State *ks, Table *t)
 {
 	int i, len = 0;
 
@@ -565,21 +563,21 @@ int table_length(ktap_State *ks, Table *t)
 	return len;
 }
 
-void table_free(ktap_State *ks, Table *t)
+void kp_table_free(ktap_State *ks, Table *t)
 {
 	if (t->sizearray > 0)
-		ktap_free(ks, t->array);
+		kp_free(ks, t->array);
 	if (!isdummy(t->node))
-		ktap_free(ks, t->node);
+		kp_free(ks, t->node);
 
-	ktap_free(ks, t);
+	kp_free(ks, t);
 }
 
-void table_dump(ktap_State *ks, Table *t)
+void kp_table_dump(ktap_State *ks, Table *t)
 {
 	int i, count = 0;
 
-	ktap_printf(ks, "{");
+	kp_printf(ks, "{");
 	for (i = 0; i < t->sizearray; i++) {
 		Tvalue *v = &t->array[i];
 
@@ -587,11 +585,11 @@ void table_dump(ktap_State *ks, Table *t)
 			continue;
 
 		if (count)
-			ktap_printf(ks, ", ");
+			kp_printf(ks, ", ");
 
-		ktap_printf(ks, "(%d: ", i + 1);
-		showobj(ks, v);
-		ktap_printf(ks, ")");
+		kp_printf(ks, "(%d: ", i + 1);
+		kp_showobj(ks, v);
+		kp_printf(ks, ")");
 		count++;
 	}
 
@@ -602,16 +600,16 @@ void table_dump(ktap_State *ks, Table *t)
 			continue;
 
 		if (count)
-			ktap_printf(ks, ", ");
+			kp_printf(ks, ", ");
 
-		ktap_printf(ks, "(");
-		showobj(ks, gkey(n));
-		ktap_printf(ks, ": ");
-		showobj(ks, gval(n));
-		ktap_printf(ks, ")");
+		kp_printf(ks, "(");
+		kp_showobj(ks, gkey(n));
+		kp_printf(ks, ": ");
+		kp_showobj(ks, gval(n));
+		kp_printf(ks, ")");
 		count++;
 	}
-	ktap_printf(ks, "}");
+	kp_printf(ks, "}");
 }
 
 struct table_hist_record {
@@ -634,13 +632,13 @@ static int hist_record_cmp(const void *r1, const void *r2)
 
 #define DISTRIBUTION_STR "------------- Distribution -------------"
 /* histogram: key should be number or string, value must be number */
-void table_histogram(ktap_State *ks, Table *t)
+void kp_table_histogram(ktap_State *ks, Table *t)
 {
 	struct table_hist_record *thr;
 	char dist_str[40];
 	int i, ratio, total = 0, count = 0;
 
-	thr = ktap_malloc(ks, sizeof(*thr) * (t->sizearray + sizenode(t)));
+	thr = kp_malloc(ks, sizeof(*thr) * (t->sizearray + sizenode(t)));
 
 	for (i = 0; i < t->sizearray; i++) {
 		Tvalue *v = &t->array[i];
@@ -674,7 +672,7 @@ void table_histogram(ktap_State *ks, Table *t)
 
 	sort(thr, count, sizeof(struct table_hist_record), hist_record_cmp, NULL);
 
-	ktap_printf(ks, "%32s%s%s\n", "value ", DISTRIBUTION_STR, " count");
+	kp_printf(ks, "%32s%s%s\n", "value ", DISTRIBUTION_STR, " count");
 	dist_str[sizeof(dist_str) - 1] = '\0';
 	for (i = 0; i < count; i++) {
 		Tvalue *key = &thr[i].key;
@@ -695,19 +693,19 @@ void table_histogram(ktap_State *ks, Table *t)
 			} else
 				keystr = svalue(key);
 
-			ktap_printf(ks, "%32s |%s%-10d\n", keystr, dist_str,
+			kp_printf(ks, "%32s |%s%-10d\n", keystr, dist_str,
 					nvalue(val));
 		} else
-			ktap_printf(ks, "%32d | %s%-10d\n", nvalue(key),
+			kp_printf(ks, "%32d | %s%-10d\n", nvalue(key),
 					dist_str, nvalue(val));
 	}
 
 	goto out;
 
  error:
-	ktap_printf(ks, "error: table histogram only handle "
+	kp_printf(ks, "error: table histogram only handle "
 			" (key: string/number val: number)\n");
  out:
-	ktap_free(ks, thr);
+	kp_free(ks, thr);
 }
 

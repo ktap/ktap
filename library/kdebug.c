@@ -79,7 +79,7 @@ static void ktap_call_probe_closure(ktap_State *mainthread, Closure *cl,
 	ktap_State *ks;
 	Tvalue *func;
 
-	ks = ktap_newthread(mainthread);
+	ks = kp_newthread(mainthread);
 	setcllvalue(ks->top, cl);
 	func = ks->top;
 	incr_top(ks);
@@ -91,10 +91,10 @@ static void ktap_call_probe_closure(ktap_State *mainthread, Closure *cl,
 
 	ks->current_event = e;
 
-	ktap_call(ks, func, 0);
+	kp_call(ks, func, 0);
 
 	ks->current_event = NULL;
-	ktap_exitthread(ks);
+	kp_exitthread(ks);
 }
 
 /* kprobe handler is called in interrupt disabled? */
@@ -166,7 +166,7 @@ static int ret_handler(struct kretprobe_instance *ri, struct pt_regs *regs)
 static void kretprobe_destructor(struct ktap_probe_event *ktap_pevent)
 {
 	unregister_kretprobe(&ktap_pevent->u.p);
-	ktap_free(ktap_pevent->ks, ktap_pevent->u.p.kp.symbol_name);
+	kp_free(ktap_pevent->ks, ktap_pevent->u.p.kp.symbol_name);
 }
 
 static int start_kprobe(ktap_State *ks, const char *event_name, Closure *cl)
@@ -174,7 +174,7 @@ static int start_kprobe(ktap_State *ks, const char *event_name, Closure *cl)
 	struct ktap_probe_event *ktap_pevent;
 	int len = strlen(event_name);
 
-	ktap_pevent = ktap_zalloc(ks, sizeof(*ktap_pevent));
+	ktap_pevent = kp_zalloc(ks, sizeof(*ktap_pevent));
 	ktap_pevent->ks = ks;
 	ktap_pevent->cl = cl;
 
@@ -192,8 +192,8 @@ static int start_kprobe(ktap_State *ks, const char *event_name, Closure *cl)
 		ktap_pevent->u.p.handler = ret_handler;
 		ktap_pevent->destructor = kretprobe_destructor;
 		if (register_kretprobe(&ktap_pevent->u.p)) {
-			ktap_free(ks, symbol_name);
-			ktap_printf(ks, "Cannot register retprobe: %s\n", event_name);
+			kp_free(ks, symbol_name);
+			kp_printf(ks, "Cannot register retprobe: %s\n", event_name);
 			goto error;
 		}
 	} else {
@@ -205,7 +205,7 @@ static int start_kprobe(ktap_State *ks, const char *event_name, Closure *cl)
 		ktap_pevent->u.p.kp.break_handler = NULL;
 		ktap_pevent->destructor = kprobe_destructor;
 		if (register_kprobe(&ktap_pevent->u.p.kp)) {
-			ktap_printf(ks, "Cannot register probe: %s\n", event_name);
+			kp_printf(ks, "Cannot register probe: %s\n", event_name);
 			goto error;
 		}
 	}
@@ -214,7 +214,7 @@ static int start_kprobe(ktap_State *ks, const char *event_name, Closure *cl)
 
  error:
 	list_del(&ktap_pevent->list);
-	ktap_free(ks, ktap_pevent);
+	kp_free(ks, ktap_pevent);
 	return -1;
 }
 
@@ -243,7 +243,7 @@ static int event_function_tostring(ktap_State *ks)
 		int len = s->len >= PAGE_SIZE ? PAGE_SIZE - 1 : s->len;
 
 		s->buffer[len] = '\0';
-		setsvalue(ks->top, tstring_assemble(ks, s->buffer, len + 1));
+		setsvalue(ks->top, kp_tstring_assemble(ks, s->buffer, len + 1));
 	} else
 		setnilvalue(ks->top);
 
@@ -266,17 +266,17 @@ void kp_show_event(ktap_State *ks)
 {
 	event_function_tostring(ks);
 	ks->top--;
-	ktap_printf(ks, "%s", getstr(rawtsvalue(ks->top)));
+	kp_printf(ks, "%s", getstr(rawtsvalue(ks->top)));
 }
 
 static void event_name(ktap_State *ks, struct ktap_event *e, StkId ra)
 {
-	setsvalue(ra, tstring_new(ks, e->pevent->name));
+	setsvalue(ra, kp_tstring_new(ks, e->pevent->name));
 }
 
 static void event_print_fmt(ktap_State *ks, struct ktap_event *e, StkId ra)
 {
-	setsvalue(ra, tstring_new(ks, e->call->print_fmt));
+	setsvalue(ra, kp_tstring_new(ks, e->call->print_fmt));
 }
 
 /* check pt_regs defintion in linux/arch/x86/include/asm/ptrace.h */
@@ -294,7 +294,7 @@ static void event_regstr(ktap_State *ks, struct ktap_event *e, StkId ra)
 		regs->si, regs->di, regs->bp, regs->ds, regs->es, regs->fs,
 		regs->gs, regs->ip, regs->cs, regs->flags, regs->sp, regs->ss);
 #endif
-	setsvalue(ra, tstring_new(ks, str));
+	setsvalue(ra, kp_tstring_new(ks, str));
 }
 
 static void event_retval(ktap_State *ks, struct ktap_event *e, StkId ra)
@@ -399,7 +399,7 @@ struct ftrace_event_field {
 /* e.narg */
 static void event_narg(ktap_State *ks, struct ktap_event *e, StkId ra)
 {
-	setsvalue(ra, tstring_new(ks, e->call->name));
+	setsvalue(ra, kp_tstring_new(ks, e->call->name));
 }
 
 static struct list_head *ktap_get_fields(struct ftrace_event_call *event_call)
@@ -425,7 +425,7 @@ static void event_allfield(ktap_State *ks, struct ktap_event *e, StkId ra)
 	}
 	s[pos] = '\0';
 
-	setsvalue(ra, tstring_new(ks, s));
+	setsvalue(ra, kp_tstring_new(ks, s));
 }
 
 static void event_field(ktap_State *ks, struct ktap_event *e, int index, StkId ra)
@@ -476,7 +476,7 @@ static struct event_field_tbl {
 	{"field1", event_field1}
 };
 
-int ktap_event_get_index(const char *field)
+int kp_event_get_index(const char *field)
 {
 	int i;
 
@@ -489,12 +489,12 @@ int ktap_event_get_index(const char *field)
 	return -1;
 }
 
-Tstring *ktap_event_get_ts(ktap_State *ks, int index)
+Tstring *kp_event_get_ts(ktap_State *ks, int index)
 {
-	return tstring_new(ks, event_ftbl[index - EVENT_FIELD_BASE].name);
+	return kp_tstring_new(ks, event_ftbl[index - EVENT_FIELD_BASE].name);
 }
 
-void ktap_event_handle(ktap_State *ks, void *e, int index, StkId ra)
+void kp_event_handle(ktap_State *ks, void *e, int index, StkId ra)
 {
 	e = (struct ktap_event *)e;
 
@@ -552,7 +552,7 @@ static void enable_tracepoint_on_cpu(int cpu, struct perf_event_attr *attr,
 	struct ktap_probe_event *ktap_pevent;
 	struct perf_event *event;
 
-	ktap_pevent = ktap_zalloc(arg->ks, sizeof(*ktap_pevent));
+	ktap_pevent = kp_zalloc(arg->ks, sizeof(*ktap_pevent));
 	ktap_pevent->name = call->name;
 	ktap_pevent->ks = arg->ks;
 	ktap_pevent->cl = arg->cl;
@@ -562,9 +562,9 @@ static void enable_tracepoint_on_cpu(int cpu, struct perf_event_attr *attr,
 						 ktap_overflow_callback, ktap_pevent);
 	if (IS_ERR(event)) {
 		int err = PTR_ERR(event);
-		ktap_printf(arg->ks, "unable create tracepoint event %s on cpu %d, err: %d\n",
+		kp_printf(arg->ks, "unable create tracepoint event %s on cpu %d, err: %d\n",
 				call->name, cpu, err);
-		ktap_free(arg->ks, ktap_pevent);
+		kp_free(arg->ks, ktap_pevent);
 		return;
 	}
 
@@ -581,7 +581,7 @@ static void enable_tracepoint(struct ftrace_event_call *call, void *data)
 	struct perf_event_attr attr;
 	int cpu, type = EVENT_TYPE_DEFAULT;
 
-	ktap_printf(arg->ks, "enable tracepoint event: %s\n", call->name);
+	kp_printf(arg->ks, "enable tracepoint event: %s\n", call->name);
 
 	memset(&attr, 0, sizeof(attr));
 	attr.type = PERF_TYPE_TRACEPOINT;	
@@ -665,7 +665,7 @@ static void ftrace_on_event_call(const char *buf, ftrace_call_func actor,
 		(*actor)(call, data);
 		total++;
 	}
-	ktap_printf(ks, "total enabled %d events\n", total);
+	kp_printf(ks, "total enabled %d events\n", total);
 }
 
 static int start_tracepoint(ktap_State *ks, const char *event_name, Closure *cl)
@@ -692,7 +692,7 @@ static int start_probe(ktap_State *ks, const char *event_name, Closure *cl)
 	} else if (!strncmp(event_name, "tp:", 3)) {
 		return start_tracepoint(ks, event_name + 3, cl);
 	} else {
-		ktap_printf(ks, "unknown probe event name: %s\n", event_name);
+		kp_printf(ks, "unknown probe event name: %s\n", event_name);
 		return -1;
 	}
 
@@ -719,7 +719,7 @@ static void end_probes(struct ktap_State *ks)
 		ktap_pevent = container_of(pos, struct ktap_probe_event,
 					   list);
 		list_del(&ktap_pevent->list);
-		ktap_free(ks, ktap_pevent);
+		kp_free(ks, ktap_pevent);
 	}
 }
 
@@ -760,7 +760,7 @@ static int ktap_lib_probe_end(ktap_State *ks)
 		no_wait = nvalue(GetArg(ks, 2));
 
 	if (!no_wait) {
-		ktap_printf(ks, "Press Control-C to stop.\n");
+		kp_printf(ks, "Press Control-C to stop.\n");
 		set_current_state(TASK_INTERRUPTIBLE);
 		schedule();
 		if (fatal_signal_pending(current))
@@ -770,12 +770,12 @@ static int ktap_lib_probe_end(ktap_State *ks)
 	end_probes(ks);
 
 	/* newline for handle CTRL+C display as ^C */
-	ktap_printf(ks, "\n");
+	kp_printf(ks, "\n");
 
 	setcllvalue(ks->top, clvalue(endfunc));
 	incr_top(ks);
 	
-	ktap_call(ks, ks->top - 1, 0);
+	kp_call(ks, ks->top - 1, 0);
 	return 0;
 }
 
@@ -793,8 +793,8 @@ void trace_console_func(void *__data, const char *text, size_t len)
 	if (likely(!__this_cpu_read(ktap_in_dumpstack)))
 		return;
 
-	/* cannot use ktap_printf here */
-	ktap_transport_write(ks, text, len);
+	/* cannot use kp_printf here */
+	kp_transport_write(ks, text, len);
 }
 
 /*
@@ -820,7 +820,7 @@ static int ktap_lib_dumpstack(ktap_State *ks)
 	return 0;
 }
 
-void ktap_probe_exit(ktap_State *ks)
+void kp_probe_exit(ktap_State *ks)
 {
 	end_probes(ks);
 
@@ -834,7 +834,7 @@ void ktap_probe_exit(ktap_State *ks)
 	G(ks)->trace_enabled = 0;
 }
 
-int ktap_probe_init(ktap_State *ks)
+int kp_probe_init(ktap_State *ks)
 {
 	INIT_LIST_HEAD(&(G(ks)->probe_events_head));
 
@@ -850,13 +850,13 @@ int ktap_probe_init(ktap_State *ks)
 	ftrace_events_ptr = kallsyms_lookup_name("ftrace_events");
 	if (!ftrace_events_ptr) {
 		free_percpu(percpu_trace_iterator);
-		ktap_printf(ks, "cannot lookup ftrace_events in kallsyms\n");
+		kp_printf(ks, "cannot lookup ftrace_events in kallsyms\n");
 		return -1;
 	}
 
 	if (register_trace_console(trace_console_func, ks)) {
 		free_percpu(percpu_trace_iterator);
-		ktap_printf(ks, "cannot register trace console\n");
+		kp_printf(ks, "cannot register trace console\n");
 		return -1;
 	}
 
@@ -872,8 +872,8 @@ static const ktap_Reg kdebuglib_funcs[] = {
 	{NULL}
 };
 
-void ktap_init_kdebuglib(ktap_State *ks)
+void kp_init_kdebuglib(ktap_State *ks)
 {
-	ktap_register_lib(ks, "kdebug", kdebuglib_funcs);
+	kp_register_lib(ks, "kdebug", kdebuglib_funcs);
 }
 
