@@ -41,6 +41,8 @@ Implementing
 - staticly typed virtual machine, it's more generic than dynamic typed vm
   support map/splice/struct/closure
   staticly typed is more faster than dynamic typed, with strict type checking
+- dynamic patch mechanism by ktap.
+  replace function in runtime
 
 
 Completed
