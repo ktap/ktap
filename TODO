@@ -43,6 +43,8 @@ Implementing
   staticly typed is more faster than dynamic typed, with strict type checking
 - dynamic patch mechanism by ktap.
   replace function in runtime
+- research a new powerful interpreter serves for ktap and systemtap, even dtrace
+  for static compiled language, use systemtap is enough.
 
 
 Completed
