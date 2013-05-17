@@ -8,8 +8,8 @@ Introduction
 A New Scripting Dynamic Tracing Tool For Linux
 
 KTAP is a new dynamic tracing tool for Linux,
-it is designed to give operational insights that allow users to
-tune and troubleshoot kernel and application.
+it is designed to give operational insights with interoperability
+that allow users to tune and troubleshoot kernel and application.
 It's similar with Linux Systemtap and Solaris Dtrace.
 
 KTAP uses a scripting language and lets users trace the Linux kernel dynamically.
@@ -21,10 +21,11 @@ fulfilling the embedd ecosystem's tracing needs.
 
 Requirements
 ------------
-- 3.4 or above Linux kernel header(kernel version below 3.4 is not tested)
+- Linux 3.4 or later(kernel version below 3.4 is not tested)
 - CONFIG_EVENT_TRACING enabled
 - CONFIG_PERF_EVENTS enabled
 - CONFIG_KPROBES enabled 
+- CONFIG_KALLSYMS enabled
 
 
 Building & Running
@@ -49,12 +50,13 @@ Building & Running
 
 	[root@jovi]# ./ktap scripts/syscalls.kp
 
+
 Contribution
 ------------
    https://github.com/ktap/ktap.git
 
+
 Contact
 -------
    zhangwei(Jovi) <jovi.zhangwei@huawei.com>
-   zhangwei(Jovi) <bookjovi@gmail.com>
 
