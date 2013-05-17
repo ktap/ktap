@@ -44,7 +44,7 @@ Example of syscall tracing
 syscalls.kp:  
 
 	function eventfun (e) {
-		printf("%d %d\t%s\t%s", cpu(), pid(), execname(), e.annotate)
+		printf("%d %d\t%s\t%s", cpu(), pid(), execname(), e.tostring())
 	}
 
 	kdebug.probe("tp:syscalls", eventfun)
