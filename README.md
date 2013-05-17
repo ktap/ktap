@@ -3,9 +3,9 @@ ktap
 
 A New Scripting Dynamic Tracing Tool For Linux
 
-KTAP is a new dynamic tracing tool for Linux,
-it is designed to give operational insights that allow users to
-tune and troubleshoot kernel and application.
+KTAP is a new scripting dynamic tracing tool for Linux,
+it is designed to give operational insights with interoperability
+that allow users to tune and troubleshoot kernel and application.
 It's similar with Linux Systemtap and Solaris Dtrace.
 
 KTAP uses a scripting language and lets users trace the Linux kernel dynamically.
