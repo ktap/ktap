@@ -11,6 +11,8 @@ KTAP Script Examples
 	kdebug.probe("tp:syscalls", eventfun)
 
 	kdebug.probe_end(function () {
+		printf("probe ending\n")
+	}
 
 
 2. timer example
