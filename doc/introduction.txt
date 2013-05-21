@@ -22,8 +22,10 @@ KTAP also is designed for enabling great interoperability with Linux kernel,
 it gives user the power to modify and extend the system, and let users
 explore the system in an easy way.
 
-More information can be found at doc/ directory.
-
+KTAP implementation is initial based on Lua programming language,
+Lua is a powerful, fast, lightweight, embeddable scripting language.
+KTAP changed a lot on Lua, for better suit for kernel embedding purpose.
+Thanks Lua.
 
 Requirements
 ------------
