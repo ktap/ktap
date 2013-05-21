@@ -20,6 +20,27 @@
  * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+/*
+ * this file is the first file to be compile, add CONFIG_ checking in here.
+ * See Requirements in doc/introduction.txt
+ */
+
+#if !CONFIG_EVENT_TRACING
+#error "Please enable CONFIG_EVENT_TRACING before compile ktap"
+#endif
+
+#if !CONFIG_PERF_EVENTS
+#error "Please enable CONFIG_PERF_EVENTS before compile ktap"
+#endif
+
+#if !CONFIG_KPROBES
+#error "Please enable CONFIG_KPROBES before compile ktap"
+#endif
+
+#if !CONFIG_KALLSYMS
+#error "Please enable CONFIG_KALLSYMS before compile ktap"
+#endif
+
 
 #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 
