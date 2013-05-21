@@ -43,7 +43,7 @@ void kp_user_complete(ktap_State *ks);
 
 void kp_exit_timers(ktap_State *ks);
 
-extern DEFINE_PER_CPU(bool, ktap_in_tracing);
+DECLARE_PER_CPU(bool, ktap_in_tracing);
 
 void kp_show_event(ktap_State *ks);
 
