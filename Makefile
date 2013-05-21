@@ -8,8 +8,10 @@ LIBOBJS += $(LIBDIR)/baselib.o $(LIBDIR)/oslib.o $(LIBDIR)/kdebug.o $(LIBDIR)/ti
 obj-m		+= ktapvm.o
 ktapvm-y	:= ktap.o loader.o object.o tstring.o table.o vm.o \
 		   opcode.o strfmt.o transport.o $(LIBOBJS)
+
+KVERSION = $(shell uname -r)
 all:
-	make -C ../../.. M=`pwd` modules
+	make -C /lib/modules/$(KVERSION)/build M=$(PWD) modules
 
 UDIR = userspace
 
@@ -53,6 +55,6 @@ ktap: $(KTAPOBJS)
 	$(QUIET_LINK)$(CC) -g -O2 -o $@ $(KTAPOBJS) -lpthread
 
 clean:
-	rm -rf ktapvm ktap *.o userspace/*.o library/*.o library/.*.o.cmd \
-        *.out *.ko *.mod.c *.order *.o.cmd Module.symvers
+	make -C /lib/modules/$(KVERSION)/build M=$(PWD) clean
+	rm -rf ktap
 
