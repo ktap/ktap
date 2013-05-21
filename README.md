@@ -57,9 +57,20 @@ syscalls.kp:
 		printf("probe end\n")
 	})
 
+Mailing list
+------------
+ktap@freelists.org  
+You can subscribe KTAP mailing list at link: http://www.freelists.org/list/ktap
 
 License
 -------
 KTAP is built from scratch, with GPL licensed.  
 https://github.com/ktap/ktap.git
+
+
+Contribution
+------------
+KTAP is still under active development, so contribution is welcome.
+You are encouraged to report bugs, provide feedback, send feature request,
+or hack on it.
 
