@@ -9,9 +9,15 @@ KTAP is designed to give operational insights with interoperability
 that allow users to tune, troubleshoot and extend kernel and application.
 It's similar with Linux Systemtap and Solaris Dtrace.
 
-KTAP have different design principles from SystemTap in that it's based on bytecode, so it doesn't depend upon GCC, doesn't require compiling a kernel module,
-have great portability, safe to use in production environment,
-fulfilling the embedd ecosystem's tracing needs.
+KTAP have different design principles from Linux mainstream dynamic tracing
+language in that it's based on bytecode, so it doesn't depend upon GCC,
+doesn't require compiling a kernel module, safe to use in production
+environment, fulfilling the embedd ecosystem's tracing needs.
+
+
+KTAP also is designed for enabling great interoperability with Linux kernel,
+it gives user the power to modify and extend the system, and let users
+explore the system in an easy way.
 
 More information can be found at doc/ directory.
 
@@ -25,8 +31,8 @@ Building & Running
 2) Compiling ktap  
 
 	[root@jovi]# cd ktap
-	[root@jovi]# make	#generate ktapvm kernel module
-	[root@jovi]# make ktap	#generate userspace ktap tool
+	[root@jovi]# make       #generate ktapvm kernel module
+	[root@jovi]# make ktap  #generate userspace ktap tool
 
 3) Insert ktapvm kernel module  
 
