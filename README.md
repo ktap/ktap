@@ -18,16 +18,15 @@ More information can be found at doc/ directory.
 Building & Running
 ------------------
 
-1) Clone ktap into linux/kernel/trace/  
+1) Clone ktap from github  
 
-	[root@jovi]# cd linux/kernel/trace/
-	[root@jovi]# git clone https://github.com/ktap/ktap.git
+	[root@jovi]# git clone http://github.com/ktap/ktap.git
 
 2) Compiling ktap  
 
-	[root@jovi]# cd linux/kernel/trace/ktap
-	[root@jovi]# make ktap	--- generate userspace ktap tool
-	[root@jovi]# make	--- generate ktapvm kernel module
+	[root@jovi]# cd ktap
+	[root@jovi]# make	#generate ktapvm kernel module
+	[root@jovi]# make ktap	#generate userspace ktap tool
 
 3) Insert ktapvm kernel module  
 
