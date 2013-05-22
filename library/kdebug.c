@@ -851,6 +851,20 @@ int kp_probe_init(ktap_State *ks)
 {
 	INIT_LIST_HEAD(&(G(ks)->probe_events_head));
 
+	/* get ftrace_events global variable if ftrace_events not exported */
+	ftrace_events_ptr = kallsyms_lookup_name("ftrace_events");
+	if (!ftrace_events_ptr) {
+		kp_printf(ks, "cannot lookup ftrace_events in kallsyms\n");
+		return -1;
+	}
+
+#if LINUX_VERSION_CODE > KERNEL_VERSION(3, 4, 0)
+	if (register_trace_console(trace_console_func, ks)) {
+		kp_printf(ks, "cannot register trace console\n");
+		return -1;
+	}
+#endif
+
 	/* allocate percpu data */
 	if (!G(ks)->trace_enabled) {
 		percpu_trace_iterator = alloc_percpu(struct trace_iterator);
@@ -858,22 +872,6 @@ int kp_probe_init(ktap_State *ks)
 			return -1;
 
 	}
-
-	/* get ftrace_events global variable if ftrace_events not exported */
-	ftrace_events_ptr = kallsyms_lookup_name("ftrace_events");
-	if (!ftrace_events_ptr) {
-		free_percpu(percpu_trace_iterator);
-		kp_printf(ks, "cannot lookup ftrace_events in kallsyms\n");
-		return -1;
-	}
-
-#if LINUX_VERSION_CODE > KERNEL_VERSION(3, 4, 0)
-	if (register_trace_console(trace_console_func, ks)) {
-		free_percpu(percpu_trace_iterator);
-		kp_printf(ks, "cannot register trace console\n");
-		return -1;
-	}
-#endif
 
 	G(ks)->trace_enabled = 1;
 	return 0;
