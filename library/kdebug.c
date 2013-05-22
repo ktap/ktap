@@ -597,7 +597,7 @@ static void enable_tracepoint(struct ftrace_event_call *call, void *data)
 		type = EVENT_TYPE_SYSCALL_EXIT;
 	}
 
-	for_each_possible_cpu(cpu)
+	for_each_online_cpu(cpu)
 		enable_tracepoint_on_cpu(cpu, &attr, call, arg, type);
 }
 
