@@ -24,7 +24,6 @@
 #include <linux/version.h>
 #include <linux/perf_event.h>
 #include <linux/ftrace_event.h>
-#include <trace/events/printk.h>
 #include <linux/kprobes.h>
 #include <asm/syscall.h> //syscall_set_return_value defined here
 #include "../ktap.h"
@@ -648,8 +647,10 @@ static void ftrace_on_event_call(const char *buf, ftrace_call_func actor,
 		if (!call->name || !call->class || !call->class->reg)
 			continue;
 
+#if LINUX_VERSION_CODE > KERNEL_VERSION(3, 4, 0)
 		if (call->flags & TRACE_EVENT_FL_IGNORE_ENABLE)
 			continue;
+#endif
 
 		if (match &&
 		    strcmp(match, call->name) != 0 &&
@@ -779,6 +780,8 @@ static int ktap_lib_probe_end(ktap_State *ks)
 	return 0;
 }
 
+#if LINUX_VERSION_CODE > KERNEL_VERSION(3, 4, 0)
+#include <trace/events/printk.h>
 static DEFINE_PER_CPU(bool, ktap_in_dumpstack);
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3, 9, 0)
@@ -819,6 +822,14 @@ static int ktap_lib_dumpstack(ktap_State *ks)
 	__this_cpu_write(ktap_in_dumpstack, false);
 	return 0;
 }
+#else
+static int ktap_lib_dumpstack(ktap_State *ks)
+{
+	kp_printf(ks, "your kernel version don't support ktap dumpstack\n");
+	return 0;
+}
+
+#endif
 
 void kp_probe_exit(ktap_State *ks)
 {
@@ -829,7 +840,9 @@ void kp_probe_exit(ktap_State *ks)
 
 	free_percpu(percpu_trace_iterator);
 
+#if LINUX_VERSION_CODE > KERNEL_VERSION(3, 4, 0)
 	unregister_trace_console(trace_console_func, ks);
+#endif
 
 	G(ks)->trace_enabled = 0;
 }
@@ -854,11 +867,13 @@ int kp_probe_init(ktap_State *ks)
 		return -1;
 	}
 
+#if LINUX_VERSION_CODE > KERNEL_VERSION(3, 4, 0)
 	if (register_trace_console(trace_console_func, ks)) {
 		free_percpu(percpu_trace_iterator);
 		kp_printf(ks, "cannot register trace console\n");
 		return -1;
 	}
+#endif
 
 	G(ks)->trace_enabled = 1;
 	return 0;
