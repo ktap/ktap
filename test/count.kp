@@ -8,13 +8,13 @@ function failed() {
 
 t = {}
 
-inplace_inc(t, "key")
+count(t, "key")
 
 if (t["key"] != 1) {
 	failed()
 }
 
-inplace_inc(t, "key")
+count(t, "key")
 
 if (t["key"] != 2) {
 	failed()

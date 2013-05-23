@@ -19,10 +19,10 @@ function ktaprun {
 ktaprun arg.kp 1 testing
 ktaprun arith.kp
 ktaprun concat.kp
+ktaprun count.kp
 ktaprun fibonacci.kp
 ktaprun function.kp
 ktaprun if.kp
-ktaprun inplace_inc.kp
 ktaprun kprobe.kp
 ktaprun kretprobe.kp
 ktaprun len.kp

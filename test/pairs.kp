@@ -14,7 +14,8 @@ t["key_1"] = "value_1"
 t["key_2"] = "value_2"
 t["key_3"] = "value_3"
 
-count = 0
+#variable count is same as built-in function count, fix it.
+local count = 0
 
 for (k, v in pairs(t)) {
 	count = count + 1

@@ -4,7 +4,7 @@
 hist = {}
 
 function eventfun (e) {
-	inplace_inc(hist, e.name)
+	count(hist, e.name)
 }
 
 kdebug.probe("tp:", eventfun)

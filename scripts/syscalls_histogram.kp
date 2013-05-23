@@ -2,7 +2,7 @@ hist = {}
 
 function eventfun (e) {
 	if (e.sc_is_enter) {
-		inplace_inc(hist, e.name)
+		count(hist, e.name)
 	}
 }
 

@@ -37,7 +37,6 @@ Implementing
 - commit to kernel: staging first?
 - integrate luajit, and use ffi library, to boost performance
   use libffi to perform jprobe, get function arguments without gcc compiling
-- add atomic add operation ++ into ktap(inplace_inc)
 - staticly typed virtual machine, it's more generic than dynamic typed vm
   support map/splice/struct/closure
   staticly typed is more faster than dynamic typed, with strict type checking

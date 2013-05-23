@@ -49,7 +49,7 @@ KTAP Standard Libraries
 12) user_string (addr)
  Receive userspace address, read string from usersapce, return string.
 
-13) inplace_inc (t, key)
+13) count (t, key)
  Receive table and key, atomic add into table value map with key.
 
 14) histogam (t)

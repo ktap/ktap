@@ -175,7 +175,7 @@ static int ktap_lib_user_string(ktap_State *ks)
 	return 1;
 }
 
-static int ktap_lib_inplace_inc(ktap_State *ks)
+static int ktap_lib_count(ktap_State *ks)
 {
 	Table *tbl = hvalue(GetArg(ks, 1));
 	Tvalue *k = GetArg(ks, 2);
@@ -219,7 +219,7 @@ static const ktap_Reg base_funcs[] = {
 	{"arch", ktap_lib_arch},
 	{"kernel_v", ktap_lib_kernel_v},
 	{"user_string", ktap_lib_user_string},
-	{"inplace_inc", ktap_lib_inplace_inc},
+	{"count", ktap_lib_count},
 	{"histogram", ktap_lib_histogram},
 	{NULL}
 };
