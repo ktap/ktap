@@ -1,0 +1,24 @@
+hist = {}
+
+function eventfun (e) {
+	if (e.sc_is_enter) {
+		count(hist, execname())
+	}
+}
+
+kdebug.probe("tp:syscalls", eventfun)
+
+kdebug.probe_end(function () {
+	histogram(hist)
+})
+
+#Result:
+#
+#[root@jovi ktap]# ./ktap scripts/syscalls_histogram2.kp
+#^C
+#                          value ------------- Distribution ------------- count
+#                            sshd |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@      196
+#                          iscsid |@@@@                                   24
+#                        sendmail |@                                      9
+
+
