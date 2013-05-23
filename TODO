@@ -44,6 +44,8 @@ Implementing
   replace function in runtime
 - research a new powerful interpreter serves for ktap and systemtap, even dtrace
   for static compiled language, use systemtap is enough.
+- benchmark for ktap
+- sometimes cannot stop script
 
 
 Completed
