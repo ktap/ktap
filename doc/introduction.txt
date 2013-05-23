@@ -30,10 +30,14 @@ Thanks Lua.
 Requirements
 ------------
 - Linux 3.1 or later(Need some kernel patches for kernel earlier than 3.1)
+- CONFIG_RELAY enabled
 - CONFIG_EVENT_TRACING enabled
 - CONFIG_PERF_EVENTS enabled
 - CONFIG_KPROBES enabled 
 - CONFIG_KALLSYMS enabled
+- CONFIG_DEBUG_FS enabled
+  (make sure debugfs mounted before insmod ktapvm
+   mount debugfs: mount -t debugfs none /sys/kernel/debug/)
 
 
 Building & Running
@@ -49,7 +53,7 @@ Building & Running
 	[root@jovi]# make       #generate ktapvm kernel module
 	[root@jovi]# make ktap  #generate userspace ktap tool
 
-3) Insert ktapvm kernel module  
+3) Insert ktapvm kernel module(make sure debugfs mounted)  
 
 	[root@jovi]# insmod ./ktapvm.ko
 
