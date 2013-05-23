@@ -1150,7 +1150,8 @@ ktap_State *kp_newstate(ktap_State **private_data, int argc, char **argv)
 	ktap_init_registry(ks);
 	ktap_init_arguments(ks, argc, argv);
 
-	kp_probe_init(ks);
+	if (kp_probe_init(ks))
+		return NULL;
 
 	/* init library */
 	kp_init_baselib(ks);
