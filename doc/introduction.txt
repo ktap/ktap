@@ -58,6 +58,12 @@ Building & Running
 	[root@jovi]# ./ktap scripts/syscalls.kp
 
 
+License
+-------
+ktap is GPL licensed.
+See more info in ktap_license.txt.
+
+
 Contribution
 ------------
    https://github.com/ktap/ktap.git

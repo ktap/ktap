@@ -1,0 +1,34 @@
+
+			KTAP License
+
+ktap is released as GPL license.
+
+ktap is based on lua programming language initially,
+so I need to give credits to lua.
+
+lua licensed as MIT, lua stats: (in http://www.lua.org/license.html)
+
+    The spirit of the Lua license is that you are free to use Lua
+    for any purpose at no cost without having to ask us. The only
+    requirement is that if you do use Lua, then you should give us
+    credit by including the copyright notice somewhere in your product
+    or its documentation.
+
+So that's why there have a lua_copyright_notice.txt in doc/.
+
+But note tha ktap software definitely released as GPL license, this is not
+violation aganist to MIT license, since MIT license is simple and liberal
+and is compatible with GPL.
+(This license solution was agreed with lua team)
+
+
+(From software design point of view, there could be remove this MIT copyright
+notice completely, because ktap possibly will use a new design compiler and
+interpreter in future, note this is just for software design reason, and have
+nothing to do with license, even though, I will still give credit to lua)
+
+
+
+
+
+
