@@ -58,6 +58,7 @@
 #include <linux/poll.h>
 #include <linux/anon_inodes.h>
 #include <linux/debugfs.h>
+#include <linux/vmalloc.h>
 #include "ktap.h"
 
 static int load_trunk(struct ktap_user_parm *uparm_ptr, unsigned long **buff)
