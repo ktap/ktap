@@ -65,7 +65,7 @@ You can subscribe KTAP mailing list at link: http://www.freelists.org/list/ktap
 License
 -------
 ktap is GPL licensed.  
-See more info in doc/ktap_license.txt.
+See more info in doc/ktap-license.txt.
 
 
 Contribution
