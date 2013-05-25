@@ -39,6 +39,9 @@ Requirements
   (make sure debugfs mounted before insmod ktapvm
    mount debugfs: mount -t debugfs none /sys/kernel/debug/)
 
+Note that those configruation is always enabled in Linux distribution,
+like REHL, Fedora, Unbuntu, etc.
+
 
 Building & Running
 ------------------
