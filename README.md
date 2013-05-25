@@ -21,6 +21,7 @@ explore the system in an easy way.
 
 More information can be found at doc/ directory.
 
+
 Building & Running
 ------------------
 
@@ -42,6 +43,7 @@ Building & Running
 
 	[root@jovi]# ./ktap scripts/syscalls.kp
 
+
 Example of syscall tracing
 --------------------------
 
@@ -57,10 +59,13 @@ syscalls.kp:
 		printf("probe end\n")
 	})
 
+
 Mailing list
 ------------
 ktap@freelists.org  
-You can subscribe KTAP mailing list at link: http://www.freelists.org/list/ktap
+You can subscribe KTAP mailing list at link(subscribe before posting):
+http://www.freelists.org/list/ktap
+
 
 License
 -------
@@ -73,4 +78,9 @@ Contribution
 KTAP is still under active development, so contribution is welcome.
 You are encouraged to report bugs, provide feedback, send feature request,
 or hack on it.
+
+
+ktap links
+----------
+LWN review on ktap by Jonathan Corbet: http://lwn.net/Articles/551314/
 
