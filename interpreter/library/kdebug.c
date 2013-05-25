@@ -787,7 +787,7 @@ static int ktap_lib_probe(ktap_State *ks)
 	} else
 		cl = NULL;
 
-	if (!cl)
+	if (!cl || isnil(evname))
 		return -1;
 
 	event_name = svalue(evname);

@@ -53,6 +53,7 @@ void ktap_concat(ktap_State *ks, int start, int end)
 	for (i = start; i <= end; i++) {
 		if (!ttisstring(top + i)) {
 			kp_printf(ks, "cannot concat non-string\n");
+			setnilvalue(top + start);
 			return;
 		}
 
@@ -65,7 +66,7 @@ void ktap_concat(ktap_State *ks, int start, int end)
 	ptr = buffer;
 
 	for (i = start; i <= end; i++) {
-		int len = rawtsvalue(top + start)->tsv.len;
+		int len = rawtsvalue(top + i)->tsv.len;
 		strncpy(ptr, svalue(top + i), len);
 		ptr += len;
 	}
