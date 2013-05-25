@@ -60,6 +60,13 @@ KTAPOBJS += $(UDIR)/object.o
 ktap: $(KTAPOBJS)
 	$(QUIET_LINK)$(CC) -g -O2 -o $@ $(KTAPOBJS) -lpthread
 
+KMISC := /lib/modules/$(KVERSION)/ktapvm/
+
+install: mod ktap
+	install -d $(KMISC)
+	install -m 644 -c *.ko /lib/modules/$(KVERSION)/ktapvm/
+	/sbin/depmod -a
+
 clean:
 	$(MAKE) -C /lib/modules/$(KVERSION)/build M=$(PWD) clean
 	$(RM) ktap
