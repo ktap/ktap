@@ -34,7 +34,7 @@ Requirements
 - CONFIG_EVENT_TRACING enabled
 - CONFIG_PERF_EVENTS enabled
 - CONFIG_KPROBES enabled 
-- CONFIG_KALLSYMS enabled
+- CONFIG_KALLSYMS_ALL enabled (not needed in future release)
 - CONFIG_DEBUG_FS enabled
   (make sure debugfs mounted before insmod ktapvm
    mount debugfs: mount -t debugfs none /sys/kernel/debug/)

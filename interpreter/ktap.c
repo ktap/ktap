@@ -43,7 +43,7 @@
 #error "Please enable CONFIG_KPROBES before compile ktap"
 #endif
 
-#if !CONFIG_KALLSYMS
+#if !CONFIG_KALLSYMS_ALL
 #error "Please enable CONFIG_KALLSYMS before compile ktap"
 #endif
 
