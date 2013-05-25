@@ -23,7 +23,7 @@
 #include <linux/slab.h>
 #include <linux/delay.h>
 #include <linux/sched.h>
-#include "../ktap.h"
+#include "../../include/ktap.h"
 
 /*
  * todo: make more robust for this function

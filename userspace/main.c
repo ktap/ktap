@@ -30,8 +30,8 @@
 #include <math.h>
 #include <getopt.h>
 
-#include "../ktap_types.h"
-#include "../ktap_opcodes.h"
+#include "../include/ktap_types.h"
+#include "../include/ktap_opcodes.h"
 #include "ktapc.h"
 
 

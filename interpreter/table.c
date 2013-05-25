@@ -21,10 +21,11 @@
  */
 
 #ifdef __KERNEL__
-#include "ktap.h"
+#include "../include/ktap.h"
 #include <linux/sort.h>
 #else
-#include "ktap_types.h"
+#include "../include/ktap_types.h"
+
 static inline void sort(void *base, size_t num, size_t size,
 			int (*cmp_func)(const void *, const void *),
 			void (*swap_func)(void *, void *, int size))

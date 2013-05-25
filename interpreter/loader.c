@@ -21,7 +21,7 @@
  */
 
 #include <linux/slab.h>
-#include "ktap.h"
+#include "../include/ktap.h"
 
 #define KTAPC_TAIL	"\x19\x93\r\n\x1a\n"
 

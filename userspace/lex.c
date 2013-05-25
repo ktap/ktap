@@ -26,7 +26,7 @@
 
 #include <locale.h>
 
-#include "../ktap_types.h"
+#include "../include/ktap_types.h"
 #include "ktapc.h"
 
 #define next(ls) (ls->current = *ls->ptr++)

@@ -21,9 +21,9 @@
  */
 
 #ifdef __KERNEL__
-#include "ktap.h"
+#include "../include/ktap.h"
 #else
-#include "ktap_types.h"
+#include "../include/ktap_types.h"
 #endif
 
 

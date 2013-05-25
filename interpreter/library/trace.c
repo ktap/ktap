@@ -21,7 +21,7 @@
  */
 
 #include <linux/ftrace_event.h>
-#include "../ktap.h"
+#include "../../include/ktap.h"
 
 struct ktap_event_file {
 	struct ftrace_event_file file;

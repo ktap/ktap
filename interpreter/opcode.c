@@ -20,8 +20,8 @@
  * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include "ktap_types.h"
-#include "ktap_opcodes.h"
+#include "../include/ktap_types.h"
+#include "../include/ktap_opcodes.h"
 
 const char *const ktap_opnames[NUM_OPCODES + 1] = {
   "MOVE",

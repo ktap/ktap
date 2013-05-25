@@ -22,7 +22,7 @@
 
 #include <linux/debugfs.h>
 #include <linux/relay.h>
-#include "ktap.h"
+#include "../include/ktap.h"
 
 static int subbuf_start_callback(struct rchan_buf *buf, void *subbuf,
 				 void *prev_subbuf, size_t prev_padding)

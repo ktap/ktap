@@ -1,13 +1,18 @@
 
-LIBDIR = library
+INTP = interpreter
 
-LIBOBJS = 
-LIBOBJS += $(LIBDIR)/baselib.o $(LIBDIR)/oslib.o $(LIBDIR)/kdebug.o $(LIBDIR)/timer.o
+LIBDIR = $(INTP)/library
 
+LIB_OBJS = 
+LIB_OBJS += $(LIBDIR)/baselib.o $(LIBDIR)/oslib.o $(LIBDIR)/kdebug.o $(LIBDIR)/timer.o
+
+INTP_OBJS = 
+INTP_OBJS += $(INTP)/ktap.o $(INTP)/loader.o $(INTP)/object.o $(INTP)/tstring.o \
+	    $(INTP)/table.o $(INTP)/vm.o $(INTP)/opcode.o $(INTP)/strfmt.o $(INTP)/transport.o \
+	    $(LIB_OBJS)
 
 obj-m		+= ktapvm.o
-ktapvm-y	:= ktap.o loader.o object.o tstring.o table.o vm.o \
-		   opcode.o strfmt.o transport.o $(LIBOBJS)
+ktapvm-y	:= $(INTP_OBJS)
 
 KVERSION = $(shell uname -r)
 all:
@@ -29,13 +34,13 @@ $(UDIR)/util.o: $(UDIR)/util.c
 	$(QUIET_CC)$(CC) -g -o $@ -c $<
 $(UDIR)/ktapio.o: $(UDIR)/ktapio.c
 	$(QUIET_CC)$(CC) -g -o $@ -c $<
-$(UDIR)/opcode.o: opcode.c
+$(UDIR)/opcode.o: $(INTP)/opcode.c
 	$(QUIET_CC)$(CC) -g -o $@ -c $<
-$(UDIR)/table.o: table.c
+$(UDIR)/table.o: $(INTP)/table.c
 	$(QUIET_CC)$(CC) -g -o $@ -c $<
-$(UDIR)/tstring.o: tstring.c
+$(UDIR)/tstring.o: $(INTP)/tstring.c
 	$(QUIET_CC)$(CC) -g -o $@ -c $<
-$(UDIR)/object.o: object.c
+$(UDIR)/object.o: $(INTP)/object.c
 	$(QUIET_CC)$(CC) -g -o $@ -c $<
 
 KTAPOBJS =

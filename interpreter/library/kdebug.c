@@ -26,7 +26,7 @@
 #include <linux/ftrace_event.h>
 #include <linux/kprobes.h>
 #include <asm/syscall.h> //syscall_set_return_value defined here
-#include "../ktap.h"
+#include "../../include/ktap.h"
 
 /* get argument operation macro */
 #define GetArg(ks, n)	((ks)->ci->func + (n))

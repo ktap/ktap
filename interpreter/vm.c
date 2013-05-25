@@ -29,7 +29,7 @@
 #include <linux/sched.h>
 #include <linux/completion.h>
 #include <linux/freezer.h>
-#include "ktap.h"
+#include "../include/ktap.h"
 
 #define KTAP_MINSTACK 20
 

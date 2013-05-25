@@ -25,7 +25,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include "../ktap_types.h"
+#include "../include/ktap_types.h"
 #include "ktapc.h"
 
 
