@@ -13,8 +13,10 @@ function func_exit (e) {
 	count(percpu_num, cpu())
 }
 
-kdebug.probe("kprobe:vfs_read", func_entry);
-kdebug.probe("kprobe:vfs_read!", func_exit);
+printf("measure time of function %s:\n", arg[1]);
+
+kdebug.probe("kprobe:" .. arg[1], func_entry);
+kdebug.probe("kprobe:" .. arg[1] .. "!", func_exit);
 
 kdebug.probe_end(function () {
 	printf("average:\n");
@@ -27,8 +29,9 @@ kdebug.probe_end(function () {
 })
 
 #Result:
-#[root@jovi ktap]# ./ktap scripts/funtion_time.kp
+#[root@jovi ktap]# ./ktap scripts/funtion_time.kp vfs_read
 #Press Control-C to stop.
+#measure time of function vfs_read:
 #^C
 #average:
 #0:      4us
