@@ -24,6 +24,7 @@
 #include <linux/sched.h>
 #include <linux/uaccess.h>
 #include <linux/utsname.h>
+#include <linux/time.h>
 #include "../../include/ktap.h"
 
 /* get argument operation macro */
@@ -137,6 +138,13 @@ static int ktap_lib_cpu(ktap_State *ks)
 	return 1;
 }
 
+static int ktap_lib_num_cpus(ktap_State *ks)
+{
+	setnvalue(ks->top, num_online_cpus());
+	incr_top(ks);
+	return 1;
+}
+
 static int ktap_lib_in_interrupt(ktap_State *ks)
 {
 	int ret = in_interrupt();
@@ -179,13 +187,19 @@ static int ktap_lib_count(ktap_State *ks)
 {
 	Table *tbl = hvalue(GetArg(ks, 1));
 	Tvalue *k = GetArg(ks, 2);
+	int n;
 	Tvalue *v;
+
+	if (GetArgN(ks) > 2)
+		n = nvalue(GetArg(ks, 3));
+	else
+		n = 1;
 
 	v = kp_table_set(ks, tbl, k);
 	if (unlikely(isnil(v))) {
 		setnvalue(v, 1);
 	} else
-		setnvalue(v, nvalue(v) + 1);
+		setnvalue(v, nvalue(v) + n);
 
 	return 0;
 }
@@ -195,6 +209,19 @@ static int ktap_lib_histogram(ktap_State *ks)
 	kp_table_histogram(ks, hvalue(GetArg(ks, 1))); /* need to check firstly */
 	return 0;
 }
+
+static int ktap_lib_gettimeofday_us(ktap_State *ks)
+{
+	struct timeval tv;
+
+	do_gettimeofday(&tv);
+
+	setnvalue(ks->top, tv.tv_sec * USEC_PER_SEC + tv.tv_usec);
+	incr_top(ks);
+
+	return 1;
+}
+
 
 static const ktap_Reg base_funcs[] = {
 //	{"assert", ktap_assert},
@@ -216,11 +243,13 @@ static const ktap_Reg base_funcs[] = {
 	{"pid", ktap_lib_pid},
 	{"execname", ktap_lib_execname},
 	{"cpu", ktap_lib_cpu},
+	{"num_cpus", ktap_lib_num_cpus},
 	{"arch", ktap_lib_arch},
 	{"kernel_v", ktap_lib_kernel_v},
 	{"user_string", ktap_lib_user_string},
 	{"count", ktap_lib_count},
 	{"histogram", ktap_lib_histogram},
+	{"gettimeofday_us", ktap_lib_gettimeofday_us},
 	{NULL}
 };
 
