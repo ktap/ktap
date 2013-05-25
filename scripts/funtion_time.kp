@@ -19,11 +19,13 @@ kdebug.probe("kprobe:" .. arg[1], func_entry);
 kdebug.probe("kprobe:" .. arg[1] .. "!", func_exit);
 
 kdebug.probe_end(function () {
-	printf("average:\n");
+	printf("cpu\tnum\taverage\n");
+	printf("-----------------------\n")
 
 	for (cpu = 0, num_cpus() - 1, 1) {
 		if (percpu_num[cpu] != nil) {
-			printf("%d:\t%dus\n", cpu, percpu_count[cpu]/percpu_num[cpu])
+			printf("%d:\t%d\t%dus\n", cpu, percpu_num[cpu],
+				percpu_count[cpu]/percpu_num[cpu])
 		}
 	}
 })
@@ -33,7 +35,9 @@ kdebug.probe_end(function () {
 #Press Control-C to stop.
 #measure time of function vfs_read:
 #^C
-#average:
-#0:      4us
-#1:      1us
+#cpu     num     average
+#-----------------------
+#0:      94      5us
+#1:      25      4934us
+
 
