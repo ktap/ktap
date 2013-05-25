@@ -1,0 +1,36 @@
+
+percpu_entry_timestamp = {}
+percpu_count = {}
+percpu_num = {}
+
+function func_entry (e) {
+	percpu_entry_timestamp[cpu()] = gettimeofday_us()
+}
+
+function func_exit (e) {
+	local durtion = gettimeofday_us() - percpu_entry_timestamp[cpu()]
+	count(percpu_count, cpu(), durtion)
+	count(percpu_num, cpu())
+}
+
+kdebug.probe("kprobe:vfs_read", func_entry);
+kdebug.probe("kprobe:vfs_read!", func_exit);
+
+kdebug.probe_end(function () {
+	printf("average:\n");
+
+	for (cpu = 0, num_cpus() - 1, 1) {
+		if (percpu_num[cpu] != nil) {
+			printf("%d:\t%dus\n", cpu, percpu_count[cpu]/percpu_num[cpu])
+		}
+	}
+})
+
+#Result:
+#[root@jovi ktap]# ./ktap scripts/funtion_time.kp
+#Press Control-C to stop.
+#^C
+#average:
+#0:      4us
+#1:      1us
+
