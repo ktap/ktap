@@ -53,8 +53,7 @@ Building & Running
 2) Compiling ktap  
 
 	[root@jovi]# cd ktap
-	[root@jovi]# make       #generate ktapvm kernel module
-	[root@jovi]# make ktap  #generate userspace ktap tool
+	[root@jovi]# make       #generate ktapvm kernel module and ktap binary
 
 3) Insert ktapvm kernel module(make sure debugfs mounted)  
 

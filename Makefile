@@ -1,3 +1,4 @@
+all: mod ktap
 
 INTP = interpreter
 
@@ -15,8 +16,8 @@ obj-m		+= ktapvm.o
 ktapvm-y	:= $(INTP_OBJS)
 
 KVERSION = $(shell uname -r)
-all:
-	make -C /lib/modules/$(KVERSION)/build M=$(PWD) modules
+mod:
+	$(MAKE) -C /lib/modules/$(KVERSION)/build M=$(PWD) modules
 
 UDIR = userspace
 
@@ -60,6 +61,6 @@ ktap: $(KTAPOBJS)
 	$(QUIET_LINK)$(CC) -g -O2 -o $@ $(KTAPOBJS) -lpthread
 
 clean:
-	make -C /lib/modules/$(KVERSION)/build M=$(PWD) clean
-	rm -rf ktap
+	$(MAKE) -C /lib/modules/$(KVERSION)/build M=$(PWD) clean
+	$(RM) ktap
 

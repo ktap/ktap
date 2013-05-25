@@ -14,7 +14,6 @@ language in that it's based on bytecode, so it doesn't depend upon GCC,
 doesn't require compiling a kernel module, safe to use in production
 environment, fulfilling the embedd ecosystem's tracing needs.
 
-
 KTAP also is designed for enabling great interoperability with Linux kernel,
 it gives user the power to modify and extend the system, and let users
 explore the system in an easy way.
@@ -32,8 +31,7 @@ Building & Running
 2) Compiling ktap  
 
 	[root@jovi]# cd ktap
-	[root@jovi]# make       #generate ktapvm kernel module
-	[root@jovi]# make ktap  #generate userspace ktap tool
+	[root@jovi]# make       #generate ktapvm kernel module and ktap binary
 
 3) Insert ktapvm kernel module  
 
