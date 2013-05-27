@@ -1,7 +1,14 @@
 
 percpu_entry_timestamp = {}
 percpu_count = {}
+percpu_count_max = {}
+percpu_count_min = {}
 percpu_num = {}
+
+for (cpu = 0, num_cpus() - 1, 1) {
+	percpu_count_max[cpu] = 0
+	percpu_count_min[cpu] = 0
+}
 
 function func_entry (e) {
 	percpu_entry_timestamp[cpu()] = gettimeofday_us()
@@ -11,6 +18,14 @@ function func_exit (e) {
 	local durtion = gettimeofday_us() - percpu_entry_timestamp[cpu()]
 	count(percpu_count, cpu(), durtion)
 	count(percpu_num, cpu())
+
+	if (durtion > percpu_count_max[cpu()]) {
+		percpu_count_max[cpu()] = durtion
+	}
+	local min = percpu_count_min[cpu()]
+	if (min  == 0 || durtion < min) {
+		percpu_count_min[cpu()] = durtion
+	}
 }
 
 printf("measure time of function %s:\n", arg[1]);
@@ -19,13 +34,14 @@ kdebug.probe("kprobe:" .. arg[1], func_entry);
 kdebug.probe("kprobe:" .. arg[1] .. "!", func_exit);
 
 kdebug.probe_end(function () {
-	printf("cpu\tnum\taverage\n");
-	printf("-----------------------\n")
+	printf("cpu\tnum\tavg\tmax\tmin\n");
+	printf("-----------------------------------\n")
 
 	for (cpu = 0, num_cpus() - 1, 1) {
 		if (percpu_num[cpu] != nil) {
-			printf("%d:\t%d\t%dus\n", cpu, percpu_num[cpu],
-				percpu_count[cpu]/percpu_num[cpu])
+			printf("%d:\t%d\t%dus\t%d\t%d\n", cpu, percpu_num[cpu],
+				percpu_count[cpu]/percpu_num[cpu],
+				percpu_count_max[cpu], percpu_count_min[cpu])
 		}
 	}
 })
