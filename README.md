@@ -80,5 +80,7 @@ or hack on it.
 
 ktap links
 ----------
-LWN review on ktap by Jonathan Corbet: http://lwn.net/Articles/551314/
+LWN review on ktap by Jonathan Corbet: http://lwn.net/Articles/551314/  
+presentation slides of LinuxCon Japan 2013: http://events.linuxfoundation.org/sites/events/files/lcjpcojp13_zhangwei.pdf
+
 
