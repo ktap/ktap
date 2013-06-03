@@ -285,13 +285,25 @@ static void event_regstr(ktap_State *ks, struct ktap_event *e, StkId ra)
 	struct pt_regs *regs = e->regs;
 	char str[256] = {0};
 
-#ifdef CONFIG_X86_32
-	sprintf(str, "{ax: 0x%lx, orig_ax: 0x%lx, bx: 0x%lx, cx: 0x%lx, dx: 0x%lx, "
+#if defined(CONFIG_X86_32)
+	snprintf(str, sizeof(str),
+		"{ax: 0x%lx, orig_ax: 0x%lx, bx: 0x%lx, cx: 0x%lx, dx: 0x%lx, "
 		"si: 0x%lx, di: 0x%lx, bp: 0x%lx, ds: 0x%lx, es: 0x%lx, fs: 0x%lx, "
 		"gs: 0x%lx, ip: 0x%lx, cs: 0x%lx, flags: 0x%lx, sp: 0x%lx, ss: 0x%lx}\n",
 		regs->ax, regs->orig_ax, regs->bx, regs->cx, regs->dx,
 		regs->si, regs->di, regs->bp, regs->ds, regs->es, regs->fs,
 		regs->gs, regs->ip, regs->cs, regs->flags, regs->sp, regs->ss);
+#elif defined(CONFIG_X86_64)
+	/* x86_64 pt_regs doesn't have ds, es, fs or gs. */
+	snprintf(str, sizeof(str),
+		"{ax: 0x%lx, orig_ax: 0x%lx, bx: 0x%lx, cx: 0x%lx, dx: 0x%lx, "
+		"si: 0x%lx, di: 0x%lx, r8: 0x%lx, r9: 0x%lx, r10: 0x%lx, r11: 0x%lx, "
+		"r12: 0x%lx, r13: 0x%lx, r14: 0x%lx, r15: 0x%lx, bp: 0x%lx, ip: 0x%lx, "
+		"cs: 0x%lx, flags: 0x%lx, sp: 0x%lx, ss: 0x%lx}\n",
+		regs->ax, regs->orig_ax, regs->bx, regs->cx, regs->dx,
+		regs->si, regs->di, regs->r8, regs->r9, regs->r10, regs->r11,
+		regs->r12, regs->r13, regs->r14, regs->r15, regs->bp, regs->ip,
+		regs->cs, regs->flags, regs->sp, regs->ss);
 #endif
 	setsvalue(ra, kp_tstring_new(ks, str));
 }
