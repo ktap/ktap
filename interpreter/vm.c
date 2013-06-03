@@ -365,7 +365,7 @@ static int precall(ktap_State *ks, StkId func, int nresults)
 		ks->top = ci->top;
 		return 0;
 	default:
-		kp_printf(ks, "cannot calling nil function\n");
+		kp_printf(ks, "cannot call nil function\n");
 		return -1;
 	}
 
