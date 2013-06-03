@@ -898,7 +898,8 @@ int kp_probe_init(ktap_State *ks)
 	INIT_LIST_HEAD(&(G(ks)->probe_events_head));
 
 	/* get ftrace_events global variable if ftrace_events not exported */
-	ftrace_events_ptr = kallsyms_lookup_name("ftrace_events");
+	ftrace_events_ptr =
+		(struct list_head *) kallsyms_lookup_name("ftrace_events");
 	if (!ftrace_events_ptr) {
 		kp_printf(ks, "cannot lookup ftrace_events in kallsyms\n");
 		return -1;
