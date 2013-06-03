@@ -44,7 +44,7 @@
 #endif
 
 #if !CONFIG_KALLSYMS_ALL
-#error "Please enable CONFIG_KALLSYMS before compile ktap"
+#error "Please enable CONFIG_KALLSYMS_ALL before compile ktap"
 #endif
 
 #if !CONFIG_RELAY
