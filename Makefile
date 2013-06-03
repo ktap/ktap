@@ -15,9 +15,14 @@ INTP_OBJS += $(INTP)/ktap.o $(INTP)/loader.o $(INTP)/object.o $(INTP)/tstring.o 
 obj-m		+= ktapvm.o
 ktapvm-y	:= $(INTP_OBJS)
 
-KVERSION = $(shell uname -r)
+KVERSION ?= $(shell uname -r)
+KERNEL_SRC ?= /lib/modules/$(KVERSION)/build
 mod:
-	$(MAKE) -C /lib/modules/$(KVERSION)/build M=$(PWD) modules
+	$(MAKE) -C $(KERNEL_SRC) M=$(PWD) modules
+
+modules_install:
+	$(MAKE) -C $(KERNEL_SRC) M=$(PWD) modules_install
+
 
 UDIR = userspace
 
@@ -68,6 +73,6 @@ install: mod ktap
 	/sbin/depmod -a
 
 clean:
-	$(MAKE) -C /lib/modules/$(KVERSION)/build M=$(PWD) clean
+	$(MAKE) -C $(KERNEL_SRC) M=$(PWD) clean
 	$(RM) ktap
 
