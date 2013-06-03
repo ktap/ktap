@@ -685,7 +685,7 @@ void kp_table_histogram(ktap_State *ks, Table *t)
 
 		if (ttisstring(key)) {
 			char buf[32 + 1] = {0};
-			char *keystr;
+			const char *keystr;
 
 			if (strlen(svalue(key)) > 32) {
 				strncpy(buf, svalue(key), 32-4);

@@ -874,7 +874,7 @@ static int cfunction_cache_getindex(ktap_State *ks, Tvalue *fname)
 {
 	const Tvalue *gt = kp_table_getint(hvalue(&G(ks)->registry),
 				KTAP_RIDX_GLOBALS);
-	Tvalue *cfunc;
+	const Tvalue *cfunc;
 	int nr, i;
 
 	nr = G(ks)->nr_builtin_cfunction;
