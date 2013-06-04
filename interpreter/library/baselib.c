@@ -224,13 +224,8 @@ static int ktap_lib_gettimeofday_us(ktap_State *ks)
 
 
 static const ktap_Reg base_funcs[] = {
-//	{"assert", ktap_assert},
 //	{"collectgarbage", ktap_collectgarbage},
 //	{"error", ktap_error},
-//	{"getmetatable", ktap_getmetatable},
-//	{"setmetatable", ktap_setmetatable},
-//	{"ipairs", ktap_ipairs},
-//	{"next", ktap_next},
 	{"pairs", ktap_lib_pairs},
 //	{"tonumber", ktap_tonumber},
 //	{"tostring", ktap_tostring},

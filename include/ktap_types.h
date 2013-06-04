@@ -107,8 +107,6 @@ typedef Tvalue * StkId;
 typedef union Udata {
 	struct {
 		CommonHeader;
-		struct Table *metatable;
-		struct Table *env;
 		size_t len;  /* number of bytes */
 	} uv;
 } Udata;
@@ -239,7 +237,6 @@ typedef struct Table {
 	CommonHeader;
 	u8 flags;  /* 1<<p means tagmethod(p) is not present */
 	u8 lsizenode;  /* log2 of size of `node' array */
-	struct Table *metatable;
 	int sizearray;  /* size of `array' array */
 	Tvalue *array;  /* array part */
 	Node *node;
@@ -473,16 +470,12 @@ typedef int ktap_Number;
         { const Tvalue *io2=(obj2); Tvalue *io1=(obj1); \
           io1->val = io2->val; io1->type = io2->type; }
 
-
-
 #define rawequalobj(t1, t2) \
 	(ttisequal(t1, t2) && kp_equalobjv(NULL, t1, t2))
 
-/* not support metatable right now, so use rawequalobj */
 #define equalobj(ks, t1, t2) rawequalobj(t1, t2)
 
 #define incr_top(ks) {ks->top++;}
-
 
 #define NUMADD(a, b)    ((a) + (b))
 #define NUMSUB(a, b)    ((a) - (b))
