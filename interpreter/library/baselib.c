@@ -172,9 +172,11 @@ static int ktap_lib_user_string(ktap_State *ks)
 {
 	unsigned long addr = nvalue(GetArg(ks, 1));
 	char str[256] = {0};
+	int ret;
 
 	pagefault_disable();
-	__copy_from_user_inatomic((void *)str, (const void *)addr, 256);
+	ret = __copy_from_user_inatomic((void *)str, (const void *)addr, 256);
+	(void) &ret;  /* Silence compiler warning. */
 	pagefault_enable();
 	str[255] = '\0';
 	setsvalue(ks->top, kp_tstring_new(ks, str));
