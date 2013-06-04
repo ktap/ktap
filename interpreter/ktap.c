@@ -1,8 +1,6 @@
 /*
  * ktap.c - ktapvm kernel module main entry
  *
- * Copyright (C) 2012-2013 Jovi Zhang
- *
  * Author: Jovi Zhang <bookjovi@gmail.com>
  *         zhangwei(Jovi) <jovi.zhangwei@huawei.com>
  *

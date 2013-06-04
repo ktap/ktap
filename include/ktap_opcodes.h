@@ -1,6 +1,9 @@
 #ifndef __KTAP_BYTECODE_H__
 #define __KTAP_BYTECODE_H__
 
+
+/* opcode is copied from lua initially */
+ 
 typedef enum {
 /*----------------------------------------------------------------------
  * name            args    description

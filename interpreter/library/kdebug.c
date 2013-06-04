@@ -1,8 +1,6 @@
 /*
  * kdebug.c - ktap probing core implementation
  *
- * Copyright (C) 2012 Jovi Zhang <bookjovi@gmail.com>
- *
  * Author: Jovi Zhang <bookjovi@gmail.com>
  *         zhangwei(Jovi) <jovi.zhangwei@huawei.com>
  *

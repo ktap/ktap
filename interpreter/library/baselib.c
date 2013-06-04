@@ -1,8 +1,6 @@
 /*
  * baselib.c - ktapvm kernel module base library
  *
- * Copyright (C) 2012-2013 Jovi Zhang
- *
  * Author: Jovi Zhang <bookjovi@gmail.com>
  *         zhangwei(Jovi) <jovi.zhangwei@huawei.com>
  *

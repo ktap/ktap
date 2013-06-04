@@ -1,6 +1,8 @@
 #ifndef __KTAP_TYPES_H__
 #define __KTAP_TYPES_H__
 
+/* opcode is copied from lua initially */
+
 #ifdef __KERNEL__
 #include <linux/module.h>
 #include <linux/slab.h>
