@@ -118,16 +118,3 @@ Q: Is there have any plan on upstream into mainline?
 A: Definitily. I hope ktap will upstream someday, but should not happen before
    ktap 1.0 release.
 
-   In LinuxCon Japan 2013, Jonathan Corbet recommend to me I should upstream
-   when ktap is small; Masami suggest could possible integrate with perf, I also
-   agree with Masami in this point, there have many advantage if integrate with
-   perf, and easy to upsteam(I guess :))
-
-Q: Is possible integrate ktap with perf?
-A: Possible.
-   perf have debuginfo handling, script support(python/perl), stable event
-   name(would be stable as Dtrace's provider), well defined tracing command
-   option(percpu, pertask), so there have many advantage to integrate perf with
-   ktap, and will be competeable with Systemtap and Dtrace, and easy to upstream
-
-

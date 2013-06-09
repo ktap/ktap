@@ -46,7 +46,7 @@ Implementing
   for static compiled language, use systemtap is enough.
 - benchmark for ktap
 - sometimes cannot stop script
-- Integrate with perf
+- eventdef should be parsed in compiler, not interpreter, and unify tracepoint and kprobe/uprobe
 
 
 Completed
