@@ -600,6 +600,7 @@ static void perf_destructor(struct ktap_probe_event *ktap_pevent)
 	perf_event_disable(ktap_pevent->u.perf);
 	perf_event_release_kernel(ktap_pevent->u.perf);
 }
+
 static void enable_tracepoint_on_cpu(int cpu, struct perf_event_attr *attr,
 				     struct ftrace_event_call *call,
 				     struct ktap_trace_arg *arg, int type)
@@ -654,6 +655,50 @@ static void enable_tracepoint(struct ftrace_event_call *call, void *data)
 
 	for_each_online_cpu(cpu)
 		enable_tracepoint_on_cpu(cpu, &attr, call, arg, type);
+}
+
+static int start_probe_by_id(ktap_State *ks, int id, Closure *cl)
+{
+	struct ktap_probe_event *ktap_pevent;
+	struct perf_event_attr attr;
+	struct perf_event *event;
+	int cpu;
+
+	kp_printf(ks, "enable tracepoint event id: %d\n", id);
+
+	memset(&attr, 0, sizeof(attr));
+	attr.type = PERF_TYPE_TRACEPOINT;	
+	attr.config = id;
+	attr.sample_type = PERF_SAMPLE_RAW | PERF_SAMPLE_TIME |
+			   PERF_SAMPLE_CPU | PERF_SAMPLE_PERIOD;
+	attr.sample_period = 1;
+	attr.size = sizeof(attr);
+
+	for_each_online_cpu(cpu) {
+		ktap_pevent = kp_zalloc(arg->ks, sizeof(*ktap_pevent));
+		ktap_pevent->name = "";
+		ktap_pevent->ks = ks;
+		ktap_pevent->cl = cl;
+		ktap_pevent->type = 0;
+		ktap_pevent->destructor = perf_destructor;
+		event = perf_event_create_kernel_counter(&attr, cpu, NULL,
+							 ktap_overflow_callback, ktap_pevent);
+		if (IS_ERR(event)) {
+			int err = PTR_ERR(event);
+			kp_printf(ks, "unable create tracepoint event %d on cpu %d, err: %d\n",
+				  id, cpu, err);
+			kp_free(ks, ktap_pevent);
+			return -1;
+		}
+
+		ktap_pevent->u.perf = event;
+		INIT_LIST_HEAD(&ktap_pevent->list);
+		list_add_tail(&ktap_pevent->list, &G(ks)->probe_events_head);
+
+		perf_event_enable(event);
+	}
+
+	return 0;
 }
 
 struct list_head *ftrace_events_ptr;
@@ -804,6 +849,29 @@ static int ktap_lib_probe(ktap_State *ks)
 	return start_probe(ks, event_name, cl);
 }
 
+static int ktap_lib_probe_by_id(ktap_State *ks)
+{
+	int id = nvalue(GetArg(ks, 1));
+	Tvalue *tracefunc;
+	Closure *cl;
+
+	if (GetArgN(ks) >= 2) {
+		tracefunc = GetArg(ks, 2);
+
+		if (ttisfunc(tracefunc))
+			cl = (Closure *)gcvalue(tracefunc);
+		else
+			cl = NULL;
+	} else
+		cl = NULL;
+
+	if (!cl || (id < 0))
+		return -1;
+
+	return start_probe_by_id(ks, id, cl);
+}
+
+
 static int ktap_lib_probe_end(ktap_State *ks)
 {
 	Tvalue *endfunc;
@@ -937,6 +1005,7 @@ int kp_probe_init(ktap_State *ks)
 static const ktap_Reg kdebuglib_funcs[] = {
 	{"dumpstack", ktap_lib_dumpstack},
 	{"probe", ktap_lib_probe},
+	{"probe_by_id", ktap_lib_probe_by_id},
 	{"probe_end", ktap_lib_probe_end},
 	{NULL}
 };
