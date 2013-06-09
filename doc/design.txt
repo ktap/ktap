@@ -73,7 +73,7 @@ A: ktap is not slow, the bytecode is very high-level, based on lua, the language
    ktap use per-cpu allocation in many place, without global locking scheme,
    it's very fast when executing tracepoint callback.
    Performance benchmark showing that the overhead of ktap running is nearly
-   5%-10%(store event name into associative array), compare with full speed
+   10%(store event name into associative array), compare with full speed
    running without any tracepoint enabled.
 
    ktap will optimize overhead all the time, hopefully the overhead will
