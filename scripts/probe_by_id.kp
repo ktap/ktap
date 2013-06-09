@@ -1,0 +1,13 @@
+# See kprobe.sh/uprobe.sh to know how to use this ktap script
+# this script can serve as tracepoint/kprobe/kretprobe/uprobe/uretprobe
+function eventfun (e) {
+	printf("%d %d\t%s\t%s", cpu(), pid(), execname(), e.tostring())
+}
+
+id = arg[1]
+kdebug.probe_by_id(id, eventfun)
+
+kdebug.probe_end(function () {
+	printf("probe end\n")
+})
+
