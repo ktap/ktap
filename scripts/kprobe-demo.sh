@@ -1,6 +1,6 @@
 #/bin/sh
 
-# You can run this shell by command:
+# You can run this shell by command(only tested in x86_32):
 # ./kprobe.sh 'do_sys_open dfd=%ax filename=%dx flags=%cx mode=+4($stack)'
 
 echo "p:myprobe" $@ > /sys/kernel/debug/tracing/kprobe_events
