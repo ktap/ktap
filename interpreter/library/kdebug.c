@@ -245,6 +245,7 @@ static int event_function_tostring(ktap_State *ks)
 	return 1;
 }
 
+/* e.tostring() */
 static void event_tostring(ktap_State *ks, struct ktap_event *e, StkId ra)
 {
 	if (e->type >= EVENT_TYPE_TRACEPOINT_MAX)
@@ -262,11 +263,13 @@ void kp_show_event(ktap_State *ks)
 	kp_printf(ks, "%s", getstr(rawtsvalue(ks->top)));
 }
 
+/* e.name */
 static void event_name(ktap_State *ks, struct ktap_event *e, StkId ra)
 {
 	setsvalue(ra, kp_tstring_new(ks, e->pevent->name));
 }
 
+/* e.print_fmt */
 static void event_print_fmt(ktap_State *ks, struct ktap_event *e, StkId ra)
 {
 	setsvalue(ra, kp_tstring_new(ks, e->call->print_fmt));
@@ -302,6 +305,7 @@ static void event_regstr(ktap_State *ks, struct ktap_event *e, StkId ra)
 	setsvalue(ra, kp_tstring_new(ks, str));
 }
 
+/* e.retval */
 static void event_retval(ktap_State *ks, struct ktap_event *e, StkId ra)
 {
 	struct pt_regs *regs = e->regs;
@@ -325,6 +329,7 @@ static int ktap_function_set_retval(ktap_State *ks)
 	return 0;
 }
 
+/* e.set_retval*/
 static void event_set_retval(ktap_State *ks, struct ktap_event *e, StkId ra)
 {
 	if (e->type != EVENT_TYPE_KRETPROBE && e->type != EVENT_TYPE_SYSCALL_EXIT) {
@@ -348,6 +353,7 @@ struct syscall_trace_exit {
 	long                    ret;
 };
 
+/* e.sc_nr */
 static void event_sc_nr(ktap_State *ks, struct ktap_event *e, StkId ra)
 {
 	struct syscall_trace_enter *entry = e->entry;
@@ -360,6 +366,7 @@ static void event_sc_nr(ktap_State *ks, struct ktap_event *e, StkId ra)
 	setnvalue(ra, entry->nr);
 }
 
+/* e.sc_is_enter */
 static void event_sc_is_enter(ktap_State *ks, struct ktap_event *e, StkId ra)
 {
 	if (e->type == EVENT_TYPE_SYSCALL_ENTER) {
