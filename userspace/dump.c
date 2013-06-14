@@ -169,8 +169,8 @@ static void DumpHeader(DumpState *D)
 }
 
 /*
-** dump ktap function as precompiled chunk
-*/
+ * dump ktap function as precompiled chunk
+ */
 int ktapc_dump(const Proto *f, ktap_Writer w, void *data, int strip)
 {
 	DumpState D;

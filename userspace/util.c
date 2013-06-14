@@ -28,12 +28,11 @@
 #include "../include/ktap_types.h"
 #include "ktapc.h"
 
-
 /*
-** converts an integer to a "floating point byte", represented as
-** (eeeeexxx), where the real value is (1xxx) * 2^(eeeee - 1) if
-** eeeee != 0 and (xxx) otherwise.
-*/
+ * converts an integer to a "floating point byte", represented as
+ * (eeeeexxx), where the real value is (1xxx) * 2^(eeeee - 1) if
+ * eeeee != 0 and (xxx) otherwise.
+ */
 int ktapc_int2fb(unsigned int x)
 {
 	int e = 0;  /* exponent */
@@ -47,7 +46,6 @@ int ktapc_int2fb(unsigned int x)
 	return ((e+1) << 3) | ((int)x - 8);
 }
 
-
 /* converts back */
 int ktapc_fb2int(int x)
 {
@@ -58,7 +56,6 @@ int ktapc_fb2int(int x)
 	else
 		return ((x & 7) + 8) << (e - 1);
 }
-
 
 int ktapc_ceillog2(unsigned int x)
 {
@@ -82,7 +79,6 @@ int ktapc_ceillog2(unsigned int x)
 	return l + log_2[x];
 }
 
-
 ktap_Number ktapc_arith(int op, ktap_Number v1, ktap_Number v2)
 {
 	switch (op) {
@@ -97,7 +93,6 @@ ktap_Number ktapc_arith(int op, ktap_Number v1, ktap_Number v2)
 	}
 }
 
-
 int ktapc_hexavalue(int c)
 {
 	if (isdigit(c))
@@ -105,7 +100,6 @@ int ktapc_hexavalue(int c)
 	else
 		return tolower(c) - 'a' + 10;
 }
-
 
 static int isneg(const char **s)
 {
@@ -118,7 +112,6 @@ static int isneg(const char **s)
 	return 0;
 }
 
-
 static ktap_Number readhexa(const char **s, ktap_Number r, int *count)
 {
 	for (; isxdigit((unsigned char)(**s)); (*s)++) {  /* read integer part */
@@ -129,11 +122,10 @@ static ktap_Number readhexa(const char **s, ktap_Number r, int *count)
 	return r;
 }
 
-
 /*
-** convert an hexadecimal numeric string to a number, following
-** C99 specification for 'strtod'
-*/
+ * convert an hexadecimal numeric string to a number, following
+ * C99 specification for 'strtod'
+ */
 static ktap_Number strx2number(const char *s, char **endptr)
 {
 	ktap_Number r = 0.0;
@@ -182,7 +174,6 @@ static ktap_Number strx2number(const char *s, char **endptr)
 	return ldexp(r, e);
 }
 
-
 int ktapc_str2d(const char *s, size_t len, ktap_Number *result)
 {
 	char *endptr;
@@ -200,8 +191,6 @@ int ktapc_str2d(const char *s, size_t len, ktap_Number *result)
 		endptr++;
 	return (endptr == s + len);  /* OK if no trailing characters */
 }
-
-
 
 /* number of chars of a literal string without the ending \0 */
 #define LL(x)	(sizeof(x)/sizeof(char) - 1)

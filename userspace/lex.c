@@ -23,9 +23,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
 #include <locale.h>
-
 #include "../include/ktap_types.h"
 #include "ktapc.h"
 
@@ -33,9 +31,7 @@
 
 #define currIsNewline(ls)	(ls->current == '\n' || ls->current == '\r')
 
-
 #define KTAP_MINBUFFER   32
-
 
 /* ORDER RESERVED */
 static const char *const ktap_tokens [] = {
@@ -47,12 +43,9 @@ static const char *const ktap_tokens [] = {
 	"<number>", "<name>", "<string>"
 };
 
-
 #define save_and_next(ls) (save(ls, ls->current), next(ls))
 
-
 static void lexerror(LexState *ls, const char *msg, int token);
-
 
 static void save(LexState *ls, int c)
 {
@@ -67,7 +60,6 @@ static void save(LexState *ls, int c)
 	b->buffer[mbuff_len(b)++] = (char)c;
 }
 
-
 void lex_init()
 {
 	int i;
@@ -76,8 +68,6 @@ void lex_init()
 		ts->tsv.extra = (u8)(i+1);  /* reserved word */
 	}
 }
-
-
 
 const char *lex_token2str(LexState *ls, int token)
 {
@@ -94,7 +84,6 @@ const char *lex_token2str(LexState *ls, int token)
 	}
 }
 
-
 static const char *txtToken(LexState *ls, int token)
 {
 	switch (token) {
@@ -107,7 +96,6 @@ static const char *txtToken(LexState *ls, int token)
 		return lex_token2str(ls, token);
 	}
 }
-
 
 static void lexerror(LexState *ls, const char *msg, int token)
 {
@@ -122,18 +110,16 @@ static void lexerror(LexState *ls, const char *msg, int token)
 	exit(EXIT_FAILURE);
 }
 
-
 void lex_syntaxerror(LexState *ls, const char *msg)
 {
 	lexerror(ls, msg, ls->t.token);
 }
 
-
 /*
-** creates a new string and anchors it in function's table so that
-** it will not be collected until the end of the function's compilation
-** (by that time it should be anchored in function's prototype)
-*/
+ * creates a new string and anchors it in function's table so that
+ * it will not be collected until the end of the function's compilation
+ * (by that time it should be anchored in function's prototype)
+ */
 Tstring *lex_newstring(LexState *ls, const char *str, size_t l)
 {
 	Tvalue *o;  /* entry for `str' */
@@ -149,11 +135,10 @@ Tstring *lex_newstring(LexState *ls, const char *str, size_t l)
 	return ts;
 }
 
-
 /*
-** increment line number and skips newline sequence (any of
-** \n, \r, \n\r, or \r\n)
-*/
+ * increment line number and skips newline sequence (any of
+ * \n, \r, \n\r, or \r\n)
+ */
 static void inclinenumber(LexState *ls)
 {
 	int old = ls->current;
@@ -164,7 +149,6 @@ static void inclinenumber(LexState *ls)
 	if (++ls->linenumber >= MAX_INT)
 		lex_syntaxerror(ls, "chunk has too many lines");
 }
-
 
 void lex_setinput(LexState *ls, unsigned char *ptr, Tstring *source, int firstchar)
 {
@@ -180,16 +164,11 @@ void lex_setinput(LexState *ls, unsigned char *ptr, Tstring *source, int firstch
 	mbuff_resize(ls->buff, KTAP_MINBUFFER);  /* initialize buffer */
 }
 
-
-
 /*
  * =======================================================
  * LEXICAL ANALYZER
  * =======================================================
  */
-
-
-
 static int check_next(LexState *ls, const char *set)
 {
 	if (ls->current == '\0' || !strchr(set, ls->current))
@@ -198,10 +177,9 @@ static int check_next(LexState *ls, const char *set)
 	return 1;
 }
 
-
 /*
-** change all characters 'from' in buffer to 'to'
-*/
+ * change all characters 'from' in buffer to 'to'
+ */
 static void buffreplace(LexState *ls, char from, char to)
 {
 	size_t n = mbuff_len(ls->buff);
@@ -210,18 +188,16 @@ static void buffreplace(LexState *ls, char from, char to)
 		if (p[n] == from) p[n] = to;
 }
 
-
 #if !defined(getlocaledecpoint)
 #define getlocaledecpoint()	(localeconv()->decimal_point[0])
 #endif
 
-
 #define mbuff2d(b,e)	ktapc_str2d(mbuff(b), mbuff_len(b) - 1, e)
 
 /*
-** in case of format error, try to change decimal point separator to
-** the one defined in the current locale and check again
-*/
+ * in case of format error, try to change decimal point separator to
+ * the one defined in the current locale and check again
+ */
 static void trydecpoint(LexState *ls, SemInfo *seminfo)
 {
 	char old = ls->decpoint;
@@ -234,12 +210,10 @@ static void trydecpoint(LexState *ls, SemInfo *seminfo)
 	}
 }
 
-
-/* KTAP_NUMBER */
 /*
-** this function is quite liberal in what it accepts, as 'ktapc_str2d'
-** will reject ill-formed numerals.
-*/
+ * this function is quite liberal in what it accepts, as 'ktapc_str2d'
+ * will reject ill-formed numerals.
+ */
 static void read_numeral(LexState *ls, SemInfo *seminfo)
 {
 	const char *expo = "Ee";
@@ -263,11 +237,10 @@ static void read_numeral(LexState *ls, SemInfo *seminfo)
 		trydecpoint(ls, seminfo); /* try to update decimal point separator */
 }
 
-
 /*
-** skip a sequence '[=*[' or ']=*]' and return its number of '='s or
-** -1 if sequence is malformed
-*/
+ * skip a sequence '[=*[' or ']=*]' and return its number of '='s or
+ * -1 if sequence is malformed
+ */
 static int skip_sep(LexState *ls)
 {
 	int count = 0;
@@ -281,7 +254,6 @@ static int skip_sep(LexState *ls)
 	}
 	return (ls->current == s) ? count : (-count) - 1;
 }
-
 
 static void read_long_string(LexState *ls, SemInfo *seminfo, int sep)
 {
@@ -317,12 +289,11 @@ static void read_long_string(LexState *ls, SemInfo *seminfo, int sep)
 		}
 	}
 
-endloop:
+ endloop:
 	if (seminfo)
 		seminfo->ts = lex_newstring(ls, mbuff(ls->buff) + (2 + sep),
 			mbuff_len(ls->buff) - 2*(2 + sep));
 }
-
 
 static void escerror(LexState *ls, int *c, int n, const char *msg)
 {
@@ -333,7 +304,6 @@ static void escerror(LexState *ls, int *c, int n, const char *msg)
 		save(ls, c[i]);
 	lexerror(ls, msg, TK_STRING);
 }
-
 
 static int readhexaesc(LexState *ls)
 {
@@ -349,7 +319,6 @@ static int readhexaesc(LexState *ls)
 	return r;
 }
 
-
 static int readdecesc(LexState *ls)
 {
 	int c[3], i;
@@ -363,7 +332,6 @@ static int readdecesc(LexState *ls)
 		escerror(ls, c, i, "decimal escape too large");
 	return r;
 }
-
 
 static void read_string(LexState *ls, int del, SemInfo *seminfo)
 {
@@ -426,7 +394,6 @@ static void read_string(LexState *ls, int del, SemInfo *seminfo)
 	save_and_next(ls);  /* skip delimiter */
 	seminfo->ts = lex_newstring(ls, mbuff(ls->buff) + 1, mbuff_len(ls->buff) - 2);
 }
-
 
 static int llex(LexState *ls, SemInfo *seminfo)
 {
@@ -590,7 +557,6 @@ static int llex(LexState *ls, SemInfo *seminfo)
 	}
 }
 
-
 void lex_next(LexState *ls)
 {
 	ls->lastline = ls->linenumber;
@@ -600,7 +566,6 @@ void lex_next(LexState *ls)
 	} else
 		ls->t.token = llex(ls, &ls->t.seminfo);  /* read next token */
 }
-
 
 int lex_lookahead(LexState *ls)
 {

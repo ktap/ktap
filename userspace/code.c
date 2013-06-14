@@ -31,17 +31,14 @@
 
 #define hasjumps(e)	((e)->t != (e)->f)
 
-
 void codegen_patchtohere (FuncState *fs, int list);
 void codegen_fixline (FuncState *fs, int line);
 void codegen_concat (FuncState *fs, int *l1, int l2);
-
 
 static int isnumeral(expdesc *e)
 {
 	return (e->k == VKNUM && e->t == NO_JUMP && e->f == NO_JUMP);
 }
-
 
 void codegen_nil(FuncState *fs, int from, int n)
 {
@@ -69,7 +66,6 @@ void codegen_nil(FuncState *fs, int from, int n)
 	codegen_codeABC(fs, OP_LOADNIL, from, n - 1, 0);  /* else no optimization */
 }
 
-
 int codegen_jump(FuncState *fs)
 {
 	int jpc = fs->jpc;  /* save list of jumps to here */
@@ -81,19 +77,16 @@ int codegen_jump(FuncState *fs)
 	return j;
 }
 
-
 void codegen_ret(FuncState *fs, int first, int nret)
 {
 	codegen_codeABC(fs, OP_RETURN, first, nret+1, 0);
 }
-
 
 static int condjump(FuncState *fs, OpCode op, int A, int B, int C)
 {
 	codegen_codeABC(fs, op, A, B, C);
 	return codegen_jump(fs);
 }
-
 
 static void fixjump(FuncState *fs, int pc, int dest)
 {
@@ -106,17 +99,15 @@ static void fixjump(FuncState *fs, int pc, int dest)
 	SETARG_sBx(*jmp, offset);
 }
 
-
 /*
-** returns current `pc' and marks it as a jump target (to avoid wrong
-** optimizations with consecutive instructions not in the same basic block).
-*/
+ * returns current `pc' and marks it as a jump target (to avoid wrong
+ * optimizations with consecutive instructions not in the same basic block).
+ */
 int codegen_getlabel(FuncState *fs)
 {
 	fs->lasttarget = fs->pc;
 	return fs->pc;
 }
-
 
 static int getjump(FuncState *fs, int pc)
 {
@@ -128,7 +119,6 @@ static int getjump(FuncState *fs, int pc)
 		return (pc+1)+offset;  /* turn offset into absolute position */
 }
 
-
 static Instruction *getjumpcontrol(FuncState *fs, int pc)
 {
 	Instruction *pi = &fs->f->code[pc];
@@ -138,11 +128,10 @@ static Instruction *getjumpcontrol(FuncState *fs, int pc)
 		return pi;
 }
 
-
 /*
-** check whether list has any jump that do not produce a value
-** (or produce an inverted value)
-*/
+ * check whether list has any jump that do not produce a value
+ * (or produce an inverted value)
+ */
 static int need_value(FuncState *fs, int list)
 {
 	for (; list != NO_JUMP; list = getjump(fs, list)) {
@@ -152,7 +141,6 @@ static int need_value(FuncState *fs, int list)
 	}
 	return 0;  /* not found */
 }
-
 
 static int patchtestreg(FuncState *fs, int node, int reg)
 {
@@ -167,13 +155,11 @@ static int patchtestreg(FuncState *fs, int node, int reg)
 	return 1;
 }
 
-
 static void removevalues(FuncState *fs, int list)
 {
 	for (; list != NO_JUMP; list = getjump(fs, list))
 		patchtestreg(fs, list, NO_REG);
 }
-
 
 static void patchlistaux(FuncState *fs, int list, int vtarget, int reg,
 			 int dtarget)
@@ -188,13 +174,11 @@ static void patchlistaux(FuncState *fs, int list, int vtarget, int reg,
 	}
 }
 
-
 static void dischargejpc(FuncState *fs)
 {
 	patchlistaux(fs, fs->jpc, fs->pc, NO_REG, fs->pc);
 	fs->jpc = NO_JUMP;
 }
-
 
 void codegen_patchlist(FuncState *fs, int list, int target)
 {
@@ -205,7 +189,6 @@ void codegen_patchlist(FuncState *fs, int list, int target)
 		patchlistaux(fs, list, target, NO_REG, target);
 	}
 }
-
 
 void codegen_patchclose(FuncState *fs, int list, int level)
 {
@@ -220,13 +203,11 @@ void codegen_patchclose(FuncState *fs, int list, int level)
 	}
 }
 
-
 void codegen_patchtohere(FuncState *fs, int list)
 {
 	codegen_getlabel(fs);
 	codegen_concat(fs, &fs->jpc, list);
 }
-
 
 void codegen_concat(FuncState *fs, int *l1, int l2)
 {
@@ -242,7 +223,6 @@ void codegen_concat(FuncState *fs, int *l1, int l2)
 		fixjump(fs, list, l2);
 	}
 }
-
 
 static int codegen_code(FuncState *fs, Instruction i)
 {
@@ -261,7 +241,6 @@ static int codegen_code(FuncState *fs, Instruction i)
 	return fs->pc++;
 }
 
-
 int codegen_codeABC(FuncState *fs, OpCode o, int a, int b, int c)
 {
 	ktap_assert(getOpMode(o) == iABC);
@@ -271,7 +250,6 @@ int codegen_codeABC(FuncState *fs, OpCode o, int a, int b, int c)
 	return codegen_code(fs, CREATE_ABC(o, a, b, c));
 }
 
-
 int codegen_codeABx(FuncState *fs, OpCode o, int a, unsigned int bc)
 {
 	ktap_assert(getOpMode(o) == iABx || getOpMode(o) == iAsBx);
@@ -280,13 +258,11 @@ int codegen_codeABx(FuncState *fs, OpCode o, int a, unsigned int bc)
 	return codegen_code(fs, CREATE_ABx(o, a, bc));
 }
 
-
 static int codeextraarg(FuncState *fs, int a)
 {
 	ktap_assert(a <= MAXARG_Ax);
 	return codegen_code(fs, CREATE_Ax(OP_EXTRAARG, a));
 }
-
 
 int codegen_codek(FuncState *fs, int reg, int k)
 {
@@ -299,7 +275,6 @@ int codegen_codek(FuncState *fs, int reg, int k)
 	}
 }
 
-
 void codegen_checkstack(FuncState *fs, int n)
 {
 	int newstack = fs->freereg + n;
@@ -311,13 +286,11 @@ void codegen_checkstack(FuncState *fs, int n)
 	}
 }
 
-
 void codegen_reserveregs(FuncState *fs, int n)
 {
 	codegen_checkstack(fs, n);
 	fs->freereg += n;
 }
-
 
 static void freereg(FuncState *fs, int reg)
 {
@@ -327,13 +300,11 @@ static void freereg(FuncState *fs, int reg)
 	}
 }
 
-
 static void freeexp(FuncState *fs, expdesc *e)
 {
 	if (e->k == VNONRELOC)
 		freereg(fs, e->u.info);
 }
-
 
 static int addk(FuncState *fs, Tvalue *key, Tvalue *v)
 {
@@ -363,7 +334,6 @@ static int addk(FuncState *fs, Tvalue *key, Tvalue *v)
 	return k;
 }
 
-
 int codegen_stringK(FuncState *fs, Tstring *s)
 {
 	Tvalue o;
@@ -371,7 +341,6 @@ int codegen_stringK(FuncState *fs, Tstring *s)
 	setsvalue(&o, s);
 	return addk(fs, &o, &o);
 }
-
 
 int codegen_numberK(FuncState *fs, ktap_Number r)
 {
@@ -390,14 +359,12 @@ int codegen_numberK(FuncState *fs, ktap_Number r)
 	return n;
 }
 
-
 static int boolK(FuncState *fs, int b)
 {
 	Tvalue o;
 	setbvalue(&o, b);
 	return addk(fs, &o, &o);
 }
-
 
 static int nilK(FuncState *fs)
 {
@@ -407,7 +374,6 @@ static int nilK(FuncState *fs)
 	sethvalue(&k, fs->h);
 	return addk(fs, &k, &v);
 }
-
 
 void codegen_setreturns(FuncState *fs, expdesc *e, int nresults)
 {
@@ -421,7 +387,6 @@ void codegen_setreturns(FuncState *fs, expdesc *e, int nresults)
 	}
 }
 
-
 void codegen_setoneret(FuncState *fs, expdesc *e)
 {
 	if (e->k == VCALL) {  /* expression is an open function call? */
@@ -432,7 +397,6 @@ void codegen_setoneret(FuncState *fs, expdesc *e)
 		e->k = VRELOCABLE;  /* can relocate its simple result */
 	}
 }
-
 
 void codegen_dischargevars(FuncState *fs, expdesc *e)
 {
@@ -467,13 +431,11 @@ void codegen_dischargevars(FuncState *fs, expdesc *e)
 	}
 }
 
-
 static int code_label(FuncState *fs, int A, int b, int jump)
 {
 	codegen_getlabel(fs);  /* those instructions may be jump targets */
 	return codegen_codeABC(fs, OP_LOADBOOL, A, b, jump);
 }
-
 
 static void discharge2reg(FuncState *fs, expdesc *e, int reg)
 {
@@ -514,7 +476,6 @@ static void discharge2reg(FuncState *fs, expdesc *e, int reg)
 	e->k = VNONRELOC;
 }
 
-
 static void discharge2anyreg(FuncState *fs, expdesc *e)
 {
 	if (e->k != VNONRELOC) {
@@ -522,7 +483,6 @@ static void discharge2anyreg(FuncState *fs, expdesc *e)
 		discharge2reg(fs, e, fs->freereg-1);
 	}
 }
-
 
 static void exp2reg(FuncState *fs, expdesc *e, int reg)
 {
@@ -550,7 +510,6 @@ static void exp2reg(FuncState *fs, expdesc *e, int reg)
 	e->k = VNONRELOC;
 }
 
-
 void codegen_exp2nextreg(FuncState *fs, expdesc *e)
 {
 	codegen_dischargevars(fs, e);
@@ -558,7 +517,6 @@ void codegen_exp2nextreg(FuncState *fs, expdesc *e)
 	codegen_reserveregs(fs, 1);
 	exp2reg(fs, e, fs->freereg - 1);
 }
-
 
 int codegen_exp2anyreg (FuncState *fs, expdesc *e)
 {
@@ -575,13 +533,11 @@ int codegen_exp2anyreg (FuncState *fs, expdesc *e)
 	return e->u.info;
 }
 
-
 void codegen_exp2anyregup(FuncState *fs, expdesc *e)
 {
 	if (e->k != VUPVAL || hasjumps(e))
 		codegen_exp2anyreg(fs, e);
 }
-
 
 void codegen_exp2val(FuncState *fs, expdesc *e)
 {
@@ -590,7 +546,6 @@ void codegen_exp2val(FuncState *fs, expdesc *e)
 	else
 		codegen_dischargevars(fs, e);
 }
-
 
 int codegen_exp2RK(FuncState *fs, expdesc *e)
 {
@@ -625,7 +580,6 @@ int codegen_exp2RK(FuncState *fs, expdesc *e)
 	return codegen_exp2anyreg(fs, e);
 }
 
-
 void codegen_storevar(FuncState *fs, expdesc *var, expdesc *ex)
 {
 	switch (var->k) {
@@ -653,7 +607,6 @@ void codegen_storevar(FuncState *fs, expdesc *var, expdesc *ex)
 	freeexp(fs, ex);
 }
 
-
 void codegen_self(FuncState *fs, expdesc *e, expdesc *key)
 {
 	int ereg;
@@ -668,14 +621,13 @@ void codegen_self(FuncState *fs, expdesc *e, expdesc *key)
 	freeexp(fs, key);
 }
 
-
-static void invertjump (FuncState *fs, expdesc *e) {
-  Instruction *pc = getjumpcontrol(fs, e->u.info);
-  ktap_assert(testTMode(GET_OPCODE(*pc)) && GET_OPCODE(*pc) != OP_TESTSET &&
-                                           GET_OPCODE(*pc) != OP_TEST);
-  SETARG_A(*pc, !(GETARG_A(*pc)));
+static void invertjump (FuncState *fs, expdesc *e)
+{
+	Instruction *pc = getjumpcontrol(fs, e->u.info);
+	ktap_assert(testTMode(GET_OPCODE(*pc)) && GET_OPCODE(*pc) != OP_TESTSET &&
+			GET_OPCODE(*pc) != OP_TEST);
+	SETARG_A(*pc, !(GETARG_A(*pc)));
 }
-
 
 static int jumponcond(FuncState *fs, expdesc *e, int cond)
 {
@@ -691,7 +643,6 @@ static int jumponcond(FuncState *fs, expdesc *e, int cond)
 	freeexp(fs, e);
 	return condjump(fs, OP_TESTSET, NO_REG, e->u.info, cond);
 }
-
 
 void codegen_goiftrue(FuncState *fs, expdesc *e)
 {
@@ -718,7 +669,6 @@ void codegen_goiftrue(FuncState *fs, expdesc *e)
 	e->t = NO_JUMP;
 }
 
-
 void codegen_goiffalse(FuncState *fs, expdesc *e)
 {
 	int pc;  /* pc of last jump */
@@ -741,7 +691,6 @@ void codegen_goiffalse(FuncState *fs, expdesc *e)
 	codegen_patchtohere(fs, e->f);
 	e->f = NO_JUMP;
 }
-
 
 static void codenot(FuncState *fs, expdesc *e)
 {
@@ -778,7 +727,6 @@ static void codenot(FuncState *fs, expdesc *e)
 	removevalues(fs, e->t);
 }
 
-
 void codegen_indexed(FuncState *fs, expdesc *t, expdesc *k)
 {
 	ktap_assert(!hasjumps(t));
@@ -788,7 +736,6 @@ void codegen_indexed(FuncState *fs, expdesc *t, expdesc *k)
 			: check_exp(vkisinreg(t->k), VLOCAL);
 	t->k = VINDEXED;
 }
-
 
 static int constfolding(OpCode op, expdesc *e1, expdesc *e2)
 {
@@ -807,7 +754,6 @@ static int constfolding(OpCode op, expdesc *e1, expdesc *e2)
 	e1->u.nval = r;
 	return 1;
 }
-
 
 static void codearith(FuncState *fs, OpCode op,
 		      expdesc *e1, expdesc *e2, int line)
@@ -831,7 +777,6 @@ static void codearith(FuncState *fs, OpCode op,
 	}
 }
 
-
 static void codecomp(FuncState *fs, OpCode op, int cond, expdesc *e1,
 		     expdesc *e2)
 {
@@ -848,7 +793,6 @@ static void codecomp(FuncState *fs, OpCode op, int cond, expdesc *e1,
 	e1->u.info = condjump(fs, op, cond, o1, o2);
 	e1->k = VJMP;
 }
-
 
 void codegen_prefix(FuncState *fs, UnOpr op, expdesc *e, int line)
 {
@@ -881,7 +825,6 @@ void codegen_prefix(FuncState *fs, UnOpr op, expdesc *e, int line)
 	}
 }
 
-
 void codegen_infix(FuncState *fs, BinOpr op, expdesc *v)
 {
 	switch (op) {
@@ -907,7 +850,6 @@ void codegen_infix(FuncState *fs, BinOpr op, expdesc *v)
 		break;
 	}
 }
-
 
 void codegen_posfix(FuncState *fs, BinOpr op, expdesc *e1, expdesc *e2, int line)
 {
@@ -957,12 +899,10 @@ void codegen_posfix(FuncState *fs, BinOpr op, expdesc *e1, expdesc *e2, int line
 	}
 }
 
-
 void codegen_fixline(FuncState *fs, int line)
 {
 	fs->f->lineinfo[fs->pc - 1] = line;
 }
-
 
 void codegen_setlist(FuncState *fs, int base, int nelems, int tostore)
 {
