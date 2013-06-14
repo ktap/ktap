@@ -46,11 +46,6 @@ void kp_printf(ktap_State *ks, const char *fmt, ...)
 	kp_transport_write(ks, buff, len);
 }
 
-
-/* get argument operation macro */
-#define GetArg(ks, n)	((ks)->ci->func + (n))
-#define GetArgN(ks)	((int)(ks->top - (ks->ci->func + 1)))
-
 static int ktap_lib_clock(ktap_State *ks)
 {
 	kp_printf(ks, "ktap_clock\n");

@@ -23,10 +23,6 @@
 #include <linux/ctype.h>
 #include "../include/ktap.h"
 
-/* get argument operation macro */
-#define GetArg(ks, n)	((ks)->ci->func + (n))
-#define GetArgN(ks)	((int)(ks->top - (ks->ci->func + 1)))
-
 /* macro to `unsign' a character */
 #define uchar(c)	((unsigned char)(c))
 

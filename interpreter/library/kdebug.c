@@ -26,10 +26,6 @@
 #include <asm/syscall.h> //syscall_set_return_value defined here
 #include "../../include/ktap.h"
 
-/* get argument operation macro */
-#define GetArg(ks, n)	((ks)->ci->func + (n))
-#define GetArgN(ks)	((int)(ks->top - (ks->ci->func + 1)))
-
 /* this structure allocate on stack */
 struct ktap_trace_arg {
 	ktap_State *ks;
