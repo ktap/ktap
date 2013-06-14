@@ -401,17 +401,26 @@ struct ftrace_event_field {
 };
 #endif
 
-/* e.narg */
-static void event_narg(ktap_State *ks, struct ktap_event *e, StkId ra)
-{
-	setsvalue(ra, kp_tstring_new(ks, e->call->name));
-}
-
 static struct list_head *ktap_get_fields(struct ftrace_event_call *event_call)
 {
 	if (!event_call->class->get_fields)
 		return &event_call->class->fields;
 	return event_call->class->get_fields(event_call);
+}
+
+/* e.fieldnum */
+static void event_fieldnum(ktap_State *ks, struct ktap_event *e, StkId ra)
+{
+	struct ftrace_event_field *field;
+	struct list_head *head;
+	int num = 0;
+
+	head = ktap_get_fields(e->call);
+	list_for_each_entry(field, head, link) {
+		num++;
+	}
+
+	setnvalue(ra, num);
 }
 
 /* e.allfield */
@@ -430,11 +439,13 @@ static void event_allfield(ktap_State *ks, struct ktap_event *e, StkId ra)
 	}
 	s[pos] = '\0';
 
-	setsvalue(ra, kp_tstring_new(ks, s));
+	setsvalue(ra, kp_tstring_new_local(ks, s));
 }
 
-static void event_field(ktap_State *ks, struct ktap_event *e, int index, StkId ra)
+static int event_fieldn(ktap_State *ks)
 {
+	struct ktap_event *e = ks->current_event;
+	int index = nvalue(GetArg(ks, 1));
 	struct ftrace_event_field *field;
 	struct list_head *head;
 
@@ -442,22 +453,20 @@ static void event_field(ktap_State *ks, struct ktap_event *e, int index, StkId r
 	list_for_each_entry_reverse(field, head, link) {
 		if ((--index == 0) && (field->size == 4)) {
 			int n = *(int *)((unsigned char *)e->entry + field->offset);
-			setnvalue(ra, n);
-			return;
+			setnvalue(ks->top++, n);
+			return 1;
 		}
 	}
 
-	setnilvalue(ra);
+	setnilvalue(ks->top++);
+	return 1;
 }
 
-
-static void event_field1(ktap_State *ks, struct ktap_event *e, StkId ra)
+/* e.field(N) */
+static void event_field(ktap_State *ks, struct ktap_event *e, StkId ra)
 {
-	event_field(ks, e, 1, ra);
+	setfvalue(ra, event_fieldn);
 }
-
-
-#define EVENT_FIELD_BASE	100
 
 static struct event_field_tbl {
 	char *name;
@@ -478,7 +487,8 @@ static struct event_field_tbl {
 	{"retval", event_retval},
 	{"set_retval", event_set_retval},
 	{"allfield", event_allfield},
-	{"field1", event_field1}
+	{"fieldnum", event_fieldnum},
+	{"field", event_field}
 };
 
 int kp_event_get_index(const char *field)
@@ -487,7 +497,7 @@ int kp_event_get_index(const char *field)
 
 	for (i = 0; i < ARRAY_SIZE(event_ftbl); i++) {
 		if (!strcmp(event_ftbl[i].name, field)) {
-			return EVENT_FIELD_BASE + i;
+			return i;
 		}
 	}
 
@@ -496,17 +506,13 @@ int kp_event_get_index(const char *field)
 
 Tstring *kp_event_get_ts(ktap_State *ks, int index)
 {
-	return kp_tstring_new(ks, event_ftbl[index - EVENT_FIELD_BASE].name);
+	return kp_tstring_new(ks, event_ftbl[index].name);
 }
 
 void kp_event_handle(ktap_State *ks, void *e, int index, StkId ra)
 {
 	e = (struct ktap_event *)e;
-
-	if (index < EVENT_FIELD_BASE) {
-		//event_field(ks, event, index, ra);
-	} else
-		event_ftbl[index - EVENT_FIELD_BASE].func(ks, e, ra);
+	event_ftbl[index].func(ks, e, ra);
 }
 
 

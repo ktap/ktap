@@ -495,7 +495,7 @@ typedef int ktap_Number;
 Tstring *kp_tstring_newlstr(ktap_State *ks, const char *str, size_t l);
 Tstring *kp_tstring_newlstr_local(ktap_State *ks, const char *str, size_t l);
 Tstring *kp_tstring_new(ktap_State *ks, const char *str);
-Tstring *kp_tstring_new_local(ktap_State *ks, const char *str, size_t l);
+Tstring *kp_tstring_new_local(ktap_State *ks, const char *str);
 int kp_tstring_eqstr(Tstring *a, Tstring *b);
 unsigned int kp_string_hash(const char *str, size_t l, unsigned int seed);
 int kp_tstring_eqlngstr(Tstring *a, Tstring *b);
