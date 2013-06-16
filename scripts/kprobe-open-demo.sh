@@ -5,9 +5,14 @@
 echo "perf probe -f do_sys_open"
 perf probe -f do_sys_open
 
-id=`cat /sys/kernel/debug/tracing/events/probe/do_sys_open/id`
+echo "perf probe -f do_sys_open%return"
+perf probe -f do_sys_open%return
 
-../ktap probe_by_id.kp $id
+id1=`cat /sys/kernel/debug/tracing/events/probe/do_sys_open/id`
+id2=`cat /sys/kernel/debug/tracing/events/probe/do_sys_open_1/id`
+
+../ktap probe_by_id.kp $id1 $id2
 
 perf probe --del probe:do_sys_open
+perf probe --del probe:do_sys_open_1
 
