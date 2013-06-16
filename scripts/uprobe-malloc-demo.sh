@@ -1,5 +1,7 @@
 #!/bin/bash
 
+#uretprobe is not demo in here, because uretprobe is only supported in 3.10 kernel
+
 machine_type=`getconf LONG_BIT`
 
 if [ $machine_type -eq 64 ]; then
