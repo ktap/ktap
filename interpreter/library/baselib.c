@@ -29,10 +29,11 @@ static int ktap_lib_next(ktap_State *ks)
 {
 	Table *t = hvalue(ks->top - 2);
 
-	if (kp_table_next(ks, t, ks->top)) {
-		ks->top += 2;
+	if (kp_table_next(ks, t, ks->top-1)) {
+		ks->top += 1;
 		return 2;
 	} else {
+		ks->top -= 1;
 		setnilvalue(ks->top++);
 		return 1;
 	}
