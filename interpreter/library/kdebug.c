@@ -672,7 +672,7 @@ static void enable_tracepoint(struct ftrace_event_call *call, void *data)
 		enable_tracepoint_on_cpu(cpu, &attr, call, arg, type);
 }
 
-static int start_probe_by_id(ktap_State *ks, int id, Closure *cl)
+static void start_probe_by_id(ktap_State *ks, int id, Closure *cl)
 {
 	struct ktap_probe_event *ktap_pevent;
 	struct perf_event_attr attr;
@@ -703,7 +703,7 @@ static int start_probe_by_id(ktap_State *ks, int id, Closure *cl)
 			kp_printf(ks, "unable create tracepoint event %d on cpu %d, err: %d\n",
 				  id, cpu, err);
 			kp_free(ks, ktap_pevent);
-			return -1;
+			return;
 		}
 
 		ktap_pevent->u.perf = event;
@@ -712,8 +712,6 @@ static int start_probe_by_id(ktap_State *ks, int id, Closure *cl)
 
 		perf_event_enable(event);
 	}
-
-	return 0;
 }
 
 struct list_head *ftrace_events_ptr;
@@ -883,7 +881,9 @@ static int ktap_lib_probe_by_id(ktap_State *ks)
 	if (!cl || (id < 0))
 		return -1;
 
-	return start_probe_by_id(ks, id, cl);
+	start_probe_by_id(ks, id, cl);
+
+	return 0;
 }
 
 
