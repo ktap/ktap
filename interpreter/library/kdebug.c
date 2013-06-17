@@ -219,6 +219,11 @@ static int event_function_tostring(ktap_State *ks)
 	struct trace_event *ev;
 	enum print_line_t ret = TRACE_TYPE_NO_CONSUME;
 
+	if (!e->call) {
+		setnilvalue(ks->top);
+		goto out;
+	}
+
 	/* Simulate the iterator */
 
 	/* iter can be a bit big for the stack, use percpu*/
@@ -240,6 +245,7 @@ static int event_function_tostring(ktap_State *ks)
 	} else
 		setnilvalue(ks->top);
 
+ out:
 	incr_top(ks);
 
 	return 1;
