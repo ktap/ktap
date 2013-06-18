@@ -16,7 +16,8 @@ function ktaprun {
 
 
 #####################################################
-ktaprun arg.kp 1 testing
+# arg.kp cannot use ktaprun because its string arguments
+./arg.kp 1 testing "2 3 4"
 ktaprun arith.kp
 ktaprun concat.kp
 ktaprun count.kp
