@@ -24,7 +24,7 @@ fi
 id1=`cat /sys/kernel/debug/tracing/events/probe_libc/malloc/id`
 id2=`cat /sys/kernel/debug/tracing/events/probe_libc/free/id`
 
-../ktap probe_by_id.kp $id1 $id2
+../ktap probe_by_id.kp "$id1 $id2"
 
 perf probe --del probe_libc:malloc
 perf probe --del probe_libc:free

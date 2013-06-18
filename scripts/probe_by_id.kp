@@ -4,11 +4,8 @@ function eventfun (e) {
 	printf("%d %d\t%s\t%s", cpu(), pid(), execname(), e.tostring())
 }
 
-for (n, id in pairs(arg)) {
-	if (n != 0) {
-		kdebug.probe_by_id(id, eventfun)
-	}
-}
+
+kdebug.probe_by_id(arg[1], eventfun)
 
 kdebug.probe_end(function () {
 	printf("probe end\n")
