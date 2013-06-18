@@ -16,8 +16,8 @@ typedef char u8;
 struct ktap_user_parm {
 	char *trunk;
 	int trunk_len;
-	char *argstr;
-	int arglen;
+	int argc;
+	char **argv;
 };
 
 enum {

@@ -35,12 +35,12 @@
  */
 void kp_printf(ktap_State *ks, const char *fmt, ...)
 {
-	char buff[512];
+	char buff[1024];
 	va_list args;
 	int len;
 
 	va_start(args, fmt);
-	len = vscnprintf(buff, 512, fmt, args);
+	len = vscnprintf(buff, 1024, fmt, args);
 	va_end(args);
 
 	kp_transport_write(ks, buff, len);

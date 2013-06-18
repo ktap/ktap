@@ -443,32 +443,46 @@ static void compile(const char *input)
 
 int main(int argc, char **argv)
 {
-	char argstr[128];
-	char *ptr = argstr;
-	int src_argindex, i, pos = 0;
+	char **ktapvm_argv;
+	char *filename;
+	int src_argindex, new_index, i;
 
 	if (argc == 1)
 		usage("");
 
 	src_argindex = parse_option(argc, argv);
+	filename = argv[src_argindex];
+	compile(filename);
 
-	compile(argv[src_argindex]);
-
-	strcpy(ptr, argv[src_argindex]);
-	ptr += strlen(argv[src_argindex]);
-	*(ptr++) = ' ';
-
-	/* pass rest argv into ktapvm */
-	for (i = src_argindex + 1; i < argc; i++) {
-		strcpy(ptr, argv[i]);
-		ptr += strlen(argv[i]);
-		*(ptr++) = ' ';
+	ktapvm_argv = (char **)malloc(sizeof(char *)*(argc-src_argindex+1));
+	if (!ktapvm_argv) {
+		fprintf(stderr, "canno allocate ktapvm_argv\n");
+		return -1;
 	}
 
-	*(ptr - 1) = '\0';
+	ktapvm_argv[0] = malloc(sizeof(strlen(filename)) + 1);
+	if (!ktapvm_argv[0]) {
+		fprintf(stderr, "canno allocate memory\n");
+		return -1;
+	}
+	strcpy(ktapvm_argv[0], filename);
+	ktapvm_argv[0][strlen(filename)] = '\0';
 
-	ktap_uparm.argstr = argstr;
-	ktap_uparm.arglen = ptr - argstr;
+	/* pass rest argv into ktapvm */
+	new_index = 1;
+	for (i = src_argindex + 1; i < argc; i++) {
+		ktapvm_argv[new_index] = malloc(strlen(argv[i]) + 1);
+		if (!ktapvm_argv[new_index]) {
+			fprintf(stderr, "canno allocate memory\n");
+			return -1;
+		}
+		strcpy(ktapvm_argv[new_index], argv[i]);
+		ktapvm_argv[new_index][strlen(argv[i])] = '\0';
+		new_index++;
+	}
+
+	ktap_uparm.argv = ktapvm_argv;
+	ktap_uparm.argc = new_index;
 
 	/* start running into kernel ktapvm */
 	run_ktapvm();

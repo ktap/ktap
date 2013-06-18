@@ -82,46 +82,88 @@ static int load_trunk(struct ktap_user_parm *uparm_ptr, unsigned long **buff)
 	return 0;
 }
 
+static char **copy_argv_from_user(struct ktap_user_parm *uparm_ptr)
+{
+	char **argv;
+	int i, j;
+	int ret;
+
+	argv = kmalloc(uparm_ptr->argc * sizeof(char *), GFP_KERNEL);
+	if (!argv) {
+		pr_err("out of memory");
+		return ERR_PTR(-ENOMEM);
+	}
+
+	ret = copy_from_user(argv, (void __user *)uparm_ptr->argv,
+			     uparm_ptr->argc * sizeof(char *));
+	if (ret < 0) {
+		kfree(argv);
+		return ERR_PTR(-EFAULT);
+	}
+
+	for (i = 0; i < uparm_ptr->argc; i++) {
+		char * __user ustr = argv[i];
+		char * kstr;
+		int len;
+
+		len = strlen_user(ustr);
+		kstr = kmalloc(len + 1, GFP_KERNEL);
+		if (!kstr) {
+			pr_err("out of memory");
+			goto error;
+		}
+
+		strncpy_from_user(kstr, ustr, len);
+		kstr[len] = '\0';
+		argv[i] = kstr;
+	}
+
+	return argv;
+ error:
+	for (j = 0; j < i; j++)
+		kfree(argv[j]);
+
+	kfree(argv);
+	return ERR_PTR(-ENOMEM);
+}
+
+static void free_argv(int argc, char **argv)
+{
+	int i;
+
+	for (i = 0; i < argc; i++)
+		kfree(argv[i]);
+
+	kfree(argv);
+}
+
+
 /* Ktap Main Entry */
 static int ktap_main(struct file *file, struct ktap_user_parm *uparm_ptr)
 {
 	unsigned long *buff = NULL;
 	ktap_State *ks;
 	Closure *cl;
-	int argc;
-	char **argv, *argstr;
+	char **argv;
 	int ret;
-
-	argstr = kmalloc(uparm_ptr->arglen, GFP_KERNEL);
-	if (!argstr)
-		return -ENOMEM;
-
-	ret = copy_from_user(argstr, (void __user *)uparm_ptr->argstr,
-			     uparm_ptr->arglen);
-	if (ret < 0) {
-		kfree(argstr);
-		return -EFAULT;
-	}
-
-	argv = argv_split(GFP_KERNEL, argstr, &argc);
-	if (!argv) {
-		kfree(argstr);
-		pr_err("out of memory");
-		return -ENOMEM;
-	}
-
-	kfree(argstr);
 
 	ret = load_trunk(uparm_ptr, &buff);
 	if (ret) {
 		pr_err("cannot load file %s\n", argv[0]);
-		argv_free(argv);
 		return ret;
 	}
 
-	ks = kp_newstate((ktap_State **)&file->private_data, argc, argv);
+	argv = copy_argv_from_user(uparm_ptr);
+	if (IS_ERR(argv)) {
+		vfree(buff);
+		return PTR_ERR(argv);
+	}
 
-	argv_free(argv);
+	ks = kp_newstate((ktap_State **)&file->private_data, uparm_ptr->argc, argv);
+
+	/* free argv memory after store into arg table */
+	free_argv(uparm_ptr->argc, argv);
+
 	if (unlikely(!ks)) {
 		vfree(buff);
 		return -ENOEXEC;

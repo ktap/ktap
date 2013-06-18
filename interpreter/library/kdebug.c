@@ -864,9 +864,11 @@ static int ktap_lib_probe(ktap_State *ks)
 
 static int ktap_lib_probe_by_id(ktap_State *ks)
 {
-	int id = nvalue(GetArg(ks, 1));
+	const char *ids_str = svalue(GetArg(ks, 1));
 	Tvalue *tracefunc;
 	Closure *cl;
+	char **argv;
+	int argc, i;
 
 	if (GetArgN(ks) >= 2) {
 		tracefunc = GetArg(ks, 2);
@@ -878,10 +880,21 @@ static int ktap_lib_probe_by_id(ktap_State *ks)
 	} else
 		cl = NULL;
 
-	if (!cl || (id < 0))
+	if (!cl)
 		return -1;
 
-	start_probe_by_id(ks, id, cl);
+	argv = argv_split(GFP_KERNEL, ids_str, &argc);
+	if (!argv)
+		return -1;
+
+	for (i = 0; i < argc; i++) {
+		int id;
+		if (!kstrtoint(argv[i], 10, &id)) {
+			start_probe_by_id(ks, id, cl);
+		}
+	}
+
+	argv_free(argv);
 
 	return 0;
 }
