@@ -1,3 +1,4 @@
+#!/usr/bin/env ktap
 
 function eventfun (e) {
 	printf("%s (execname %s); retval:%d\n", e.name, execname(), e.retval);

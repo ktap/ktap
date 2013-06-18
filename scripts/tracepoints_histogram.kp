@@ -1,3 +1,4 @@
+#!/usr/bin/env ktap
 
 # showing all tracepoints in histogram style
 

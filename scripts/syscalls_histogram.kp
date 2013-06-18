@@ -1,3 +1,5 @@
+#!/usr/bin/env ktap
+
 hist = {}
 
 function eventfun (e) {

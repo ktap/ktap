@@ -1,3 +1,4 @@
+#!/usr/bin/env ktap
 
 percpu_entry_timestamp = {}
 percpu_count = {}

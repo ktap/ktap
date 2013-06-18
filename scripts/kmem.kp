@@ -1,3 +1,4 @@
+#!/usr/bin/env ktap
 
 count1 = 0
 kdebug.probe("tp:kmem:kmalloc", function () {

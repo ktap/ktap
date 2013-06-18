@@ -1,3 +1,4 @@
+#!/usr/bin/env ktap
 
 function eventfun (e) {
 	if (execname() == "ls") {

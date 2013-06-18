@@ -1,3 +1,5 @@
+#!/usr/bin/env ktap
+
 function eventfun(e) {
 	printf(e.annotate)
 	printf("\n")

@@ -1,3 +1,5 @@
+#!/usr/bin/env ktap
+
 function failed() {
 	printf("failed\n");
 	exit(-1);

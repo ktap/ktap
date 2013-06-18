@@ -1,3 +1,5 @@
+#!/usr/bin/env ktap
+
 function eventfun (e) {
 	printf("%d %d\t%s\t%s", cpu(), pid(), execname(), e.tostring())
 }

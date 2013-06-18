@@ -1,3 +1,5 @@
+#!/usr/bin/env ktap
+
 # See kprobe.sh/uprobe.sh to know how to use this ktap script
 # this script can serve as tracepoint/kprobe/kretprobe/uprobe/uretprobe
 function eventfun (e) {
