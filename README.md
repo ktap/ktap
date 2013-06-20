@@ -42,10 +42,8 @@ Building & Running
 	[root@jovi]# ./ktap scripts/syscalls.kp
 
 
-Example of syscall tracing
---------------------------
-
-syscalls.kp:  
+A very small taste of syscall tracing
+-------------------------------------
 
 	trace "syscalls:*" function (e) {
 		printf("%d %d\t%s\t%s", cpu(), pid(), execname(), e.tostring())
