@@ -222,7 +222,6 @@ Tstring *ktapc_parse_eventdef(Tstring *eventdef)
 	strncpy(sys, def_str, separator - def_str);
 	strcpy(event, separator+1);
 
-	printf("%s %s\n", sys, event);
 	if (parse_events_add_tracepoint(sys, event))
 		return NULL;
 
