@@ -16,6 +16,9 @@ kdebug.probe("kprobe:schedule", eventfun);
 
 os.sleep(3)
 
+kdebug.traceoff()
+
 if (!count) {
 	failed()
 }
+

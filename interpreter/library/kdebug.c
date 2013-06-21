@@ -888,7 +888,6 @@ static int ktap_lib_probe_by_id(ktap_State *ks)
 	return 0;
 }
 
-
 static int ktap_lib_probe_end(ktap_State *ks)
 {
 	Tvalue *endfunc;
@@ -900,8 +899,23 @@ static int ktap_lib_probe_end(ktap_State *ks)
 
 	G(ks)->trace_end_closure = clvalue(endfunc);
 	return 0;
-
 }
+
+static int ktap_lib_traceoff(ktap_State *ks)
+{
+	end_probes(ks);
+
+	/* call trace_end_closure after probed end */
+	if (G(ks)->trace_end_closure) {
+		setcllvalue(ks->top, G(ks)->trace_end_closure);
+		incr_top(ks);
+		kp_call(ks, ks->top - 1, 0);
+		G(ks)->trace_end_closure = NULL;
+	}
+
+	return 0;
+}
+
 
 #if LINUX_VERSION_CODE > KERNEL_VERSION(3, 4, 0)
 #include <trace/events/printk.h>
@@ -980,6 +994,7 @@ void kp_probe_exit(ktap_State *ks)
 		setcllvalue(ks->top, G(ks)->trace_end_closure);
 		incr_top(ks);
 		kp_call(ks, ks->top - 1, 0);
+		G(ks)->trace_end_closure = NULL;
 	}
 
 	free_percpu(percpu_trace_iterator);
@@ -1024,9 +1039,10 @@ int kp_probe_init(ktap_State *ks)
 
 static const ktap_Reg kdebuglib_funcs[] = {
 	{"dumpstack", ktap_lib_dumpstack},
-	{"probe", ktap_lib_probe},
+	{"probe", ktap_lib_probe}, /* remove kdebug.probe soon, not use this */
 	{"probe_by_id", ktap_lib_probe_by_id},
 	{"probe_end", ktap_lib_probe_end},
+	{"traceoff", ktap_lib_traceoff},
 	{NULL}
 };
 

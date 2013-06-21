@@ -16,6 +16,8 @@ kdebug.probe("tp:sched", eventfun)
 
 os.sleep(10)
 
+kdebug.traceoff()
+
 if (!count) {
 	failed()
 }
