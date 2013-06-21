@@ -892,22 +892,17 @@ static int ktap_lib_probe_by_id(ktap_State *ks)
 static int ktap_lib_probe_end(ktap_State *ks)
 {
 	Tvalue *endfunc;
-	int no_wait = 0;
 
 	if (GetArgN(ks) == 0)
 		return 0;
 
 	endfunc = GetArg(ks, 1);
-	if (GetArgN(ks) >= 2)
-		no_wait = nvalue(GetArg(ks, 2));
 
-	if (!no_wait) {
-		kp_printf(ks, "Press Control-C to stop.\n");
-		set_current_state(TASK_INTERRUPTIBLE);
-		schedule();
-		if (fatal_signal_pending(current))
-			flush_signals(current);
-	}
+	kp_printf(ks, "Press Control-C to stop.\n");
+	set_current_state(TASK_INTERRUPTIBLE);
+	schedule();
+	if (fatal_signal_pending(current))
+		flush_signals(current);
 
 	end_probes(ks);
 

@@ -82,13 +82,6 @@ KTAP TRACING
  user press CTRL+C to stop tracing, then ktap will call endfunc function, user could
  show tracing results in that function, or do other things.
 
- If user don't want to wait in that function, to force tracing end, user can set
- second argument of kdebug.probe_end function:
-
- kdebug.probe_end (endfunc, 1)
-
- Normally this usage mainly purpose for end tracing after some timer expired.
-
 3). kdebug.dumpstack ()
  This function dump current thread stack into user.
 

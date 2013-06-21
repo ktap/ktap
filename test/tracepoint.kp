@@ -16,11 +16,7 @@ kdebug.probe("tp:sched", eventfun)
 
 os.sleep(10)
 
-# second argument 1 of trace_end means not waiting,
-# so user don't need press CTRL+C to stop tracing in here
+if (!count) {
+	failed()
+}
 
-kdebug.probe_end(function () {
-	if (!count) {
-		failed()
-	}
-}, 1)
