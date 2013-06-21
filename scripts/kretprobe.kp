@@ -6,10 +6,6 @@ function eventfun (e) {
 
 kdebug.probe("kprobe:vfs_read!", eventfun);
 
-kdebug.probe_end(function () {
-	printf("probe ending\n");
-})
-
 #Result:
 #vfs_read! (execname sshd); retval:38
 #vfs_read! (execname sshd); retval:38

@@ -8,11 +8,6 @@ KTAP Script Examples
 		printf("%d %d\t%s\t%s", cpu(), pid(), execname(), e.tostring())
 	}
 
-	trace_end function () {
-		printf("probe ending\n")
-	}
-
-
 2. timer example
 	timer.s(1, function () {
 		printf("1s timer hit\n");
@@ -25,6 +20,3 @@ KTAP Script Examples
 		printf("kprobe schedule hit\n");
 	});
 
-	kdebug.probe_end(function () {
-		printf("kprobe ending\n");
-	})

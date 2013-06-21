@@ -51,10 +51,6 @@ syscalls.kp:
 		printf("%d %d\t%s\t%s", cpu(), pid(), execname(), e.tostring())
 	}
 
-	trace_end function () {
-		printf("trace end\n")
-	}
-
 
 Mailing list
 ------------
