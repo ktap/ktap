@@ -605,62 +605,6 @@ static void perf_destructor(struct ktap_probe_event *ktap_pevent)
 	perf_event_release_kernel(ktap_pevent->u.perf);
 }
 
-static void enable_tracepoint_on_cpu(int cpu, struct perf_event_attr *attr,
-				     struct ftrace_event_call *call,
-				     struct ktap_trace_arg *arg, int type)
-{
-	struct ktap_probe_event *ktap_pevent;
-	struct perf_event *event;
-
-	ktap_pevent = kp_zalloc(arg->ks, sizeof(*ktap_pevent));
-	ktap_pevent->name = call->name;
-	ktap_pevent->ks = arg->ks;
-	ktap_pevent->cl = arg->cl;
-	ktap_pevent->type = type;
-	ktap_pevent->destructor = perf_destructor;
-	event = perf_event_create_kernel_counter(attr, cpu, NULL,
-						 ktap_overflow_callback, ktap_pevent);
-	if (IS_ERR(event)) {
-		int err = PTR_ERR(event);
-		kp_printf(arg->ks, "unable create tracepoint event %s on cpu %d, err: %d\n",
-				call->name, cpu, err);
-		kp_free(arg->ks, ktap_pevent);
-		return;
-	}
-
-	ktap_pevent->u.perf = event;
-	INIT_LIST_HEAD(&ktap_pevent->list);
-	list_add_tail(&ktap_pevent->list, &G(arg->ks)->probe_events_head);
-
-	perf_event_enable(event);
-}
-
-static void enable_tracepoint(struct ftrace_event_call *call, void *data)
-{
-	struct ktap_trace_arg *arg = data;
-	struct perf_event_attr attr;
-	int cpu, type = EVENT_TYPE_DEFAULT;
-
-	kp_printf(arg->ks, "enable tracepoint event: %s\n", call->name);
-
-	memset(&attr, 0, sizeof(attr));
-	attr.type = PERF_TYPE_TRACEPOINT;	
-	attr.config = call->event.type;
-	attr.sample_type = PERF_SAMPLE_RAW | PERF_SAMPLE_TIME |
-			   PERF_SAMPLE_CPU | PERF_SAMPLE_PERIOD;
-	attr.sample_period = 1;
-	attr.size = sizeof(attr);
-
-	if (!strncmp(call->name, "sys_enter_", 10)) {
-		type = EVENT_TYPE_SYSCALL_ENTER;
-	} else if (!strncmp(call->name, "sys_exit_", 9)) {
-		type = EVENT_TYPE_SYSCALL_EXIT;
-	}
-
-	for_each_online_cpu(cpu)
-		enable_tracepoint_on_cpu(cpu, &attr, call, arg, type);
-}
-
 static void start_probe_by_id(ktap_State *ks, int id, Closure *cl)
 {
 	struct ktap_probe_event *ktap_pevent;
@@ -703,98 +647,12 @@ static void start_probe_by_id(ktap_State *ks, int id, Closure *cl)
 	}
 }
 
-struct list_head *ftrace_events_ptr;
-
-typedef void (*ftrace_call_func)(struct ftrace_event_call * call, void *data);
-/* helper function for ktap register tracepoint */
-static void ftrace_on_event_call(const char *buf, ftrace_call_func actor,
-				 void *data)
-{
-	char *event = NULL, *sub = NULL, *match, *buf_ptr = NULL;
-	char new_buf[32] = {0};
-	struct ftrace_event_call *call;
-	ktap_State *ks = ((struct ktap_trace_arg *)data)->ks;
-	int total = 0;
-
-	if (buf) {
-		/* argument buf is const, so we need to prepare a changeable buff */
-		strncpy(new_buf, buf, 31);
-		buf_ptr = new_buf;
-	}
-
-	/*
-	 * The buf format can be <subsystem>:<event-name>
-	 *  *:<event-name> means any event by that name.
-	 *  :<event-name> is the same.
-	 *
-	 *  <subsystem>:* means all events in that subsystem
-	 *  <subsystem>: means the same.
-	 *
-	 *  <name> (no ':') means all events in a subsystem with
-	 *  the name <name> or any event that matches <name>
-	 */
-
-	match = strsep(&buf_ptr, ":");
-	if (buf_ptr) {
-		sub = match;
-		event = buf_ptr;
-		match = NULL;
-
-		if (!strlen(sub) || strcmp(sub, "*") == 0)
-			sub = NULL;
-		if (!strlen(event) || strcmp(event, "*") == 0)
-			event = NULL;
-	}
-
-	list_for_each_entry(call, ftrace_events_ptr, list) {
-		if (!call->name || !call->class || !call->class->reg)
-			continue;
-
-#if LINUX_VERSION_CODE > KERNEL_VERSION(3, 4, 0)
-		if (call->flags & TRACE_EVENT_FL_IGNORE_ENABLE)
-			continue;
-#endif
-
-		if (match &&
-		    strcmp(match, call->name) != 0 &&
-		    strcmp(match, call->class->system) != 0)
-			continue;
-
-		if (sub && strcmp(sub, call->class->system) != 0)
-			continue;
-
-		if (event && strcmp(event, call->name) != 0)
-			continue;
-
-		(*actor)(call, data);
-		total++;
-	}
-	kp_printf(ks, "total enabled %d events\n", total);
-}
-
-static int start_tracepoint(ktap_State *ks, const char *event_name, Closure *cl)
-{
-	struct ktap_trace_arg arg;
-
-	if (*event_name == '\0')
-		event_name = NULL;
-
-	arg.ks = ks;
-	arg.cl = cl;
-	ftrace_on_event_call(event_name, enable_tracepoint, (void *)&arg);
-	return 0;
-}
-
 static int start_probe(ktap_State *ks, const char *event_name, Closure *cl)
 {
 	if (!strncmp(event_name, "kprobe:", 7)) {
 		return start_kprobe(ks, event_name + 7, cl);
 	} else if (!strncmp(event_name, "kprobes:", 8)) {
 		return start_kprobe(ks, event_name + 8, cl);
-	} else if (!strncmp(event_name, "tracepoint:", 11)) {
-		return start_tracepoint(ks, event_name + 11, cl);
-	} else if (!strncmp(event_name, "tp:", 3)) {
-		return start_tracepoint(ks, event_name + 3, cl);
 	} else {
 		kp_printf(ks, "unknown probe event name: %s\n", event_name);
 		return -1;
@@ -1010,14 +868,6 @@ int kp_probe_init(ktap_State *ks)
 {
 	INIT_LIST_HEAD(&(G(ks)->probe_events_head));
 
-	/* get ftrace_events global variable if ftrace_events not exported */
-	ftrace_events_ptr =
-		(struct list_head *) kallsyms_lookup_name("ftrace_events");
-	if (!ftrace_events_ptr) {
-		kp_printf(ks, "cannot lookup ftrace_events in kallsyms\n");
-		return -1;
-	}
-
 #if LINUX_VERSION_CODE > KERNEL_VERSION(3, 4, 0)
 	if (register_trace_console(trace_console_func, ks)) {
 		kp_printf(ks, "cannot register trace console\n");
@@ -1035,7 +885,6 @@ int kp_probe_init(ktap_State *ks)
 	G(ks)->trace_enabled = 1;
 	return 0;
 }
-
 
 static const ktap_Reg kdebuglib_funcs[] = {
 	{"dumpstack", ktap_lib_dumpstack},

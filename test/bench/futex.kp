@@ -1,11 +1,4 @@
 #!/usr/bin/env ktap
 
-function eventfun (e) {
-}
-
-kdebug.probe("tp:syscalls:sys_enter_futex", eventfun)
-
-kdebug.probe_end(function () {
-	histogram(hist)
-})
+trace "syscalls:sys_enter_futex" function (e) {}
 
