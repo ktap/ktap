@@ -2,10 +2,8 @@
 
 hist = {}
 
-trace "syscalls:*" function (e) {
-	if (e.sc_is_enter) {
-		count(hist, execname())
-	}
+trace "syscalls:sys_enter_*" function (e) {
+	count(hist, execname())
 }
 
 trace_end function () {

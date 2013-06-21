@@ -56,8 +56,6 @@ KTAP TRACING
      see /sys/kernel/debug/tracing/events/*/*/format
  e.sc_nr
      get syscall number of event, only valid for syscall events.
- e.sc_is_enter
-     check if this is syscall enter event, only valid for syscall events.
  e.sc_arg1
      get argument 1 of syscall enter event.
  e.sc_arg2
