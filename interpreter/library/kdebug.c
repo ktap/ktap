@@ -272,7 +272,7 @@ void kp_show_event(ktap_State *ks)
 /* e.name */
 static void event_name(ktap_State *ks, struct ktap_event *e, StkId ra)
 {
-	setsvalue(ra, kp_tstring_new(ks, e->pevent->name));
+	setsvalue(ra, kp_tstring_new(ks, e->call->name));
 }
 
 /* e.print_fmt */
