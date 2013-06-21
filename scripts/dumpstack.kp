@@ -1,13 +1,11 @@
 #!/usr/bin/env ktap
 
-function eventfun(e) {
-	printf(e.annotate)
+trace "syscalls:sys_enter_open" function (e) {
+	printf("%s", e.tostring)
 	printf("\n")
 	kdebug.dumpstack()
 }
 
-kdebug.probe("tp:syscalls:sys_enter_open", eventfun);
-
-kdebug.probe_end(function () {
+trace_end function () {
 	print("trace ending\n")
-})
+}

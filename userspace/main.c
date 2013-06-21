@@ -120,10 +120,6 @@ void *ktapc_growaux(void *block, int *size, size_t size_elems, int limit,
 	return newblock;
 }
 
-
-
-
-
 /*************************************************************************/
 
 #define print_base(i) \
@@ -288,10 +284,7 @@ static void init_dummy_global_state()
         kp_tstring_resize(NULL, 32); /* set inital string hashtable size */
 }
 
-
 #define handle_error(str) do { perror(str); exit(-1); } while(0)
-
-
 
 static struct ktap_user_parm ktap_uparm;
 static int ktap_trunk_mem_size = 1024;
@@ -301,7 +294,7 @@ static int ktapc_writer(const void* p, size_t sz, void* ud)
 	int ret;
 
 	if (ktap_uparm.trunk_len + sz > ktap_trunk_mem_size) {
-		int new_size = ktap_trunk_mem_size * 2;
+		int new_size = (ktap_uparm.trunk_len + sz) * 2;
 		ktap_uparm.trunk = realloc(ktap_uparm.trunk, new_size);
 		ktap_trunk_mem_size = new_size;
 	}

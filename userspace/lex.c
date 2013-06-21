@@ -35,6 +35,7 @@
 
 /* ORDER RESERVED */
 static const char *const ktap_tokens [] = {
+	"trace", "trace_end",
 	"and", "break", "do", "else", "elseif",
 	"end", "false", "for", "function", "goto", "if",
 	"in", "local", "nil", "not", "or", "repeat",

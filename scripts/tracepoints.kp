@@ -1,11 +1,9 @@
 #!/usr/bin/env ktap
 
-function eventfun (e) {
+trace "*:*" function (e) {
 	printf("%d %d\t%s\t%s", cpu(), pid(), execname(), e.tostring())
 }
 
-kdebug.probe("tp:", eventfun)
-
-kdebug.probe_end(function () {
+trace_end function () {
 	printf("probe end\n")
-})
+}

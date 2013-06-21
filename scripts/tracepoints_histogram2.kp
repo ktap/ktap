@@ -4,15 +4,13 @@
 
 hist = {}
 
-function eventfun (e) {
+trace "*:*" function (e) {
 	count(hist, execname())
 }
 
-kdebug.probe("tp:", eventfun)
-
-kdebug.probe_end(function () {
+trace_end function () {
 	histogram(hist)
-})
+}
 
 #Results:
 #^C

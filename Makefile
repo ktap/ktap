@@ -40,6 +40,8 @@ $(UDIR)/util.o: $(UDIR)/util.c
 	$(QUIET_CC)$(CC) -g -o $@ -c $<
 $(UDIR)/ktapio.o: $(UDIR)/ktapio.c
 	$(QUIET_CC)$(CC) -g -o $@ -c $<
+$(UDIR)/eventdef.o: $(UDIR)/eventdef.c
+	$(QUIET_CC)$(CC) -g -o $@ -c $<
 $(UDIR)/opcode.o: $(INTP)/opcode.c
 	$(QUIET_CC)$(CC) -g -o $@ -c $<
 $(UDIR)/table.o: $(INTP)/table.c
@@ -57,6 +59,7 @@ KTAPOBJS += $(UDIR)/dump.o
 KTAPOBJS += $(UDIR)/main.o
 KTAPOBJS += $(UDIR)/util.o
 KTAPOBJS += $(UDIR)/ktapio.o
+KTAPOBJS += $(UDIR)/eventdef.o
 KTAPOBJS += $(UDIR)/opcode.o
 KTAPOBJS += $(UDIR)/table.o
 KTAPOBJS += $(UDIR)/tstring.o

@@ -47,15 +47,13 @@ Example of syscall tracing
 
 syscalls.kp:  
 
-	function eventfun (e) {
+	trace "syscalls:*" function (e) {
 		printf("%d %d\t%s\t%s", cpu(), pid(), execname(), e.tostring())
 	}
 
-	kdebug.probe("tp:syscalls", eventfun)
-
-	kdebug.probe_end(function () {
-		printf("probe end\n")
-	})
+	trace_end function () {
+		printf("trace end\n")
+	}
 
 
 Mailing list

@@ -1593,6 +1593,71 @@ static void retstat(LexState *ls)
 	testnext(ls, ';');  /* skip optional semicolon */
 }
 
+static void tracestat(LexState *ls)
+{
+	expdesc v0, key, args;
+	expdesc *v = &v0;
+	Tstring *kdebug_str = ktapc_ts_new("kdebug");
+	Tstring *probe_str = ktapc_ts_new("probe_by_id");
+	Tstring *probe_end_str = ktapc_ts_new("probe_end");
+	FuncState *fs = ls->fs;
+	int token = ls->t.token;
+	int line = ls->linenumber;
+	int base, nparams;
+
+	lex_next(ls);  /* skip "trace/trace_begin/trace_end" keyword */
+
+	/* kdebug */
+	singlevaraux(fs, ls->envn, v, 1);  /* get environment variable */
+	codestring(ls, &key, kdebug_str);  /* key is variable name */
+	codegen_indexed(fs, v, &key);  /* env[varname] */
+
+	/* fieldsel: kdebug.probe */
+	codegen_exp2anyregup(fs, v);
+	if (token == TK_TRACE)
+		codestring(ls, &key, probe_str);
+	else if (token == TK_TRACE_END)
+		codestring(ls, &key, probe_end_str);
+	codegen_indexed(fs, v, &key);
+
+	/* funcargs*/
+	codegen_exp2nextreg(fs, v);
+
+	if (token == TK_TRACE) {
+		/* argument: EVENTDEF string */
+		check(ls, TK_STRING);
+		enterlevel(ls);
+		Tstring *ts = ktapc_parse_eventdef(ls->t.seminfo.ts);
+		check_condition(ls, ts != NULL, "Cannot parse eventdef");
+		codestring(ls, &args, ts);
+		lex_next(ls);  /* skip EVENTDEF string */
+		leavelevel(ls);
+
+		codegen_exp2nextreg(fs, &args); /* for next argument */
+	}
+
+	/* argument: callback function */
+	enterlevel(ls);
+	simpleexp(ls, &args);
+	leavelevel(ls);
+
+	codegen_setmultret(fs, &args);
+
+	base = v->u.info;  /* base register for call */
+	if (hasmultret(args.k))
+		nparams = KTAP_MULTRET;  /* open call */
+	else {
+		codegen_exp2nextreg(fs, &args);  /* close last argument */
+		nparams = fs->freereg - (base+1);
+	}
+	init_exp(v, VCALL, codegen_codeABC(fs, OP_CALL, base, nparams+1, 2));
+	codegen_fixline(fs, line);
+	fs->freereg = base+1;
+
+	check_condition(ls, v->k == VCALL, "syntax error");
+	SETARG_C(getcode(fs, v), 1);  /* call statement uses no results */
+}
+
 static void statement (LexState *ls)
 {
 	int line = ls->linenumber;  /* may be needed for error messages */
@@ -1652,6 +1717,11 @@ static void statement (LexState *ls)
 		gotostat(ls, codegen_jump(ls->fs));
 		break;
 	}
+
+	case TK_TRACE:
+	case TK_TRACE_END:
+		tracestat(ls);
+		break;
 	default: {  /* stat -> func | assignment */
 		exprstat(ls);
 		break;

@@ -3,6 +3,10 @@
  * only can be included by userspace compiler
  */
 
+typedef int bool;
+#define false 0
+#define true 1
+
 #define MAX_INT         ((int)(~0U>>1))
 #define UCHAR_MAX	255
 
@@ -70,7 +74,8 @@
  */
 enum RESERVED {
 	/* terminal symbols denoted by reserved words */
-	TK_AND = FIRST_RESERVED, TK_BREAK,
+	TK_TRACE = FIRST_RESERVED, TK_TRACE_END,
+	TK_AND, TK_BREAK,
 	TK_DO, TK_ELSE, TK_ELSEIF, TK_END, TK_FALSE, TK_FOR, TK_FUNCTION,
 	TK_GOTO, TK_IF, TK_IN, TK_LOCAL, TK_NIL, TK_NOT, TK_OR, TK_REPEAT,
 	TK_RETURN, TK_THEN, TK_TRUE, TK_UNTIL, TK_WHILE,
@@ -300,6 +305,8 @@ void *ktapc_growaux(void *block, int *size, size_t size_elems, int limit,
 
 void ktapio_exit(void);
 int ktapio_create(void *);
+
+Tstring *ktapc_parse_eventdef(Tstring *eventdef);
 
 #define ktapc_equalobj(t1, t2)	kp_equalobjv(NULL, t1, t2)
 
