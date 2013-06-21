@@ -275,6 +275,7 @@ typedef struct global_State {
 	struct list_head timers;
 	struct list_head probe_events_head;
 	struct completion *user_completion;
+	Closure *trace_end_closure;
 #endif
 } global_State;
 

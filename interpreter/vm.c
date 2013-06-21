@@ -1094,7 +1094,7 @@ void kp_exit(ktap_State *ks)
 		return;
 	}
 	/* we need to flush all signals */
-	flush_signals(current);
+	//flush_signals(current);
 
 	kp_probe_exit(ks);
 	kp_exit_timers(ks);

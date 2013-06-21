@@ -898,22 +898,9 @@ static int ktap_lib_probe_end(ktap_State *ks)
 
 	endfunc = GetArg(ks, 1);
 
-	kp_printf(ks, "Press Control-C to stop.\n");
-	set_current_state(TASK_INTERRUPTIBLE);
-	schedule();
-	if (fatal_signal_pending(current))
-		flush_signals(current);
-
-	end_probes(ks);
-
-	/* newline for handle CTRL+C display as ^C */
-	kp_printf(ks, "\n");
-
-	setcllvalue(ks->top, clvalue(endfunc));
-	incr_top(ks);
-	
-	kp_call(ks, ks->top - 1, 0);
+	G(ks)->trace_end_closure = clvalue(endfunc);
 	return 0;
+
 }
 
 #if LINUX_VERSION_CODE > KERNEL_VERSION(3, 4, 0)
@@ -964,15 +951,36 @@ static int ktap_lib_dumpstack(ktap_State *ks)
 	kp_printf(ks, "your kernel version don't support ktap dumpstack\n");
 	return 0;
 }
-
 #endif
+
+static void wait_interrupt(ktap_State *ks)
+{
+	kp_printf(ks, "Press Control-C to stop.\n");
+	set_current_state(TASK_INTERRUPTIBLE);
+	schedule();
+
+	flush_signals(current);
+
+	/* newline for handle CTRL+C display as ^C */
+	kp_printf(ks, "\n");
+}
 
 void kp_probe_exit(ktap_State *ks)
 {
-	end_probes(ks);
-
 	if (!G(ks)->trace_enabled)
 		return;
+
+	if (!list_empty(&G(ks)->probe_events_head))
+		wait_interrupt(ks);
+
+	end_probes(ks);
+
+	/* call trace_end_closure after probed end */
+	if (G(ks)->trace_end_closure) {
+		setcllvalue(ks->top, G(ks)->trace_end_closure);
+		incr_top(ks);
+		kp_call(ks, ks->top - 1, 0);
+	}
 
 	free_percpu(percpu_trace_iterator);
 
