@@ -1,10 +1,10 @@
 /*
  * strfmt.c - printf implementation
  *
- * Author: Jovi Zhang <bookjovi@gmail.com>
- *         zhangwei(Jovi) <jovi.zhangwei@huawei.com>
+ * Copyright 2013 The ktap Project Developers.
+ * See the COPYRIGHT file at the top-level directory of this distribution.
  *
- * Code is copied from lua initially.
+ * The part of code is copied from lua initially in this file.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,

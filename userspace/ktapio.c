@@ -1,10 +1,8 @@
 /*
  * ktapio.c - relay transport in userspace
  *
- * Copyright (C) 2012-2013 Jovi Zhang
- *
- * Author: Jovi Zhang <bookjovi@gmail.com>
- *         zhangwei(Jovi) <jovi.zhangwei@huawei.com>
+ * Copyright 2013 The ktap Project Developers.
+ * See the COPYRIGHT file at the top-level directory of this distribution.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
