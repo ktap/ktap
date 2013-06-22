@@ -68,7 +68,6 @@ Building & Running
 License
 -------
 ktap is GPL licensed.
-See more info in ktap_license.txt.
 
 
 Contribution

@@ -60,7 +60,6 @@ http://www.freelists.org/list/ktap
 License
 -------
 ktap is GPL licensed.  
-See more info in doc/ktap-license.txt.
 
 
 Contribution
