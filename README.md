@@ -42,12 +42,27 @@ Building & Running
 	[root@jovi]# ./ktap scripts/syscalls.kp
 
 
-A very small taste of syscall tracing
+Small taste of syscall tracing
 -------------------------------------
+
+1) simple syscall tracing  
 
 	trace "syscalls:*" function (e) {
 		printf("%d %d\t%s\t%s", cpu(), pid(), execname(), e.tostring())
 	}
+
+2) histogram style syscall tracing  
+
+	hist = {}
+
+	trace "syscalls:sys_enter_*" function (e) {
+		    count(hist, e.name)
+	}
+
+	trace_end function () {
+		    histogram(hist)
+	}
+
 
 
 Mailing list
