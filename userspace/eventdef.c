@@ -91,14 +91,11 @@ static char *get_idstr()
 	return idstr;
 }
 
-static int add_tracepoint(char *sys_name, char *evt_name)
+static int add_event(char *evtid_path)
 {
-	char evtid_path[PATH_MAX];
 	char id_buf[24];
 	int id, fd;
 
-	snprintf(evtid_path, PATH_MAX, "%s/%s/%s/id", tracing_events_path,
-					sys_name, evt_name);
 	fd = open(evtid_path, O_RDONLY);
 	if (fd < 0) {
 		/*
@@ -129,6 +126,16 @@ static int add_tracepoint(char *sys_name, char *evt_name)
 	ids_array[id/8] = ids_array[id/8] | (1 << (id%8));
 
 	return 0;
+}
+
+static int add_tracepoint(char *sys_name, char *evt_name)
+{
+	char evtid_path[PATH_MAX] = {0};
+
+
+	snprintf(evtid_path, PATH_MAX, "%s/%s/%s/id", tracing_events_path,
+					sys_name, evt_name);
+	return add_event(evtid_path);
 }
 
 static int add_tracepoint_multi_event(char *sys_name, char *evt_name)
@@ -208,10 +215,49 @@ static int parse_events_add_tracepoint(char *sys, char *event)
 		return add_tracepoint_event(sys, event);
 }
 
+#define KPROBE_EVENTS_PATH "/sys/kernel/debug/tracing/kprobe_events"
+
+static int parse_events_add_kprobes(char *event)
+{
+	char probe_event[32] = {0};
+	int fd;
+	int ret;
+
+	fd = open(KPROBE_EVENTS_PATH, O_WRONLY);
+	if (fd < 0) {
+		fprintf(stderr, "Cannot open %s\n", KPROBE_EVENTS_PATH);
+		return -1;
+	}
+
+	sprintf(probe_event, "p:kprobes/ktap %s", event);
+
+	ret = write(fd, probe_event, strlen(probe_event));
+	if (ret <= 0) {
+		fprintf(stderr, "Cannot write %s to %s\n", event, KPROBE_EVENTS_PATH);
+		close(fd);
+		return -1;
+	}
+
+	close(fd);
+
+	ret = add_event("/sys/kernel/debug/tracing/events/kprobes/ktap/id");
+	if (ret < 0)
+		return -1;
+
+	return 0;
+}
+
+static int parse_events_add_uprobes(char *event)
+{
+
+}
+
+
 Tstring *ktapc_parse_eventdef(Tstring *eventdef)
 {
 	const char *def_str = getstr(eventdef);
 	char sys[32] = {0}, event[32] = {0}, *separator, *idstr;
+	int ret;
 
 	memset(ids_array, 0, sizeof(ids_array));
 
@@ -222,7 +268,12 @@ Tstring *ktapc_parse_eventdef(Tstring *eventdef)
 	strncpy(sys, def_str, separator - def_str);
 	strcpy(event, separator+1);
 
-	if (parse_events_add_tracepoint(sys, event))
+	if (!strcmp(sys, "kprobes")) {
+		ret = parse_events_add_kprobes(event);
+	} else
+		ret = parse_events_add_tracepoint(sys, event);
+
+	if (ret)
 		return NULL;
 
 	idstr = get_idstr();
