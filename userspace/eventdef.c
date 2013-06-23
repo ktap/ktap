@@ -233,7 +233,7 @@ static int parse_events_add_kprobes(char *event)
 
 	ret = write(fd, probe_event, strlen(probe_event));
 	if (ret <= 0) {
-		fprintf(stderr, "Cannot write %s to %s\n", event, KPROBE_EVENTS_PATH);
+		fprintf(stderr, "Cannot write %s to %s\n", probe_event, KPROBE_EVENTS_PATH);
 		close(fd);
 		return -1;
 	}
