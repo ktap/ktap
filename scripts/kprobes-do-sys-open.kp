@@ -1,0 +1,9 @@
+#!/usr/bin/env ktap
+
+trace "kprobes:do_sys_open dfd=%di filename=%dx flags=%cx mode=+4($stack)" function (e) {
+	printf("%20s\tentry:\t%s", execname(), e.tostring())
+}
+
+trace "kprobes:do_sys_open%return fd=%ax" function (e) {
+	printf("%20s\texit:\t%s", execname(), e.tostring())
+}
