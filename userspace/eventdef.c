@@ -217,9 +217,13 @@ static int parse_events_add_tracepoint(char *sys, char *event)
 
 #define KPROBE_EVENTS_PATH "/sys/kernel/debug/tracing/kprobe_events"
 
-static int parse_events_add_kprobes(char *event)
+static int parse_events_add_kprobes(char *old_event)
 {
-	char probe_event[32] = {0};
+	static int event_seq = 0;
+	char probe_event[128] = {0};
+	char event_id_path[128] = {0};
+	char *event;
+	char *r;
 	int fd;
 	int ret;
 
@@ -229,7 +233,14 @@ static int parse_events_add_kprobes(char *event)
 		return -1;
 	}
 
-	sprintf(probe_event, "p:kprobes/ktap %s", event);
+	event = strdup(old_event);
+
+	r = strstr(event, "%return");
+	if (r) {
+		memset(r, ' ', 7);
+		sprintf(probe_event, "r:kprobes/ktap%d %s", event_seq, event);
+	} else
+		sprintf(probe_event, "p:kprobes/ktap%d %s", event_seq, event);
 
 	ret = write(fd, probe_event, strlen(probe_event));
 	if (ret <= 0) {
@@ -240,10 +251,13 @@ static int parse_events_add_kprobes(char *event)
 
 	close(fd);
 
-	ret = add_event("/sys/kernel/debug/tracing/events/kprobes/ktap/id");
+	sprintf(event_id_path, "/sys/kernel/debug/tracing/events/kprobes/ktap%d/id",
+			event_seq);
+	ret = add_event(event_id_path);
 	if (ret < 0)
 		return -1;
 
+	event_seq++;
 	return 0;
 }
 
@@ -256,7 +270,7 @@ static int parse_events_add_uprobes(char *event)
 Tstring *ktapc_parse_eventdef(Tstring *eventdef)
 {
 	const char *def_str = getstr(eventdef);
-	char sys[32] = {0}, event[32] = {0}, *separator, *idstr;
+	char sys[128] = {0}, event[128] = {0}, *separator, *idstr;
 	int ret;
 
 	memset(ids_array, 0, sizeof(ids_array));
