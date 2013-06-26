@@ -238,9 +238,9 @@ static int parse_events_add_kprobes(char *old_event)
 	r = strstr(event, "%return");
 	if (r) {
 		memset(r, ' ', 7);
-		sprintf(probe_event, "r:kprobes/ktap%d %s", event_seq, event);
+		sprintf(probe_event, "r:kprobes/kp%d %s", event_seq, event);
 	} else
-		sprintf(probe_event, "p:kprobes/ktap%d %s", event_seq, event);
+		sprintf(probe_event, "p:kprobes/kp%d %s", event_seq, event);
 
 	ret = write(fd, probe_event, strlen(probe_event));
 	if (ret <= 0) {
@@ -251,7 +251,7 @@ static int parse_events_add_kprobes(char *old_event)
 
 	close(fd);
 
-	sprintf(event_id_path, "/sys/kernel/debug/tracing/events/kprobes/ktap%d/id",
+	sprintf(event_id_path, "/sys/kernel/debug/tracing/events/kprobes/kp%d/id",
 			event_seq);
 	ret = add_event(event_id_path);
 	if (ret < 0)
@@ -261,11 +261,52 @@ static int parse_events_add_kprobes(char *old_event)
 	return 0;
 }
 
-static int parse_events_add_uprobes(char *event)
+#define UPROBE_EVENTS_PATH "/sys/kernel/debug/tracing/uprobe_events"
+
+static int parse_events_add_uprobes(char *old_event)
 {
+	static int event_seq = 0;
+	char probe_event[128] = {0};
+	char event_id_path[128] = {0};
+	char *event;
+	char *r;
+	int fd;
+	int ret;
 
+	fd = open(UPROBE_EVENTS_PATH, O_WRONLY);
+	if (fd < 0) {
+		fprintf(stderr, "Cannot open %s\n", UPROBE_EVENTS_PATH);
+		return -1;
+	}
+
+	event = strdup(old_event);
+
+	r = strstr(event, "%return");
+	if (r) {
+		memset(r, ' ', 7);
+		sprintf(probe_event, "r:uprobes/kp%d %s", event_seq, event);
+	} else
+		sprintf(probe_event, "p:uprobes/kp%d %s", event_seq, event);
+
+	printf("[probe event] %s\n", probe_event);
+	ret = write(fd, probe_event, strlen(probe_event));
+	if (ret <= 0) {
+		fprintf(stderr, "Cannot write %s to %s\n", probe_event, UPROBE_EVENTS_PATH);
+		close(fd);
+		return -1;
+	}
+
+	close(fd);
+
+	sprintf(event_id_path, "/sys/kernel/debug/tracing/events/uprobes/kp%d/id",
+			event_seq);
+	ret = add_event(event_id_path);
+	if (ret < 0)
+		return -1;
+
+	event_seq++;
+	return 0;
 }
-
 
 Tstring *ktapc_parse_eventdef(Tstring *eventdef)
 {
@@ -277,8 +318,8 @@ Tstring *ktapc_parse_eventdef(Tstring *eventdef)
 		ids_array = malloc(IDS_ARRAY_SIZE);
 		if (!ids_array)
 			return NULL;
-		memset(ids_array, 0, sizeof(ids_array));
 	}
+	memset(ids_array, 0, IDS_ARRAY_SIZE);
 
 	separator = strchr(def_str, ':');
 	if (!separator || (separator == def_str)) {
@@ -289,6 +330,8 @@ Tstring *ktapc_parse_eventdef(Tstring *eventdef)
 
 	if (!strcmp(sys, "kprobes")) {
 		ret = parse_events_add_kprobes(event);
+	} else if (!strcmp(sys, "uprobes")) {
+		ret = parse_events_add_uprobes(event);
 	} else
 		ret = parse_events_add_tracepoint(sys, event);
 
