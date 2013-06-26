@@ -23,33 +23,34 @@ mod:
 modules_install:
 	$(MAKE) -C $(KERNEL_SRC) M=$(PWD) modules_install
 
+DEBUGINFO_FLAG=
 
 UDIR = userspace
 
 $(UDIR)/lex.o: $(UDIR)/lex.c
-	$(QUIET_CC)$(CC) -g -o $@ -c $<
+	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) -o $@ -c $<
 $(UDIR)/parser.o: $(UDIR)/parser.c
-	$(QUIET_CC)$(CC) -g -o $@ -c $<
+	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) -o $@ -c $<
 $(UDIR)/code.o: $(UDIR)/code.c
-	$(QUIET_CC)$(CC) -g -o $@ -c $<
+	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) -o $@ -c $<
 $(UDIR)/dump.o: $(UDIR)/dump.c
-	$(QUIET_CC)$(CC) -g -o $@ -c $<
+	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) -o $@ -c $<
 $(UDIR)/main.o: $(UDIR)/main.c
-	$(QUIET_CC)$(CC) -g -o $@ -c $<
+	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) -o $@ -c $<
 $(UDIR)/util.o: $(UDIR)/util.c
-	$(QUIET_CC)$(CC) -g -o $@ -c $<
+	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) -o $@ -c $<
 $(UDIR)/ktapio.o: $(UDIR)/ktapio.c
-	$(QUIET_CC)$(CC) -g -o $@ -c $<
+	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) -o $@ -c $<
 $(UDIR)/eventdef.o: $(UDIR)/eventdef.c
-	$(QUIET_CC)$(CC) -g -o $@ -c $<
+	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) -o $@ -c $<
 $(UDIR)/opcode.o: $(INTP)/opcode.c
-	$(QUIET_CC)$(CC) -g -o $@ -c $<
+	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) -o $@ -c $<
 $(UDIR)/table.o: $(INTP)/table.c
-	$(QUIET_CC)$(CC) -g -o $@ -c $<
+	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) -o $@ -c $<
 $(UDIR)/tstring.o: $(INTP)/tstring.c
-	$(QUIET_CC)$(CC) -g -o $@ -c $<
+	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) -o $@ -c $<
 $(UDIR)/object.o: $(INTP)/object.c
-	$(QUIET_CC)$(CC) -g -o $@ -c $<
+	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) -o $@ -c $<
 
 KTAPOBJS =
 KTAPOBJS += $(UDIR)/lex.o
@@ -66,7 +67,7 @@ KTAPOBJS += $(UDIR)/tstring.o
 KTAPOBJS += $(UDIR)/object.o
 
 ktap: $(KTAPOBJS)
-	$(QUIET_LINK)$(CC) -g -O2 -o $@ $(KTAPOBJS) -lpthread
+	$(QUIET_LINK)$(CC) $(DEBUGINFO_FLAG) -O2 -o $@ $(KTAPOBJS) -lpthread
 
 KMISC := /lib/modules/$(KVERSION)/ktapvm/
 
