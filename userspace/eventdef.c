@@ -35,10 +35,10 @@
 #include "../include/ktap_opcodes.h"
 #include "ktapc.h"
 
+static char tracing_events_path[] = "/sys/kernel/debug/tracing/events";
 
-static char tracing_events_path[PATH_MAX + 1] = "/sys/kernel/debug/tracing/events";
-
-static u8 ids_array[4096];
+#define IDS_ARRAY_SIZE 4096
+static u8 *ids_array;
 
 static int get_digit_len(int id)
 {
@@ -64,7 +64,7 @@ static char *get_idstr()
 	int total_len = 0;
 	int i;
 
-	for (i = 0; i < sizeof(ids_array)*8; i++) {
+	for (i = 0; i < IDS_ARRAY_SIZE*8; i++) {
 		if (ids_array[i/8] & (1 << (i%8)))
 			total_len += get_digit_len(i) + 1;
 	}
@@ -75,7 +75,7 @@ static char *get_idstr()
 
 	memset(idstr, 0, total_len);
 	ptr = idstr;
-	for (i = 0; i < sizeof(ids_array)*8; i++) {
+	for (i = 0; i < IDS_ARRAY_SIZE*8; i++) {
 		if (ids_array[i/8] & (1 << (i%8))) {
 			char digits[32] = {0};
 			int len;
@@ -113,9 +113,9 @@ static int add_event(char *evtid_path)
 
 	id = atoll(id_buf);
 
-	if (id >= sizeof(ids_array)) {
+	if (id >= IDS_ARRAY_SIZE * 8) {
 		fprintf(stderr, "tracepoint id(%d) is bigger than %d\n", id,
-				sizeof(ids_array));
+				IDS_ARRAY_SIZE * 8);
 		return -1;
 	}
 
@@ -273,7 +273,12 @@ Tstring *ktapc_parse_eventdef(Tstring *eventdef)
 	char sys[128] = {0}, event[128] = {0}, *separator, *idstr;
 	int ret;
 
-	memset(ids_array, 0, sizeof(ids_array));
+	if (!ids_array) {
+		ids_array = malloc(IDS_ARRAY_SIZE);
+		if (!ids_array)
+			return NULL;
+		memset(ids_array, 0, sizeof(ids_array));
+	}
 
 	separator = strchr(def_str, ':');
 	if (!separator || (separator == def_str)) {
