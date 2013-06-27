@@ -46,12 +46,12 @@ Implementing
   for static compiled language, use systemtap is enough.
 - benchmark for ktap
 - sometimes cannot stop script
-- eventdef should be parsed in compiler, not interpreter, and unify tracepoint and kprobe/uprobe
-
+- let ktap support stapsdt in userspace binary (for example: libc)
 
 Completed
 ---------
 
+- eventdef should be parsed in compiler, not interpreter, and unify tracepoint and kprobe/uprobe
 - event based tracing infrastructure
 - Drop ftrace.patch
 - table stat showing
