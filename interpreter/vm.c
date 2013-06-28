@@ -27,8 +27,7 @@
 #include <linux/signal.h>
 #include <linux/delay.h>
 #include <linux/sched.h>
-#include <linux/completion.h>
-#include <linux/freezer.h>
+#include <linux/semaphore.h>
 #include "../include/ktap.h"
 
 #define KTAP_MINSTACK 20
@@ -1061,27 +1060,14 @@ ktap_State *kp_newthread(ktap_State *mainthread)
 
 void kp_user_complete(ktap_State *ks)
 {
-	if (!ks || !G(ks)->user_completion)
-		return;
-
-	complete(G(ks)->user_completion);
-	G(ks)->user_completion = NULL;
+	up(&G(ks)->sync_sem);
 }
 
 static void wait_user_completion(ktap_State *ks)
 {
-	struct completion t;
-
-	G(ks)->user_completion = &t;
-	init_completion(&t);
-
-	freezer_do_not_count();
-	wait_for_completion(&t);
-	freezer_count();
-
-	G(ks)->user_completion = NULL;
+	G(ks)->exit = 1;
+	down(&G(ks)->sync_sem);
 }
-
 
 /* todo: how to process not-mainthread exit? */
 void kp_exit(ktap_State *ks)
@@ -1130,10 +1116,11 @@ ktap_State *kp_newstate(ktap_State **private_data, int argc, char **argv)
 	G(ks)->seed = 201236; /* todo: make more random in */
 	G(ks)->task = current;
 	INIT_LIST_HEAD(&(G(ks)->timers));
+	sema_init(&G(ks)->sync_sem, 0); /* init as 0, not 1 */
+	G(ks)->exit = 0;
 
 	if (cfunction_cache_init(ks) < 0)
 		return NULL;
-
 
 	ret = kp_transport_init(ks);
 	if (ret)
@@ -1164,5 +1151,4 @@ ktap_State *kp_newstate(ktap_State **private_data, int argc, char **argv)
 
 	return ks;
 }
-
 

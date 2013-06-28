@@ -187,6 +187,7 @@ static void print_version(void)
 static long ktap_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
 	struct ktap_user_parm uparm;
+	ktap_State *ks = file->private_data;
 	int ret;
 
 	switch (cmd) {
@@ -200,11 +201,12 @@ static long ktap_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 			return -EFAULT;
 
 		return ktap_main(file, &uparm);
-	case KTAP_CMD_USER_COMPLETE: {
-		ktap_State *ks = file->private_data;
+	case KTAP_CMD_USER_COMPLETE:
+		if (!ks)
+			return 0;
+
 		kp_user_complete(ks);
 		break;
-		}
 	default:
 		return -EINVAL;
 	};
@@ -219,7 +221,7 @@ static unsigned int ktap_poll(struct file *file, poll_table *wait)
 	if (!ks)
 		return 0;
 
-	if (G(ks)->user_completion)
+	if (G(ks)->exit)
 		return POLLERR;
 
 	return 0;
@@ -230,8 +232,6 @@ static const struct file_operations ktap_fops = {
 	.unlocked_ioctl         = ktap_ioctl,
 	.poll			= ktap_poll
 };
-
-
 
 static long ktapvm_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
@@ -287,7 +287,6 @@ static void __exit exit_ktap(void)
 {
 	debugfs_remove_recursive(ktap_dir);
 }
-
 
 module_init(init_ktap);
 module_exit(exit_ktap);

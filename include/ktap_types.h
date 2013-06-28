@@ -6,6 +6,7 @@
 #ifdef __KERNEL__
 #include <linux/module.h>
 #include <linux/slab.h>
+#include <linux/semaphore.h>
 #else
 typedef char u8;
 #include <stdlib.h>
@@ -274,7 +275,8 @@ typedef struct global_State {
 	int trace_enabled;
 	struct list_head timers;
 	struct list_head probe_events_head;
-	struct completion *user_completion;
+	int exit;
+	struct semaphore sync_sem;
 	Closure *trace_end_closure;
 #endif
 } global_State;
