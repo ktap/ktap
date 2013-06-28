@@ -319,6 +319,13 @@ static int parse_events_add_probe(char *old_event)
 		return parse_events_add_uprobe(old_event);
 }
 
+static int parse_events_add_stapsdt(char *old_event)
+{
+	printf("Currently ktap don't support stapsdt, please waiting\n");
+
+	return -1;
+}
+
 Tstring *ktapc_parse_eventdef(Tstring *eventdef)
 {
 	const char *def_str = getstr(eventdef);
@@ -342,6 +349,8 @@ Tstring *ktapc_parse_eventdef(Tstring *eventdef)
 
 	if (!strcmp(sys, "probe"))
 		ret = parse_events_add_probe(event);
+	else if (!strcmp(sys, "stapsdt"))
+		ret = parse_events_add_stapsdt(event);
 	else
 		ret = parse_events_add_tracepoint(sys, event);
 
