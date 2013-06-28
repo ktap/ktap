@@ -1068,21 +1068,18 @@ void kp_user_complete(ktap_State *ks)
 	G(ks)->user_completion = NULL;
 }
 
-static int wait_user_completion(ktap_State *ks)
+static void wait_user_completion(ktap_State *ks)
 {
 	struct completion t;
-	int killed;
 
 	G(ks)->user_completion = &t;
 	init_completion(&t);
 
 	freezer_do_not_count();
-	killed = wait_for_completion_interruptible(&t);
+	wait_for_completion(&t);
 	freezer_count();
 
 	G(ks)->user_completion = NULL;
-
-	return killed;
 }
 
 
@@ -1093,8 +1090,6 @@ void kp_exit(ktap_State *ks)
 		kp_printf(ks, "Error: ktap_exit called by non mainthread\n");
 		return;
 	}
-	/* we need to flush all signals */
-	//flush_signals(current);
 
 	kp_probe_exit(ks);
 	kp_exit_timers(ks);
@@ -1108,7 +1103,6 @@ void kp_exit(ktap_State *ks)
 	cfunction_cache_exit(ks);
 
 	wait_user_completion(ks);
-	flush_signals(current);
 
 	kp_transport_exit(ks);
 
