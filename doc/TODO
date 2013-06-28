@@ -47,6 +47,10 @@ Implementing
 - benchmark for ktap
 - sometimes cannot stop script
 - let ktap support stapsdt in userspace binary (for example: libc)
+	(See: readelf -n /lib/libc.so.6)
+	(http://sourceware.org/systemtap/wiki/AddingUserSpaceProbingToApps)
+	(http://www.sourceware.org/ml/systemtap/2010-q3/msg00145.html)
+	(EVENTDEF: trace "stapsdt:libc:setjmp" function (e) { BODY } )
 
 Completed
 ---------
