@@ -21,6 +21,15 @@ explore the system in an easy way.
 More information can be found at doc/ directory.
 
 
+Highlights
+----------
+
+- simple but powerful script language(forked by lua, proven to be fast)
+- register based virtual machine in Linux kernel
+- small and lightweight
+- safty in sandbox
+- support static tracepoint, kprobe, kretprobe, uprobe, uretprobe, timer, dumpstack
+
 Building & Running
 ------------------
 
