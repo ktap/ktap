@@ -1,9 +1,9 @@
 #!/usr/bin/env ktap
 
-trace "uprobes:/lib/libc.so.6:0x000773c0" function (e) {
+trace "probe:/lib/libc.so.6:0x000773c0" function (e) {
 	printf("%20s\tentry:\t%s", execname(), e.tostring())
 }
 
-trace "uprobes:/lib/libc.so.6:0x000773c0%return" function (e) {
+trace "probe:/lib/libc.so.6:0x000773c0%return" function (e) {
 	printf("%20s\texit:\t%s", execname(), e.tostring())
 }

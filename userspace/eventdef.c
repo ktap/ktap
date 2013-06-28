@@ -217,7 +217,7 @@ static int parse_events_add_tracepoint(char *sys, char *event)
 
 #define KPROBE_EVENTS_PATH "/sys/kernel/debug/tracing/kprobe_events"
 
-static int parse_events_add_kprobes(char *old_event)
+static int parse_events_add_kprobe(char *old_event)
 {
 	static int event_seq = 0;
 	char probe_event[128] = {0};
@@ -263,7 +263,7 @@ static int parse_events_add_kprobes(char *old_event)
 
 #define UPROBE_EVENTS_PATH "/sys/kernel/debug/tracing/uprobe_events"
 
-static int parse_events_add_uprobes(char *old_event)
+static int parse_events_add_uprobe(char *old_event)
 {
 	static int event_seq = 0;
 	char probe_event[128] = {0};
@@ -308,6 +308,17 @@ static int parse_events_add_uprobes(char *old_event)
 	return 0;
 }
 
+static int parse_events_add_probe(char *old_event)
+{
+	char *separator;
+
+	separator = strchr(old_event, ':');
+	if (!separator || (separator == old_event))
+		return parse_events_add_kprobe(old_event);
+	else
+		return parse_events_add_uprobe(old_event);
+}
+
 Tstring *ktapc_parse_eventdef(Tstring *eventdef)
 {
 	const char *def_str = getstr(eventdef);
@@ -325,14 +336,13 @@ Tstring *ktapc_parse_eventdef(Tstring *eventdef)
 	if (!separator || (separator == def_str)) {
 		return NULL;
 	}
+
 	strncpy(sys, def_str, separator - def_str);
 	strcpy(event, separator+1);
 
-	if (!strcmp(sys, "kprobes")) {
-		ret = parse_events_add_kprobes(event);
-	} else if (!strcmp(sys, "uprobes")) {
-		ret = parse_events_add_uprobes(event);
-	} else
+	if (!strcmp(sys, "probe"))
+		ret = parse_events_add_probe(event);
+	else
 		ret = parse_events_add_tracepoint(sys, event);
 
 	if (ret)
