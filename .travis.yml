@@ -1,1 +1,2 @@
 language: C
+script: "sudo id; make; make install"
