@@ -106,7 +106,9 @@ static int ktap_lib_printf(ktap_State *ks)
 static int ktap_lib_exit(ktap_State *ks)
 {
 	kp_exit(ks);
-	return 0;
+
+	/* do not execute bytecode any more in this thread */
+	return -1;
 }
 
 static int ktap_lib_pid(ktap_State *ks)

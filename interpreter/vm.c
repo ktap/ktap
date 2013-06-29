@@ -341,6 +341,9 @@ static int precall(ktap_State *ks, StkId func, int nresults)
 		ci->top = ks->top + KTAP_MINSTACK;
 		ci->callstatus = 0;
 		n = (*f)(ks);
+		if (n < 0)
+			return n;
+
 		poscall(ks, ks->top - n);
 		return 1;
 	case KTAP_TLCL:	
@@ -1073,7 +1076,7 @@ static void wait_user_completion(ktap_State *ks)
 void kp_exit(ktap_State *ks)
 {
 	if (ks != G(ks)->mainthread) {
-		kp_printf(ks, "Error: ktap_exit called by non mainthread\n");
+		wake_up_process(G(ks)->task);
 		return;
 	}
 
