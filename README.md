@@ -51,7 +51,7 @@ Building & Running
 	[root@jovi]# ./ktap scripts/syscalls.kp
 
 
-Small taste of syscall tracing
+Examples
 -------------------------------------
 
 1) simple syscall tracing  
@@ -108,6 +108,32 @@ Small taste of syscall tracing
               sys_enter_mprotect |                                       9
 			     ...
 
+3) kprobe tracing (do_sys_open)
+
+	[root@jovi]# cat scripts/kprobes-do-sys-open.kp
+	trace "probe:do_sys_open dfd=%di filename=%dx flags=%cx mode=+4($stack)" function (e) {
+		printf("%20s\tentry:\t%s", execname(), e.tostring())
+	}
+
+	trace "probe:do_sys_open%return fd=$retval" function (e) {
+		printf("%20s\texit:\t%s", execname(), e.tostring())
+	}
+
+
+4) uprobe tracing (malloc)
+
+	[root@jovi]# cat scripts/uprobes-malloc.kp
+	#do not use 0x000773c0 in your system,
+	#you need to calculate libc malloc symbol offset in your own system.
+	#symbol resolve will support in future
+
+	trace "probe:/lib/libc.so.6:0x000773c0" function (e) {
+		printf("%20s\tentry:\t%s", execname(), e.tostring())
+	}
+
+	trace "probe:/lib/libc.so.6:0x000773c0%return" function (e) {
+		printf("%20s\texit:\t%s", execname(), e.tostring())
+	}
 
 Mailing list
 ------------
