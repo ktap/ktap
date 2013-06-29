@@ -579,6 +579,9 @@ static void ktap_overflow_callback(struct perf_event *event,
 	ktap_pevent = event->overflow_handler_context;
 	ks = ktap_pevent->ks;
 
+	if (same_thread_group(current, G(ks)->task))
+		return;
+
 	e.pevent = ktap_pevent;
 	e.call = event->tp_event;
 	e.entry = data->raw->data;
@@ -589,12 +592,8 @@ static void ktap_overflow_callback(struct perf_event *event,
 	local_irq_save(irq_flags);
 	__this_cpu_write(ktap_in_tracing, true);
 
-	if (same_thread_group(current, G(ks)->task))
-		goto out;
-
 	ktap_call_probe_closure(ks, ktap_pevent->cl, &e);
 
- out:
 	__this_cpu_write(ktap_in_tracing, false);
 	local_irq_restore(irq_flags);
 }
