@@ -1,10 +1,8 @@
 #!/usr/bin/env ktap
 
-function eventfun (e) {
+trace "probe:vfs_read%return " function (e) {
 	printf("%s (execname %s); retval:%d\n", e.name, execname(), e.retval);
 }
-
-kdebug.probe("kprobe:vfs_read!", eventfun);
 
 #Result:
 #vfs_read! (execname sshd); retval:38

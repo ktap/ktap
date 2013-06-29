@@ -29,12 +29,12 @@ function func_exit (e) {
 	}
 }
 
-printf("measure time of function %s:\n", arg[1]);
+printf("measure time of function vfs_read\n");
 
-kdebug.probe("kprobe:" .. arg[1], func_entry);
-kdebug.probe("kprobe:" .. arg[1] .. "!", func_exit);
+trace "probe:vfs_read" func_entry
+trace "probe:vfs_read%return" func_exit
 
-kdebug.probe_end(function () {
+trace_end function () {
 	printf("cpu\tnum\tavg\tmax\tmin\n");
 	printf("-----------------------------------\n")
 
@@ -45,10 +45,10 @@ kdebug.probe_end(function () {
 				percpu_count_max[cpu], percpu_count_min[cpu])
 		}
 	}
-})
+}
 
 #Result:
-#[root@jovi ktap]# ./ktap scripts/funtion_time.kp vfs_read
+#[root@jovi ktap]# ./ktap scripts/funtion_time.kp
 #Press Control-C to stop.
 #measure time of function vfs_read:
 #^C

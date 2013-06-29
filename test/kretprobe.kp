@@ -8,11 +8,9 @@ function failed() {
 #----------------------------------------#
 
 count = 0
-function eventfun (e) {
+trace "probe:__schedule%return" function (e) {
 	count = count + 1
 }
-
-kdebug.probe("kprobe:__schedule!", eventfun);
 
 os.sleep(3*1000)
 
