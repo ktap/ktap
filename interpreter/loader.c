@@ -292,7 +292,7 @@ Closure *kp_load(ktap_State *ks, unsigned char *buff)
 	if (f->nupvalues == 1) {
 		Table *reg = hvalue(&G(ks)->registry);
 		const Tvalue *gt = kp_table_getint(reg, KTAP_RIDX_GLOBALS);
-		setobj(ks, f->upvals[0]->v, gt);
+		setobj(f->upvals[0]->v, gt);
 	}
 
 	verify_code(&S, cl->l.p);

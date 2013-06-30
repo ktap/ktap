@@ -202,15 +202,15 @@ int kp_table_next(ktap_State *ks, Table *t, StkId key)
 	for (i++; i < t->sizearray; i++) {  /* try first array part */
 	        if (!ttisnil(&t->array[i])) {  /* a non-nil value? */
 			setnvalue(key, i+1);
-			setobj(ks, key+1, &t->array[i]);
+			setobj(key+1, &t->array[i]);
 			return 1;
 		}
 	}
 
 	for (i -= t->sizearray; i < sizenode(t); i++) {  /* then hash part */
 		if (!ttisnil(gval(gnode(t, i)))) {  /* a non-nil value? */
-			setobj(ks, key, gkey(gnode(t, i)));
-			setobj(ks, key+1, gval(gnode(t, i)));
+			setobj(key, gkey(gnode(t, i)));
+			setobj(key+1, gval(gnode(t, i)));
 			return 1;
 		}
 	}
@@ -374,7 +374,7 @@ void kp_table_resize(ktap_State *ks, Table *t, int nasize, int nhsize)
 			/* doesn't need barrier/invalidate cache, as entry was
 			 * already present in the table
 			 */
-			setobj(ks, kp_table_set(ks, t, gkey(old)), gval(old));
+			setobj(kp_table_set(ks, t, gkey(old)), gval(old));
 		}
 	}
 
@@ -452,7 +452,7 @@ static Tvalue *table_newkey(ktap_State *ks, Table *t, const Tvalue *key)
 			mp = n;
 		}
 	}
-	setobj(ks, gkey(mp), key);
+	setobj(gkey(mp), key);
 	return gval(mp);
 }
 
@@ -520,7 +520,7 @@ Tvalue *kp_table_set(ktap_State *ks, Table *t, const Tvalue *key)
 
 void kp_table_setvalue(ktap_State *ks, Table *t, const Tvalue *key, Tvalue *val)
 {
-	setobj(ks, kp_table_set(ks, t, key), val);
+	setobj(kp_table_set(ks, t, key), val);
 }
 
 
@@ -537,7 +537,7 @@ void kp_table_setint(ktap_State *ks, Table *t, int key, Tvalue *v)
 		cell = table_newkey(ks, t, &k);
 	}
 
-	setobj(ks, cell, v);
+	setobj(cell, v);
 }
 
 int kp_table_length(ktap_State *ks, Table *t)
@@ -665,8 +665,8 @@ void kp_table_histogram(ktap_State *ks, Table *t)
 			goto error;
 
 		num = nvalue(gval(n));
-		setobj(ks, &thr[count].key, gkey(n));
-		setobj(ks, &thr[count].val, gval(n));
+		setobj(&thr[count].key, gkey(n));
+		setobj(&thr[count].val, gval(n));
 		count++;
 		total += nvalue(gval(n));
 	}

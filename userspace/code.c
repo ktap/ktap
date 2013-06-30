@@ -329,7 +329,7 @@ static int addk(FuncState *fs, Tvalue *key, Tvalue *v)
 	ktapc_growvector(f->k, k, f->sizek, Tvalue, MAXARG_Ax, "constants");
 	while (oldsize < f->sizek)
 		setnilvalue(&f->k[oldsize++]);
-	setobj(NULL, &f->k[k], v);
+	setobj(&f->k[k], v);
 	fs->nk++;
 	return k;
 }

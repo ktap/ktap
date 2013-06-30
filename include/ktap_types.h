@@ -469,7 +469,7 @@ typedef int ktap_Number;
 #define setevalue(obj, x) \
   { Tvalue *io=(obj); val_(io).p = (x); settype(io, KTAP_TEVENT); }
 
-#define setobj(ks,obj1,obj2) \
+#define setobj(obj1,obj2) \
         { const Tvalue *io2=(obj2); Tvalue *io1=(obj1); \
           io1->val = io2->val; io1->type = io2->type; }
 

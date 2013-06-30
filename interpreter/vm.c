@@ -183,7 +183,7 @@ static void pushclosure(ktap_State *ks, Proto *p, Upval **encup, StkId base,
 
 static void gettable(ktap_State *ks, const Tvalue *t, Tvalue *key, StkId val)
 {
-	setobj(ks, val, kp_table_get(hvalue(t), key));
+	setobj(val, kp_table_get(hvalue(t), key));
 }
 
 static void settable(ktap_State *ks, const Tvalue *t, Tvalue *key, StkId val)
@@ -254,7 +254,7 @@ static StkId adjust_varargs(ktap_State *ks, Proto *p, int actual)
 	base = ks->top;  /* final position of first argument */
 
 	for (i=0; i < nfixargs; i++) {
-		setobj(ks, ks->top++, fixed + i);
+		setobj(ks->top++, fixed + i);
 		setnilvalue(fixed + i);
 	}
 
@@ -275,7 +275,7 @@ static int poscall(ktap_State *ks, StkId first_result)
 	ks->ci = ci = ci->prev;
 
 	for (i = wanted; i != 0 && first_result < ks->top; i--)
-		setobj(ks, res++, first_result++);
+		setobj(res++, first_result++);
 
 	while(i-- > 0)
 		setnilvalue(res++);
@@ -447,13 +447,13 @@ static void ktap_execute(ktap_State *ks)
 
 	switch (opcode) {
 	case OP_MOVE:
-		setobj(ks, ra, base + GETARG_B(instr));
+		setobj(ra, base + GETARG_B(instr));
 		break;
 	case OP_LOADK:
-		setobj(ks, ra, k + GETARG_Bx(instr));
+		setobj(ra, k + GETARG_Bx(instr));
 		break;
 	case OP_LOADKX:
-		setobj(ks, ra, k + GETARG_Ax(*ci->u.l.savedpc++));
+		setobj(ra, k + GETARG_Ax(*ci->u.l.savedpc++));
 		break;
 	case OP_LOADBOOL:
 		setbvalue(ra, GETARG_B(instr));
@@ -469,7 +469,7 @@ static void ktap_execute(ktap_State *ks)
 		}
 	case OP_GETUPVAL: {
 		int b = GETARG_B(instr);
-		setobj(ks, ra, cl->upvals[b]->v);
+		setobj(ra, cl->upvals[b]->v);
 		break;
 		}
 	case OP_GETTABUP: {
@@ -490,7 +490,7 @@ static void ktap_execute(ktap_State *ks)
 		}
 	case OP_SETUPVAL: {
 		Upval *uv = cl->upvals[GETARG_B(instr)];
-		setobj(ks, uv->v, ra);
+		setobj(uv->v, ra);
 		break;
 		}
 	case OP_SETTABLE:
@@ -509,7 +509,7 @@ static void ktap_execute(ktap_State *ks)
 		}
 	case OP_SELF: {
 		StkId rb = RB(instr);
-		setobj(ks, ra+1, rb);
+		setobj(ra+1, rb);
 		gettable(ks, rb, RKC(instr), ra);
 		base = ci->u.l.base;
 		break;
@@ -609,7 +609,7 @@ static void ktap_execute(ktap_State *ks)
 		if (GETARG_C(instr) ? isfalse(rb) : !isfalse(rb))
 			ci->u.l.savedpc++;
 		else {
-			setobj(ks, ra, rb);
+			setobj(ra, rb);
 			donextjump(ci);
 		}
 		break;
@@ -662,7 +662,7 @@ static void ktap_execute(ktap_State *ks)
 
 			/* move new frame into old one */
 			for (aux = 0; nfunc + aux < lim; aux++)
-				setobj(ks, ofunc + aux, nfunc + aux);
+				setobj(ofunc + aux, nfunc + aux);
 			oci->u.l.base = ofunc + (nci->u.l.base - nfunc);  /* correct base */
 			oci->top = ks->top = ofunc + (ks->top - nfunc);  /* correct top */
 			oci->u.l.savedpc = nci->u.l.savedpc;
@@ -718,9 +718,9 @@ static void ktap_execute(ktap_State *ks)
 		}
 	case OP_TFORCALL: {
 		StkId cb = ra + 3;  /* call base */
-		setobj(ks, cb + 2, ra + 2);
-		setobj(ks, cb + 1, ra + 1);
-		setobj(ks, cb, ra);
+		setobj(cb + 2, ra + 2);
+		setobj(cb + 1, ra + 1);
+		setobj(cb, ra);
 		ks->top = cb + 3;  /* func. + 2 args (state and index) */
 		kp_call(ks, cb, GETARG_C(instr));
 		base = ci->u.l.base;
@@ -731,7 +731,7 @@ static void ktap_execute(ktap_State *ks)
 		/*go through */
 	case OP_TFORLOOP:
 		if (!ttisnil(ra + 1)) {  /* continue loop? */
-			setobj(ks, ra, ra + 1);  /* save control variable */
+			setobj(ra, ra + 1);  /* save control variable */
 			ci->u.l.savedpc += GETARG_sBx(instr);  /* jump back */
 		}
 		break;
@@ -777,7 +777,7 @@ static void ktap_execute(ktap_State *ks)
 		}
 		for (j = 0; j < b; j++) {
 			if (j < n) {
-				setobj(ks, ra + j, base - n + j);
+				setobj(ra + j, base - n + j);
 			} else
 				setnilvalue(ra + j);
 		}
@@ -802,7 +802,7 @@ static void ktap_execute(ktap_State *ks)
 
 	case OP_LOAD_GLOBAL: {
 		Tvalue *cfunc = cfunction_cache_get(ks, GETARG_C(instr));
-		setobj(ks, ra, cfunc);
+		setobj(ra, cfunc);
 		}
 		break;
 	}
@@ -896,7 +896,7 @@ static int cfunction_cache_getindex(ktap_State *ks, Tvalue *fname)
 static void cfunction_cache_add(ktap_State *ks, Tvalue *func)
 {
 	int nr = G(ks)->nr_builtin_cfunction;
-	setobj(ks, &G(ks)->cfunction_tbl[nr], func);
+	setobj(&G(ks)->cfunction_tbl[nr], func);
 	G(ks)->nr_builtin_cfunction++;
 }
 
@@ -973,7 +973,7 @@ static void ktap_init_arguments(ktap_State *ks, int argc, char **argv)
 	
 	setsvalue(&arg_tsval, kp_tstring_new(ks, "arg"));
 	sethvalue(&arg_tblval, arg_tbl);
-	setobj(ks, kp_table_set(ks, global_tbl, &arg_tsval), &arg_tblval);
+	setobj(kp_table_set(ks, global_tbl, &arg_tsval), &arg_tblval);
 
 	if (!argc)
 		return;
