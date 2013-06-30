@@ -195,7 +195,7 @@ static void growstack(ktap_state *ks, int n)
 {
 	ktap_value *oldstack;
 	int lim;
-	Callinfo *ci;
+	ktap_callinfo *ci;
 	Gcobject *up;
 	int size = ks->stacksize;
 	int needed = (int)(ks->top - ks->stack) + n;
@@ -263,7 +263,7 @@ static StkId adjust_varargs(ktap_state *ks, Proto *p, int actual)
 
 static int poscall(ktap_state *ks, StkId first_result)
 {
-	Callinfo *ci;
+	ktap_callinfo *ci;
 	StkId res;
 	int wanted, i;
 
@@ -285,11 +285,11 @@ static int poscall(ktap_state *ks, StkId first_result)
 	return (wanted - (-1));
 }
 
-static Callinfo *extend_ci(ktap_state *ks)
+static ktap_callinfo *extend_ci(ktap_state *ks)
 {
-	Callinfo *ci;
+	ktap_callinfo *ci;
 
-	ci = kp_malloc(ks, sizeof(Callinfo));
+	ci = kp_malloc(ks, sizeof(ktap_callinfo));
 	ks->ci->next = ci;
 	ci->prev = ks->ci;
 	ci->next = NULL;
@@ -299,8 +299,8 @@ static Callinfo *extend_ci(ktap_state *ks)
 
 static void free_ci(ktap_state *ks)
 {
-	Callinfo *ci = ks->ci;
-	Callinfo *next;
+	ktap_callinfo *ci = ks->ci;
+	ktap_callinfo *next;
 
 	if (!ci)
 		return;
@@ -321,7 +321,7 @@ static void free_ci(ktap_state *ks)
 static int precall(ktap_state *ks, StkId func, int nresults)
 {
 	ktap_cfunction f;
-	Callinfo *ci;
+	ktap_callinfo *ci;
 	Proto *p;
 	StkId base;
 	ptrdiff_t funcr = savestack(ks, func);
@@ -403,7 +403,7 @@ static ktap_value *cfunction_cache_get(ktap_state *ks, int index);
 static void ktap_execute(ktap_state *ks)
 {
 	int exec_count = 0;
-	Callinfo *ci;
+	ktap_callinfo *ci;
 	ktap_lclosure *cl;
 	ktap_value *k;
 	unsigned int instr, opcode;
@@ -648,8 +648,8 @@ static void ktap_execute(ktap_state *ks)
 			base = ci->u.l.base;
 		else {
 			/* tail call: put called frame (n) in place of caller one (o) */
-			Callinfo *nci = ks->ci;  /* called frame */
-			Callinfo *oci = nci->prev;  /* caller frame */
+			ktap_callinfo *nci = ks->ci;  /* called frame */
+			ktap_callinfo *oci = nci->prev;  /* caller frame */
 			StkId nfunc = nci->func;  /* called function */
 			StkId ofunc = oci->func;  /* caller function */
 			/* last stack slot filled by 'precall' */
@@ -999,7 +999,7 @@ static void *percpu_ktap_stack;
 
 static void ktap_init_state(ktap_state *ks)
 {
-	Callinfo *ci;
+	ktap_callinfo *ci;
 	int i;
 
 	if (ks == G(ks)->mainthread) {

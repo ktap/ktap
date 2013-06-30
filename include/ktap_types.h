@@ -195,10 +195,10 @@ typedef struct Proto {
 /*
  * information about a call
  */
-typedef struct Callinfo {
+typedef struct ktap_callinfo {
 	StkId func;  /* function index in the stack */
 	StkId top;  /* top for this function */
-	struct Callinfo *prev, *next;  /* dynamic call link */
+	struct ktap_callinfo *prev, *next;  /* dynamic call link */
 	short nresults;  /* expected number of results from this function */
 	u8 callstatus;
 	int extra;
@@ -212,7 +212,7 @@ typedef struct Callinfo {
 			u8 status;
 		} c;
 	} u;
-} Callinfo;
+} ktap_callinfo;
 
 
 /*
@@ -286,7 +286,7 @@ typedef struct ktap_state {
 	u8 status;
 	ktap_global_state *g;
 	StkId top;
-	Callinfo *ci;
+	ktap_callinfo *ci;
 	const unsigned long *oldpc;
 	StkId stack_last;
 	StkId stack;
@@ -295,7 +295,7 @@ typedef struct ktap_state {
 	Gcobject *openupval;
 	Gcobject *gclist;
 
-	Callinfo baseci;
+	ktap_callinfo baseci;
 
 	int debug;
 	int version;
