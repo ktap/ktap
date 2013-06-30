@@ -173,11 +173,11 @@ int kp_objlen(ktap_state *ks, const ktap_value *v)
 
 
 /* need to protect allgc field? */
-Gcobject *kp_newobject(ktap_state *ks, int type, size_t size, Gcobject **list)
+ktap_gcobject *kp_newobject(ktap_state *ks, int type, size_t size, ktap_gcobject **list)
 {
-	Gcobject *o;
+	ktap_gcobject *o;
 
-	o = kp_malloc(ks, sizeof(Gcobject) + size);
+	o = kp_malloc(ks, sizeof(ktap_gcobject) + size);
 	if (list == NULL)
 		list = &G(ks)->allgc;
 
@@ -270,8 +270,8 @@ void *kp_newuserdata(ktap_state *ks, size_t size)
 
 void kp_free_all_gcobject(ktap_state *ks)
 {
-	Gcobject *o = G(ks)->allgc;
-	Gcobject *next;
+	ktap_gcobject *o = G(ks)->allgc;
+	ktap_gcobject *next;
 
 	while (o) {
 		next = gch(o)->next;

@@ -105,7 +105,7 @@ void kp_tstring_resize(ktap_state *ks, int newsize)
 	//ktapc_runtilstate(L, ~bitmask(GCSsweepstring));
 
 	if (newsize > tb->size) {
-		kp_realloc(ks, tb->hash, tb->size, newsize, Gcobject *);
+		kp_realloc(ks, tb->hash, tb->size, newsize, ktap_gcobject *);
 
 	for (i = tb->size; i < newsize; i++)
 		tb->hash[i] = NULL;
@@ -113,11 +113,11 @@ void kp_tstring_resize(ktap_state *ks, int newsize)
 
 	/* rehash */
 	for (i = 0; i < tb->size; i++) {
-		Gcobject *p = tb->hash[i];
+		ktap_gcobject *p = tb->hash[i];
 		tb->hash[i] = NULL;
 
 		while (p) {
-			Gcobject *next = gch(p)->next;
+			ktap_gcobject *next = gch(p)->next;
 			unsigned int h = lmod(gco2ts(p)->hash, newsize);
 
 			gch(p)->next = tb->hash[h];
@@ -129,7 +129,7 @@ void kp_tstring_resize(ktap_state *ks, int newsize)
 
 	if (newsize < tb->size) {
 		/* shrinking slice must be empty */
-		kp_realloc(ks, tb->hash, tb->size, newsize, Gcobject *);
+		kp_realloc(ks, tb->hash, tb->size, newsize, ktap_gcobject *);
 	}
 
 	tb->size = newsize;
@@ -140,7 +140,7 @@ void kp_tstring_resize(ktap_state *ks, int newsize)
  * creates a new string object
  */
 static ktap_string *createstrobj(ktap_state *ks, const char *str, size_t l,
-			     int tag, unsigned int h, Gcobject **list)
+			     int tag, unsigned int h, ktap_gcobject **list)
 {
 	ktap_string *ts;
 	size_t totalsize;  /* total size of TString object */
@@ -160,7 +160,7 @@ ktap_string *kp_tstring_assemble(ktap_state *ks, const char *str, size_t l)
 	ktap_string *ts;
 
 	ts = (ktap_string *)(str - sizeof(ktap_string));
-	gch((Gcobject *)ts)->tt = KTAP_TLNGSTR;
+	gch((ktap_gcobject *)ts)->tt = KTAP_TLNGSTR;
 	ts->tsv.len = l;
 	ts->tsv.hash = 0;
 	ts->tsv.extra = 0;
@@ -174,7 +174,7 @@ ktap_string *kp_tstring_assemble(ktap_state *ks, const char *str, size_t l)
 static ktap_string *newshrstr(ktap_state *ks, const char *str, size_t l,
 			  unsigned int h)
 {
-	Gcobject **list;
+	ktap_gcobject **list;
 	Stringtable *tb = &G(ks)->strt;
 	ktap_string *s;
 
@@ -194,7 +194,7 @@ static DEFINE_SPINLOCK(tstring_lock);
  */
 static ktap_string *internshrstr(ktap_state *ks, const char *str, size_t l)
 {
-	Gcobject *o;
+	ktap_gcobject *o;
 	ktap_global_state *g = G(ks);
 	ktap_string *ts;
 	unsigned int h = kp_string_hash(str, l, g->seed);
@@ -254,7 +254,7 @@ void kp_tstring_freeall(ktap_state *ks)
 	int h;
 
 	for (h = 0; h < g->strt.size; h++) {
-		Gcobject *o, *next;
+		ktap_gcobject *o, *next;
 		o = g->strt.hash[h];
 		while (o) {
 			next = gch(o)->next;
@@ -270,7 +270,7 @@ void kp_tstring_freeall(ktap_state *ks)
 /* todo: dump long string, strt table only contain short string */
 void kp_tstring_dump(ktap_state *ks)
 {
-	Gcobject *o;
+	ktap_gcobject *o;
 	ktap_global_state *g = G(ks);
 	int h;
 

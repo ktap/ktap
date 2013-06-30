@@ -126,12 +126,12 @@ static const ktap_value *ktap_tonumber(const ktap_value *obj, ktap_value *n)
 static Upval *findupval(ktap_state *ks, StkId level)
 {
 	ktap_global_state *g = G(ks);
-	Gcobject **pp = &ks->openupval;
+	ktap_gcobject **pp = &ks->openupval;
 	Upval *p;
 	Upval *uv;
 
 	while (*pp != NULL && (p = gco2uv(*pp))->v >= level) {
-		//Gcobject *o = obj2gco(p);
+		//ktap_gcobject *o = obj2gco(p);
 		if (p->v == level) {  /* found a corresponding upvalue? */
 			//if (isdead(g, o))  /* is it dead? */
 			//  changewhite(o);  /* resurrect it */
@@ -196,7 +196,7 @@ static void growstack(ktap_state *ks, int n)
 	ktap_value *oldstack;
 	int lim;
 	ktap_callinfo *ci;
-	Gcobject *up;
+	ktap_gcobject *up;
 	int size = ks->stacksize;
 	int needed = (int)(ks->top - ks->stack) + n;
 	int newsize = 2 * size;
@@ -1032,8 +1032,8 @@ static void ktap_init_state(ktap_state *ks)
 
 void kp_exitthread(ktap_state *ks)
 {
-	Gcobject *o = ks->localgc;
-	Gcobject *next;
+	ktap_gcobject *o = ks->localgc;
+	ktap_gcobject *next;
 
 	free_ci(ks);
 

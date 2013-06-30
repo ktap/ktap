@@ -64,9 +64,9 @@ enum {
 
 typedef int Instruction;
 
-typedef union Gcobject Gcobject;
+typedef union ktap_gcobject ktap_gcobject;
 
-#define CommonHeader Gcobject *next; u8 tt; u8 marked;
+#define CommonHeader ktap_gcobject *next; u8 tt; u8 marked;
 
 struct ktap_state;
 typedef int (*ktap_cfunction) (struct ktap_state *ks);
@@ -88,7 +88,7 @@ typedef union ktap_string {
 
 
 union _ktap_value {
-	Gcobject *gc;    /* collectable objects */
+	ktap_gcobject *gc;    /* collectable objects */
 	void *p;         /* light userdata */
 	int b;           /* booleans */
 	ktap_cfunction f; /* light C functions */
@@ -146,7 +146,7 @@ typedef struct Upval {
 
 
 #define ktap_closure_header \
-	CommonHeader; u8 nupvalues; Gcobject *gclist
+	CommonHeader; u8 nupvalues; ktap_gcobject *gclist
 
 typedef struct ktap_cclosure {
 	ktap_closure_header;
@@ -242,14 +242,14 @@ typedef struct Table {
 	ktap_value *array;  /* array part */
 	Node *node;
 	Node *lastfree;  /* any free position is before this position */
-	Gcobject *gclist;
+	ktap_gcobject *gclist;
 } Table;
 
 #define lmod(s,size)	((int)((s) & ((size)-1)))
 
 
 typedef struct Stringtable {
-	Gcobject **hash;
+	ktap_gcobject **hash;
 	int nuse;
 	int size;
 } Stringtable;
@@ -262,7 +262,7 @@ typedef struct ktap_global_state {
 	u8 gckind; /* kind of GC running */
 	u8 gcrunning; /* true if GC is running */
 
-	Gcobject *allgc; /* list of all collectable objects */
+	ktap_gcobject *allgc; /* list of all collectable objects */
 
 	Upval uvhead; /* head of double-linked list of all open upvalues */
 
@@ -292,8 +292,8 @@ typedef struct ktap_state {
 	StkId stack;
 	int stacksize;
 
-	Gcobject *openupval;
-	Gcobject *gclist;
+	ktap_gcobject *openupval;
+	ktap_gcobject *gclist;
 
 	ktap_callinfo baseci;
 
@@ -301,7 +301,7 @@ typedef struct ktap_state {
 	int version;
 	int gcrunning;
 
-	Gcobject *localgc; /* list of temp collectable objects, free when thread exit */
+	ktap_gcobject *localgc; /* list of temp collectable objects, free when thread exit */
 	char buff[128];  /* temporary buffer for string concatentation */
 #ifdef __KERNEL__
 	struct ktap_event *current_event;
@@ -316,7 +316,7 @@ typedef struct gcheader {
 /*
  * Union of all collectable objects
  */
-union Gcobject {
+union ktap_gcobject {
   gcheader gch;  /* common header */
   union ktap_string ts;
   union Udata u;
@@ -334,7 +334,7 @@ union Gcobject {
 
 #define gco2uv(o)	(&((o)->uv))
 
-#define obj2gco(v)	((Gcobject *)(v))
+#define obj2gco(v)	((ktap_gcobject *)(v))
 
 
 #ifdef __KERNEL__
@@ -449,22 +449,22 @@ typedef int ktap_Number;
 #define setsvalue(obj, x) \
   { ktap_value *io = (obj); \
     ktap_string *x_ = (x); \
-    io->val.gc = (Gcobject *)x_; settype(io, x_->tsv.tt); }
+    io->val.gc = (ktap_gcobject *)x_; settype(io, x_->tsv.tt); }
 
 #define setcllvalue(obj, x) \
   { ktap_value *io = (obj); \
-    io->val.gc = (Gcobject *)x; settype(io, KTAP_TLCL); }
+    io->val.gc = (ktap_gcobject *)x; settype(io, KTAP_TLCL); }
 
 #define sethvalue(obj,x) \
   { ktap_value *io=(obj); \
-    val_(io).gc = (Gcobject *)(x); settype(io, KTAP_TTABLE); }
+    val_(io).gc = (ktap_gcobject *)(x); settype(io, KTAP_TTABLE); }
 
 #define setfvalue(obj,x) \
   { ktap_value *io=(obj); val_(io).f=(x); settype(io, KTAP_TLCF); }
 
 #define setthvalue(L,obj,x) \
   { ktap_value *io=(obj); \
-    val_(io).gc = (Gcobject *)(x); settype(io, KTAP_TTHREAD); }
+    val_(io).gc = (ktap_gcobject *)(x); settype(io, KTAP_TTHREAD); }
 
 #define setevalue(obj, x) \
   { ktap_value *io=(obj); val_(io).p = (x); settype(io, KTAP_TEVENT); }
@@ -524,7 +524,7 @@ int kp_table_next(ktap_state *ks, Table *t, StkId key);
 void kp_obj_dump(ktap_state *ks, const ktap_value *v);
 void kp_showobj(ktap_state *ks, const ktap_value *v);
 int kp_objlen(ktap_state *ks, const ktap_value *rb);
-Gcobject *kp_newobject(ktap_state *ks, int type, size_t size, Gcobject **list);
+ktap_gcobject *kp_newobject(ktap_state *ks, int type, size_t size, ktap_gcobject **list);
 int kp_equalobjv(ktap_state *ks, const ktap_value *t1, const ktap_value *t2);
 ktap_closure *kp_newlclosure(ktap_state *ks, int n);
 ktap_proto *kp_newproto(ktap_state *ks);
