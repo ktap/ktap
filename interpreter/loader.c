@@ -66,9 +66,9 @@ static int load_number(struct load_state *S)
 	return x;
 }
 
-static Tstring *load_string(struct load_state *S)
+static ktap_string *load_string(struct load_state *S)
 {
-	Tstring *ts;
+	ktap_string *ts;
 	size_t size;
 
 	size = READ_INT(S);

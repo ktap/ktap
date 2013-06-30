@@ -46,7 +46,7 @@ void ktap_concat(ktap_state *ks, int start, int end)
 {
 	int i, len = 0;
 	StkId top = ks->ci->u.l.base;
-	Tstring *ts;
+	ktap_string *ts;
 	char *ptr, *buffer;
 
 	for (i = start; i <= end; i++) {

@@ -68,7 +68,7 @@ static void DumpVector(const void *b, int n, size_t size, DumpState *D)
 	DumpMem(b, n, size, D);
 }
 
-static void DumpString(const Tstring *s, DumpState *D)
+static void DumpString(const ktap_string *s, DumpState *D)
 {
 	if (s == NULL) {
 		int size = 0;

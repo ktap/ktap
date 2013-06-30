@@ -334,7 +334,7 @@ static int addk(FuncState *fs, ktap_value *key, ktap_value *v)
 	return k;
 }
 
-int codegen_stringK(FuncState *fs, Tstring *s)
+int codegen_stringK(FuncState *fs, ktap_string *s)
 {
 	ktap_value o;
 

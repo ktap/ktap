@@ -130,7 +130,7 @@ static Node *mainposition (const Table *t, const ktap_value *key)
 	case KTAP_TNUMBER:
 		return hashnum(t, nvalue(key));
 	case KTAP_TLNGSTR: {
-		Tstring *s = rawtsvalue(key);
+		ktap_string *s = rawtsvalue(key);
 		if (s->tsv.extra == 0) {  /* no hash? */
 			s->tsv.hash = kp_string_hash(getstr(s), s->tsv.len, s->tsv.hash);
 			s->tsv.extra = 1;  /* now it has its hash */
@@ -460,7 +460,7 @@ static ktap_value *table_newkey(ktap_state *ks, Table *t, const ktap_value *key)
 /*
  * search function for short strings
  */
-const ktap_value *kp_table_getstr(Table *t, Tstring *key)
+const ktap_value *kp_table_getstr(Table *t, ktap_string *key)
 {
 	Node *n = hashstr(t, key);
 

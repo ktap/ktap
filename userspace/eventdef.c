@@ -326,7 +326,7 @@ static int parse_events_add_stapsdt(char *old_event)
 	return -1;
 }
 
-Tstring *ktapc_parse_eventdef(Tstring *eventdef)
+ktap_string *ktapc_parse_eventdef(ktap_string *eventdef)
 {
 	const char *def_str = getstr(eventdef);
 	char sys[128] = {0}, event[128] = {0}, *separator, *idstr;

@@ -60,17 +60,17 @@ Table *ktapc_table_new()
 	return kp_table_new(NULL);
 }
 
-Tstring *ktapc_ts_newlstr(const char *str, size_t l)
+ktap_string *ktapc_ts_newlstr(const char *str, size_t l)
 {
 	return kp_tstring_newlstr(NULL, str, l);
 }
 
-Tstring *ktapc_ts_new(const char *str)
+ktap_string *ktapc_ts_new(const char *str)
 {
 	return kp_tstring_new(NULL, str);
 }
 
-int ktapc_ts_eqstr(Tstring *a, Tstring *b)
+int ktapc_ts_eqstr(ktap_string *a, ktap_string *b)
 {
 	return kp_tstring_eqstr(a, b);
 }
@@ -228,7 +228,7 @@ static void dump_function(int level, Proto *f)
 			break;
 		case KTAP_TSTRING:
 			printf("\tTSTRING: ");
-			printf("%s\n", (Tstring *)f->k[i].val.gc + 1);
+			printf("%s\n", (ktap_string *)f->k[i].val.gc + 1);
 
 			break;
 		default:

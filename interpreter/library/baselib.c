@@ -122,7 +122,7 @@ static int ktap_lib_pid(ktap_state *ks)
 
 static int ktap_lib_execname(ktap_state *ks)
 {
-	Tstring *ts = kp_tstring_new(ks, current->comm);
+	ktap_string *ts = kp_tstring_new(ks, current->comm);
 	setsvalue(ks->top, ts);
 	incr_top(ks);
 	return 1;

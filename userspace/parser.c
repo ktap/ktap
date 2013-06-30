@@ -58,7 +58,7 @@ static void anchor_token(LexState *ls)
 	/* last token from outer function must be EOS */
 	ktap_assert((int)(ls->fs != NULL) || ls->t.token == TK_EOS);
 	if (ls->t.token == TK_NAME || ls->t.token == TK_STRING) {
-		Tstring *ts = ls->t.seminfo.ts;
+		ktap_string *ts = ls->t.seminfo.ts;
 		lex_newstring(ls, getstr(ts), ts->tsv.len);
 	}
 }
@@ -132,9 +132,9 @@ static void check_match(LexState *ls, int what, int who, int where)
 	}
 }
 
-static Tstring *str_checkname(LexState *ls)
+static ktap_string *str_checkname(LexState *ls)
 {
-	Tstring *ts;
+	ktap_string *ts;
 
 	check(ls, TK_NAME);
 	ts = ls->t.seminfo.ts;
@@ -149,7 +149,7 @@ static void init_exp(expdesc *e, expkind k, int i)
 	e->u.info = i;
 }
 
-static void codestring (LexState *ls, expdesc *e, Tstring *s)
+static void codestring (LexState *ls, expdesc *e, ktap_string *s)
 {
 	init_exp(e, VK, codegen_stringK(ls->fs, s));
 }
@@ -159,7 +159,7 @@ static void checkname(LexState *ls, expdesc *e)
 	codestring(ls, e, str_checkname(ls));
 }
 
-static int registerlocalvar(LexState *ls, Tstring *varname)
+static int registerlocalvar(LexState *ls, ktap_string *varname)
 {
 	FuncState *fs = ls->fs;
 	Proto *f = fs->f;
@@ -175,7 +175,7 @@ static int registerlocalvar(LexState *ls, Tstring *varname)
 	return fs->nlocvars++;
 }
 
-static void new_localvar(LexState *ls, Tstring *name)
+static void new_localvar(LexState *ls, ktap_string *name)
 {
 	FuncState *fs = ls->fs;
 	Dyndata *dyd = ls->dyd;
@@ -222,7 +222,7 @@ static void removevars(FuncState *fs, int tolevel)
 		getlocvar(fs, --fs->nactvar)->endpc = fs->pc;
 }
 
-static int searchupvalue(FuncState *fs, Tstring *name)
+static int searchupvalue(FuncState *fs, ktap_string *name)
 {
 	int i;
 	Upvaldesc *up = fs->f->upvalues;
@@ -234,7 +234,7 @@ static int searchupvalue(FuncState *fs, Tstring *name)
 	return -1;  /* not found */
 }
 
-static int newupvalue(FuncState *fs, Tstring *name, expdesc *v)
+static int newupvalue(FuncState *fs, ktap_string *name, expdesc *v)
 {
 	Proto *f = fs->f;
 	int oldsize = f->sizeupvalues;
@@ -251,7 +251,7 @@ static int newupvalue(FuncState *fs, Tstring *name, expdesc *v)
 	return fs->nups++;
 }
 
-static int searchvar(FuncState *fs, Tstring *n)
+static int searchvar(FuncState *fs, ktap_string *n)
 {
 	int i;
 
@@ -279,7 +279,7 @@ static void markupval (FuncState *fs, int level)
  * Find variable with given name 'n'. If it is an upvalue, add this
  * upvalue into all intermediate functions.
  */
-static int singlevaraux(FuncState *fs, Tstring *n, expdesc *var, int base)
+static int singlevaraux(FuncState *fs, ktap_string *n, expdesc *var, int base)
 {
 	if (fs == NULL)  /* no more levels? */
 		return VVOID;  /* default is global */
@@ -306,7 +306,7 @@ static int singlevaraux(FuncState *fs, Tstring *n, expdesc *var, int base)
 
 static void singlevar(LexState *ls, expdesc *var)
 {
-	Tstring *varname = str_checkname(ls);
+	ktap_string *varname = str_checkname(ls);
 	FuncState *fs = ls->fs;
 
 	if (singlevaraux(fs, varname, var, 1) == VVOID) {  /* global name? */
@@ -357,7 +357,7 @@ static void closegoto(LexState *ls, int g, Labeldesc *label)
 
 	ktap_assert(ktapc_ts_eqstr(gt->name, label->name));
 	if (gt->nactvar < label->nactvar) {
-		Tstring *vname = getlocvar(fs, gt->nactvar)->varname;
+		ktap_string *vname = getlocvar(fs, gt->nactvar)->varname;
 		const char *msg = ktapc_sprintf(
 			"<goto %s> at line %d jumps into the scope of local " KTAP_QS,
 			getstr(gt->name), gt->line, getstr(vname));
@@ -395,7 +395,7 @@ static int findlabel(LexState *ls, int g)
 	return 0;  /* label not found; cannot close goto */
 }
 
-static int newlabelentry(LexState *ls, Labellist *l, Tstring *name,
+static int newlabelentry(LexState *ls, Labellist *l, ktap_string *name,
 			 int line, int pc)
 {
 	int n = l->n;
@@ -472,7 +472,7 @@ static void enterblock(FuncState *fs, BlockCnt *bl, u8 isloop)
  */
 static void breaklabel(LexState *ls)
 {
-	Tstring *n = ktapc_ts_new("break");
+	ktap_string *n = ktapc_ts_new("break");
 	int l = newlabelentry(ls, &ls->dyd->label, n, 0, ls->fs->pc);
 
 	findgotos(ls, &ls->dyd->label.arr[l]);
@@ -1210,7 +1210,7 @@ static int cond(LexState *ls)
 static void gotostat(LexState *ls, int pc)
 {
 	int line = ls->linenumber;
-	Tstring *label;
+	ktap_string *label;
 	int g;
 
 	if (testnext(ls, TK_GOTO))
@@ -1224,7 +1224,7 @@ static void gotostat(LexState *ls, int pc)
 }
 
 /* check for repeated labels on the same block */
-static void checkrepeated(FuncState *fs, Labellist *ll, Tstring *label)
+static void checkrepeated(FuncState *fs, Labellist *ll, ktap_string *label)
 {
 	int i;
 	for (i = fs->bl->firstlabel; i < ll->n; i++) {
@@ -1244,7 +1244,7 @@ static void skipnoopstat (LexState *ls)
 		statement(ls);
 }
 
-static void labelstat (LexState *ls, Tstring *label, int line)
+static void labelstat (LexState *ls, ktap_string *label, int line)
 {
 	/* label -> '::' NAME '::' */
 	FuncState *fs = ls->fs;
@@ -1351,7 +1351,7 @@ static void forbody(LexState *ls, int base, int line, int nvars, int isnum)
 	codegen_fixline(fs, line);
 }
 
-static void fornum(LexState *ls, Tstring *varname, int line)
+static void fornum(LexState *ls, ktap_string *varname, int line)
 {
 	/* fornum -> NAME = exp1,exp1[,exp1] forbody */
 	FuncState *fs = ls->fs;
@@ -1374,7 +1374,7 @@ static void fornum(LexState *ls, Tstring *varname, int line)
 	forbody(ls, base, line, 1, 1);
 }
 
-static void forlist(LexState *ls, Tstring *indexname)
+static void forlist(LexState *ls, ktap_string *indexname)
 {
 	/* forlist -> NAME {,NAME} IN explist forbody */
 	FuncState *fs = ls->fs;
@@ -1404,7 +1404,7 @@ static void forstat(LexState *ls, int line)
 {
 	/* forstat -> FOR (fornum | forlist) END */
 	FuncState *fs = ls->fs;
-	Tstring *varname;
+	ktap_string *varname;
 	BlockCnt bl;
 
 	enterblock(fs, &bl, 1);  /* scope for loop and control variables */
@@ -1597,9 +1597,9 @@ static void tracestat(LexState *ls)
 {
 	expdesc v0, key, args;
 	expdesc *v = &v0;
-	Tstring *kdebug_str = ktapc_ts_new("kdebug");
-	Tstring *probe_str = ktapc_ts_new("probe_by_id");
-	Tstring *probe_end_str = ktapc_ts_new("probe_end");
+	ktap_string *kdebug_str = ktapc_ts_new("kdebug");
+	ktap_string *probe_str = ktapc_ts_new("probe_by_id");
+	ktap_string *probe_end_str = ktapc_ts_new("probe_end");
 	FuncState *fs = ls->fs;
 	int token = ls->t.token;
 	int line = ls->linenumber;
@@ -1627,7 +1627,7 @@ static void tracestat(LexState *ls)
 		/* argument: EVENTDEF string */
 		check(ls, TK_STRING);
 		enterlevel(ls);
-		Tstring *ts = ktapc_parse_eventdef(ls->t.seminfo.ts);
+		ktap_string *ts = ktapc_parse_eventdef(ls->t.seminfo.ts);
 		check_condition(ls, ts != NULL, "Cannot parse eventdef");
 		codestring(ls, &args, ts);
 		lex_next(ls);  /* skip EVENTDEF string */
@@ -1764,7 +1764,7 @@ ktap_closure *ktapc_parser(unsigned char *ptr, const char *name)
 	memset(&lexstate, 0, sizeof(LexState));
 	memset(&funcstate, 0, sizeof(FuncState));
 	funcstate.f = cl->l.p = ktapc_newproto();
-	funcstate.f->source = ktapc_ts_new(name);  /* create and anchor Tstring */
+	funcstate.f->source = ktapc_ts_new(name);  /* create and anchor ktap_string */
 
 	lex_init();
 

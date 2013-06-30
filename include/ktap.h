@@ -30,7 +30,7 @@ int kp_probe_init(ktap_state *ks);
 void kp_probe_exit(ktap_state *ks);
 
 int kp_event_get_index(const char *field);
-Tstring *kp_event_get_ts(ktap_state *ks, int index);
+ktap_string *kp_event_get_ts(ktap_state *ks, int index);
 
 int kp_strfmt(ktap_state *ks, struct trace_seq *seq);
 

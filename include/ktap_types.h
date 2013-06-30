@@ -71,7 +71,7 @@ typedef union Gcobject Gcobject;
 struct ktap_state;
 typedef int (*ktap_cfunction) (struct ktap_state *ks);
 
-typedef union Tstring {
+typedef union ktap_string {
 	int dummy;  /* ensures maximum alignment for strings */
 	struct {
 		CommonHeader;
@@ -79,7 +79,7 @@ typedef union Tstring {
 		unsigned int hash;
 		size_t len;  /* number of characters in string */
 	} tsv;
-} Tstring;
+} ktap_string;
 
 #define getstr(ts)	(const char *)((ts) + 1)
 #define eqshrstr(a,b)	((a) == (b))
@@ -116,7 +116,7 @@ typedef union Udata {
  * Description of an upvalue for function prototypes
  */
 typedef struct Upvaldesc {
-	Tstring *name;  /* upvalue name (for debug information) */
+	ktap_string *name;  /* upvalue name (for debug information) */
 	u8 instack;  /* whether it is in stack */
 	u8 idx;  /* index of upvalue (in stack or in outer function's list) */
 } Upvaldesc;
@@ -126,7 +126,7 @@ typedef struct Upvaldesc {
  * (used for debug information)
  */
 typedef struct LocVar {
-	Tstring *varname;
+	ktap_string *varname;
 	int startpc;  /* first point where variable is active */
 	int endpc;    /* first point where variable is dead */
 } LocVar;
@@ -177,7 +177,7 @@ typedef struct Proto {
 	struct LocVar *locvars;  /* information about local variables (debug information) */
 	struct Upvaldesc *upvalues;  /* upvalue information */
 	ktap_closure *cache;  /* last created closure with this prototype */
-	Tstring  *source;  /* used for debug information */
+	ktap_string  *source;  /* used for debug information */
 	int sizeupvalues;  /* size of 'upvalues' */
 	int sizek;  /* size of `k' */
 	int sizecode;
@@ -318,7 +318,7 @@ typedef struct gcheader {
  */
 union Gcobject {
   gcheader gch;  /* common header */
-  union Tstring ts;
+  union ktap_string ts;
   union Udata u;
   struct ktap_closure cl;
   struct Table h;
@@ -448,7 +448,7 @@ typedef int ktap_Number;
 
 #define setsvalue(obj, x) \
   { ktap_value *io = (obj); \
-    Tstring *x_ = (x); \
+    ktap_string *x_ = (x); \
     io->val.gc = (Gcobject *)x_; settype(io, x_->tsv.tt); }
 
 #define setcllvalue(obj, x) \
@@ -495,17 +495,17 @@ typedef int ktap_Number;
 #define NUMPOW(a, b)    (pow(a, b))
 
 
-Tstring *kp_tstring_newlstr(ktap_state *ks, const char *str, size_t l);
-Tstring *kp_tstring_newlstr_local(ktap_state *ks, const char *str, size_t l);
-Tstring *kp_tstring_new(ktap_state *ks, const char *str);
-Tstring *kp_tstring_new_local(ktap_state *ks, const char *str);
-int kp_tstring_eqstr(Tstring *a, Tstring *b);
+ktap_string *kp_tstring_newlstr(ktap_state *ks, const char *str, size_t l);
+ktap_string *kp_tstring_newlstr_local(ktap_state *ks, const char *str, size_t l);
+ktap_string *kp_tstring_new(ktap_state *ks, const char *str);
+ktap_string *kp_tstring_new_local(ktap_state *ks, const char *str);
+int kp_tstring_eqstr(ktap_string *a, ktap_string *b);
 unsigned int kp_string_hash(const char *str, size_t l, unsigned int seed);
-int kp_tstring_eqlngstr(Tstring *a, Tstring *b);
-int kp_tstring_cmp(const Tstring *ls, const Tstring *rs);
+int kp_tstring_eqlngstr(ktap_string *a, ktap_string *b);
+int kp_tstring_cmp(const ktap_string *ls, const ktap_string *rs);
 void kp_tstring_resize(ktap_state *ks, int newsize);
 void kp_tstring_freeall(ktap_state *ks);
-Tstring *kp_tstring_assemble(ktap_state *ks, const char *str, size_t l);
+ktap_string *kp_tstring_assemble(ktap_state *ks, const char *str, size_t l);
 
 ktap_value *kp_table_set(ktap_state *ks, Table *t, const ktap_value *key);
 Table *kp_table_new(ktap_state *ks);

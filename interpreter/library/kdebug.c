@@ -344,7 +344,7 @@ int kp_event_get_index(const char *field)
 	return -1;
 }
 
-Tstring *kp_event_get_ts(ktap_state *ks, int index)
+ktap_string *kp_event_get_ts(ktap_state *ks, int index)
 {
 	return kp_tstring_new(ks, event_ftbl[index].name);
 }

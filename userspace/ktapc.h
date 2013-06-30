@@ -91,7 +91,7 @@ enum RESERVED {
 
 typedef union {
 	ktap_Number r;
-	Tstring *ts;
+	ktap_string *ts;
 } SemInfo;  /* semantics information */
 
 
@@ -133,8 +133,8 @@ typedef struct LexState {
 	struct FuncState *fs;  /* current function (parser) */
 	Mbuffer *buff;  /* buffer for tokens */
 	struct Dyndata *dyd;  /* dynamic structures used by the parser */
-	Tstring *source;  /* current source name */
-	Tstring *envn;  /* environment variable name */
+	ktap_string *source;  /* current source name */
+	ktap_string *envn;  /* environment variable name */
 	char decpoint;  /* locale decimal point */
 	int nCcalls;
 } LexState;
@@ -187,7 +187,7 @@ typedef struct Vardesc {
 
 /* description of pending goto statements and label statements */
 typedef struct Labeldesc {
-	Tstring *name;  /* label identifier */
+	ktap_string *name;  /* label identifier */
 	int pc;  /* position in code */
 	int line;  /* line where it appeared */
 	u8 nactvar;  /* local level where it appears in current block */
@@ -283,16 +283,16 @@ typedef enum UnOpr { OPR_MINUS, OPR_NOT, OPR_LEN, OPR_NOUNOPR } UnOpr;
             ((v)=(t *)ktapc_growaux(v,&(size),sizeof(t),limit,e))
 
 
-Tstring *lex_newstring(LexState *ls, const char *str, size_t l);
+ktap_string *lex_newstring(LexState *ls, const char *str, size_t l);
 const char *lex_token2str(LexState *ls, int token);
 void lex_syntaxerror(LexState *ls, const char *msg);
-void lex_setinput(LexState *ls, unsigned char *ptr, Tstring *source, int firstchar);
+void lex_setinput(LexState *ls, unsigned char *ptr, ktap_string *source, int firstchar);
 void lex_next(LexState *ls);
 int lex_lookahead(LexState *ls);
 ktap_closure *ktapc_parser(unsigned char *pos, const char *name);
-Tstring *ktapc_ts_new(const char *str);
-int ktapc_ts_eqstr(Tstring *a, Tstring *b);
-Tstring *ktapc_ts_newlstr(const char *str, size_t l);
+ktap_string *ktapc_ts_new(const char *str);
+int ktapc_ts_eqstr(ktap_string *a, ktap_string *b);
+ktap_string *ktapc_ts_newlstr(const char *str, size_t l);
 Proto *ktapc_newproto();
 Table *ktapc_table_new();
 ktap_value *ktapc_table_set(Table *t, const ktap_value *key);
@@ -306,7 +306,7 @@ void *ktapc_growaux(void *block, int *size, size_t size_elems, int limit,
 void ktapio_exit(void);
 int ktapio_create(void *);
 
-Tstring *ktapc_parse_eventdef(Tstring *eventdef);
+ktap_string *ktapc_parse_eventdef(ktap_string *eventdef);
 
 #define ktapc_equalobj(t1, t2)	kp_equalobjv(NULL, t1, t2)
 

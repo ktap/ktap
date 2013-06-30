@@ -65,7 +65,7 @@ void lex_init()
 {
 	int i;
 	for (i = 0; i < NUM_RESERVED; i++) {
-		Tstring *ts = ktapc_ts_new(ktap_tokens[i]);
+		ktap_string *ts = ktapc_ts_new(ktap_tokens[i]);
 		ts->tsv.extra = (u8)(i+1);  /* reserved word */
 	}
 }
@@ -121,11 +121,11 @@ void lex_syntaxerror(LexState *ls, const char *msg)
  * it will not be collected until the end of the function's compilation
  * (by that time it should be anchored in function's prototype)
  */
-Tstring *lex_newstring(LexState *ls, const char *str, size_t l)
+ktap_string *lex_newstring(LexState *ls, const char *str, size_t l)
 {
 	ktap_value *o;  /* entry for `str' */
 	ktap_value tsv;
-	Tstring *ts = ktapc_ts_newlstr(str, l);  /* create new string */
+	ktap_string *ts = ktapc_ts_newlstr(str, l);  /* create new string */
 	setsvalue(&tsv, ts); 
 	o = ktapc_table_set(ls->fs->h, &tsv);
 	if (ttisnil(o)) {  /* not in use yet? (see 'addK') */
@@ -151,7 +151,7 @@ static void inclinenumber(LexState *ls)
 		lex_syntaxerror(ls, "chunk has too many lines");
 }
 
-void lex_setinput(LexState *ls, unsigned char *ptr, Tstring *source, int firstchar)
+void lex_setinput(LexState *ls, unsigned char *ptr, ktap_string *source, int firstchar)
 {
 	ls->decpoint = '.';
 	ls->current = firstchar;
@@ -537,7 +537,7 @@ static int llex(LexState *ls, SemInfo *seminfo)
 		} 
 		default: {
 			if (islalpha(ls->current)) {  /* identifier or reserved word? */
-				Tstring *ts;
+				ktap_string *ts;
 				do {
 					save_and_next(ls);
 				} while (islalnum(ls->current));
