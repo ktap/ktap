@@ -105,12 +105,12 @@ typedef ktap_value * StkId;
 
 
 
-typedef union Udata {
+typedef union ktap_udata {
 	struct {
 		CommonHeader;
 		size_t len;  /* number of bytes */
 	} uv;
-} Udata;
+} ktap_udata;
 
 /*
  * Description of an upvalue for function prototypes
@@ -319,7 +319,7 @@ typedef struct gcheader {
 union ktap_gcobject {
   gcheader gch;  /* common header */
   union ktap_string ts;
-  union Udata u;
+  union ktap_udata u;
   struct ktap_closure cl;
   struct ktap_table h;
   struct ktap_proto p;

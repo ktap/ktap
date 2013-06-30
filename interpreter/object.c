@@ -250,18 +250,18 @@ ktap_proto *kp_newproto(ktap_state *ks)
 	return f;
 }
 
-static Udata *newudata(ktap_state *ks, size_t s)
+static ktap_udata *newudata(ktap_state *ks, size_t s)
 {
-	Udata *u;
+	ktap_udata *u;
 
-	u = &kp_newobject(ks, KTAP_TUSERDATA, sizeof(Udata) + s, NULL)->u;
+	u = &kp_newobject(ks, KTAP_TUSERDATA, sizeof(ktap_udata) + s, NULL)->u;
 	u->uv.len = s;
 	return u;
 }
 
 void *kp_newuserdata(ktap_state *ks, size_t size)
 {
-	Udata *u;
+	ktap_udata *u;
 
 	u = newudata(ks, size);
 	return u + 1;
