@@ -500,7 +500,7 @@ static void ktap_execute(ktap_state *ks)
 	case OP_NEWTABLE: {
 		int b = GETARG_B(instr);
 		int c = GETARG_C(instr);
-		Table *t = kp_table_new(ks);
+		ktap_table *t = kp_table_new(ks);
 		sethvalue(ra, t);
 		if (b != 0 || c != 0)
 			kp_table_resize(ks, t, fb2int(b), fb2int(c));
@@ -739,7 +739,7 @@ static void ktap_execute(ktap_state *ks)
 		int n = GETARG_B(instr);
 		int c = GETARG_C(instr);
 		int last;
-		Table *h;
+		ktap_table *h;
 
 		if (n == 0)
 			n = (int)(ks->top - ra) - 1;
@@ -918,7 +918,7 @@ static int cfunction_cache_init(ktap_state *ks)
 void kp_register_lib(ktap_state *ks, const char *libname, const ktap_Reg *funcs)
 {
 	int i;
-	Table *target_tbl;
+	ktap_table *target_tbl;
 	const ktap_value *gt = kp_table_getint(hvalue(&G(ks)->registry), KTAP_RIDX_GLOBALS);
 
 	/* lib is null when register baselib function */
@@ -951,7 +951,7 @@ void kp_register_lib(ktap_state *ks, const char *libname, const ktap_Reg *funcs)
 static void ktap_init_registry(ktap_state *ks)
 {
 	ktap_value mt;
-	Table *registry = kp_table_new(ks);
+	ktap_table *registry = kp_table_new(ks);
 
 	sethvalue(&G(ks)->registry, registry);
 	kp_table_resize(ks, registry, KTAP_RIDX_LAST, 0);
@@ -965,8 +965,8 @@ static void ktap_init_arguments(ktap_state *ks, int argc, char **argv)
 {
 	const ktap_value *gt = kp_table_getint(hvalue(&G(ks)->registry),
 			   KTAP_RIDX_GLOBALS);
-	Table *global_tbl = hvalue(gt);
-	Table *arg_tbl = kp_table_new(ks);
+	ktap_table *global_tbl = hvalue(gt);
+	ktap_table *arg_tbl = kp_table_new(ks);
 	ktap_value arg_tblval;
 	ktap_value arg_tsval;
 	int i;

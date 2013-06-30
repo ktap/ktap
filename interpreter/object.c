@@ -277,7 +277,7 @@ void kp_free_all_gcobject(ktap_state *ks)
 		next = gch(o)->next;
 		switch (gch(o)->tt) {
 		case KTAP_TTABLE:
-			kp_table_free(ks, (Table *)o);
+			kp_table_free(ks, (ktap_table *)o);
 			break;
 		case KTAP_TPROTO:
 			free_proto(ks, (ktap_proto *)o);

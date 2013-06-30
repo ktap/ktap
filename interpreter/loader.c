@@ -290,7 +290,7 @@ ktap_closure *kp_load(ktap_state *ks, unsigned char *buff)
 
 	/* set global table as 1st upvalue of 'f' */
 	if (f->nupvalues == 1) {
-		Table *reg = hvalue(&G(ks)->registry);
+		ktap_table *reg = hvalue(&G(ks)->registry);
 		const ktap_value *gt = kp_table_getint(reg, KTAP_RIDX_GLOBALS);
 		setobj(f->upvals[0]->v, gt);
 	}

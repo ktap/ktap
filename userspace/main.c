@@ -50,12 +50,12 @@ ktap_proto *ktapc_newproto()
 	return kp_newproto(NULL);
 }
 
-ktap_value *ktapc_table_set(Table *t, const ktap_value *key)
+ktap_value *ktapc_table_set(ktap_table *t, const ktap_value *key)
 {
 	return kp_table_set(NULL, t, key);
 }
 
-Table *ktapc_table_new()
+ktap_table *ktapc_table_new()
 {
 	return kp_table_new(NULL);
 }

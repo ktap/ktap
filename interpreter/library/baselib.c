@@ -27,7 +27,7 @@
 
 static int ktap_lib_next(ktap_state *ks)
 {
-	Table *t = hvalue(ks->top - 2);
+	ktap_table *t = hvalue(ks->top - 2);
 
 	if (kp_table_next(ks, t, ks->top-1)) {
 		ks->top += 1;
@@ -41,7 +41,7 @@ static int ktap_lib_next(ktap_state *ks)
 
 static int ktap_lib_pairs(ktap_state *ks)
 {
-	Table *t = hvalue(kp_arg(ks, 1));
+	ktap_table *t = hvalue(kp_arg(ks, 1));
 
 	setfvalue(ks->top++, ktap_lib_next);
 	sethvalue(ks->top++, t);
@@ -184,7 +184,7 @@ static int ktap_lib_user_string(ktap_state *ks)
 
 static int ktap_lib_count(ktap_state *ks)
 {
-	Table *tbl = hvalue(kp_arg(ks, 1));
+	ktap_table *tbl = hvalue(kp_arg(ks, 1));
 	ktap_value *k = kp_arg(ks, 2);
 	int n;
 	ktap_value *v;

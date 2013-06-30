@@ -216,7 +216,7 @@ typedef struct ktap_callinfo {
 
 
 /*
- * Tables
+ * ktap_tables
  */
 typedef union Tkey {
 	struct {
@@ -234,7 +234,7 @@ typedef struct Node {
 } Node;
 
 
-typedef struct Table {
+typedef struct ktap_table {
 	CommonHeader;
 	u8 flags;  /* 1<<p means tagmethod(p) is not present */
 	u8 lsizenode;  /* log2 of size of `node' array */
@@ -243,7 +243,7 @@ typedef struct Table {
 	Node *node;
 	Node *lastfree;  /* any free position is before this position */
 	ktap_gcobject *gclist;
-} Table;
+} ktap_table;
 
 #define lmod(s,size)	((int)((s) & ((size)-1)))
 
@@ -321,7 +321,7 @@ union ktap_gcobject {
   union ktap_string ts;
   union Udata u;
   struct ktap_closure cl;
-  struct Table h;
+  struct ktap_table h;
   struct ktap_proto p;
   struct Upval uv;
   struct ktap_state th;  /* thread */
@@ -507,19 +507,19 @@ void kp_tstring_resize(ktap_state *ks, int newsize);
 void kp_tstring_freeall(ktap_state *ks);
 ktap_string *kp_tstring_assemble(ktap_state *ks, const char *str, size_t l);
 
-ktap_value *kp_table_set(ktap_state *ks, Table *t, const ktap_value *key);
-Table *kp_table_new(ktap_state *ks);
-const ktap_value *kp_table_getint(Table *t, int key);
-void kp_table_setint(ktap_state *ks, Table *t, int key, ktap_value *v);
-const ktap_value *kp_table_get(Table *t, const ktap_value *key);
-void kp_table_setvalue(ktap_state *ks, Table *t, const ktap_value *key, ktap_value *val);
-void kp_table_resize(ktap_state *ks, Table *t, int nasize, int nhsize);
-void kp_table_resizearray(ktap_state *ks, Table *t, int nasize);
-void kp_table_free(ktap_state *ks, Table *t);
-int kp_table_length(ktap_state *ks, Table *t);
-void kp_table_dump(ktap_state *ks, Table *t);
-void kp_table_histogram(ktap_state *ks, Table *t);
-int kp_table_next(ktap_state *ks, Table *t, StkId key);
+ktap_value *kp_table_set(ktap_state *ks, ktap_table *t, const ktap_value *key);
+ktap_table *kp_table_new(ktap_state *ks);
+const ktap_value *kp_table_getint(ktap_table *t, int key);
+void kp_table_setint(ktap_state *ks, ktap_table *t, int key, ktap_value *v);
+const ktap_value *kp_table_get(ktap_table *t, const ktap_value *key);
+void kp_table_setvalue(ktap_state *ks, ktap_table *t, const ktap_value *key, ktap_value *val);
+void kp_table_resize(ktap_state *ks, ktap_table *t, int nasize, int nhsize);
+void kp_table_resizearray(ktap_state *ks, ktap_table *t, int nasize);
+void kp_table_free(ktap_state *ks, ktap_table *t);
+int kp_table_length(ktap_state *ks, ktap_table *t);
+void kp_table_dump(ktap_state *ks, ktap_table *t);
+void kp_table_histogram(ktap_state *ks, ktap_table *t);
+int kp_table_next(ktap_state *ks, ktap_table *t, StkId key);
 
 void kp_obj_dump(ktap_state *ks, const ktap_value *v);
 void kp_showobj(ktap_state *ks, const ktap_value *v);

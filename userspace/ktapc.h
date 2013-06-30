@@ -221,7 +221,7 @@ struct BlockCnt;  /* defined in lparser.c */
 /* state needed to generate code for a given function */
 typedef struct FuncState {
 	ktap_proto *f;  /* current function header */
-	Table *h;  /* table to find (and reuse) elements in `k' */
+	ktap_table *h;  /* table to find (and reuse) elements in `k' */
 	struct FuncState *prev;  /* enclosing function */
 	struct LexState *ls;  /* lexical state */
 	struct BlockCnt *bl;  /* chain of current blocks */
@@ -294,8 +294,8 @@ ktap_string *ktapc_ts_new(const char *str);
 int ktapc_ts_eqstr(ktap_string *a, ktap_string *b);
 ktap_string *ktapc_ts_newlstr(const char *str, size_t l);
 ktap_proto *ktapc_newproto();
-Table *ktapc_table_new();
-ktap_value *ktapc_table_set(Table *t, const ktap_value *key);
+ktap_table *ktapc_table_new();
+ktap_value *ktapc_table_set(ktap_table *t, const ktap_value *key);
 ktap_closure *ktapc_newlclosure(int n);
 char *ktapc_sprintf(const char *fmt, ...);
 
