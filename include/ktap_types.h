@@ -157,7 +157,7 @@ typedef struct ktap_cclosure {
 
 typedef struct ktap_lclosure {
 	ktap_closure_header;
-	struct Proto *p;
+	struct ktap_proto *p;
 	struct Upval *upvals[1];  /* list of upvalues */
 } ktap_lclosure;
 
@@ -168,11 +168,11 @@ typedef struct ktap_closure {
 } ktap_closure;
 
 
-typedef struct Proto {
+typedef struct ktap_proto {
 	CommonHeader;
 	ktap_value *k;  /* constants used by the function */
 	unsigned int *code;
-	struct Proto **p;  /* functions defined inside the function */
+	struct ktap_proto **p;  /* functions defined inside the function */
 	int *lineinfo;  /* map from opcodes to source lines (debug information) */
 	struct LocVar *locvars;  /* information about local variables (debug information) */
 	struct Upvaldesc *upvalues;  /* upvalue information */
@@ -189,7 +189,7 @@ typedef struct Proto {
 	u8 numparams;  /* number of fixed parameters */
 	u8 is_vararg;
 	u8 maxstacksize;  /* maximum stack used by this function */
-} Proto;
+} ktap_proto;
 
 
 /*
@@ -322,7 +322,7 @@ union Gcobject {
   union Udata u;
   struct ktap_closure cl;
   struct Table h;
-  struct Proto p;
+  struct ktap_proto p;
   struct Upval uv;
   struct ktap_state th;  /* thread */
 };
@@ -527,7 +527,7 @@ int kp_objlen(ktap_state *ks, const ktap_value *rb);
 Gcobject *kp_newobject(ktap_state *ks, int type, size_t size, Gcobject **list);
 int kp_equalobjv(ktap_state *ks, const ktap_value *t1, const ktap_value *t2);
 ktap_closure *kp_newlclosure(ktap_state *ks, int n);
-Proto *kp_newproto(ktap_state *ks);
+ktap_proto *kp_newproto(ktap_state *ks);
 Upval *kp_newupval(ktap_state *ks);
 void kp_free_all_gcobject(ktap_state *ks);
 void kp_header(u8 *h);

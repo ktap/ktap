@@ -162,7 +162,7 @@ static void checkname(LexState *ls, expdesc *e)
 static int registerlocalvar(LexState *ls, ktap_string *varname)
 {
 	FuncState *fs = ls->fs;
-	Proto *f = fs->f;
+	ktap_proto *f = fs->f;
 	int oldsize = f->sizelocvars;
 
 	ktapc_growvector(f->locvars, fs->nlocvars, f->sizelocvars,
@@ -236,7 +236,7 @@ static int searchupvalue(FuncState *fs, ktap_string *name)
 
 static int newupvalue(FuncState *fs, ktap_string *name, expdesc *v)
 {
-	Proto *f = fs->f;
+	ktap_proto *f = fs->f;
 	int oldsize = f->sizeupvalues;
 
 	checklimit(fs, fs->nups + 1, MAXUPVAL, "upvalues");
@@ -521,15 +521,15 @@ static void leaveblock (FuncState *fs)
 /*
  * adds a new prototype into list of prototypes
  */
-static Proto *addprototype(LexState *ls)
+static ktap_proto *addprototype(LexState *ls)
 {
-	Proto *clp;
+	ktap_proto *clp;
 	FuncState *fs = ls->fs;
-	Proto *f = fs->f;  /* prototype of current function */
+	ktap_proto *f = fs->f;  /* prototype of current function */
 
 	if (fs->np >= f->sizep) {
 		int oldsize = f->sizep;
-		ktapc_growvector(f->p, fs->np, f->sizep, Proto *, MAXARG_Bx, "functions");
+		ktapc_growvector(f->p, fs->np, f->sizep, ktap_proto *, MAXARG_Bx, "functions");
 		while (oldsize < f->sizep)
 			f->p[oldsize++] = NULL;
 	}
@@ -549,7 +549,7 @@ static void codeclosure (LexState *ls, expdesc *v)
 
 static void open_func(LexState *ls, FuncState *fs, BlockCnt *bl)
 {
-	Proto *f;
+	ktap_proto *f;
 
 	fs->prev = ls->fs;  /* linked list of funcstates */
 	fs->ls = ls;
@@ -576,7 +576,7 @@ static void open_func(LexState *ls, FuncState *fs, BlockCnt *bl)
 static void close_func(LexState *ls)
 {
 	FuncState *fs = ls->fs;
-	Proto *f = fs->f;
+	ktap_proto *f = fs->f;
 
 	codegen_ret(fs, 0, 0);  /* final return */
 	leaveblock(fs);
@@ -586,7 +586,7 @@ static void close_func(LexState *ls)
 	f->sizelineinfo = fs->pc;
 	ktapc_reallocvector(f->k, f->sizek, fs->nk, ktap_value);
 	f->sizek = fs->nk;
-	ktapc_reallocvector(f->p, f->sizep, fs->np, Proto *);
+	ktapc_reallocvector(f->p, f->sizep, fs->np, ktap_proto *);
 	f->sizep = fs->np;
 	ktapc_reallocvector(f->locvars, f->sizelocvars, fs->nlocvars, LocVar);
 	f->sizelocvars = fs->nlocvars;
@@ -782,7 +782,7 @@ static void parlist (LexState *ls)
 {
 	/* parlist -> [ param { `,' param } ] */
 	FuncState *fs = ls->fs;
-	Proto *f = fs->f;
+	ktap_proto *f = fs->f;
 	int nparams = 0;
 	f->is_vararg = 0;
 

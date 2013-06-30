@@ -213,7 +213,7 @@ ktap_closure *kp_newlclosure(ktap_state *ks, int n)
 	return cl;
 }
 
-static void free_proto(ktap_state *ks, Proto *f)
+static void free_proto(ktap_state *ks, ktap_proto *f)
 {
 	kp_free(ks, f->code);
 	kp_free(ks, f->p);
@@ -224,10 +224,10 @@ static void free_proto(ktap_state *ks, Proto *f)
 	kp_free(ks, f);
 }
 
-Proto *kp_newproto(ktap_state *ks)
+ktap_proto *kp_newproto(ktap_state *ks)
 {
-	Proto *f;
-	f = (Proto *)kp_newobject(ks, KTAP_TPROTO, sizeof(*f), NULL);
+	ktap_proto *f;
+	f = (ktap_proto *)kp_newobject(ks, KTAP_TPROTO, sizeof(*f), NULL);
 	f->k = NULL;
  	f->sizek = 0;
 	f->p = NULL;
@@ -280,7 +280,7 @@ void kp_free_all_gcobject(ktap_state *ks)
 			kp_table_free(ks, (Table *)o);
 			break;
 		case KTAP_TPROTO:
-			free_proto(ks, (Proto *)o);
+			free_proto(ks, (ktap_proto *)o);
 			break;
 		default:
 			kp_free(ks, o);

@@ -82,9 +82,9 @@ static void DumpString(const ktap_string *s, DumpState *D)
 
 #define DumpCode(f,D)	 DumpVector(f->code, f->sizecode, sizeof(Instruction), D)
 
-static void DumpFunction(const Proto *f, DumpState *D);
+static void DumpFunction(const ktap_proto *f, DumpState *D);
 
-static void DumpConstants(const Proto *f, DumpState *D)
+static void DumpConstants(const ktap_proto *f, DumpState *D)
 {
 	int i, n = f->sizek;
 
@@ -115,7 +115,7 @@ static void DumpConstants(const Proto *f, DumpState *D)
 		DumpFunction(f->p[i], D);
 }
 
-static void DumpUpvalues(const Proto *f, DumpState *D)
+static void DumpUpvalues(const ktap_proto *f, DumpState *D)
 {
 	int i, n = f->sizeupvalues;
 
@@ -126,7 +126,7 @@ static void DumpUpvalues(const Proto *f, DumpState *D)
 	}
 }
 
-static void DumpDebug(const Proto *f, DumpState *D)
+static void DumpDebug(const ktap_proto *f, DumpState *D)
 {
 	int i,n;
 
@@ -147,7 +147,7 @@ static void DumpDebug(const Proto *f, DumpState *D)
 		DumpString(f->upvalues[i].name, D);
 }
 
-static void DumpFunction(const Proto *f, DumpState *D)
+static void DumpFunction(const ktap_proto *f, DumpState *D)
 {
 	DumpInt(f->linedefined, D);
 	DumpInt(f->lastlinedefined, D);
@@ -171,7 +171,7 @@ static void DumpHeader(DumpState *D)
 /*
  * dump ktap function as precompiled chunk
  */
-int ktapc_dump(const Proto *f, ktap_Writer w, void *data, int strip)
+int ktapc_dump(const ktap_proto *f, ktap_Writer w, void *data, int strip)
 {
 	DumpState D;
 

@@ -157,7 +157,7 @@ static void function_close (ktap_state *ks, StkId level)
 }
 
 /* create a new closure */
-static void pushclosure(ktap_state *ks, Proto *p, Upval **encup, StkId base,
+static void pushclosure(ktap_state *ks, ktap_proto *p, Upval **encup, StkId base,
 			StkId ra)
 {
 	int nup = p->sizeupvalues;
@@ -243,7 +243,7 @@ static inline void checkstack(ktap_state *ks, int n)
 }
 
 
-static StkId adjust_varargs(ktap_state *ks, Proto *p, int actual)
+static StkId adjust_varargs(ktap_state *ks, ktap_proto *p, int actual)
 {
 	int i;
 	int nfixargs = p->numparams;
@@ -322,7 +322,7 @@ static int precall(ktap_state *ks, StkId func, int nresults)
 {
 	ktap_cfunction f;
 	ktap_callinfo *ci;
-	Proto *p;
+	ktap_proto *p;
 	StkId base;
 	ptrdiff_t funcr = savestack(ks, func);
 	int n;
@@ -760,7 +760,7 @@ static void ktap_execute(ktap_state *ks)
 		}
 	case OP_CLOSURE: {
 		/* need to use closure cache? (multithread contention issue)*/
-		Proto *p = cl->p->p[GETARG_Bx(instr)];
+		ktap_proto *p = cl->p->p[GETARG_Bx(instr)];
 		pushclosure(ks, p, cl->upvals, base, ra);
 		//checkGC(ks, ra + 1);
 		break;
@@ -823,7 +823,7 @@ static int cfunction_cache_getindex(ktap_state *ks, ktap_value *fname);
  *
  * This function must be called before all code loaded.
  */
-void kp_optimize_code(ktap_state *ks, int level, Proto *f)
+void kp_optimize_code(ktap_state *ks, int level, ktap_proto *f)
 {
 	int i;
 

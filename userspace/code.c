@@ -226,7 +226,7 @@ void codegen_concat(FuncState *fs, int *l1, int l2)
 
 static int codegen_code(FuncState *fs, Instruction i)
 {
-	Proto *f = fs->f;
+	ktap_proto *f = fs->f;
 
 	dischargejpc(fs);  /* `pc' will change */
 
@@ -309,7 +309,7 @@ static void freeexp(FuncState *fs, expdesc *e)
 static int addk(FuncState *fs, ktap_value *key, ktap_value *v)
 {
 	ktap_value *idx = ktapc_table_set(fs->h, key);
-	Proto *f = fs->f;
+	ktap_proto *f = fs->f;
 	int k, oldsize;
 
 	if (ttisnumber(idx)) {

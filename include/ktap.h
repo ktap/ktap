@@ -17,7 +17,7 @@ ktap_state *kp_newthread(ktap_state *mainthread);
 void kp_exitthread(ktap_state *ks);
 ktap_closure *kp_load(ktap_state *ks, unsigned char *buff);
 void kp_call(ktap_state *ks, StkId func, int nresults);
-void kp_optimize_code(ktap_state *ks, int level, Proto *f);
+void kp_optimize_code(ktap_state *ks, int level, ktap_proto *f);
 void kp_register_lib(ktap_state *ks, const char *libname, const ktap_Reg *funcs);
 
 void kp_init_baselib(ktap_state *ks);

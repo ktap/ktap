@@ -47,7 +47,7 @@ struct load_state {
 #define ADD_POS(S, size)	S->pos += size
 
 
-static int load_function(struct load_state *S, Proto *f);
+static int load_function(struct load_state *S, ktap_proto *f);
 
 
 static int load_int(struct load_state *S)
@@ -84,7 +84,7 @@ static ktap_string *load_string(struct load_state *S)
 }
 
 
-static int load_code(struct load_state *S, Proto *f)
+static int load_code(struct load_state *S, ktap_proto *f)
 {
 	int n = READ_INT(S);
 
@@ -95,7 +95,7 @@ static int load_code(struct load_state *S, Proto *f)
 	return 0;
 }
 
-static int load_constants(struct load_state *S, Proto *f)
+static int load_constants(struct load_state *S, ktap_proto *f)
 {
 	int i,n;
 
@@ -132,7 +132,7 @@ static int load_constants(struct load_state *S, Proto *f)
 	}
 
 	n = READ_INT(S);
-	f->p = NEW_VECTOR(S, n * sizeof(Proto));
+	f->p = NEW_VECTOR(S, n * sizeof(ktap_proto));
 	f->sizep = n;
 	for (i = 0; i < n; i++)
 		f->p[i] = NULL;
@@ -146,7 +146,7 @@ static int load_constants(struct load_state *S, Proto *f)
 }
 
 
-static int load_upvalues(struct load_state *S, Proto *f)
+static int load_upvalues(struct load_state *S, ktap_proto *f)
 {
 	int i,n;
 
@@ -165,7 +165,7 @@ static int load_upvalues(struct load_state *S, Proto *f)
 	return 0;
 }
 
-static int load_debuginfo(struct load_state *S, Proto *f)
+static int load_debuginfo(struct load_state *S, ktap_proto *f)
 {
 	int i,n;
 
@@ -191,7 +191,7 @@ static int load_debuginfo(struct load_state *S, Proto *f)
 	return 0;
 }
 
-static int load_function(struct load_state *S, Proto *f)
+static int load_function(struct load_state *S, ktap_proto *f)
 {
 	f->linedefined = READ_INT(S);
  	f->lastlinedefined = READ_INT(S);
@@ -241,7 +241,7 @@ static int load_header(struct load_state *S)
 }
 
 
-static int verify_code(struct load_state *S, Proto *f)
+static int verify_code(struct load_state *S, ktap_proto *f)
 {
 	/* not support now */
 	return 0;
@@ -276,7 +276,7 @@ ktap_closure *kp_load(ktap_state *ks, unsigned char *buff)
 		return NULL;
 
 	if (cl->l.p->sizeupvalues != 1) {
-		Proto *p = cl->l.p;
+		ktap_proto *p = cl->l.p;
 		cl = kp_newlclosure(ks, cl->l.p->sizeupvalues);
 		cl->l.p = p;
 		setcllvalue(ks->top - 1, cl);

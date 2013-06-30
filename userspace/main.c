@@ -45,7 +45,7 @@ ktap_closure *ktapc_newlclosure(int n)
 	return kp_newlclosure(NULL, n);
 }
 
-Proto *ktapc_newproto()
+ktap_proto *ktapc_newproto()
 {
 	return kp_newproto(NULL);
 }
@@ -138,7 +138,7 @@ void *ktapc_growaux(void *block, int *size, size_t size_elems, int limit,
 			print_base(GETARG_C(instr)); \
 	} while (0)
 
-static void decode_instruction(Proto *f, int instr)
+static void decode_instruction(ktap_proto *f, int instr)
 {
 	int opcode = GET_OPCODE(instr);
 	ktap_value *k;
@@ -195,7 +195,7 @@ static void decode_instruction(Proto *f, int instr)
 static int function_nr = 0;
 
 /* this is a debug function used for check bytecode chunk file */
-static void dump_function(int level, Proto *f)
+static void dump_function(int level, ktap_proto *f)
 {
 	int i;
 
