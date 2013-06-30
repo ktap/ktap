@@ -178,7 +178,7 @@ static void event_retval(ktap_State *ks, struct ktap_event *e, StkId ra)
 static int ktap_function_set_retval(ktap_State *ks)
 {
 	struct ktap_event *e = ks->current_event;
-	int n = nvalue(GetArg(ks, 1));
+	int n = nvalue(kp_arg(ks, 1));
 
 	/* use syscall_set_return_value as generic return value set macro */
 	syscall_set_return_value(current, e->regs, n, 0);
@@ -286,7 +286,7 @@ static void event_allfield(ktap_State *ks, struct ktap_event *e, StkId ra)
 static int event_fieldn(ktap_State *ks)
 {
 	struct ktap_event *e = ks->current_event;
-	int index = nvalue(GetArg(ks, 1));
+	int index = nvalue(kp_arg(ks, 1));
 	struct ftrace_event_field *field;
 	struct list_head *head;
 
@@ -510,14 +510,14 @@ static void end_probes(struct ktap_State *ks)
 
 static int ktap_lib_probe_by_id(ktap_State *ks)
 {
-	const char *ids_str = svalue(GetArg(ks, 1));
+	const char *ids_str = svalue(kp_arg(ks, 1));
 	Tvalue *tracefunc;
 	Closure *cl;
 	char **argv;
 	int argc, i;
 
-	if (GetArgN(ks) >= 2) {
-		tracefunc = GetArg(ks, 2);
+	if (kp_arg_nr(ks) >= 2) {
+		tracefunc = kp_arg(ks, 2);
 
 		if (ttisfunc(tracefunc))
 			cl = (Closure *)gcvalue(tracefunc);
@@ -549,10 +549,10 @@ static int ktap_lib_probe_end(ktap_State *ks)
 {
 	Tvalue *endfunc;
 
-	if (GetArgN(ks) == 0)
+	if (kp_arg_nr(ks) == 0)
 		return 0;
 
-	endfunc = GetArg(ks, 1);
+	endfunc = kp_arg(ks, 1);
 
 	G(ks)->trace_end_closure = clvalue(endfunc);
 	return 0;

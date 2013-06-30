@@ -48,7 +48,7 @@ DECLARE_PER_CPU(bool, ktap_in_tracing);
 void kp_show_event(ktap_State *ks);
 
 /* get argument operation macro */
-#define GetArg(ks, n)	((ks)->ci->func + (n))
-#define GetArgN(ks)	((int)(ks->top - (ks->ci->func + 1)))
+#define kp_arg(ks, n)	((ks)->ci->func + (n))
+#define kp_arg_nr(ks)	((int)(ks->top - (ks->ci->func + 1)))
 
 #endif /* __KTAP_H__ */

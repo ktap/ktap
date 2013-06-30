@@ -59,7 +59,7 @@ static int ktap_lib_info(ktap_State *ks)
 
 static int ktap_lib_sleep(ktap_State *ks)
 {
-	Tvalue *time = GetArg(ks, 1);
+	Tvalue *time = kp_arg(ks, 1);
 
 	/* only mainthread can sleep
 	if (ks != G(ks)->mainthread)

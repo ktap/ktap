@@ -65,13 +65,13 @@ static int set_timer(ktap_State *ks, int factor)
 	struct hrtimer_ktap *t;
 	u64 period;
 	Tvalue *tracefunc;
-	int n = nvalue(GetArg(ks, 1));
+	int n = nvalue(kp_arg(ks, 1));
 	Closure *cl;
 
 	period = (u64)factor * n;
 	
-	if (GetArgN(ks) >= 2) {
-		tracefunc = GetArg(ks, 2);
+	if (kp_arg_nr(ks) >= 2) {
+		tracefunc = kp_arg(ks, 2);
 
 		if (ttisfunc(tracefunc))
 			cl = (Closure *)gcvalue(tracefunc);

@@ -105,8 +105,8 @@ int kp_strfmt(ktap_State *ks, struct trace_seq *seq)
 {
 	int arg = 1;
 	size_t sfl;
-	Tvalue *arg_fmt = GetArg(ks, 1);
-	int argnum = GetArgN(ks);
+	Tvalue *arg_fmt = kp_arg(ks, 1);
+	int argnum = kp_arg_nr(ks);
 	const char *strfrmt, *strfrmt_end;
 
 	strfrmt = svalue(arg_fmt);
@@ -127,10 +127,10 @@ int kp_strfmt(ktap_State *ks, struct trace_seq *seq)
 			strfrmt = scanformat(ks, strfrmt, form);
 			switch (*strfrmt++) {
 			case 'c':
-				trace_seq_printf(seq, form, nvalue(GetArg(ks, arg)));
+				trace_seq_printf(seq, form, nvalue(kp_arg(ks, arg)));
 				break;
 			case 'd':  case 'i': {
-				ktap_Number n = nvalue(GetArg(ks, arg));
+				ktap_Number n = nvalue(kp_arg(ks, arg));
 				INTFRM_T ni = (INTFRM_T)n;
 				#if 0
 				INTFRM_T ni = (INTFRM_T)n;
@@ -143,15 +143,15 @@ int kp_strfmt(ktap_State *ks, struct trace_seq *seq)
 				break;
 			}
 			case 'o':  case 'u':  case 'x':  case 'X': {
-				ktap_Number n = nvalue(GetArg(ks, arg));
+				ktap_Number n = nvalue(kp_arg(ks, arg));
 				unsigned INTFRM_T ni = (unsigned INTFRM_T)n;
 				addlenmod(form, INTFRMLEN);
 				trace_seq_printf(seq, form, ni);
 				break;
 			}
 			case 's': {
-				const char *s = svalue(GetArg(ks, arg));
-				size_t l = rawtsvalue((GetArg(ks, arg)))->tsv.len;
+				const char *s = svalue(kp_arg(ks, arg));
+				size_t l = rawtsvalue((kp_arg(ks, arg)))->tsv.len;
 				if (!strchr(form, '.') && l >= 100) {
 					/*
 					 * no precision and string is too long to be formatted;

@@ -41,7 +41,7 @@ static int ktap_lib_next(ktap_State *ks)
 
 static int ktap_lib_pairs(ktap_State *ks)
 {
-	Table *t = hvalue(GetArg(ks, 1));
+	Table *t = hvalue(kp_arg(ks, 1));
 
 	setfvalue(ks->top++, ktap_lib_next);
 	sethvalue(ks->top++, t);
@@ -51,7 +51,7 @@ static int ktap_lib_pairs(ktap_State *ks)
 
 static int ktap_lib_len(ktap_State *ks)
 {
-	int len = kp_objlen(ks, GetArg(ks, 1));
+	int len = kp_objlen(ks, kp_arg(ks, 1));
 
 	if (len < 0)
 		return -1;
@@ -64,10 +64,10 @@ static int ktap_lib_len(ktap_State *ks)
 static int ktap_lib_print(ktap_State *ks)
 {
 	int i;
-	int n = GetArgN(ks);
+	int n = kp_arg_nr(ks);
 
 	for (i = 1; i <= n; i++) {
-		Tvalue *arg = GetArg(ks, i);
+		Tvalue *arg = kp_arg(ks, i);
 		if (i > 1)
 			kp_printf(ks, "\t");
 		kp_showobj(ks, arg);
@@ -167,7 +167,7 @@ static int ktap_lib_kernel_v(ktap_State *ks)
 
 static int ktap_lib_user_string(ktap_State *ks)
 {
-	unsigned long addr = nvalue(GetArg(ks, 1));
+	unsigned long addr = nvalue(kp_arg(ks, 1));
 	char str[256] = {0};
 	int ret;
 
@@ -184,13 +184,13 @@ static int ktap_lib_user_string(ktap_State *ks)
 
 static int ktap_lib_count(ktap_State *ks)
 {
-	Table *tbl = hvalue(GetArg(ks, 1));
-	Tvalue *k = GetArg(ks, 2);
+	Table *tbl = hvalue(kp_arg(ks, 1));
+	Tvalue *k = kp_arg(ks, 2);
 	int n;
 	Tvalue *v;
 
-	if (GetArgN(ks) > 2)
-		n = nvalue(GetArg(ks, 3));
+	if (kp_arg_nr(ks) > 2)
+		n = nvalue(kp_arg(ks, 3));
 	else
 		n = 1;
 
@@ -205,7 +205,7 @@ static int ktap_lib_count(ktap_State *ks)
 
 static int ktap_lib_histogram(ktap_State *ks)
 {
-	kp_table_histogram(ks, hvalue(GetArg(ks, 1))); /* need to check firstly */
+	kp_table_histogram(ks, hvalue(kp_arg(ks, 1))); /* need to check firstly */
 	return 0;
 }
 
