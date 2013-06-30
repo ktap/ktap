@@ -98,7 +98,7 @@ unsigned int kp_string_hash(const char *str, size_t l, unsigned int seed)
 void kp_tstring_resize(ktap_state *ks, int newsize)
 {
 	int i;
-	Stringtable *tb = &G(ks)->strt;
+	ktap_stringtable *tb = &G(ks)->strt;
 
 	/* todo: */
 	/* cannot resize while GC is traversing strings */
@@ -175,7 +175,7 @@ static ktap_string *newshrstr(ktap_state *ks, const char *str, size_t l,
 			  unsigned int h)
 {
 	ktap_gcobject **list;
-	Stringtable *tb = &G(ks)->strt;
+	ktap_stringtable *tb = &G(ks)->strt;
 	ktap_string *s;
 
 	if (tb->nuse >= (int)tb->size)

@@ -248,14 +248,14 @@ typedef struct Table {
 #define lmod(s,size)	((int)((s) & ((size)-1)))
 
 
-typedef struct Stringtable {
+typedef struct ktap_stringtable {
 	ktap_gcobject **hash;
 	int nuse;
 	int size;
-} Stringtable;
+} ktap_stringtable;
 
 typedef struct ktap_global_state {
-	Stringtable strt;  /* hash table for strings */
+	ktap_stringtable strt;  /* hash table for strings */
 	ktap_value registry;
 	unsigned int seed; /* randonized seed for hashes */
 	u8 gcstate; /* state of garbage collector */
