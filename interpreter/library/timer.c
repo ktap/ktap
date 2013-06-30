@@ -26,7 +26,7 @@
 struct hrtimer_ktap {
 	struct hrtimer timer;
 	ktap_state *ks;
-	Closure *cl;
+	ktap_closure *cl;
 	u64 ns;
 	struct list_head list;
 };
@@ -66,7 +66,7 @@ static int set_timer(ktap_state *ks, int factor)
 	u64 period;
 	ktap_value *tracefunc;
 	int n = nvalue(kp_arg(ks, 1));
-	Closure *cl;
+	ktap_closure *cl;
 
 	period = (u64)factor * n;
 	
@@ -74,7 +74,7 @@ static int set_timer(ktap_state *ks, int factor)
 		tracefunc = kp_arg(ks, 2);
 
 		if (ttisfunc(tracefunc))
-			cl = (Closure *)gcvalue(tracefunc);
+			cl = (ktap_closure *)gcvalue(tracefunc);
 		else
 			cl = NULL;
 	} else

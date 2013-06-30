@@ -24,7 +24,7 @@
 struct ktap_event_file {
 	struct ftrace_event_file file;
 	ktap_state *ks;
-	Closure *cl;
+	ktap_closure *cl;
 };
 
 static void *entry_percpu_buffer;
@@ -112,7 +112,7 @@ static void enable_event(struct ftrace_event_call *call, void *data)
 	call->class->reg(call, TRACE_REG_REGISTER, &ktap_file->file);
 
 
-int start_trace(ktap_state *ks, const char *event_name, Closure *cl)
+int start_trace(ktap_state *ks, const char *event_name, ktap_closure *cl)
 {
 	struct ktap_trace_arg arg;
 

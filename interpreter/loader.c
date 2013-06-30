@@ -248,11 +248,11 @@ static int verify_code(struct load_state *S, Proto *f)
 }
 
 
-Closure *kp_load(ktap_state *ks, unsigned char *buff)
+ktap_closure *kp_load(ktap_state *ks, unsigned char *buff)
 {
 	struct load_state S;
-	Closure *cl;
-	LClosure *f;
+	ktap_closure *cl;
+	Lktap_closure *f;
 	int ret, i;
 
 	S.ks = ks;

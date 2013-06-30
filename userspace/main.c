@@ -40,7 +40,7 @@ void *ktapc_reallocv(void *block, size_t osize, size_t nsize)
 	return kp_reallocv(NULL, block, osize, nsize);
 }
 
-Closure *ktapc_newlclosure(int n)
+ktap_closure *ktapc_newlclosure(int n)
 {
 	return kp_newlclosure(NULL, n);
 }
@@ -383,7 +383,7 @@ static int parse_option(int argc, char **argv)
 
 static void compile(const char *input)
 {
-	Closure *cl;
+	ktap_closure *cl;
 	unsigned char *buff;
 	struct stat sb;
 	int fdin, fdout;

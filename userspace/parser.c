@@ -1752,14 +1752,14 @@ static void mainfunc(LexState *ls, FuncState *fs)
 	close_func(ls);
 }
 
-Closure *ktapc_parser(unsigned char *ptr, const char *name)
+ktap_closure *ktapc_parser(unsigned char *ptr, const char *name)
 {
 	LexState lexstate;
 	FuncState funcstate;
 	Dyndata dyd;
 	Mbuffer buff;
 	int firstchar = *ptr++;
-	Closure *cl = ktapc_newlclosure(1);  /* create main closure */
+	ktap_closure *cl = ktapc_newlclosure(1);  /* create main closure */
 
 	memset(&lexstate, 0, sizeof(LexState));
 	memset(&funcstate, 0, sizeof(FuncState));

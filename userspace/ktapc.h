@@ -289,14 +289,14 @@ void lex_syntaxerror(LexState *ls, const char *msg);
 void lex_setinput(LexState *ls, unsigned char *ptr, Tstring *source, int firstchar);
 void lex_next(LexState *ls);
 int lex_lookahead(LexState *ls);
-Closure *ktapc_parser(unsigned char *pos, const char *name);
+ktap_closure *ktapc_parser(unsigned char *pos, const char *name);
 Tstring *ktapc_ts_new(const char *str);
 int ktapc_ts_eqstr(Tstring *a, Tstring *b);
 Tstring *ktapc_ts_newlstr(const char *str, size_t l);
 Proto *ktapc_newproto();
 Table *ktapc_table_new();
 ktap_value *ktapc_table_set(Table *t, const ktap_value *key);
-Closure *ktapc_newlclosure(int n);
+ktap_closure *ktapc_newlclosure(int n);
 char *ktapc_sprintf(const char *fmt, ...);
 
 void *ktapc_reallocv(void *block, size_t osize, size_t nsize);

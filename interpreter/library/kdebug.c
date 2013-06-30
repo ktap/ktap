@@ -41,12 +41,12 @@ struct ktap_probe_event {
 	const char *name;
 	struct perf_event *perf;
 	ktap_state *ks;
-	Closure *cl;
+	ktap_closure *cl;
 };
 
 DEFINE_PER_CPU(bool, ktap_in_tracing);
 
-static void ktap_call_probe_closure(ktap_state *mainthread, Closure *cl,
+static void ktap_call_probe_closure(ktap_state *mainthread, ktap_closure *cl,
 				    struct ktap_event *e)
 {
 	ktap_state *ks;
@@ -442,7 +442,7 @@ static void perf_destructor(struct ktap_probe_event *ktap_pevent)
 	perf_event_release_kernel(ktap_pevent->perf);
 }
 
-static void start_probe_by_id(ktap_state *ks, int id, Closure *cl)
+static void start_probe_by_id(ktap_state *ks, int id, ktap_closure *cl)
 {
 	struct ktap_probe_event *ktap_pevent;
 	struct perf_event_attr attr;
@@ -512,7 +512,7 @@ static int ktap_lib_probe_by_id(ktap_state *ks)
 {
 	const char *ids_str = svalue(kp_arg(ks, 1));
 	ktap_value *tracefunc;
-	Closure *cl;
+	ktap_closure *cl;
 	char **argv;
 	int argc, i;
 
@@ -520,7 +520,7 @@ static int ktap_lib_probe_by_id(ktap_state *ks)
 		tracefunc = kp_arg(ks, 2);
 
 		if (ttisfunc(tracefunc))
-			cl = (Closure *)gcvalue(tracefunc);
+			cl = (ktap_closure *)gcvalue(tracefunc);
 		else
 			cl = NULL;
 	} else

@@ -200,11 +200,11 @@ Upval *kp_newupval(ktap_state *ks)
 }
 
 
-Closure *kp_newlclosure(ktap_state *ks, int n)
+ktap_closure *kp_newlclosure(ktap_state *ks, int n)
 {
-	Closure *cl;
+	ktap_closure *cl;
 
-	cl = (Closure *)kp_newobject(ks, KTAP_TLCL, sizeof(*cl), NULL);
+	cl = (ktap_closure *)kp_newobject(ks, KTAP_TLCL, sizeof(*cl), NULL);
 	cl->l.p = NULL;
 	cl->l.nupvalues = n;
 	while (n--)

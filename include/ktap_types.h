@@ -145,27 +145,27 @@ typedef struct Upval {
 } Upval;
 
 
-#define ClosureHeader \
+#define ktap_closureHeader \
 	CommonHeader; u8 nupvalues; Gcobject *gclist
 
-typedef struct CClosure {
-	ClosureHeader;
+typedef struct Cktap_closure {
+	ktap_closureHeader;
 	ktap_cfunction f;
 	ktap_value upvalue[1];  /* list of upvalues */
-} CClosure;
+} Cktap_closure;
 
 
-typedef struct LClosure {
-	ClosureHeader;
+typedef struct Lktap_closure {
+	ktap_closureHeader;
 	struct Proto *p;
 	struct Upval *upvals[1];  /* list of upvalues */
-} LClosure;
+} Lktap_closure;
 
 
-typedef struct Closure {
-	struct CClosure c;
-	struct LClosure l;
-} Closure;
+typedef struct ktap_closure {
+	struct Cktap_closure c;
+	struct Lktap_closure l;
+} ktap_closure;
 
 
 typedef struct Proto {
@@ -176,7 +176,7 @@ typedef struct Proto {
 	int *lineinfo;  /* map from opcodes to source lines (debug information) */
 	struct LocVar *locvars;  /* information about local variables (debug information) */
 	struct Upvaldesc *upvalues;  /* upvalue information */
-	Closure *cache;  /* last created closure with this prototype */
+	ktap_closure *cache;  /* last created closure with this prototype */
 	Tstring  *source;  /* used for debug information */
 	int sizeupvalues;  /* size of 'upvalues' */
 	int sizek;  /* size of `k' */
@@ -277,7 +277,7 @@ typedef struct ktap_global_state {
 	struct list_head probe_events_head;
 	int exit;
 	struct semaphore sync_sem;
-	Closure *trace_end_closure;
+	ktap_closure *trace_end_closure;
 #endif
 } ktap_global_state;
 
@@ -320,7 +320,7 @@ union Gcobject {
   gcheader gch;  /* common header */
   union Tstring ts;
   union Udata u;
-  struct Closure cl;
+  struct ktap_closure cl;
   struct Table h;
   struct Proto p;
   struct Upval uv;
@@ -526,7 +526,7 @@ void kp_showobj(ktap_state *ks, const ktap_value *v);
 int kp_objlen(ktap_state *ks, const ktap_value *rb);
 Gcobject *kp_newobject(ktap_state *ks, int type, size_t size, Gcobject **list);
 int kp_equalobjv(ktap_state *ks, const ktap_value *t1, const ktap_value *t2);
-Closure *kp_newlclosure(ktap_state *ks, int n);
+ktap_closure *kp_newlclosure(ktap_state *ks, int n);
 Proto *kp_newproto(ktap_state *ks);
 Upval *kp_newupval(ktap_state *ks);
 void kp_free_all_gcobject(ktap_state *ks);

@@ -163,7 +163,7 @@ static void pushclosure(ktap_state *ks, Proto *p, Upval **encup, StkId base,
 	int nup = p->sizeupvalues;
 	Upvaldesc *uv = p->upvalues;
 	int i;
-	Closure *ncl = kp_newlclosure(ks, nup);
+	ktap_closure *ncl = kp_newlclosure(ks, nup);
 
 	ncl->l.p = p;
 	setcllvalue(ra, ncl);  /* anchor new closure in stack */
@@ -404,7 +404,7 @@ static void ktap_execute(ktap_state *ks)
 {
 	int exec_count = 0;
 	Callinfo *ci;
-	LClosure *cl;
+	Lktap_closure *cl;
 	ktap_value *k;
 	unsigned int instr, opcode;
 	StkId base; /* stack pointer */

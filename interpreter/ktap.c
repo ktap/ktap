@@ -139,7 +139,7 @@ static int ktap_main(struct file *file, struct ktap_user_parm *uparm_ptr)
 {
 	unsigned long *buff = NULL;
 	ktap_state *ks;
-	Closure *cl;
+	ktap_closure *cl;
 	char **argv;
 	int ret;
 
