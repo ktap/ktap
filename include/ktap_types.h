@@ -279,7 +279,7 @@ typedef struct ktap_global_state {
 	struct semaphore sync_sem;
 	Closure *trace_end_closure;
 #endif
-} global_State;
+} ktap_global_state;
 
 typedef struct ktap_state {
 	CommonHeader;
