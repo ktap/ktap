@@ -252,7 +252,7 @@ ktap_closure *kp_load(ktap_state *ks, unsigned char *buff)
 {
 	struct load_state S;
 	ktap_closure *cl;
-	Lktap_closure *f;
+	ktap_lclosure *f;
 	int ret, i;
 
 	S.ks = ks;

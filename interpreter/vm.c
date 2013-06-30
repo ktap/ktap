@@ -404,7 +404,7 @@ static void ktap_execute(ktap_state *ks)
 {
 	int exec_count = 0;
 	Callinfo *ci;
-	Lktap_closure *cl;
+	ktap_lclosure *cl;
 	ktap_value *k;
 	unsigned int instr, opcode;
 	StkId base; /* stack pointer */

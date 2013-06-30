@@ -145,26 +145,26 @@ typedef struct Upval {
 } Upval;
 
 
-#define ktap_closureHeader \
+#define ktap_closure_header \
 	CommonHeader; u8 nupvalues; Gcobject *gclist
 
-typedef struct Cktap_closure {
-	ktap_closureHeader;
+typedef struct ktap_cclosure {
+	ktap_closure_header;
 	ktap_cfunction f;
 	ktap_value upvalue[1];  /* list of upvalues */
-} Cktap_closure;
+} ktap_cclosure;
 
 
-typedef struct Lktap_closure {
-	ktap_closureHeader;
+typedef struct ktap_lclosure {
+	ktap_closure_header;
 	struct Proto *p;
 	struct Upval *upvals[1];  /* list of upvalues */
-} Lktap_closure;
+} ktap_lclosure;
 
 
 typedef struct ktap_closure {
-	struct Cktap_closure c;
-	struct Lktap_closure l;
+	struct ktap_cclosure c;
+	struct ktap_lclosure l;
 } ktap_closure;
 
 
