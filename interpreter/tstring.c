@@ -195,7 +195,7 @@ static DEFINE_SPINLOCK(tstring_lock);
 static Tstring *internshrstr(ktap_state *ks, const char *str, size_t l)
 {
 	Gcobject *o;
-	global_State *g = G(ks);
+	ktap_global_state *g = G(ks);
 	Tstring *ts;
 	unsigned int h = kp_string_hash(str, l, g->seed);
 
@@ -250,7 +250,7 @@ Tstring *kp_tstring_new_local(ktap_state *ks, const char *str)
 
 void kp_tstring_freeall(ktap_state *ks)
 {
-	global_State *g = G(ks);
+	ktap_global_state *g = G(ks);
 	int h;
 
 	for (h = 0; h < g->strt.size; h++) {
@@ -271,7 +271,7 @@ void kp_tstring_freeall(ktap_state *ks)
 void kp_tstring_dump(ktap_state *ks)
 {
 	Gcobject *o;
-	global_State *g = G(ks);
+	ktap_global_state *g = G(ks);
 	int h;
 
 	kp_printf(ks, "tstring dump: strt size: %d, nuse: %d\n", g->strt.size, g->strt.nuse);

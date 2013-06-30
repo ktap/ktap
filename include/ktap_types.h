@@ -87,7 +87,7 @@ typedef union Tstring {
 #define svalue(o)       getstr(rawtsvalue(o))
 
 
-union value {
+union _ktap_value {
 	Gcobject *gc;    /* collectable objects */
 	void *p;         /* light userdata */
 	int b;           /* booleans */
@@ -96,12 +96,12 @@ union value {
 };
 
 
-typedef struct Tvalue {
-	union value val;
+typedef struct ktap_value {
+	union _ktap_value val;
 	int type;
-} Tvalue;
+} ktap_value;
 
-typedef Tvalue * StkId;
+typedef ktap_value * StkId;
 
 
 
@@ -134,9 +134,9 @@ typedef struct LocVar {
 
 typedef struct Upval {
 	CommonHeader;
-	Tvalue *v;  /* points to stack or to its own value */
+	ktap_value *v;  /* points to stack or to its own value */
 	union {
-		Tvalue value;  /* the value (when closed) */
+		ktap_value value;  /* the value (when closed) */
 		struct {  /* double linked list (when open) */
 			struct Upval *prev;
 			struct Upval *next;
@@ -151,7 +151,7 @@ typedef struct Upval {
 typedef struct CClosure {
 	ClosureHeader;
 	ktap_cfunction f;
-	Tvalue upvalue[1];  /* list of upvalues */
+	ktap_value upvalue[1];  /* list of upvalues */
 } CClosure;
 
 
@@ -170,7 +170,7 @@ typedef struct Closure {
 
 typedef struct Proto {
 	CommonHeader;
-	Tvalue *k;  /* constants used by the function */
+	ktap_value *k;  /* constants used by the function */
 	unsigned int *code;
 	struct Proto **p;  /* functions defined inside the function */
 	int *lineinfo;  /* map from opcodes to source lines (debug information) */
@@ -220,16 +220,16 @@ typedef struct Callinfo {
  */
 typedef union Tkey {
 	struct {
-		union value value_;
+		union _ktap_value value_;
 		int tt_;
 		struct Node *next;  /* for chaining */
 	} nk;
-	Tvalue tvk;
+	ktap_value tvk;
 } Tkey;
 
 
 typedef struct Node {
-	Tvalue i_val;
+	ktap_value i_val;
 	Tkey i_key;
 } Node;
 
@@ -239,7 +239,7 @@ typedef struct Table {
 	u8 flags;  /* 1<<p means tagmethod(p) is not present */
 	u8 lsizenode;  /* log2 of size of `node' array */
 	int sizearray;  /* size of `array' array */
-	Tvalue *array;  /* array part */
+	ktap_value *array;  /* array part */
 	Node *node;
 	Node *lastfree;  /* any free position is before this position */
 	Gcobject *gclist;
@@ -256,7 +256,7 @@ typedef struct Stringtable {
 
 typedef struct ktap_global_state {
 	Stringtable strt;  /* hash table for strings */
-	Tvalue registry;
+	ktap_value registry;
 	unsigned int seed; /* randonized seed for hashes */
 	u8 gcstate; /* state of garbage collector */
 	u8 gckind; /* kind of GC running */
@@ -269,7 +269,7 @@ typedef struct ktap_global_state {
 	struct ktap_state *mainthread;
 #ifdef __KERNEL__
 	int nr_builtin_cfunction;
-	Tvalue *cfunction_tbl;
+	ktap_value *cfunction_tbl;
 	struct task_struct *task;
 	struct rchan *ktap_chan;
 	int trace_enabled;
@@ -284,7 +284,7 @@ typedef struct ktap_global_state {
 typedef struct ktap_state {
 	CommonHeader;
 	u8 status;
-	global_State *g;
+	ktap_global_state *g;
 	StkId top;
 	Callinfo *ci;
 	const unsigned long *oldpc;
@@ -438,39 +438,39 @@ typedef int ktap_Number;
 
 
 
-#define setnilvalue(obj) {Tvalue *io = (obj); settype(io, KTAP_TNIL);}
+#define setnilvalue(obj) {ktap_value *io = (obj); settype(io, KTAP_TNIL);}
 
 #define setbvalue(obj, x) \
-  {Tvalue *io = (obj); io->val.b = (x); settype(io, KTAP_TBOOLEAN); }
+  {ktap_value *io = (obj); io->val.b = (x); settype(io, KTAP_TBOOLEAN); }
 
 #define setnvalue(obj, x) \
-  { Tvalue *io = (obj); io->val.n = (x); settype(io, KTAP_TNUMBER); }
+  { ktap_value *io = (obj); io->val.n = (x); settype(io, KTAP_TNUMBER); }
 
 #define setsvalue(obj, x) \
-  { Tvalue *io = (obj); \
+  { ktap_value *io = (obj); \
     Tstring *x_ = (x); \
     io->val.gc = (Gcobject *)x_; settype(io, x_->tsv.tt); }
 
 #define setcllvalue(obj, x) \
-  { Tvalue *io = (obj); \
+  { ktap_value *io = (obj); \
     io->val.gc = (Gcobject *)x; settype(io, KTAP_TLCL); }
 
 #define sethvalue(obj,x) \
-  { Tvalue *io=(obj); \
+  { ktap_value *io=(obj); \
     val_(io).gc = (Gcobject *)(x); settype(io, KTAP_TTABLE); }
 
 #define setfvalue(obj,x) \
-  { Tvalue *io=(obj); val_(io).f=(x); settype(io, KTAP_TLCF); }
+  { ktap_value *io=(obj); val_(io).f=(x); settype(io, KTAP_TLCF); }
 
 #define setthvalue(L,obj,x) \
-  { Tvalue *io=(obj); \
+  { ktap_value *io=(obj); \
     val_(io).gc = (Gcobject *)(x); settype(io, KTAP_TTHREAD); }
 
 #define setevalue(obj, x) \
-  { Tvalue *io=(obj); val_(io).p = (x); settype(io, KTAP_TEVENT); }
+  { ktap_value *io=(obj); val_(io).p = (x); settype(io, KTAP_TEVENT); }
 
 #define setobj(obj1,obj2) \
-        { const Tvalue *io2=(obj2); Tvalue *io1=(obj1); \
+        { const ktap_value *io2=(obj2); ktap_value *io1=(obj1); \
           io1->val = io2->val; io1->type = io2->type; }
 
 #define rawequalobj(t1, t2) \
@@ -507,12 +507,12 @@ void kp_tstring_resize(ktap_state *ks, int newsize);
 void kp_tstring_freeall(ktap_state *ks);
 Tstring *kp_tstring_assemble(ktap_state *ks, const char *str, size_t l);
 
-Tvalue *kp_table_set(ktap_state *ks, Table *t, const Tvalue *key);
+ktap_value *kp_table_set(ktap_state *ks, Table *t, const ktap_value *key);
 Table *kp_table_new(ktap_state *ks);
-const Tvalue *kp_table_getint(Table *t, int key);
-void kp_table_setint(ktap_state *ks, Table *t, int key, Tvalue *v);
-const Tvalue *kp_table_get(Table *t, const Tvalue *key);
-void kp_table_setvalue(ktap_state *ks, Table *t, const Tvalue *key, Tvalue *val);
+const ktap_value *kp_table_getint(Table *t, int key);
+void kp_table_setint(ktap_state *ks, Table *t, int key, ktap_value *v);
+const ktap_value *kp_table_get(Table *t, const ktap_value *key);
+void kp_table_setvalue(ktap_state *ks, Table *t, const ktap_value *key, ktap_value *val);
 void kp_table_resize(ktap_state *ks, Table *t, int nasize, int nhsize);
 void kp_table_resizearray(ktap_state *ks, Table *t, int nasize);
 void kp_table_free(ktap_state *ks, Table *t);
@@ -521,11 +521,11 @@ void kp_table_dump(ktap_state *ks, Table *t);
 void kp_table_histogram(ktap_state *ks, Table *t);
 int kp_table_next(ktap_state *ks, Table *t, StkId key);
 
-void kp_obj_dump(ktap_state *ks, const Tvalue *v);
-void kp_showobj(ktap_state *ks, const Tvalue *v);
-int kp_objlen(ktap_state *ks, const Tvalue *rb);
+void kp_obj_dump(ktap_state *ks, const ktap_value *v);
+void kp_showobj(ktap_state *ks, const ktap_value *v);
+int kp_objlen(ktap_state *ks, const ktap_value *rb);
 Gcobject *kp_newobject(ktap_state *ks, int type, size_t size, Gcobject **list);
-int kp_equalobjv(ktap_state *ks, const Tvalue *t1, const Tvalue *t2);
+int kp_equalobjv(ktap_state *ks, const ktap_value *t1, const ktap_value *t2);
 Closure *kp_newlclosure(ktap_state *ks, int n);
 Proto *kp_newproto(ktap_state *ks);
 Upval *kp_newupval(ktap_state *ks);
@@ -562,7 +562,7 @@ void kp_printf(ktap_state *ks, const char *fmt, ...);
  * and G(ks)->seed, so ktapc need to init those field
  */
 #define G(ks)   (&dummy_global_state)
-extern global_State dummy_global_state;
+extern ktap_global_state dummy_global_state;
 
 #define kp_malloc(ks, size)			malloc(size)
 #define kp_free(ks, block)			free(block)

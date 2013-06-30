@@ -102,12 +102,12 @@ static int load_constants(struct load_state *S, Proto *f)
 	n = READ_INT(S);
 
 	f->sizek = n;
-	f->k = NEW_VECTOR(S, n * sizeof(Tvalue));
+	f->k = NEW_VECTOR(S, n * sizeof(ktap_value));
 	for (i = 0; i < n; i++)
 		setnilvalue(&f->k[i]);
 
 	for (i=0; i < n; i++) {
-		Tvalue *o = &f->k[i];
+		ktap_value *o = &f->k[i];
 
 		int t = READ_CHAR(S);
 		switch (t) {
@@ -125,7 +125,7 @@ static int load_constants(struct load_state *S, Proto *f)
 			setsvalue(o, READ_STRING(S));
 			break;
 		default:
-			kp_printf(S->ks, "ktap: load_constants: unknow Tvalue\n");
+			kp_printf(S->ks, "ktap: load_constants: unknow ktap_value\n");
 			return -1;
 			
 		}
@@ -291,7 +291,7 @@ Closure *kp_load(ktap_state *ks, unsigned char *buff)
 	/* set global table as 1st upvalue of 'f' */
 	if (f->nupvalues == 1) {
 		Table *reg = hvalue(&G(ks)->registry);
-		const Tvalue *gt = kp_table_getint(reg, KTAP_RIDX_GLOBALS);
+		const ktap_value *gt = kp_table_getint(reg, KTAP_RIDX_GLOBALS);
 		setobj(f->upvals[0]->v, gt);
 	}
 

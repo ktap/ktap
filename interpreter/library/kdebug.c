@@ -50,7 +50,7 @@ static void ktap_call_probe_closure(ktap_state *mainthread, Closure *cl,
 				    struct ktap_event *e)
 {
 	ktap_state *ks;
-	Tvalue *func;
+	ktap_value *func;
 
 	ks = kp_newthread(mainthread);
 	setcllvalue(ks->top, cl);
@@ -511,7 +511,7 @@ static void end_probes(struct ktap_state *ks)
 static int ktap_lib_probe_by_id(ktap_state *ks)
 {
 	const char *ids_str = svalue(kp_arg(ks, 1));
-	Tvalue *tracefunc;
+	ktap_value *tracefunc;
 	Closure *cl;
 	char **argv;
 	int argc, i;
@@ -547,7 +547,7 @@ static int ktap_lib_probe_by_id(ktap_state *ks)
 
 static int ktap_lib_probe_end(ktap_state *ks)
 {
-	Tvalue *endfunc;
+	ktap_value *endfunc;
 
 	if (kp_arg_nr(ks) == 0)
 		return 0;

@@ -67,7 +67,7 @@ static int ktap_lib_print(ktap_state *ks)
 	int n = kp_arg_nr(ks);
 
 	for (i = 1; i <= n; i++) {
-		Tvalue *arg = kp_arg(ks, i);
+		ktap_value *arg = kp_arg(ks, i);
 		if (i > 1)
 			kp_printf(ks, "\t");
 		kp_showobj(ks, arg);
@@ -185,9 +185,9 @@ static int ktap_lib_user_string(ktap_state *ks)
 static int ktap_lib_count(ktap_state *ks)
 {
 	Table *tbl = hvalue(kp_arg(ks, 1));
-	Tvalue *k = kp_arg(ks, 2);
+	ktap_value *k = kp_arg(ks, 2);
 	int n;
-	Tvalue *v;
+	ktap_value *v;
 
 	if (kp_arg_nr(ks) > 2)
 		n = nvalue(kp_arg(ks, 3));

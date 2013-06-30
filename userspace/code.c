@@ -306,9 +306,9 @@ static void freeexp(FuncState *fs, expdesc *e)
 		freereg(fs, e->u.info);
 }
 
-static int addk(FuncState *fs, Tvalue *key, Tvalue *v)
+static int addk(FuncState *fs, ktap_value *key, ktap_value *v)
 {
-	Tvalue *idx = ktapc_table_set(fs->h, key);
+	ktap_value *idx = ktapc_table_set(fs->h, key);
 	Proto *f = fs->f;
 	int k, oldsize;
 
@@ -326,7 +326,7 @@ static int addk(FuncState *fs, Tvalue *key, Tvalue *v)
 	/* numerical value does not need GC barrier;
 	   table has no metatable, so it does not need to invalidate cache */
 	setnvalue(idx, (ktap_Number)(k));
-	ktapc_growvector(f->k, k, f->sizek, Tvalue, MAXARG_Ax, "constants");
+	ktapc_growvector(f->k, k, f->sizek, ktap_value, MAXARG_Ax, "constants");
 	while (oldsize < f->sizek)
 		setnilvalue(&f->k[oldsize++]);
 	setobj(&f->k[k], v);
@@ -336,7 +336,7 @@ static int addk(FuncState *fs, Tvalue *key, Tvalue *v)
 
 int codegen_stringK(FuncState *fs, Tstring *s)
 {
-	Tvalue o;
+	ktap_value o;
 
 	setsvalue(&o, s);
 	return addk(fs, &o, &o);
@@ -345,7 +345,7 @@ int codegen_stringK(FuncState *fs, Tstring *s)
 int codegen_numberK(FuncState *fs, ktap_Number r)
 {
 	int n;
-	Tvalue o, s;
+	ktap_value o, s;
 
 	setnvalue(&o, r);
 	if (r == 0 || ktap_numisnan(NULL, r)) {  /* handle -0 and NaN */
@@ -361,14 +361,14 @@ int codegen_numberK(FuncState *fs, ktap_Number r)
 
 static int boolK(FuncState *fs, int b)
 {
-	Tvalue o;
+	ktap_value o;
 	setbvalue(&o, b);
 	return addk(fs, &o, &o);
 }
 
 static int nilK(FuncState *fs)
 {
-	Tvalue k, v;
+	ktap_value k, v;
 	setnilvalue(&v);
 	/* cannot use nil as key; instead use table itself to represent nil */
 	sethvalue(&k, fs->h);

@@ -64,7 +64,7 @@ static int set_timer(ktap_state *ks, int factor)
 {
 	struct hrtimer_ktap *t;
 	u64 period;
-	Tvalue *tracefunc;
+	ktap_value *tracefunc;
 	int n = nvalue(kp_arg(ks, 1));
 	Closure *cl;
 

@@ -123,8 +123,8 @@ void lex_syntaxerror(LexState *ls, const char *msg)
  */
 Tstring *lex_newstring(LexState *ls, const char *str, size_t l)
 {
-	Tvalue *o;  /* entry for `str' */
-	Tvalue tsv;
+	ktap_value *o;  /* entry for `str' */
+	ktap_value tsv;
 	Tstring *ts = ktapc_ts_newlstr(str, l);  /* create new string */
 	setsvalue(&tsv, ts); 
 	o = ktapc_table_set(ls->fs->h, &tsv);

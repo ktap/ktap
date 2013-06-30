@@ -584,7 +584,7 @@ static void close_func(LexState *ls)
 	f->sizecode = fs->pc;
 	ktapc_reallocvector(f->lineinfo, f->sizelineinfo, fs->pc, int);
 	f->sizelineinfo = fs->pc;
-	ktapc_reallocvector(f->k, f->sizek, fs->nk, Tvalue);
+	ktapc_reallocvector(f->k, f->sizek, fs->nk, ktap_value);
 	f->sizek = fs->nk;
 	ktapc_reallocvector(f->p, f->sizep, fs->np, Proto *);
 	f->sizep = fs->np;

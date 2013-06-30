@@ -50,7 +50,7 @@ Proto *ktapc_newproto()
 	return kp_newproto(NULL);
 }
 
-Tvalue *ktapc_table_set(Table *t, const Tvalue *key)
+ktap_value *ktapc_table_set(Table *t, const ktap_value *key)
 {
 	return kp_table_set(NULL, t, key);
 }
@@ -141,7 +141,7 @@ void *ktapc_growaux(void *block, int *size, size_t size_elems, int limit,
 static void decode_instruction(Proto *f, int instr)
 {
 	int opcode = GET_OPCODE(instr);
-	Tvalue *k;
+	ktap_value *k;
 
 	k = f->k;
 
@@ -274,11 +274,11 @@ static void usage(const char *msg)
 	exit(EXIT_FAILURE);
 }
 
-global_State dummy_global_state;
+ktap_global_state dummy_global_state;
 
 static void init_dummy_global_state()
 {
-	memset(&dummy_global_state, 0, sizeof(global_State));
+	memset(&dummy_global_state, 0, sizeof(ktap_global_state));
 	dummy_global_state.seed = 201236;
 
         kp_tstring_resize(NULL, 32); /* set inital string hashtable size */

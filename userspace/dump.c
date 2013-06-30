@@ -90,7 +90,7 @@ static void DumpConstants(const Proto *f, DumpState *D)
 
 	DumpInt(n, D);
 	for (i = 0; i < n; i++) {
-		const Tvalue* o=&f->k[i];
+		const ktap_value* o=&f->k[i];
 		DumpChar(ttypenv(o), D);
 		switch (ttypenv(o)) {
 		case KTAP_TNIL:

@@ -27,7 +27,7 @@
 #endif
 
 
-void kp_obj_dump(ktap_state *ks, const Tvalue *v)
+void kp_obj_dump(ktap_state *ks, const ktap_value *v)
 {
 	switch (ttype(v)) {
 	case KTAP_TNIL:
@@ -61,7 +61,7 @@ void kp_obj_dump(ktap_state *ks, const Tvalue *v)
 	}
 }
 
-void kp_showobj(ktap_state *ks, const Tvalue *v)
+void kp_showobj(ktap_state *ks, const ktap_value *v)
 {
 	switch (ttype(v)) {
 	case KTAP_TNIL:
@@ -104,7 +104,7 @@ void kp_showobj(ktap_state *ks, const Tvalue *v)
 /*
  * equality of ktap values. ks == NULL means raw equality
  */
-int kp_equalobjv(ktap_state *ks, const Tvalue *t1, const Tvalue *t2)
+int kp_equalobjv(ktap_state *ks, const ktap_value *t1, const ktap_value *t2)
 {
 	switch (ttype(t1)) {
 	case KTAP_TNIL:
@@ -157,7 +157,7 @@ int kp_equalobjv(ktap_state *ks, const Tvalue *t1, const Tvalue *t2)
  * any of the indices that directly precedes a nil value
  * (that is, it may consider any such nil value as the end of the array).
  */
-int kp_objlen(ktap_state *ks, const Tvalue *v)
+int kp_objlen(ktap_state *ks, const ktap_value *v)
 {
 	switch(v->type) {
 	case KTAP_TTABLE:

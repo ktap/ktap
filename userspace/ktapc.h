@@ -295,7 +295,7 @@ int ktapc_ts_eqstr(Tstring *a, Tstring *b);
 Tstring *ktapc_ts_newlstr(const char *str, size_t l);
 Proto *ktapc_newproto();
 Table *ktapc_table_new();
-Tvalue *ktapc_table_set(Table *t, const Tvalue *key);
+ktap_value *ktapc_table_set(Table *t, const ktap_value *key);
 Closure *ktapc_newlclosure(int n);
 char *ktapc_sprintf(const char *fmt, ...);
 

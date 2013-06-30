@@ -38,7 +38,7 @@ static inline void sort(void *base, size_t num, size_t size,
 
 
 #define NILCONSTANT     {NULL}, KTAP_TNIL
-const struct Tvalue ktap_nilobjectv = {NILCONSTANT};
+const struct ktap_value ktap_nilobjectv = {NILCONSTANT};
 #define ktap_nilobject	(&ktap_nilobjectv)
 
 static const Node dummynode_ = {
@@ -105,7 +105,7 @@ Table *kp_table_new(ktap_state *ks)
 	return t;
 }
 
-const Tvalue *kp_table_getint(Table *t, int key)
+const ktap_value *kp_table_getint(Table *t, int key)
 {
 	Node *n;
 
@@ -124,7 +124,7 @@ const Tvalue *kp_table_getint(Table *t, int key)
 }
 
 
-static Node *mainposition (const Table *t, const Tvalue *key)
+static Node *mainposition (const Table *t, const ktap_value *key)
 {
 	switch (ttype(key)) {
 	case KTAP_TNUMBER:
@@ -150,7 +150,7 @@ static Node *mainposition (const Table *t, const Tvalue *key)
 	}
 }
 
-static int arrayindex(const Tvalue *key)
+static int arrayindex(const ktap_value *key)
 {
 	if (ttisnumber(key)) {
 		ktap_Number n = nvalue(key);
@@ -244,7 +244,7 @@ static int computesizes (int nums[], int *narray)
 }
 
 
-static int countint(const Tvalue *key, int *nums)
+static int countint(const ktap_value *key, int *nums)
 {
 	int k = arrayindex(key);
 
@@ -309,7 +309,7 @@ static void setarrayvector(ktap_state *ks, Table *t, int size)
 {
 	int i;
 
-	kp_realloc(ks, t->array, t->sizearray, size, Tvalue);
+	kp_realloc(ks, t->array, t->sizearray, size, ktap_value);
 	for (i = t->sizearray; i < size; i++)
 		setnilvalue(&t->array[i]);
 
@@ -364,7 +364,7 @@ void kp_table_resize(ktap_state *ks, Table *t, int nasize, int nhsize)
 		}
 
 		/* shrink array */
-		kp_realloc(ks, t->array, oldasize, nasize, Tvalue);
+		kp_realloc(ks, t->array, oldasize, nasize, ktap_value);
 	}
 
 	/* re-insert elements from hash part */
@@ -388,7 +388,7 @@ void kp_table_resizearray(ktap_state *ks, Table *t, int nasize)
 	kp_table_resize(ks, t, nasize, nsize);
 }
 
-static void rehash(ktap_state *ks, Table *t, const Tvalue *ek)
+static void rehash(ktap_state *ks, Table *t, const ktap_value *ek)
 {
 	int nasize, na;
 	int nums[MAXBITS+1];  /* nums[i] = number of keys with 2^(i-1) < k <= 2^i */
@@ -422,7 +422,7 @@ static Node *getfreepos(Table *t)
 }
 
 
-static Tvalue *table_newkey(ktap_state *ks, Table *t, const Tvalue *key)
+static ktap_value *table_newkey(ktap_state *ks, Table *t, const ktap_value *key)
 {
 	Node *mp;
 
@@ -460,7 +460,7 @@ static Tvalue *table_newkey(ktap_state *ks, Table *t, const Tvalue *key)
 /*
  * search function for short strings
  */
-const Tvalue *kp_table_getstr(Table *t, Tstring *key)
+const ktap_value *kp_table_getstr(Table *t, Tstring *key)
 {
 	Node *n = hashstr(t, key);
 
@@ -478,7 +478,7 @@ const Tvalue *kp_table_getstr(Table *t, Tstring *key)
 /*
  * main search function
  */
-const Tvalue *kp_table_get(Table *t, const Tvalue *key)
+const ktap_value *kp_table_get(Table *t, const ktap_value *key)
 {
 	switch (ttype(key)) {
 	case KTAP_TNIL:
@@ -507,32 +507,32 @@ const Tvalue *kp_table_get(Table *t, const Tvalue *key)
 }
 
 
-Tvalue *kp_table_set(ktap_state *ks, Table *t, const Tvalue *key)
+ktap_value *kp_table_set(ktap_state *ks, Table *t, const ktap_value *key)
 {
-	const Tvalue *p = kp_table_get(t, key);
+	const ktap_value *p = kp_table_get(t, key);
 
 	if (p != ktap_nilobject)
-		return (Tvalue *)p;
+		return (ktap_value *)p;
 	else
 		return table_newkey(ks, t, key);
 }
 
 
-void kp_table_setvalue(ktap_state *ks, Table *t, const Tvalue *key, Tvalue *val)
+void kp_table_setvalue(ktap_state *ks, Table *t, const ktap_value *key, ktap_value *val)
 {
 	setobj(kp_table_set(ks, t, key), val);
 }
 
 
-void kp_table_setint(ktap_state *ks, Table *t, int key, Tvalue *v)
+void kp_table_setint(ktap_state *ks, Table *t, int key, ktap_value *v)
 {
-	const Tvalue *p = kp_table_getint(t, key);
-	Tvalue *cell;
+	const ktap_value *p = kp_table_getint(t, key);
+	ktap_value *cell;
 
 	if (p != ktap_nilobject)
-		cell = (Tvalue *)p;
+		cell = (ktap_value *)p;
 	else {
-		Tvalue k;
+		ktap_value k;
 		setnvalue(&k, key);
 		cell = table_newkey(ks, t, &k);
 	}
@@ -545,7 +545,7 @@ int kp_table_length(ktap_state *ks, Table *t)
 	int i, len = 0;
 
 	for (i = 0; i < t->sizearray; i++) {
-		Tvalue *v = &t->array[i];
+		ktap_value *v = &t->array[i];
 
 		if (isnil(v))
 			continue;
@@ -580,7 +580,7 @@ void kp_table_dump(ktap_state *ks, Table *t)
 
 	kp_printf(ks, "{");
 	for (i = 0; i < t->sizearray; i++) {
-		Tvalue *v = &t->array[i];
+		ktap_value *v = &t->array[i];
 
 		if (isnil(v))
 			continue;
@@ -614,8 +614,8 @@ void kp_table_dump(ktap_state *ks, Table *t)
 }
 
 struct table_hist_record {
-	Tvalue key;
-	Tvalue val;
+	ktap_value key;
+	ktap_value val;
 };
 
 static int hist_record_cmp(const void *r1, const void *r2)
@@ -642,7 +642,7 @@ void kp_table_histogram(ktap_state *ks, Table *t)
 	thr = kp_malloc(ks, sizeof(*thr) * (t->sizearray + sizenode(t)));
 
 	for (i = 0; i < t->sizearray; i++) {
-		Tvalue *v = &t->array[i];
+		ktap_value *v = &t->array[i];
 
 		if (isnil(v))
 			continue;
@@ -676,8 +676,8 @@ void kp_table_histogram(ktap_state *ks, Table *t)
 	kp_printf(ks, "%32s%s%s\n", "value ", DISTRIBUTION_STR, " count");
 	dist_str[sizeof(dist_str) - 1] = '\0';
 	for (i = 0; i < count; i++) {
-		Tvalue *key = &thr[i].key;
-		Tvalue *val = &thr[i].val;
+		ktap_value *key = &thr[i].key;
+		ktap_value *val = &thr[i].val;
 
 		memset(dist_str, ' ', sizeof(dist_str) - 1);
 		ratio = (nvalue(val) * (sizeof(dist_str) - 1)) / total;
