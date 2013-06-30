@@ -23,7 +23,7 @@
 
 struct ktap_event_file {
 	struct ftrace_event_file file;
-	ktap_State *ks;
+	ktap_state *ks;
 	Closure *cl;
 };
 
@@ -112,7 +112,7 @@ static void enable_event(struct ftrace_event_call *call, void *data)
 	call->class->reg(call, TRACE_REG_REGISTER, &ktap_file->file);
 
 
-int start_trace(ktap_State *ks, const char *event_name, Closure *cl)
+int start_trace(ktap_state *ks, const char *event_name, Closure *cl)
 {
 	struct ktap_trace_arg arg;
 
@@ -126,7 +126,7 @@ int start_trace(ktap_State *ks, const char *event_name, Closure *cl)
 }
 
 /* cleanup all tracepoint owned by this ktap */
-void end_all_trace(ktap_State *ks)
+void end_all_trace(ktap_state *ks)
 {
 	struct ftrace_event_file *file, *tmp;
 
@@ -148,13 +148,13 @@ void end_all_trace(ktap_State *ks)
 	}
 }
 
-void ktap_trace_exit(ktap_State *ks)
+void ktap_trace_exit(ktap_state *ks)
 {
 	end_all_trace(ks);
 	free_percpu(entry_percpu_buffer);
 }
 
-int ktap_trace_init(ktap_State *ks)
+int ktap_trace_init(ktap_state *ks)
 {	
 	entry_percpu_buffer = __alloc_percpu(PAGE_SIZE,
 					     __alignof__(char));

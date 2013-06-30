@@ -138,7 +138,7 @@ static void free_argv(int argc, char **argv)
 static int ktap_main(struct file *file, struct ktap_user_parm *uparm_ptr)
 {
 	unsigned long *buff = NULL;
-	ktap_State *ks;
+	ktap_state *ks;
 	Closure *cl;
 	char **argv;
 	int ret;
@@ -155,7 +155,7 @@ static int ktap_main(struct file *file, struct ktap_user_parm *uparm_ptr)
 		return PTR_ERR(argv);
 	}
 
-	ks = kp_newstate((ktap_State **)&file->private_data, uparm_ptr->argc, argv);
+	ks = kp_newstate((ktap_state **)&file->private_data, uparm_ptr->argc, argv);
 
 	/* free argv memory after store into arg table */
 	free_argv(uparm_ptr->argc, argv);
@@ -187,7 +187,7 @@ static void print_version(void)
 static long ktap_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
 	struct ktap_user_parm uparm;
-	ktap_State *ks = file->private_data;
+	ktap_state *ks = file->private_data;
 	int ret;
 
 	switch (cmd) {
@@ -216,7 +216,7 @@ static long ktap_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 
 static unsigned int ktap_poll(struct file *file, poll_table *wait)
 {
-	ktap_State *ks = file->private_data;
+	ktap_state *ks = file->private_data;
 
 	if (!ks)
 		return 0;

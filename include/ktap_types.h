@@ -68,8 +68,8 @@ typedef union Gcobject Gcobject;
 
 #define CommonHeader Gcobject *next; u8 tt; u8 marked;
 
-struct ktap_State;
-typedef int (*ktap_cfunction) (struct ktap_State *ks);
+struct ktap_state;
+typedef int (*ktap_cfunction) (struct ktap_state *ks);
 
 typedef union Tstring {
 	int dummy;  /* ensures maximum alignment for strings */
@@ -254,7 +254,7 @@ typedef struct Stringtable {
 	int size;
 } Stringtable;
 
-typedef struct global_State {
+typedef struct ktap_global_state {
 	Stringtable strt;  /* hash table for strings */
 	Tvalue registry;
 	unsigned int seed; /* randonized seed for hashes */
@@ -266,7 +266,7 @@ typedef struct global_State {
 
 	Upval uvhead; /* head of double-linked list of all open upvalues */
 
-	struct ktap_State *mainthread;
+	struct ktap_state *mainthread;
 #ifdef __KERNEL__
 	int nr_builtin_cfunction;
 	Tvalue *cfunction_tbl;
@@ -281,7 +281,7 @@ typedef struct global_State {
 #endif
 } global_State;
 
-typedef struct ktap_State {
+typedef struct ktap_state {
 	CommonHeader;
 	u8 status;
 	global_State *g;
@@ -306,7 +306,7 @@ typedef struct ktap_State {
 #ifdef __KERNEL__
 	struct ktap_event *current_event;
 #endif
-} ktap_State;
+} ktap_state;
 
 
 typedef struct gcheader {
@@ -324,7 +324,7 @@ union Gcobject {
   struct Table h;
   struct Proto p;
   struct Upval uv;
-  struct ktap_State th;  /* thread */
+  struct ktap_state th;  /* thread */
 };
 
 #define gch(o)	(&(o)->gch)
@@ -495,41 +495,41 @@ typedef int ktap_Number;
 #define NUMPOW(a, b)    (pow(a, b))
 
 
-Tstring *kp_tstring_newlstr(ktap_State *ks, const char *str, size_t l);
-Tstring *kp_tstring_newlstr_local(ktap_State *ks, const char *str, size_t l);
-Tstring *kp_tstring_new(ktap_State *ks, const char *str);
-Tstring *kp_tstring_new_local(ktap_State *ks, const char *str);
+Tstring *kp_tstring_newlstr(ktap_state *ks, const char *str, size_t l);
+Tstring *kp_tstring_newlstr_local(ktap_state *ks, const char *str, size_t l);
+Tstring *kp_tstring_new(ktap_state *ks, const char *str);
+Tstring *kp_tstring_new_local(ktap_state *ks, const char *str);
 int kp_tstring_eqstr(Tstring *a, Tstring *b);
 unsigned int kp_string_hash(const char *str, size_t l, unsigned int seed);
 int kp_tstring_eqlngstr(Tstring *a, Tstring *b);
 int kp_tstring_cmp(const Tstring *ls, const Tstring *rs);
-void kp_tstring_resize(ktap_State *ks, int newsize);
-void kp_tstring_freeall(ktap_State *ks);
-Tstring *kp_tstring_assemble(ktap_State *ks, const char *str, size_t l);
+void kp_tstring_resize(ktap_state *ks, int newsize);
+void kp_tstring_freeall(ktap_state *ks);
+Tstring *kp_tstring_assemble(ktap_state *ks, const char *str, size_t l);
 
-Tvalue *kp_table_set(ktap_State *ks, Table *t, const Tvalue *key);
-Table *kp_table_new(ktap_State *ks);
+Tvalue *kp_table_set(ktap_state *ks, Table *t, const Tvalue *key);
+Table *kp_table_new(ktap_state *ks);
 const Tvalue *kp_table_getint(Table *t, int key);
-void kp_table_setint(ktap_State *ks, Table *t, int key, Tvalue *v);
+void kp_table_setint(ktap_state *ks, Table *t, int key, Tvalue *v);
 const Tvalue *kp_table_get(Table *t, const Tvalue *key);
-void kp_table_setvalue(ktap_State *ks, Table *t, const Tvalue *key, Tvalue *val);
-void kp_table_resize(ktap_State *ks, Table *t, int nasize, int nhsize);
-void kp_table_resizearray(ktap_State *ks, Table *t, int nasize);
-void kp_table_free(ktap_State *ks, Table *t);
-int kp_table_length(ktap_State *ks, Table *t);
-void kp_table_dump(ktap_State *ks, Table *t);
-void kp_table_histogram(ktap_State *ks, Table *t);
-int kp_table_next(ktap_State *ks, Table *t, StkId key);
+void kp_table_setvalue(ktap_state *ks, Table *t, const Tvalue *key, Tvalue *val);
+void kp_table_resize(ktap_state *ks, Table *t, int nasize, int nhsize);
+void kp_table_resizearray(ktap_state *ks, Table *t, int nasize);
+void kp_table_free(ktap_state *ks, Table *t);
+int kp_table_length(ktap_state *ks, Table *t);
+void kp_table_dump(ktap_state *ks, Table *t);
+void kp_table_histogram(ktap_state *ks, Table *t);
+int kp_table_next(ktap_state *ks, Table *t, StkId key);
 
-void kp_obj_dump(ktap_State *ks, const Tvalue *v);
-void kp_showobj(ktap_State *ks, const Tvalue *v);
-int kp_objlen(ktap_State *ks, const Tvalue *rb);
-Gcobject *kp_newobject(ktap_State *ks, int type, size_t size, Gcobject **list);
-int kp_equalobjv(ktap_State *ks, const Tvalue *t1, const Tvalue *t2);
-Closure *kp_newlclosure(ktap_State *ks, int n);
-Proto *kp_newproto(ktap_State *ks);
-Upval *kp_newupval(ktap_State *ks);
-void kp_free_all_gcobject(ktap_State *ks);
+void kp_obj_dump(ktap_state *ks, const Tvalue *v);
+void kp_showobj(ktap_state *ks, const Tvalue *v);
+int kp_objlen(ktap_state *ks, const Tvalue *rb);
+Gcobject *kp_newobject(ktap_state *ks, int type, size_t size, Gcobject **list);
+int kp_equalobjv(ktap_state *ks, const Tvalue *t1, const Tvalue *t2);
+Closure *kp_newlclosure(ktap_state *ks, int n);
+Proto *kp_newproto(ktap_state *ks);
+Upval *kp_newupval(ktap_state *ks);
+void kp_free_all_gcobject(ktap_state *ks);
 void kp_header(u8 *h);
 
 int kp_str2d(const char *s, size_t len, ktap_Number *result);
@@ -555,7 +555,7 @@ int kp_str2d(const char *s, size_t len, ktap_Number *result);
 #define kp_free(ks, block)			kfree(block)
 #define kp_reallocv(ks, block, osize, nsize)	krealloc(block, nsize, KTAP_ALLOC_FLAGS)
 #define kp_zalloc(ks, size)			kzalloc(size, KTAP_ALLOC_FLAGS)
-void kp_printf(ktap_State *ks, const char *fmt, ...);
+void kp_printf(ktap_state *ks, const char *fmt, ...);
 #else
 /*
  * this is used for ktapc tstring operation, tstring need G(ks)->strt

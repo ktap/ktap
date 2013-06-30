@@ -27,7 +27,7 @@
 #endif
 
 
-void kp_obj_dump(ktap_State *ks, const Tvalue *v)
+void kp_obj_dump(ktap_state *ks, const Tvalue *v)
 {
 	switch (ttype(v)) {
 	case KTAP_TNIL:
@@ -61,7 +61,7 @@ void kp_obj_dump(ktap_State *ks, const Tvalue *v)
 	}
 }
 
-void kp_showobj(ktap_State *ks, const Tvalue *v)
+void kp_showobj(ktap_state *ks, const Tvalue *v)
 {
 	switch (ttype(v)) {
 	case KTAP_TNIL:
@@ -104,7 +104,7 @@ void kp_showobj(ktap_State *ks, const Tvalue *v)
 /*
  * equality of ktap values. ks == NULL means raw equality
  */
-int kp_equalobjv(ktap_State *ks, const Tvalue *t1, const Tvalue *t2)
+int kp_equalobjv(ktap_state *ks, const Tvalue *t1, const Tvalue *t2)
 {
 	switch (ttype(t1)) {
 	case KTAP_TNIL:
@@ -157,7 +157,7 @@ int kp_equalobjv(ktap_State *ks, const Tvalue *t1, const Tvalue *t2)
  * any of the indices that directly precedes a nil value
  * (that is, it may consider any such nil value as the end of the array).
  */
-int kp_objlen(ktap_State *ks, const Tvalue *v)
+int kp_objlen(ktap_state *ks, const Tvalue *v)
 {
 	switch(v->type) {
 	case KTAP_TTABLE:
@@ -173,7 +173,7 @@ int kp_objlen(ktap_State *ks, const Tvalue *v)
 
 
 /* need to protect allgc field? */
-Gcobject *kp_newobject(ktap_State *ks, int type, size_t size, Gcobject **list)
+Gcobject *kp_newobject(ktap_state *ks, int type, size_t size, Gcobject **list)
 {
 	Gcobject *o;
 
@@ -189,7 +189,7 @@ Gcobject *kp_newobject(ktap_State *ks, int type, size_t size, Gcobject **list)
 	return o;
 }
 
-Upval *kp_newupval(ktap_State *ks)
+Upval *kp_newupval(ktap_state *ks)
 {
 	Upval *uv;
 
@@ -200,7 +200,7 @@ Upval *kp_newupval(ktap_State *ks)
 }
 
 
-Closure *kp_newlclosure(ktap_State *ks, int n)
+Closure *kp_newlclosure(ktap_state *ks, int n)
 {
 	Closure *cl;
 
@@ -213,7 +213,7 @@ Closure *kp_newlclosure(ktap_State *ks, int n)
 	return cl;
 }
 
-static void free_proto(ktap_State *ks, Proto *f)
+static void free_proto(ktap_state *ks, Proto *f)
 {
 	kp_free(ks, f->code);
 	kp_free(ks, f->p);
@@ -224,7 +224,7 @@ static void free_proto(ktap_State *ks, Proto *f)
 	kp_free(ks, f);
 }
 
-Proto *kp_newproto(ktap_State *ks)
+Proto *kp_newproto(ktap_state *ks)
 {
 	Proto *f;
 	f = (Proto *)kp_newobject(ks, KTAP_TPROTO, sizeof(*f), NULL);
@@ -250,7 +250,7 @@ Proto *kp_newproto(ktap_State *ks)
 	return f;
 }
 
-static Udata *newudata(ktap_State *ks, size_t s)
+static Udata *newudata(ktap_state *ks, size_t s)
 {
 	Udata *u;
 
@@ -259,7 +259,7 @@ static Udata *newudata(ktap_State *ks, size_t s)
 	return u;
 }
 
-void *kp_newuserdata(ktap_State *ks, size_t size)
+void *kp_newuserdata(ktap_state *ks, size_t size)
 {
 	Udata *u;
 
@@ -268,7 +268,7 @@ void *kp_newuserdata(ktap_State *ks, size_t size)
 }
 
 
-void kp_free_all_gcobject(ktap_State *ks)
+void kp_free_all_gcobject(ktap_state *ks)
 {
 	Gcobject *o = G(ks)->allgc;
 	Gcobject *next;

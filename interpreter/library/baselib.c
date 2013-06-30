@@ -25,7 +25,7 @@
 #include <linux/time.h>
 #include "../../include/ktap.h"
 
-static int ktap_lib_next(ktap_State *ks)
+static int ktap_lib_next(ktap_state *ks)
 {
 	Table *t = hvalue(ks->top - 2);
 
@@ -39,7 +39,7 @@ static int ktap_lib_next(ktap_State *ks)
 	}
 }
 
-static int ktap_lib_pairs(ktap_State *ks)
+static int ktap_lib_pairs(ktap_state *ks)
 {
 	Table *t = hvalue(kp_arg(ks, 1));
 
@@ -49,7 +49,7 @@ static int ktap_lib_pairs(ktap_State *ks)
 	return 3;
 }
 
-static int ktap_lib_len(ktap_State *ks)
+static int ktap_lib_len(ktap_state *ks)
 {
 	int len = kp_objlen(ks, kp_arg(ks, 1));
 
@@ -61,7 +61,7 @@ static int ktap_lib_len(ktap_State *ks)
 	return 1;
 }
 
-static int ktap_lib_print(ktap_State *ks)
+static int ktap_lib_print(ktap_state *ks)
 {
 	int i;
 	int n = kp_arg_nr(ks);
@@ -82,7 +82,7 @@ static struct trace_seq mainthread_printf_seq;
 static DEFINE_PER_CPU(struct trace_seq, printf_seq);
 
 /* don't engage with tstring when printf, use buffer directly */
-static int ktap_lib_printf(ktap_State *ks)
+static int ktap_lib_printf(ktap_state *ks)
 {
 	struct trace_seq *seq;
 
@@ -103,7 +103,7 @@ static int ktap_lib_printf(ktap_State *ks)
 	return 0;
 }
 
-static int ktap_lib_exit(ktap_State *ks)
+static int ktap_lib_exit(ktap_state *ks)
 {
 	kp_exit(ks);
 
@@ -111,7 +111,7 @@ static int ktap_lib_exit(ktap_State *ks)
 	return -1;
 }
 
-static int ktap_lib_pid(ktap_State *ks)
+static int ktap_lib_pid(ktap_state *ks)
 {
 	pid_t pid = task_tgid_vnr(current);
 
@@ -120,7 +120,7 @@ static int ktap_lib_pid(ktap_State *ks)
 	return 1;
 }
 
-static int ktap_lib_execname(ktap_State *ks)
+static int ktap_lib_execname(ktap_state *ks)
 {
 	Tstring *ts = kp_tstring_new(ks, current->comm);
 	setsvalue(ks->top, ts);
@@ -128,21 +128,21 @@ static int ktap_lib_execname(ktap_State *ks)
 	return 1;
 }
 
-static int ktap_lib_cpu(ktap_State *ks)
+static int ktap_lib_cpu(ktap_state *ks)
 {
 	setnvalue(ks->top, smp_processor_id());
 	incr_top(ks);
 	return 1;
 }
 
-static int ktap_lib_num_cpus(ktap_State *ks)
+static int ktap_lib_num_cpus(ktap_state *ks)
 {
 	setnvalue(ks->top, num_online_cpus());
 	incr_top(ks);
 	return 1;
 }
 
-static int ktap_lib_in_interrupt(ktap_State *ks)
+static int ktap_lib_in_interrupt(ktap_state *ks)
 {
 	int ret = in_interrupt();
 
@@ -151,21 +151,21 @@ static int ktap_lib_in_interrupt(ktap_State *ks)
 	return 1;
 }
 
-static int ktap_lib_arch(ktap_State *ks)
+static int ktap_lib_arch(ktap_state *ks)
 {
 	setsvalue(ks->top, kp_tstring_new(ks, utsname()->machine));
 	incr_top(ks);
 	return 1;
 }
 
-static int ktap_lib_kernel_v(ktap_State *ks)
+static int ktap_lib_kernel_v(ktap_state *ks)
 {
 	setsvalue(ks->top, kp_tstring_new(ks, utsname()->release));
 	incr_top(ks);
 	return 1;
 }
 
-static int ktap_lib_user_string(ktap_State *ks)
+static int ktap_lib_user_string(ktap_state *ks)
 {
 	unsigned long addr = nvalue(kp_arg(ks, 1));
 	char str[256] = {0};
@@ -182,7 +182,7 @@ static int ktap_lib_user_string(ktap_State *ks)
 	return 1;
 }
 
-static int ktap_lib_count(ktap_State *ks)
+static int ktap_lib_count(ktap_state *ks)
 {
 	Table *tbl = hvalue(kp_arg(ks, 1));
 	Tvalue *k = kp_arg(ks, 2);
@@ -203,13 +203,13 @@ static int ktap_lib_count(ktap_State *ks)
 	return 0;
 }
 
-static int ktap_lib_histogram(ktap_State *ks)
+static int ktap_lib_histogram(ktap_state *ks)
 {
 	kp_table_histogram(ks, hvalue(kp_arg(ks, 1))); /* need to check firstly */
 	return 0;
 }
 
-static int ktap_lib_gettimeofday_us(ktap_State *ks)
+static int ktap_lib_gettimeofday_us(ktap_state *ks)
 {
 	struct timeval tv;
 
@@ -247,7 +247,7 @@ static const ktap_Reg base_funcs[] = {
 	{NULL}
 };
 
-void kp_init_baselib(ktap_State *ks)
+void kp_init_baselib(ktap_state *ks)
 {
 	kp_register_lib(ks, NULL, base_funcs); 
 }

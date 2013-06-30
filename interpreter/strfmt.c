@@ -40,7 +40,7 @@
  */
 #define MAX_FORMAT	(sizeof(FLAGS) + sizeof(INTFRMLEN) + 10)
 
-static const char *scanformat(ktap_State *ks, const char *strfrmt, char *form)
+static const char *scanformat(ktap_state *ks, const char *strfrmt, char *form)
 {
 	const char *p = strfrmt;
 	while (*p != '\0' && strchr(FLAGS, *p) != NULL)
@@ -89,7 +89,7 @@ static void addlenmod(char *form, const char *lenmod)
 }
 
 
-static void ktap_argerror(ktap_State *ks, int narg, const char *extramsg)
+static void ktap_argerror(ktap_state *ks, int narg, const char *extramsg)
 {
 	kp_runerror(ks, "bad argument #%d: (%s)", narg, extramsg);
 }
@@ -101,7 +101,7 @@ static void ktap_argerror(ktap_State *ks, int narg, const char *extramsg)
 				ktap_argerror(ks, (numarg), (extramsg)); \
 		} while (0)
 
-int kp_strfmt(ktap_State *ks, struct trace_seq *seq)
+int kp_strfmt(ktap_state *ks, struct trace_seq *seq)
 {
 	int arg = 1;
 	size_t sfl;

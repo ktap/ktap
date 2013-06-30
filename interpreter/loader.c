@@ -28,7 +28,7 @@
 struct load_state {
 	unsigned char *buff;
 	int pos;
-	ktap_State *ks;
+	ktap_state *ks;
 };
 
 #define READ_CHAR(S)  (S->buff[S->pos++])
@@ -248,7 +248,7 @@ static int verify_code(struct load_state *S, Proto *f)
 }
 
 
-Closure *kp_load(ktap_State *ks, unsigned char *buff)
+Closure *kp_load(ktap_state *ks, unsigned char *buff)
 {
 	struct load_state S;
 	Closure *cl;

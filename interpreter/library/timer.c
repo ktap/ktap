@@ -25,7 +25,7 @@
 
 struct hrtimer_ktap {
 	struct hrtimer timer;
-	ktap_State *ks;
+	ktap_state *ks;
 	Closure *cl;
 	u64 ns;
 	struct list_head list;
@@ -33,14 +33,14 @@ struct hrtimer_ktap {
 
 static enum hrtimer_restart hrtimer_ktap_fn(struct hrtimer *timer)
 {
-	ktap_State *ks;
+	ktap_state *ks;
 	struct hrtimer_ktap *t;
 
 	/* 
 	 * we need to make sure timer cannot running conflict with tracing
-	 * ktap_newthread use percpu ktap_State, we need to avoid timer
+	 * ktap_newthread use percpu ktap_state, we need to avoid timer
 	 * callback closure running with tracepoint enabled, then percpu
-	 * ktap_State will crash. so here make ktap_in_tracing as true, to
+	 * ktap_state will crash. so here make ktap_in_tracing as true, to
 	 * tell ktap not running any tracepoint in timer callback closure.
 	 */
 	__this_cpu_write(ktap_in_tracing, true);
@@ -60,7 +60,7 @@ static enum hrtimer_restart hrtimer_ktap_fn(struct hrtimer *timer)
 	return HRTIMER_RESTART;
 }
 
-static int set_timer(ktap_State *ks, int factor)
+static int set_timer(ktap_state *ks, int factor)
 {
 	struct hrtimer_ktap *t;
 	u64 period;
@@ -98,36 +98,36 @@ static int set_timer(ktap_State *ks, int factor)
 	return 0;
 }
 
-static int ktap_lib_second(ktap_State *ks)
+static int ktap_lib_second(ktap_state *ks)
 {
 	set_timer(ks, NSEC_PER_SEC);
 	return 0;
 }
 
-static int ktap_lib_msecond(ktap_State *ks)
+static int ktap_lib_msecond(ktap_state *ks)
 {
 	set_timer(ks, NSEC_PER_MSEC);
 	return 0;
 }
 
-static int ktap_lib_usecond(ktap_State *ks)
+static int ktap_lib_usecond(ktap_state *ks)
 {
 	set_timer(ks, NSEC_PER_USEC);
 	return 0;
 }
 
-static int ktap_lib_nsecond(ktap_State *ks)
+static int ktap_lib_nsecond(ktap_state *ks)
 {
 	set_timer(ks, 1);
 	return 0;
 }
 
-static int ktap_lib_profile(ktap_State *ks)
+static int ktap_lib_profile(ktap_state *ks)
 {
 	return 0;
 }
 
-void kp_exit_timers(ktap_State *ks)
+void kp_exit_timers(ktap_state *ks)
 {
 	struct hrtimer_ktap *t, *tmp;
 	struct list_head *timers_list = &(G(ks)->timers);
@@ -157,7 +157,7 @@ static const ktap_Reg timerlib_funcs[] = {
 	{NULL}
 };
 
-void kp_init_timerlib(ktap_State *ks)
+void kp_init_timerlib(ktap_state *ks)
 {
 	kp_register_lib(ks, "timer", timerlib_funcs);
 }

@@ -40,16 +40,16 @@ struct ktap_probe_event {
 	int type;
 	const char *name;
 	struct perf_event *perf;
-	ktap_State *ks;
+	ktap_state *ks;
 	Closure *cl;
 };
 
 DEFINE_PER_CPU(bool, ktap_in_tracing);
 
-static void ktap_call_probe_closure(ktap_State *mainthread, Closure *cl,
+static void ktap_call_probe_closure(ktap_state *mainthread, Closure *cl,
 				    struct ktap_event *e)
 {
-	ktap_State *ks;
+	ktap_state *ks;
 	Tvalue *func;
 
 	ks = kp_newthread(mainthread);
@@ -71,7 +71,7 @@ static void ktap_call_probe_closure(ktap_State *mainthread, Closure *cl,
 }
 
 static struct trace_iterator *percpu_trace_iterator;
-static int event_function_tostring(ktap_State *ks)
+static int event_function_tostring(ktap_state *ks)
 {
 	struct ktap_event *e = ks->current_event;
 	struct trace_iterator *iter;
@@ -111,14 +111,14 @@ static int event_function_tostring(ktap_State *ks)
 }
 
 /* e.tostring() */
-static void event_tostring(ktap_State *ks, struct ktap_event *e, StkId ra)
+static void event_tostring(ktap_state *ks, struct ktap_event *e, StkId ra)
 {
 	setfvalue(ra, event_function_tostring);
 }
 /*
  * called when print(e)
  */
-void kp_show_event(ktap_State *ks)
+void kp_show_event(ktap_state *ks)
 {
 	event_function_tostring(ks);
 	ks->top--;
@@ -126,20 +126,20 @@ void kp_show_event(ktap_State *ks)
 }
 
 /* e.name */
-static void event_name(ktap_State *ks, struct ktap_event *e, StkId ra)
+static void event_name(ktap_state *ks, struct ktap_event *e, StkId ra)
 {
 	setsvalue(ra, kp_tstring_new(ks, e->call->name));
 }
 
 /* e.print_fmt */
-static void event_print_fmt(ktap_State *ks, struct ktap_event *e, StkId ra)
+static void event_print_fmt(ktap_state *ks, struct ktap_event *e, StkId ra)
 {
 	setsvalue(ra, kp_tstring_new(ks, e->call->print_fmt));
 }
 
 /* check pt_regs defintion in linux/arch/x86/include/asm/ptrace.h */
 /* support other architecture pt_regs showing */
-static void event_regstr(ktap_State *ks, struct ktap_event *e, StkId ra)
+static void event_regstr(ktap_state *ks, struct ktap_event *e, StkId ra)
 {
 	struct pt_regs *regs = e->regs;
 	char str[256] = {0};
@@ -168,14 +168,14 @@ static void event_regstr(ktap_State *ks, struct ktap_event *e, StkId ra)
 }
 
 /* e.retval */
-static void event_retval(ktap_State *ks, struct ktap_event *e, StkId ra)
+static void event_retval(ktap_state *ks, struct ktap_event *e, StkId ra)
 {
 	struct pt_regs *regs = e->regs;
 
 	setnvalue(ra, regs_return_value(regs));
 }
 
-static int ktap_function_set_retval(ktap_State *ks)
+static int ktap_function_set_retval(ktap_state *ks)
 {
 	struct ktap_event *e = ks->current_event;
 	int n = nvalue(kp_arg(ks, 1));
@@ -187,7 +187,7 @@ static int ktap_function_set_retval(ktap_State *ks)
 }
 
 /* e.set_retval*/
-static void event_set_retval(ktap_State *ks, struct ktap_event *e, StkId ra)
+static void event_set_retval(ktap_state *ks, struct ktap_event *e, StkId ra)
 {
 	setfvalue(ra, ktap_function_set_retval);
 }
@@ -207,7 +207,7 @@ struct syscall_trace_exit {
 };
 
 /* e.sc_nr */
-static void event_sc_nr(ktap_State *ks, struct ktap_event *e, StkId ra)
+static void event_sc_nr(ktap_state *ks, struct ktap_event *e, StkId ra)
 {
 	struct syscall_trace_enter *entry = e->entry;
 
@@ -216,7 +216,7 @@ static void event_sc_nr(ktap_State *ks, struct ktap_event *e, StkId ra)
 
 
 #define EVENT_SC_ARGFUNC(n) \
-static void event_sc_arg##n(ktap_State *ks, struct ktap_event *e, StkId ra)\
+static void event_sc_arg##n(ktap_state *ks, struct ktap_event *e, StkId ra)\
 { \
 	struct syscall_trace_enter *entry = e->entry;	\
 	setnvalue(ra, entry->args[n - 1]);	\
@@ -250,7 +250,7 @@ static struct list_head *ktap_get_fields(struct ftrace_event_call *event_call)
 }
 
 /* e.fieldnum */
-static void event_fieldnum(ktap_State *ks, struct ktap_event *e, StkId ra)
+static void event_fieldnum(ktap_state *ks, struct ktap_event *e, StkId ra)
 {
 	struct ftrace_event_field *field;
 	struct list_head *head;
@@ -265,7 +265,7 @@ static void event_fieldnum(ktap_State *ks, struct ktap_event *e, StkId ra)
 }
 
 /* e.allfield */
-static void event_allfield(ktap_State *ks, struct ktap_event *e, StkId ra)
+static void event_allfield(ktap_state *ks, struct ktap_event *e, StkId ra)
 {
 	char s[128];
 	int len, pos = 0;
@@ -283,7 +283,7 @@ static void event_allfield(ktap_State *ks, struct ktap_event *e, StkId ra)
 	setsvalue(ra, kp_tstring_new_local(ks, s));
 }
 
-static int event_fieldn(ktap_State *ks)
+static int event_fieldn(ktap_state *ks)
 {
 	struct ktap_event *e = ks->current_event;
 	int index = nvalue(kp_arg(ks, 1));
@@ -304,14 +304,14 @@ static int event_fieldn(ktap_State *ks)
 }
 
 /* e.field(N) */
-static void event_field(ktap_State *ks, struct ktap_event *e, StkId ra)
+static void event_field(ktap_state *ks, struct ktap_event *e, StkId ra)
 {
 	setfvalue(ra, event_fieldn);
 }
 
 static struct event_field_tbl {
 	char *name;
-	void (*func)(ktap_State *ks, struct ktap_event *e, StkId ra);	
+	void (*func)(ktap_state *ks, struct ktap_event *e, StkId ra);	
 } event_ftbl[] = {
 	{"name", event_name},
 	{"tostring", event_tostring},
@@ -344,12 +344,12 @@ int kp_event_get_index(const char *field)
 	return -1;
 }
 
-Tstring *kp_event_get_ts(ktap_State *ks, int index)
+Tstring *kp_event_get_ts(ktap_state *ks, int index)
 {
 	return kp_tstring_new(ks, event_ftbl[index].name);
 }
 
-void kp_event_handle(ktap_State *ks, void *e, int index, StkId ra)
+void kp_event_handle(ktap_state *ks, void *e, int index, StkId ra)
 {
 	e = (struct ktap_event *)e;
 	event_ftbl[index].func(ks, e, ra);
@@ -407,7 +407,7 @@ static void ktap_overflow_callback(struct perf_event *event,
 				   struct pt_regs *regs)
 {
 	struct ktap_probe_event *ktap_pevent;
-	ktap_State  *ks;
+	ktap_state  *ks;
 	struct ktap_event e;
 	unsigned long irq_flags;
 
@@ -442,7 +442,7 @@ static void perf_destructor(struct ktap_probe_event *ktap_pevent)
 	perf_event_release_kernel(ktap_pevent->perf);
 }
 
-static void start_probe_by_id(ktap_State *ks, int id, Closure *cl)
+static void start_probe_by_id(ktap_state *ks, int id, Closure *cl)
 {
 	struct ktap_probe_event *ktap_pevent;
 	struct perf_event_attr attr;
@@ -483,7 +483,7 @@ static void start_probe_by_id(ktap_State *ks, int id, Closure *cl)
 	}
 }
 
-static void end_probes(struct ktap_State *ks)
+static void end_probes(struct ktap_state *ks)
 {
 	struct ktap_probe_event *ktap_pevent;
 	struct list_head *tmp, *pos;
@@ -508,7 +508,7 @@ static void end_probes(struct ktap_State *ks)
 	}
 }
 
-static int ktap_lib_probe_by_id(ktap_State *ks)
+static int ktap_lib_probe_by_id(ktap_state *ks)
 {
 	const char *ids_str = svalue(kp_arg(ks, 1));
 	Tvalue *tracefunc;
@@ -545,7 +545,7 @@ static int ktap_lib_probe_by_id(ktap_State *ks)
 	return 0;
 }
 
-static int ktap_lib_probe_end(ktap_State *ks)
+static int ktap_lib_probe_end(ktap_state *ks)
 {
 	Tvalue *endfunc;
 
@@ -558,7 +558,7 @@ static int ktap_lib_probe_end(ktap_State *ks)
 	return 0;
 }
 
-static int ktap_lib_traceoff(ktap_State *ks)
+static int ktap_lib_traceoff(ktap_state *ks)
 {
 	end_probes(ks);
 
@@ -585,7 +585,7 @@ void trace_console_func(void *__data, const char *text, unsigned start,
 void trace_console_func(void *__data, const char *text, size_t len)
 #endif
 {
-	ktap_State *ks = __data;
+	ktap_state *ks = __data;
 
 	if (likely(!__this_cpu_read(ktap_in_dumpstack)))
 		return;
@@ -607,7 +607,7 @@ void trace_console_func(void *__data, const char *text, size_t len)
  *
  * todo: not output to consoles.
  */
-static int ktap_lib_dumpstack(ktap_State *ks)
+static int ktap_lib_dumpstack(ktap_state *ks)
 {
 	__this_cpu_write(ktap_in_dumpstack, true);
 
@@ -617,14 +617,14 @@ static int ktap_lib_dumpstack(ktap_State *ks)
 	return 0;
 }
 #else
-static int ktap_lib_dumpstack(ktap_State *ks)
+static int ktap_lib_dumpstack(ktap_state *ks)
 {
 	kp_printf(ks, "your kernel version don't support ktap dumpstack\n");
 	return 0;
 }
 #endif
 
-static void wait_interrupt(ktap_State *ks)
+static void wait_interrupt(ktap_state *ks)
 {
 	kp_printf(ks, "Press Control-C to stop.\n");
 	set_current_state(TASK_INTERRUPTIBLE);
@@ -636,7 +636,7 @@ static void wait_interrupt(ktap_State *ks)
 	kp_printf(ks, "\n");
 }
 
-void kp_probe_exit(ktap_State *ks)
+void kp_probe_exit(ktap_state *ks)
 {
 	if (!G(ks)->trace_enabled)
 		return;
@@ -663,7 +663,7 @@ void kp_probe_exit(ktap_State *ks)
 	G(ks)->trace_enabled = 0;
 }
 
-int kp_probe_init(ktap_State *ks)
+int kp_probe_init(ktap_state *ks)
 {
 	INIT_LIST_HEAD(&(G(ks)->probe_events_head));
 
@@ -693,7 +693,7 @@ static const ktap_Reg kdebuglib_funcs[] = {
 	{NULL}
 };
 
-void kp_init_kdebuglib(ktap_State *ks)
+void kp_init_kdebuglib(ktap_state *ks)
 {
 	kp_register_lib(ks, "kdebug", kdebuglib_funcs);
 }

@@ -33,7 +33,7 @@
  * you terminal
  * Use this function in raw pts terminal
  */
-void kp_printf(ktap_State *ks, const char *fmt, ...)
+void kp_printf(ktap_state *ks, const char *fmt, ...)
 {
 	char buff[1024];
 	va_list args;
@@ -46,18 +46,18 @@ void kp_printf(ktap_State *ks, const char *fmt, ...)
 	kp_transport_write(ks, buff, len);
 }
 
-static int ktap_lib_clock(ktap_State *ks)
+static int ktap_lib_clock(ktap_state *ks)
 {
 	kp_printf(ks, "ktap_clock\n");
 	return 0;
 }
 
-static int ktap_lib_info(ktap_State *ks)
+static int ktap_lib_info(ktap_state *ks)
 {
 	return 0;
 }
 
-static int ktap_lib_sleep(ktap_State *ks)
+static int ktap_lib_sleep(ktap_state *ks)
 {
 	Tvalue *time = kp_arg(ks, 1);
 
@@ -74,7 +74,7 @@ static int ktap_lib_sleep(ktap_State *ks)
 }
 
 /* wait forever unit interrupt by signal */
-static int ktap_lib_wait(ktap_State *ks)
+static int ktap_lib_wait(ktap_state *ks)
 {
 	set_current_state(TASK_INTERRUPTIBLE);
 	schedule();
@@ -92,7 +92,7 @@ static const ktap_Reg oslib_funcs[] = {
 	{NULL}
 };
 
-void kp_init_oslib(ktap_State *ks)
+void kp_init_oslib(ktap_state *ks)
 {
 	kp_register_lib(ks, "os", oslib_funcs);
 }

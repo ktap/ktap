@@ -60,7 +60,7 @@ Completed
 - Drop ftrace.patch
 - table stat showing
 - ktap memory allocation
-- per-cpu ktap_State for performance improvement
+- per-cpu ktap_state for performance improvement
 - x86-64 support
 - ktapio problem in all event tracepoints opened
   (fixed by patch "relay: fix timer madness" merge in 3.10)

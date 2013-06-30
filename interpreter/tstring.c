@@ -95,7 +95,7 @@ unsigned int kp_string_hash(const char *str, size_t l, unsigned int seed)
  * resizes the string table
  * todo: resize when after tracing
  */
-void kp_tstring_resize(ktap_State *ks, int newsize)
+void kp_tstring_resize(ktap_state *ks, int newsize)
 {
 	int i;
 	Stringtable *tb = &G(ks)->strt;
@@ -139,7 +139,7 @@ void kp_tstring_resize(ktap_State *ks, int newsize)
 /*
  * creates a new string object
  */
-static Tstring *createstrobj(ktap_State *ks, const char *str, size_t l,
+static Tstring *createstrobj(ktap_state *ks, const char *str, size_t l,
 			     int tag, unsigned int h, Gcobject **list)
 {
 	Tstring *ts;
@@ -155,7 +155,7 @@ static Tstring *createstrobj(ktap_State *ks, const char *str, size_t l,
 	return ts;
 }
 
-Tstring *kp_tstring_assemble(ktap_State *ks, const char *str, size_t l)
+Tstring *kp_tstring_assemble(ktap_state *ks, const char *str, size_t l)
 {
 	Tstring *ts;
 
@@ -171,7 +171,7 @@ Tstring *kp_tstring_assemble(ktap_State *ks, const char *str, size_t l)
 /*
  * creates a new short string, inserting it into string table
  */
-static Tstring *newshrstr(ktap_State *ks, const char *str, size_t l,
+static Tstring *newshrstr(ktap_state *ks, const char *str, size_t l,
 			  unsigned int h)
 {
 	Gcobject **list;
@@ -192,7 +192,7 @@ static DEFINE_SPINLOCK(tstring_lock);
 /*
  * checks whether short string exists and reuses it or creates a new one
  */
-static Tstring *internshrstr(ktap_State *ks, const char *str, size_t l)
+static Tstring *internshrstr(ktap_state *ks, const char *str, size_t l)
 {
 	Gcobject *o;
 	global_State *g = G(ks);
@@ -220,7 +220,7 @@ static Tstring *internshrstr(ktap_State *ks, const char *str, size_t l)
 /*
  * new string (with explicit length)
  */
-Tstring *kp_tstring_newlstr(ktap_State *ks, const char *str, size_t l)
+Tstring *kp_tstring_newlstr(ktap_state *ks, const char *str, size_t l)
 {
 	/* short string? */
 	if (l <= STRING_MAXSHORTLEN)
@@ -229,7 +229,7 @@ Tstring *kp_tstring_newlstr(ktap_State *ks, const char *str, size_t l)
 		return createstrobj(ks, str, l, KTAP_TLNGSTR, G(ks)->seed, NULL);
 }
 
-Tstring *kp_tstring_newlstr_local(ktap_State *ks, const char *str, size_t l)
+Tstring *kp_tstring_newlstr_local(ktap_state *ks, const char *str, size_t l)
 {
 	return createstrobj(ks, str, l, KTAP_TLNGSTR, G(ks)->seed, &ks->localgc);
 }
@@ -237,18 +237,18 @@ Tstring *kp_tstring_newlstr_local(ktap_State *ks, const char *str, size_t l)
 /*
  * new zero-terminated string
  */
-Tstring *kp_tstring_new(ktap_State *ks, const char *str)
+Tstring *kp_tstring_new(ktap_state *ks, const char *str)
 {
 	return kp_tstring_newlstr(ks, str, strlen(str));
 }
 
-Tstring *kp_tstring_new_local(ktap_State *ks, const char *str)
+Tstring *kp_tstring_new_local(ktap_state *ks, const char *str)
 {
 	return createstrobj(ks, str, strlen(str), KTAP_TLNGSTR, G(ks)->seed,
 			    &ks->localgc);
 }
 
-void kp_tstring_freeall(ktap_State *ks)
+void kp_tstring_freeall(ktap_state *ks)
 {
 	global_State *g = G(ks);
 	int h;
@@ -268,7 +268,7 @@ void kp_tstring_freeall(ktap_State *ks)
 }
 
 /* todo: dump long string, strt table only contain short string */
-void kp_tstring_dump(ktap_State *ks)
+void kp_tstring_dump(ktap_state *ks)
 {
 	Gcobject *o;
 	global_State *g = G(ks);
