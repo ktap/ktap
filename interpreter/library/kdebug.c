@@ -26,12 +26,6 @@
 #include "../../include/ktap.h"
 
 /* this structure allocate on stack */
-struct ktap_trace_arg {
-	ktap_State *ks;
-	Closure *cl;
-};
-
-/* this structure allocate on stack */
 struct ktap_event {
 	struct ktap_probe_event *pevent;
 	struct ftrace_event_call *call;
