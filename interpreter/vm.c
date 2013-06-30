@@ -387,12 +387,15 @@ static int precall(ktap_State *ks, StkId func, int nresults)
 	ci->u.l.savedpc += GETARG_sBx(i) + e; }
 #define donextjump(ci)  { instr = *ci->u.l.savedpc; dojump(ci, instr, 1); }
 
-#define arith_op(op) { \
+#define arith_op(ks, op) { \
 	Tvalue *rb = RKB(instr); \
 	Tvalue *rc = RKC(instr); \
 	if (ttisnumber(rb) && ttisnumber(rc)) { \
 		ktap_Number nb = nvalue(rb), nc = nvalue(rc); \
 		setnvalue(ra, op(nb, nc)); \
+	} else {	\
+		kp_printf(ks, "Error: Cannot make arith operation\n");	\
+		return;	\
 	} }
 
 static Tvalue *cfunction_cache_get(ktap_State *ks, int index);
@@ -512,13 +515,13 @@ static void ktap_execute(ktap_State *ks)
 		break;
 		}
 	case OP_ADD:
-		arith_op(NUMADD);
+		arith_op(ks, NUMADD);
 		break;
 	case OP_SUB:
-		arith_op(NUMSUB);
+		arith_op(ks, NUMSUB);
 		break;
 	case OP_MUL:
-		arith_op(NUMMUL);
+		arith_op(ks, NUMMUL);
 		break;
 	case OP_DIV:
 		/* divide 0 checking */
@@ -526,7 +529,7 @@ static void ktap_execute(ktap_State *ks)
 			kp_printf(ks, "error: divide 0 arith operation, exit\n");
 			return;
 		}
-		arith_op(NUMDIV);
+		arith_op(ks, NUMDIV);
 		break;
 	case OP_MOD:
 		/* divide 0 checking */
@@ -534,12 +537,12 @@ static void ktap_execute(ktap_State *ks)
 			kp_printf(ks, "error: mod 0 arith operation, exit\n");
 			return;
 		}
-		arith_op(NUMMOD);
+		arith_op(ks, NUMMOD);
 		break;
 	case OP_POW:
 		kp_printf(ks, "ktap don't support pow arith in kernel, exit\n");
 		return;
-		//arith_op(NUMPOW);
+		//arith_op(ks, NUMPOW);
 		break;
 	case OP_UNM: {
 		Tvalue *rb = RB(instr);
