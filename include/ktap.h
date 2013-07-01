@@ -11,7 +11,7 @@ typedef struct ktap_Reg {
         ktap_cfunction func;
 } ktap_Reg;
 
-ktap_state *kp_newstate(ktap_state **private_data, int argc, char **argv);
+ktap_state *kp_newstate(ktap_state **private_data, int verbose, int argc, char **argv);
 void kp_exit(ktap_state *ks);
 ktap_state *kp_newthread(ktap_state *mainthread);
 void kp_exitthread(ktap_state *ks);
@@ -46,6 +46,10 @@ void kp_exit_timers(ktap_state *ks);
 DECLARE_PER_CPU(bool, ktap_in_tracing);
 
 void kp_show_event(ktap_state *ks);
+
+#define kp_verbose_printf(ks, ...) \
+	if (G(ks)->verbose)	\
+		kp_printf(ks, __VA_ARGS__);
 
 /* get argument operation macro */
 #define kp_arg(ks, n)	((ks)->ci->func + (n))

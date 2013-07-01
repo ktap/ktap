@@ -449,7 +449,7 @@ static void start_probe_by_id(ktap_state *ks, int id, ktap_closure *cl)
 	struct perf_event *event;
 	int cpu;
 
-	kp_printf(ks, "enable tracepoint event id: %d\n", id);
+	kp_verbose_printf(ks, "enable tracepoint event id: %d\n", id);
 
 	memset(&attr, 0, sizeof(attr));
 	attr.type = PERF_TYPE_TRACEPOINT;	

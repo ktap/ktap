@@ -19,6 +19,7 @@ struct ktap_user_parm {
 	int trunk_len;
 	int argc;
 	char **argv;
+	int verbose;
 };
 
 enum {
@@ -263,6 +264,7 @@ typedef struct ktap_global_state {
 
 	struct ktap_state *mainthread;
 #ifdef __KERNEL__
+	int verbose;
 	int nr_builtin_cfunction;
 	ktap_value *cfunction_tbl;
 	struct task_struct *task;

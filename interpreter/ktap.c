@@ -155,7 +155,8 @@ static int ktap_main(struct file *file, struct ktap_user_parm *uparm_ptr)
 		return PTR_ERR(argv);
 	}
 
-	ks = kp_newstate((ktap_state **)&file->private_data, uparm_ptr->argc, argv);
+	ks = kp_newstate((ktap_state **)&file->private_data, uparm_ptr->verbose,
+			 uparm_ptr->argc, argv);
 
 	/* free argv memory after store into arg table */
 	free_argv(uparm_ptr->argc, argv);

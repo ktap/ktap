@@ -337,7 +337,7 @@ static void run_ktapvm()
 	close(ktapvm_fd);
 }
 
-static int verbose;
+int verbose;
 static char output_filename[128];
 
 static int parse_option(int argc, char **argv)
@@ -476,6 +476,7 @@ int main(int argc, char **argv)
 
 	ktap_uparm.argv = ktapvm_argv;
 	ktap_uparm.argc = new_index;
+	ktap_uparm.verbose = verbose;
 
 	/* start running into kernel ktapvm */
 	run_ktapvm();

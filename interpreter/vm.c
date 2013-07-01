@@ -1106,7 +1106,8 @@ void kp_exit(ktap_state *ks)
 }
 
 /* ktap mainthread initization, main entry for ktap */
-ktap_state *kp_newstate(ktap_state **private_data, int argc, char **argv)
+ktap_state *kp_newstate(ktap_state **private_data, int verbose,
+			int argc, char **argv)
 {
 	ktap_state *ks;
 	int ret;
@@ -1121,6 +1122,7 @@ ktap_state *kp_newstate(ktap_state **private_data, int argc, char **argv)
 	G(ks)->mainthread = ks;
 	G(ks)->seed = 201236; /* todo: make more random in */
 	G(ks)->task = current;
+	G(ks)->verbose = verbose; /* for debug use */
 	INIT_LIST_HEAD(&(G(ks)->timers));
 	sema_init(&G(ks)->sync_sem, 0); /* init as 0, not 1 */
 	G(ks)->exit = 0;

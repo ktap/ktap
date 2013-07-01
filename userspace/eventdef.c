@@ -242,6 +242,8 @@ static int parse_events_add_kprobe(char *old_event)
 	} else
 		sprintf(probe_event, "p:kprobes/kp%d %s", event_seq, event);
 
+	verbose_printf("[probe event] %s\n", probe_event);
+
 	ret = write(fd, probe_event, strlen(probe_event));
 	if (ret <= 0) {
 		fprintf(stderr, "Cannot write %s to %s\n", probe_event, KPROBE_EVENTS_PATH);
@@ -288,7 +290,7 @@ static int parse_events_add_uprobe(char *old_event)
 	} else
 		sprintf(probe_event, "p:uprobes/kp%d %s", event_seq, event);
 
-	printf("[probe event] %s\n", probe_event);
+	verbose_printf("[probe event] %s\n", probe_event);
 	ret = write(fd, probe_event, strlen(probe_event));
 	if (ret <= 0) {
 		fprintf(stderr, "Cannot write %s to %s\n", probe_event, UPROBE_EVENTS_PATH);
