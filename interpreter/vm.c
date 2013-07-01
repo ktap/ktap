@@ -1022,7 +1022,6 @@ static void ktap_init_state(ktap_state *ks)
 	ks->stack_last = ks->stack + ks->stacksize;
 
 	ci = &ks->baseci;
-	ci->next = ci->prev = NULL;
 	ci->callstatus = 0;
 	ci->func = ks->top;
 	setnilvalue(ks->top++);
@@ -1030,15 +1029,26 @@ static void ktap_init_state(ktap_state *ks)
 	ks->ci = ci;
 }
 
+static ktap_state *ktap_percpu_state;
+
+void free_all_ci(ktap_state *ks)
+{
+	int cpu;
+
+	for_each_possible_cpu(cpu) {
+		ktap_state *ks;
+
+		ks = per_cpu_ptr(ktap_percpu_state, cpu);
+		free_ci(ks);
+	}
+
+	free_ci(ks);
+}
+
 void kp_exitthread(ktap_state *ks)
 {
 	ktap_gcobject *o = ks->localgc;
 	ktap_gcobject *next;
-
-	free_ci(ks);
-
-	if (ks == G(ks)->mainthread)
-		kp_free(ks, ks->stack);
 
 	/* free local allocation objects, like annotate strings */
 	while (o) {
@@ -1046,9 +1056,11 @@ void kp_exitthread(ktap_state *ks)
 		kp_free(ks, o);
 		o = next;
 	}
+
+	if (unlikely(ks == G(ks)->mainthread))
+		kp_free(ks, ks->stack);
 }
 
-static ktap_state *ktap_percpu_state;
 ktap_state *kp_newthread(ktap_state *mainthread)
 {
 	ktap_state *ks;
@@ -1082,14 +1094,8 @@ void kp_exit(ktap_state *ks)
 		return;
 	}
 
-
 	kp_probe_exit(ks);
 	kp_exit_timers(ks);
-
-	if (ktap_percpu_state)
-		free_percpu(ktap_percpu_state);
-	if (ktap_percpu_stack)
-		free_percpu(ktap_percpu_stack);
 
 	/* free all resources got by ktap */
 	kp_tstring_freeall(ks);
@@ -1101,6 +1107,13 @@ void kp_exit(ktap_state *ks)
 	kp_transport_exit(ks);
 
 	kp_exitthread(ks);
+	free_all_ci(ks);
+
+	if (ktap_percpu_state)
+		free_percpu(ktap_percpu_state);
+	if (ktap_percpu_stack)
+		free_percpu(ktap_percpu_stack);
+
 	kp_free(ks, ks);
 
 	/* life ending, no return anymore*/
