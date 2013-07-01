@@ -995,7 +995,7 @@ static void ktap_init_arguments(ktap_state *ks, int argc, char **argv)
 
 
 #define KTAP_STACK_SIZE (BASIC_STACK_SIZE * sizeof(ktap_value))
-static void *percpu_ktap_stack;
+static void *ktap_percpu_stack;
 
 static void ktap_init_state(ktap_state *ks)
 {
@@ -1010,7 +1010,7 @@ static void ktap_init_state(ktap_state *ks)
 			return;
 		}
 	} else {
-		ks->stack = per_cpu_ptr(percpu_ktap_stack, smp_processor_id());
+		ks->stack = per_cpu_ptr(ktap_percpu_stack, smp_processor_id());
 	}
 
 	ks->stacksize = BASIC_STACK_SIZE;
@@ -1087,7 +1087,7 @@ void kp_exit(ktap_state *ks)
 	kp_exit_timers(ks);
 
 	free_percpu(ktap_percpu_state);
-	free_percpu(percpu_ktap_stack);
+	free_percpu(ktap_percpu_stack);
 
 	/* free all resources got by ktap */
 	kp_tstring_freeall(ks);
@@ -1153,8 +1153,8 @@ ktap_state *kp_newstate(ktap_state **private_data, int verbose,
 	if (!ktap_percpu_state)
 		return NULL;
 
-	percpu_ktap_stack = __alloc_percpu(KTAP_STACK_SIZE, __alignof__(char));
-	if (!percpu_ktap_stack)
+	ktap_percpu_stack = __alloc_percpu(KTAP_STACK_SIZE, __alignof__(char));
+	if (!ktap_percpu_stack)
 		return NULL;
 
 	return ks;
