@@ -269,7 +269,8 @@ static void usage(const char *msg)
 		"Available options are:\n"
 		"  -o name  output to file  name default is ktapc.out\n"
 		"  -v       version info\n"
-		"  -V       verbose\n");
+		"  -V       verbose\n"
+		"  -b       list bytecode");
 
 	exit(EXIT_FAILURE);
 }
@@ -338,6 +339,7 @@ static void run_ktapvm()
 }
 
 int verbose;
+static int dump_bytecode;
 static char output_filename[128];
 
 static int parse_option(int argc, char **argv)
@@ -348,11 +350,12 @@ static int parse_option(int argc, char **argv)
 		static struct option long_options[] = {
 			{"output",	required_argument, NULL, 'o'},
                         {"verbose",	no_argument, NULL, 'V'},
-                        {"version",	no_argument, NULL, 'v'},
+			{"list_bytecode", no_argument, NULL, 'b'},
+			{"version",	no_argument, NULL, 'v'},
 			{"help",	no_argument, NULL, '?'},
-                        {NULL, 0, NULL, 0}
-                };
-                int c = getopt_long(argc, argv, "o:Vv?", long_options,
+			{NULL, 0, NULL, 0}
+		};
+		int c = getopt_long(argc, argv, "o:Vvb?", long_options,
 							&option_index);
 		if (c == -1)
 			break;
@@ -364,6 +367,9 @@ static int parse_option(int argc, char **argv)
 			break;
 		case 'V':
 			verbose = 1;
+			break;
+		case 'b':
+			dump_bytecode = 1;
 			break;
 		case 'v':
 		case '?':
@@ -408,8 +414,10 @@ static void compile(const char *input)
 	munmap(buff, sb.st_size);
 	close(fdin);
 
-	if (verbose)
+	if (dump_bytecode) {
 		dump_function(1, cl->l.p);
+		exit(0);
+	}
 
 	/* ktapc output */
 	ktap_uparm.trunk = malloc(ktap_trunk_mem_size);
