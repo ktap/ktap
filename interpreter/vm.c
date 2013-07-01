@@ -1083,11 +1083,14 @@ void kp_exit(ktap_state *ks)
 		return;
 	}
 
+
 	kp_probe_exit(ks);
 	kp_exit_timers(ks);
 
-	free_percpu(ktap_percpu_state);
-	free_percpu(ktap_percpu_stack);
+	if (ktap_percpu_state)
+		free_percpu(ktap_percpu_state);
+	if (ktap_percpu_stack)
+		free_percpu(ktap_percpu_stack);
 
 	/* free all resources got by ktap */
 	kp_tstring_freeall(ks);
@@ -1110,7 +1113,6 @@ ktap_state *kp_newstate(ktap_state **private_data, int verbose,
 			int argc, char **argv)
 {
 	ktap_state *ks;
-	int ret;
 
 	ks = kzalloc(sizeof(ktap_state) + sizeof(ktap_global_state), GFP_KERNEL);
 	if (!ks)
@@ -1124,24 +1126,20 @@ ktap_state *kp_newstate(ktap_state **private_data, int verbose,
 	G(ks)->task = current;
 	G(ks)->verbose = verbose; /* for debug use */
 	INIT_LIST_HEAD(&(G(ks)->timers));
-	sema_init(&G(ks)->sync_sem, 0); /* init as 0, not 1 */
+	sema_init(&G(ks)->sync_sem, 1);
 	G(ks)->exit = 0;
 
-	if (cfunction_cache_init(ks) < 0)
-		return NULL;
+	if (cfunction_cache_init(ks))
+		goto out;
 
-	ret = kp_transport_init(ks);
-	if (ret)
-		return NULL;
+	if (kp_transport_init(ks))
+		goto out;
 
 	kp_tstring_resize(ks, 512); /* set inital string hashtable size */
 
 	ktap_init_state(ks);
 	ktap_init_registry(ks);
 	ktap_init_arguments(ks, argc, argv);
-
-	if (kp_probe_init(ks))
-		return NULL;
 
 	/* init library */
 	kp_init_baselib(ks);
@@ -1151,12 +1149,20 @@ ktap_state *kp_newstate(ktap_state **private_data, int verbose,
 
 	ktap_percpu_state = (ktap_state *)alloc_percpu(ktap_state);
 	if (!ktap_percpu_state)
-		return NULL;
+		goto out;
 
 	ktap_percpu_stack = __alloc_percpu(KTAP_STACK_SIZE, __alignof__(char));
 	if (!ktap_percpu_stack)
-		return NULL;
+		goto out;
 
+	if (kp_probe_init(ks))
+		goto out;
+
+	sema_init(&G(ks)->sync_sem, 0); /* init as 0, make not wait in exit */
 	return ks;
+
+ out:
+	kp_exit(ks);
+	return NULL;
 }
 
