@@ -1052,13 +1052,12 @@ static ktap_state *ktap_percpu_state;
 ktap_state *kp_newthread(ktap_state *mainthread)
 {
 	ktap_state *ks;
-	ktap_global_state *g = G(mainthread);
+	ktap_global_state *gs = G(mainthread);
 
-	if (mainthread != g->mainthread)
-		return NULL;
+	WARN_ON_ONCE(mainthread != gs->mainthread);
 
 	ks = per_cpu_ptr(ktap_percpu_state, smp_processor_id());
-	G(ks) = G(mainthread);
+	G(ks) = gs;
 	ks->localgc = NULL;
 	ktap_init_state(ks);
 	return ks;
