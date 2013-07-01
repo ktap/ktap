@@ -1120,7 +1120,7 @@ ktap_state *kp_newstate(ktap_state **private_data, int verbose,
 
 	G(ks) = (ktap_global_state *)(ks + 1);
 	G(ks)->mainthread = ks;
-	G(ks)->seed = 201236; /* todo: make more random in */
+	G(ks)->seed = 201236; /* todo: make more random in future */
 	G(ks)->task = current;
 	G(ks)->verbose = verbose; /* for debug use */
 	INIT_LIST_HEAD(&(G(ks)->timers));
