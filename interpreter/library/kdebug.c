@@ -131,8 +131,8 @@ static void event_name(ktap_state *ks, struct ktap_event *e, StkId ra)
 	setsvalue(ra, kp_tstring_new(ks, e->call->name));
 }
 
-/* e.print_fmt */
-static void event_print_fmt(ktap_state *ks, struct ktap_event *e, StkId ra)
+/* e.format */
+static void event_format(ktap_state *ks, struct ktap_event *e, StkId ra)
 {
 	setsvalue(ra, kp_tstring_new(ks, e->call->print_fmt));
 }
@@ -315,7 +315,7 @@ static struct event_field_tbl {
 } event_ftbl[] = {
 	{"name", event_name},
 	{"tostring", event_tostring},
-	{"print_fmt", event_print_fmt},
+	{"format", event_format},
 	{"sc_nr", event_sc_nr},
 	{"sc_arg1", event_sc_arg1},
 	{"sc_arg2", event_sc_arg2},
