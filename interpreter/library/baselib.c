@@ -103,6 +103,27 @@ static int ktap_lib_printf(ktap_state *ks)
 	return 0;
 }
 
+static int ktap_lib_trace_printk(ktap_state *ks)
+{
+	struct trace_seq *seq;
+
+	if (ks == G(ks)->mainthread) {
+		seq = &mainthread_printf_seq;		
+	} else {
+		seq = &per_cpu(printf_seq, smp_processor_id());
+	}
+
+	trace_seq_init(seq);
+	if (kp_strfmt(ks, seq)) {
+		return 0;
+	}
+
+	seq->buffer[seq->len] = '\0';
+	__trace_puts(0, seq->buffer, seq->len);
+
+	return 0;
+}
+
 static int ktap_lib_exit(ktap_state *ks)
 {
 	kp_exit(ks);
@@ -232,6 +253,7 @@ static const ktap_Reg base_funcs[] = {
 	{"len", ktap_lib_len},
 	{"print", ktap_lib_print},
 	{"printf", ktap_lib_printf},
+	{"trace_printk", ktap_lib_trace_printk},
 	{"in_interrupt", ktap_lib_in_interrupt},
 	{"exit", ktap_lib_exit},
 	{"pid", ktap_lib_pid},
