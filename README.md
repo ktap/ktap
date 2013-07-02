@@ -25,10 +25,11 @@ Highlights
 ----------
 
 - simple but powerful script language(forked by lua, proven to be fast)
-- register based virtual machine in Linux kernel
-- small and lightweight
+- register based interpreter(heavy optimized) in Linux kernel
+- small and lightweight(5KLOC of interpreter)
 - safty in sandbox
-- support static tracepoint, kprobe, kretprobe, uprobe, uretprobe, timer, dumpstack
+- easy to use in embedd environment even without debugging info
+- support static tracepoint, k(ret)probe, u(ret)probe, timer, dumpstack and more
 
 Building & Running
 ------------------
