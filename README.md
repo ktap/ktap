@@ -29,6 +29,7 @@ Highlights
 - small and lightweight(5KLOC of interpreter)
 - safty in sandbox
 - easy to use in embedd environment even without debugging info
+- a pure scripting interface for Linux tracing subsystem
 - support static tracepoint, k(ret)probe, u(ret)probe, timer, dumpstack and more
 
 Building & Running
@@ -145,7 +146,7 @@ http://www.freelists.org/list/ktap
 
 License
 -------
-ktap is GPL licensed.  
+GPL v2
 
 
 Contribution
