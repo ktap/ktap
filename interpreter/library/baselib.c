@@ -19,6 +19,7 @@
  */
 
 #include <linux/hardirq.h>
+#include <linux/kallsyms.h>
 #include <linux/sched.h>
 #include <linux/uaccess.h>
 #include <linux/utsname.h>
@@ -123,6 +124,51 @@ static int ktap_lib_trace_printk(ktap_state *ks)
 
 	return 0;
 }
+
+#ifdef CONFIG_STACKTRACE
+#include <linux/stacktrace.h>
+
+#define KTAP_STACK_MAX_ENTRIES 10
+struct ktap_stack {
+	unsigned long	calls[KTAP_STACK_MAX_ENTRIES];
+};
+
+static DEFINE_PER_CPU(struct ktap_stack, ktap_stack);
+
+static int ktap_lib_print_backtrace(ktap_state *ks)
+{
+	struct stack_trace trace;
+	char str[KSYM_SYMBOL_LEN];
+	int i;
+
+	trace.nr_entries = 0;
+	trace.skip = 9;
+	trace.max_entries = KTAP_STACK_MAX_ENTRIES;
+	trace.entries = &__get_cpu_var(ktap_stack).calls[0];
+	save_stack_trace(&trace);
+
+	kp_printf(ks, "<stack trace>\n");
+
+	for (i = 0; i < trace.nr_entries && i < trace.max_entries; i++) {
+		unsigned long p = trace.entries[i];
+
+		if (p == ULONG_MAX)
+			break;
+
+		kp_printf(ks, " => ");
+		sprint_symbol(str, p);
+		kp_printf(ks, "%s\n", str);
+	}
+
+	return 0;
+}
+#else
+static int ktap_lib_print_backtrace(ktap_state *ks)
+{
+	kp_printf(ks, "Please enable CONFIG_STACKTRACE before use ktap print_backtrace\n");
+	return 0;
+}
+#endif
 
 static int ktap_lib_exit(ktap_state *ks)
 {
@@ -254,6 +300,7 @@ static const ktap_Reg base_funcs[] = {
 	{"print", ktap_lib_print},
 	{"printf", ktap_lib_printf},
 	{"trace_printk", ktap_lib_trace_printk},
+	{"print_backtrace", ktap_lib_print_backtrace},
 	{"in_interrupt", ktap_lib_in_interrupt},
 	{"exit", ktap_lib_exit},
 	{"pid", ktap_lib_pid},

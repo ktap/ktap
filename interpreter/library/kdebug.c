@@ -573,57 +573,6 @@ static int ktap_lib_traceoff(ktap_state *ks)
 	return 0;
 }
 
-
-#if LINUX_VERSION_CODE > KERNEL_VERSION(3, 4, 0)
-#include <trace/events/printk.h>
-static DEFINE_PER_CPU(bool, ktap_in_dumpstack);
-
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 9, 0)
-void trace_console_func(void *__data, const char *text, unsigned start,
-			unsigned end, size_t len)
-#else
-void trace_console_func(void *__data, const char *text, size_t len)
-#endif
-{
-	ktap_state *ks = __data;
-
-	if (likely(!__this_cpu_read(ktap_in_dumpstack)))
-		return;
-
-	/* cannot use kp_printf here */
-	kp_transport_write(ks, text, len);
-}
-
-/*
- * Some method:
- * 1) use console tracepoint
- * 2) register console driver
- * 3) hack printk function, like kdb does now.
- * 4) console_lock firstly, read log buffer, then console_unlock
- *
- * Note we cannot use console_lock/console_trylock here.
- * Issue: printk may not call call_console_drivers if console semaphore
- * is already held, in this case, ktap may output nothing.
- *
- * todo: not output to consoles.
- */
-static int ktap_lib_dumpstack(ktap_state *ks)
-{
-	__this_cpu_write(ktap_in_dumpstack, true);
-
-	dump_stack();
-
-	__this_cpu_write(ktap_in_dumpstack, false);
-	return 0;
-}
-#else
-static int ktap_lib_dumpstack(ktap_state *ks)
-{
-	kp_printf(ks, "your kernel version don't support ktap dumpstack\n");
-	return 0;
-}
-#endif
-
 static void wait_interrupt(ktap_state *ks)
 {
 	kp_printf(ks, "Press Control-C to stop.\n");
@@ -656,23 +605,12 @@ void kp_probe_exit(ktap_state *ks)
 
 	free_percpu(percpu_trace_iterator);
 
-#if LINUX_VERSION_CODE > KERNEL_VERSION(3, 4, 0)
-	unregister_trace_console(trace_console_func, ks);
-#endif
-
 	G(ks)->trace_enabled = 0;
 }
 
 int kp_probe_init(ktap_state *ks)
 {
 	INIT_LIST_HEAD(&(G(ks)->probe_events_head));
-
-#if LINUX_VERSION_CODE > KERNEL_VERSION(3, 4, 0)
-	if (register_trace_console(trace_console_func, ks)) {
-		kp_printf(ks, "cannot register trace console\n");
-		return -1;
-	}
-#endif
 
 	/* allocate percpu data */
 	if (!G(ks)->trace_enabled) {
@@ -686,7 +624,6 @@ int kp_probe_init(ktap_state *ks)
 }
 
 static const ktap_Reg kdebuglib_funcs[] = {
-	{"dumpstack", ktap_lib_dumpstack},
 	{"probe_by_id", ktap_lib_probe_by_id},
 	{"probe_end", ktap_lib_probe_end},
 	{"traceoff", ktap_lib_traceoff},
