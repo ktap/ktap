@@ -119,7 +119,7 @@ static int ktap_lib_trace_printk(ktap_state *ks)
 	}
 
 	seq->buffer[seq->len] = '\0';
-	__trace_puts(0, seq->buffer, seq->len);
+	trace_printk(seq->buffer);
 
 	return 0;
 }
