@@ -155,9 +155,8 @@ static int ktap_lib_print_backtrace(ktap_state *ks)
 		if (p == ULONG_MAX)
 			break;
 
-		kp_printf(ks, " => ");
 		sprint_symbol(str, p);
-		kp_printf(ks, "%s\n", str);
+		kp_printf(ks, " => %s\n", str);
 	}
 
 	return 0;
