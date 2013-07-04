@@ -1121,8 +1121,8 @@ void kp_exit(ktap_state *ks)
 }
 
 /* ktap mainthread initization, main entry for ktap */
-ktap_state *kp_newstate(ktap_state **private_data, int verbose,
-			int argc, char **argv)
+ktap_state *kp_newstate(ktap_state **private_data, struct ktap_parm *parm,
+			char **argv)
 {
 	ktap_state *ks;
 
@@ -1136,7 +1136,7 @@ ktap_state *kp_newstate(ktap_state **private_data, int verbose,
 	G(ks)->mainthread = ks;
 	G(ks)->seed = 201236; /* todo: make more random in future */
 	G(ks)->task = current;
-	G(ks)->verbose = verbose; /* for debug use */
+	G(ks)->verbose = parm->verbose; /* for debug use */
 	INIT_LIST_HEAD(&(G(ks)->timers));
 	sema_init(&G(ks)->sync_sem, 1);
 	G(ks)->exit = 0;
@@ -1144,14 +1144,14 @@ ktap_state *kp_newstate(ktap_state **private_data, int verbose,
 	if (cfunction_cache_init(ks))
 		goto out;
 
-	if (kp_transport_init(ks))
+	if (kp_transport_init(ks, parm->use_ftrace_rb))
 		goto out;
 
 	kp_tstring_resize(ks, 512); /* set inital string hashtable size */
 
 	ktap_init_state(ks);
 	ktap_init_registry(ks);
-	ktap_init_arguments(ks, argc, argv);
+	ktap_init_arguments(ks, parm->argc, argv);
 
 	/* init library */
 	kp_init_baselib(ks);

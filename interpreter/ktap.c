@@ -58,17 +58,17 @@
 #include <linux/vmalloc.h>
 #include "../include/ktap.h"
 
-static int load_trunk(struct ktap_user_parm *uparm_ptr, unsigned long **buff)
+static int load_trunk(struct ktap_parm *parm, unsigned long **buff)
 {
 	int ret;
 	unsigned long *vmstart;
 
-	vmstart = vmalloc(uparm_ptr->trunk_len);
+	vmstart = vmalloc(parm->trunk_len);
 	if (!vmstart)
 		return -ENOMEM;
 
-	ret = copy_from_user(vmstart, (void __user *)uparm_ptr->trunk,
-			     uparm_ptr->trunk_len);
+	ret = copy_from_user(vmstart, (void __user *)parm->trunk,
+			     parm->trunk_len);
 	if (ret < 0) {
 		vfree(vmstart);
 		return -EFAULT;
@@ -78,26 +78,26 @@ static int load_trunk(struct ktap_user_parm *uparm_ptr, unsigned long **buff)
 	return 0;
 }
 
-static char **copy_argv_from_user(struct ktap_user_parm *uparm_ptr)
+static char **copy_argv_from_user(struct ktap_parm *parm)
 {
 	char **argv;
 	int i, j;
 	int ret;
 
-	argv = kmalloc(uparm_ptr->argc * sizeof(char *), GFP_KERNEL);
+	argv = kmalloc(parm->argc * sizeof(char *), GFP_KERNEL);
 	if (!argv) {
 		pr_err("out of memory");
 		return ERR_PTR(-ENOMEM);
 	}
 
-	ret = copy_from_user(argv, (void __user *)uparm_ptr->argv,
-			     uparm_ptr->argc * sizeof(char *));
+	ret = copy_from_user(argv, (void __user *)parm->argv,
+			     parm->argc * sizeof(char *));
 	if (ret < 0) {
 		kfree(argv);
 		return ERR_PTR(-EFAULT);
 	}
 
-	for (i = 0; i < uparm_ptr->argc; i++) {
+	for (i = 0; i < parm->argc; i++) {
 		char * __user ustr = argv[i];
 		char * kstr;
 		int len;
@@ -135,7 +135,7 @@ static void free_argv(int argc, char **argv)
 
 
 /* Ktap Main Entry */
-static int ktap_main(struct file *file, struct ktap_user_parm *uparm_ptr)
+static int ktap_main(struct file *file, struct ktap_parm *parm)
 {
 	unsigned long *buff = NULL;
 	ktap_state *ks;
@@ -143,23 +143,22 @@ static int ktap_main(struct file *file, struct ktap_user_parm *uparm_ptr)
 	char **argv;
 	int ret;
 
-	ret = load_trunk(uparm_ptr, &buff);
+	ret = load_trunk(parm, &buff);
 	if (ret) {
 		pr_err("cannot load file %s\n", argv[0]);
 		return ret;
 	}
 
-	argv = copy_argv_from_user(uparm_ptr);
+	argv = copy_argv_from_user(parm);
 	if (IS_ERR(argv)) {
 		vfree(buff);
 		return PTR_ERR(argv);
 	}
 
-	ks = kp_newstate((ktap_state **)&file->private_data, uparm_ptr->verbose,
-			 uparm_ptr->argc, argv);
+	ks = kp_newstate((ktap_state **)&file->private_data, parm, argv);
 
 	/* free argv memory after store into arg table */
-	free_argv(uparm_ptr->argc, argv);
+	free_argv(parm->argc, argv);
 
 	if (unlikely(!ks)) {
 		vfree(buff);
@@ -187,7 +186,7 @@ static void print_version(void)
 
 static long ktap_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
-	struct ktap_user_parm uparm;
+	struct ktap_parm parm;
 	ktap_state *ks = file->private_data;
 	int ret;
 
@@ -196,12 +195,12 @@ static long ktap_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		print_version();
 		return 0;
 	case KTAP_CMD_RUN:
-		ret = copy_from_user(&uparm, (void __user *)arg,
-				     sizeof(struct ktap_user_parm));
+		ret = copy_from_user(&parm, (void __user *)arg,
+				     sizeof(struct ktap_parm));
 		if (ret < 0)
 			return -EFAULT;
 
-		return ktap_main(file, &uparm);
+		return ktap_main(file, &parm);
 	case KTAP_CMD_USER_COMPLETE:
 		if (!ks)
 			return 0;

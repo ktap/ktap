@@ -14,12 +14,13 @@ typedef char u8;
 #include <string.h>
 #endif
 
-struct ktap_user_parm {
+struct ktap_parm {
 	char *trunk;
 	int trunk_len;
 	int argc;
 	char **argv;
 	int verbose;
+	int use_ftrace_rb;
 };
 
 enum {
@@ -265,6 +266,7 @@ typedef struct ktap_global_state {
 	struct ktap_state *mainthread;
 #ifdef __KERNEL__
 	int verbose;
+	int use_ftrace_rb;
 	int nr_builtin_cfunction;
 	ktap_value *cfunction_tbl;
 	struct task_struct *task;

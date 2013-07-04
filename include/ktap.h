@@ -11,7 +11,7 @@ typedef struct ktap_Reg {
         ktap_cfunction func;
 } ktap_Reg;
 
-ktap_state *kp_newstate(ktap_state **private_data, int verbose, int argc, char **argv);
+ktap_state *kp_newstate(ktap_state **private_data, struct ktap_parm *parm, char **argv);
 void kp_exit(ktap_state *ks);
 ktap_state *kp_newthread(ktap_state *mainthread);
 void kp_exitthread(ktap_state *ks);
@@ -37,7 +37,7 @@ int kp_strfmt(ktap_state *ks, struct trace_seq *seq);
 void kp_transport_write(ktap_state *ks, const void *data, size_t length);
 void *kp_transport_reserve(ktap_state *ks, size_t length);
 void kp_transport_exit(ktap_state *ks);
-int kp_transport_init(ktap_state *ks);
+int kp_transport_init(ktap_state *ks, int use_ftrace_rb);
 
 void kp_user_complete(ktap_state *ks);
 

@@ -287,21 +287,21 @@ static void init_dummy_global_state()
 
 #define handle_error(str) do { perror(str); exit(-1); } while(0)
 
-static struct ktap_user_parm ktap_uparm;
+static struct ktap_parm uparm;
 static int ktap_trunk_mem_size = 1024;
 
 static int ktapc_writer(const void* p, size_t sz, void* ud)
 {
 	int ret;
 
-	if (ktap_uparm.trunk_len + sz > ktap_trunk_mem_size) {
-		int new_size = (ktap_uparm.trunk_len + sz) * 2;
-		ktap_uparm.trunk = realloc(ktap_uparm.trunk, new_size);
+	if (uparm.trunk_len + sz > ktap_trunk_mem_size) {
+		int new_size = (uparm.trunk_len + sz) * 2;
+		uparm.trunk = realloc(uparm.trunk, new_size);
 		ktap_trunk_mem_size = new_size;
 	}
 
-	memcpy(ktap_uparm.trunk + ktap_uparm.trunk_len, p, sz);
-	ktap_uparm.trunk_len += sz;
+	memcpy(uparm.trunk + uparm.trunk_len, p, sz);
+	uparm.trunk_len += sz;
 
 	return 0;
 }
@@ -332,7 +332,7 @@ static void run_ktapvm()
 
 	ktapio_create((void *)ktap_user_complete_cb);
 
-	ioctl(ktap_fd, KTAP_CMD_RUN, &ktap_uparm);
+	ioctl(ktap_fd, KTAP_CMD_RUN, &uparm);
 
 	close(ktap_fd);
 	close(ktapvm_fd);
@@ -340,6 +340,7 @@ static void run_ktapvm()
 
 int verbose;
 static int dump_bytecode;
+int use_ftrace_rb;
 static char output_filename[128];
 
 static int parse_option(int argc, char **argv)
@@ -351,11 +352,12 @@ static int parse_option(int argc, char **argv)
 			{"output",	required_argument, NULL, 'o'},
                         {"verbose",	no_argument, NULL, 'V'},
 			{"list_bytecode", no_argument, NULL, 'b'},
+			{"use_ftrace_rb", no_argument, NULL, 'F'},
 			{"version",	no_argument, NULL, 'v'},
 			{"help",	no_argument, NULL, '?'},
 			{NULL, 0, NULL, 0}
 		};
-		int c = getopt_long(argc, argv, "o:Vvb?", long_options,
+		int c = getopt_long(argc, argv, "o:VvbF?", long_options,
 							&option_index);
 		if (c == -1)
 			break;
@@ -370,6 +372,9 @@ static int parse_option(int argc, char **argv)
 			break;
 		case 'b':
 			dump_bytecode = 1;
+			break;
+		case 'F':
+			use_ftrace_rb = 1;
 			break;
 		case 'v':
 		case '?':
@@ -420,8 +425,8 @@ static void compile(const char *input)
 	}
 
 	/* ktapc output */
-	ktap_uparm.trunk = malloc(ktap_trunk_mem_size);
-	if (!ktap_uparm.trunk)
+	uparm.trunk = malloc(ktap_trunk_mem_size);
+	if (!uparm.trunk)
 		handle_error("malloc failed");
 
 	ktapc_dump(cl->l.p, ktapc_writer, NULL, 0);
@@ -433,7 +438,7 @@ static void compile(const char *input)
 		if (fdout < 0)
 			handle_error("open failed");
 
-		ret = write(fdout, ktap_uparm.trunk, ktap_uparm.trunk_len);
+		ret = write(fdout, uparm.trunk, uparm.trunk_len);
 		if (ret < 0)
 			handle_error("write failed");
 
@@ -482,9 +487,10 @@ int main(int argc, char **argv)
 		new_index++;
 	}
 
-	ktap_uparm.argv = ktapvm_argv;
-	ktap_uparm.argc = new_index;
-	ktap_uparm.verbose = verbose;
+	uparm.argv = ktapvm_argv;
+	uparm.argc = new_index;
+	uparm.verbose = verbose;
+	uparm.use_ftrace_rb = use_ftrace_rb;
 
 	/* start running into kernel ktapvm */
 	run_ktapvm();
