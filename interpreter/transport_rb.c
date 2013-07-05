@@ -168,7 +168,6 @@ static void *trace_find_next_entry_inc(struct ktap_trace_iterator *iter)
 {
 	iter->ent = __find_next_entry(iter, &iter->cpu,
 				      &iter->lost_events, &iter->ts);
-
 	if (iter->ent)
 		iter->idx++;
 
@@ -186,6 +185,7 @@ static void poll_wait_pipe(void)
 static int tracing_wait_pipe(struct file *filp)
 {
 	struct ktap_trace_iterator *iter = filp->private_data;
+	ktap_state *ks = iter->private;
 
 	while (trace_empty(iter)) {
 
@@ -199,8 +199,10 @@ static int tracing_wait_pipe(struct file *filp)
 
 		mutex_lock(&iter->mutex);
 
-		if (signal_pending(current))
+		if (G(ks)->exit && trace_empty(iter)) {
+			flush_signals(current);
 			return -EINTR;
+		}
 	}
 
 	return 1;
@@ -289,12 +291,14 @@ out:
 static int tracing_open_pipe(struct inode *inode, struct file *filp)
 {
 	struct ktap_trace_iterator *iter;
+	ktap_state *ks = inode->i_private;
 
 	/* create a buffer to store the information to pass to userspace */
 	iter = kzalloc(sizeof(*iter), GFP_KERNEL);
 	if (!iter)
 		return -ENOMEM;
 
+	iter->private = ks;
 	iter->buffer = buffer;
 	mutex_init(&iter->mutex);
 	filp->private_data = iter;
@@ -348,14 +352,14 @@ void kp_transport_exit(ktap_state *ks)
 
 extern struct dentry *ktap_dir;
 
-int kp_transport_init(ktap_state *ks, int use_ftrace_rb)
+int kp_transport_init(ktap_state *ks)
 {
 	buffer = ring_buffer_alloc(1000000, RB_FL_OVERWRITE);
 	if (!buffer)
 		return -ENOMEM;
 
 	ktap_trace_dentry = debugfs_create_file("trace_pipe", 0444, ktap_dir,
-						NULL, &tracing_pipe_fops);
+						ks, &tracing_pipe_fops);
 	if (!ktap_trace_dentry) {
 		pr_err("ktapvm: cannot create trace file in debugfs\n");
 		ring_buffer_free(buffer);

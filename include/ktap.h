@@ -37,7 +37,7 @@ int kp_strfmt(ktap_state *ks, struct trace_seq *seq);
 void kp_transport_write(ktap_state *ks, const void *data, size_t length);
 void *kp_transport_reserve(ktap_state *ks, size_t length);
 void kp_transport_exit(ktap_state *ks);
-int kp_transport_init(ktap_state *ks, int use_ftrace_rb);
+int kp_transport_init(ktap_state *ks);
 
 void kp_user_complete(ktap_state *ks);
 

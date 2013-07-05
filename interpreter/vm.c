@@ -1144,7 +1144,7 @@ ktap_state *kp_newstate(ktap_state **private_data, struct ktap_parm *parm,
 	if (cfunction_cache_init(ks))
 		goto out;
 
-	if (kp_transport_init(ks, parm->use_ftrace_rb))
+	if (kp_transport_init(ks))
 		goto out;
 
 	kp_tstring_resize(ks, 512); /* set inital string hashtable size */

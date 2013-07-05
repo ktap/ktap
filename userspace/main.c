@@ -340,7 +340,6 @@ static void run_ktapvm()
 
 int verbose;
 static int dump_bytecode;
-int use_ftrace_rb;
 static char output_filename[128];
 
 static int parse_option(int argc, char **argv)
@@ -352,12 +351,11 @@ static int parse_option(int argc, char **argv)
 			{"output",	required_argument, NULL, 'o'},
                         {"verbose",	no_argument, NULL, 'V'},
 			{"list_bytecode", no_argument, NULL, 'b'},
-			{"use_ftrace_rb", no_argument, NULL, 'F'},
 			{"version",	no_argument, NULL, 'v'},
 			{"help",	no_argument, NULL, '?'},
 			{NULL, 0, NULL, 0}
 		};
-		int c = getopt_long(argc, argv, "o:VvbF?", long_options,
+		int c = getopt_long(argc, argv, "o:Vvb?", long_options,
 							&option_index);
 		if (c == -1)
 			break;
@@ -372,9 +370,6 @@ static int parse_option(int argc, char **argv)
 			break;
 		case 'b':
 			dump_bytecode = 1;
-			break;
-		case 'F':
-			use_ftrace_rb = 1;
 			break;
 		case 'v':
 		case '?':
@@ -490,7 +485,6 @@ int main(int argc, char **argv)
 	uparm.argv = ktapvm_argv;
 	uparm.argc = new_index;
 	uparm.verbose = verbose;
-	uparm.use_ftrace_rb = use_ftrace_rb;
 
 	/* start running into kernel ktapvm */
 	run_ktapvm();

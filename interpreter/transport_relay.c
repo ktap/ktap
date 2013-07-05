@@ -60,11 +60,6 @@ static struct rchan_callbacks relay_callbacks = {
 
 void kp_transport_write(ktap_state *ks, const void *data, size_t length)
 {
-	if (G(ks)->use_ftrace_rb) {
-		trace_printk(data);
-		return;
-	}
-
 	__relay_write(G(ks)->ktap_chan, data, length);
 }
 
@@ -78,23 +73,15 @@ void *kp_transport_reserve(ktap_state *ks, size_t length)
 
 void kp_transport_exit(ktap_state *ks)
 {
-	if (G(ks)->use_ftrace_rb)
-		return;
-
 	if (G(ks)->ktap_chan)
 		relay_close(G(ks)->ktap_chan);
 }
 
 extern struct dentry *ktap_dir;
 
-int kp_transport_init(ktap_state *ks, int use_ftrace_rb)
+int kp_transport_init(ktap_state *ks)
 {
 	char prefix[32] = {0};
-
-	if (use_ftrace_rb) {
-		G(ks)->use_ftrace_rb = 1;
-		return 0;
-	}
 
 	sprintf(prefix, "trace-%d-", (int)task_tgid_vnr(current));
 	G(ks)->ktap_chan = relay_open(prefix, ktap_dir, 4096, 10,
