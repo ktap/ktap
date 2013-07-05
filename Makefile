@@ -9,7 +9,7 @@ LIB_OBJS += $(LIBDIR)/baselib.o $(LIBDIR)/oslib.o $(LIBDIR)/kdebug.o $(LIBDIR)/t
 
 INTP_OBJS = 
 INTP_OBJS += $(INTP)/ktap.o $(INTP)/loader.o $(INTP)/object.o $(INTP)/tstring.o \
-	    $(INTP)/table.o $(INTP)/vm.o $(INTP)/opcode.o $(INTP)/strfmt.o $(INTP)/transport_rb.o \
+	    $(INTP)/table.o $(INTP)/vm.o $(INTP)/opcode.o $(INTP)/strfmt.o $(INTP)/transport.o \
 	    $(LIB_OBJS)
 
 obj-m		+= ktapvm.o
