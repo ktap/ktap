@@ -61,7 +61,7 @@ static void *reader_thread(void *data)
 
 	block_sigint();
 
-	sprintf(filename, "/sys/kernel/debug/ktap/trace_pipe");
+	sprintf(filename, "/sys/kernel/debug/ktap/trace_pipe_%d", ktap_pid);
 
  open_again:
 	fd = open(filename, O_RDONLY);

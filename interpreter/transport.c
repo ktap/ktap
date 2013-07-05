@@ -354,14 +354,18 @@ extern struct dentry *ktap_dir;
 
 int kp_transport_init(ktap_state *ks)
 {
+	char filename[32] = {0};
+
 	buffer = ring_buffer_alloc(1000000, RB_FL_OVERWRITE);
 	if (!buffer)
 		return -ENOMEM;
 
-	ktap_trace_dentry = debugfs_create_file("trace_pipe", 0444, ktap_dir,
+	sprintf(filename, "trace_pipe_%d", (int)task_tgid_vnr(current));
+
+	ktap_trace_dentry = debugfs_create_file(filename, 0444, ktap_dir,
 						ks, &tracing_pipe_fops);
 	if (!ktap_trace_dentry) {
-		pr_err("ktapvm: cannot create trace file in debugfs\n");
+		pr_err("ktapvm: cannot create trace_pipe file in debugfs\n");
 		ring_buffer_free(buffer);
 		return -1;
 	}
