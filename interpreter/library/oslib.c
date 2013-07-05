@@ -43,7 +43,8 @@ void kp_printf(ktap_state *ks, const char *fmt, ...)
 	len = vscnprintf(buff, 1024, fmt, args);
 	va_end(args);
 
-	kp_transport_write(ks, buff, len);
+	buff[len] = '\0';
+	kp_transport_write(ks, buff, len + 1);
 }
 
 static int ktap_lib_clock(ktap_state *ks)

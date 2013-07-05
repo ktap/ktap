@@ -99,7 +99,7 @@ static int ktap_lib_printf(ktap_state *ks)
 	}
 
 	seq->buffer[seq->len] = '\0';
-	kp_transport_write(ks, seq->buffer, seq->len);
+	kp_transport_write(ks, seq->buffer, seq->len + 1);
 
 	return 0;
 }
