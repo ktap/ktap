@@ -55,27 +55,21 @@ Building & Running
 
 Examples
 -------------------------------------
+1) simplest one-line tracing script  
 
-1) simple syscall tracing  
+	#one-line script to trace all static tracepoint
+	trace '*:*' function (e) { print(e) }
 
-	[root@jovi]# cat scripts/syscalls.kp
+2) simple syscall tracing  
+
+	#scripts/syscalls.kp
 	trace "syscalls:*" function (e) {
 		printf("%d %d\t%s\t%s", cpu(), pid(), execname(), e.tostring())
 	}
 
-	[root@jovi]# ktap scripts/syscalls.kp
-	0 895   sshd    sys_write(fd: 3, buf: b7fdf378, count: 90)
-	0 895   sshd    sys_write -> 0x90
-	0 895   sshd    sys_select(n: b, inp: b7fcc0f8, outp: b7fcc0e8, exp: 0, tvp: 0)
-	1 602   iscsid  sys_poll -> 0x0
-	1 602   iscsid  sys_poll(ufds: bf82fa10, nfds: 2, timeout_msecs: fa)
-	0 895   sshd    sys_select -> 0x1
-	0 895   sshd    sys_select(n: b, inp: b7fcc0f8, outp: b7fcc0e8, exp: 0, tvp: 0)
-	...
+3) histogram style syscall tracing  
 
-2) histogram style syscall tracing  
-
-	[root@jovi]# cat scripts/syscalls_histogram.kp
+	#scripts/syscalls_histogram.kp
 	hist = {}
 
 	trace "syscalls:sys_enter_*" function (e) {
@@ -86,33 +80,9 @@ Examples
 		    histogram(hist)
 	}
 
-	[root@jovi]# ktap scripts/syscalls_histogram.kp
-	Press Control-C to stop.
-	^C
-                          value ------------- Distribution ------------- count
-        sys_enter_rt_sigprocmask |@@@@@@@@@@@@@@@                        596
-                sys_enter_select |@@@@                                   179
-          sys_enter_rt_sigaction |@@@@                                   165
-                  sys_enter_read |@@@                                    130
-                 sys_enter_write |@@@                                    129
-                  sys_enter_poll |                                       38
-               sys_enter_lstat64 |                                       36
-                 sys_enter_ioctl |                                       36
-                sys_enter_capget |                                       31
-              sys_enter_getxattr |                                       31
-            sys_enter_mmap_pgoff |                                       28
-                 sys_enter_close |                                       21
-               sys_enter_fstat64 |                                       15
-                  sys_enter_open |                                       15
-                sys_enter_stat64 |                                       12
-                  sys_enter_time |                                       11
-             sys_enter_nanosleep |                                       10
-              sys_enter_mprotect |                                       9
-			     ...
+4) kprobe tracing  
 
-3) kprobe tracing (do_sys_open)
-
-	[root@jovi]# cat scripts/kprobes-do-sys-open.kp
+	#scripts/kprobes-do-sys-open.kp
 	trace "probe:do_sys_open dfd=%di filename=%dx flags=%cx mode=+4($stack)" function (e) {
 		printf("%20s\tentry:\t%s", execname(), e.tostring())
 	}
@@ -122,9 +92,9 @@ Examples
 	}
 
 
-4) uprobe tracing (malloc)
+5) uprobe tracing  
 
-	[root@jovi]# cat scripts/uprobes-malloc.kp
+	#scripts/uprobes-malloc.kp
 	#do not use 0x000773c0 in your system,
 	#you need to calculate libc malloc symbol offset in your own system.
 	#symbol resolve will support in future
