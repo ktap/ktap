@@ -1,5 +1,5 @@
 /*
- * ktapio.c - relay transport in userspace
+ * ktapio.c - ring buffer transport in userspace
  *
  * Copyright 2013 The ktap Project Developers.
  * See the COPYRIGHT file at the top-level directory of this distribution.

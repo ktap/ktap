@@ -41,10 +41,6 @@
 #error "Please enable CONFIG_KPROBES before compile ktap"
 #endif
 
-#if !CONFIG_RELAY
-#error "Please enable CONFIG_RELAY before compile ktap"
-#endif
-
 #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 
 #include <linux/module.h>

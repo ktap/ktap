@@ -30,7 +30,6 @@ Thanks Lua.
 Requirements
 ------------
 - Linux 3.1 or later(Need some kernel patches for kernel earlier than 3.1)
-- CONFIG_RELAY enabled
 - CONFIG_EVENT_TRACING enabled
 - CONFIG_PERF_EVENTS enabled
 - CONFIG_KPROBES enabled 
