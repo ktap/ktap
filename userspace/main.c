@@ -341,6 +341,7 @@ static void run_ktapvm()
 int verbose;
 static int dump_bytecode;
 static char output_filename[128];
+static char oneline_src[1024];
 
 static int parse_option(int argc, char **argv)
 {
@@ -349,13 +350,14 @@ static int parse_option(int argc, char **argv)
 	for (;;) {
 		static struct option long_options[] = {
 			{"output",	required_argument, NULL, 'o'},
+			{"program",	required_argument, NULL, 'e'},
                         {"verbose",	no_argument, NULL, 'V'},
 			{"list_bytecode", no_argument, NULL, 'b'},
 			{"version",	no_argument, NULL, 'v'},
 			{"help",	no_argument, NULL, '?'},
 			{NULL, 0, NULL, 0}
 		};
-		int c = getopt_long(argc, argv, "o:Vvb?", long_options,
+		int c = getopt_long(argc, argv, "o:e:Vvb?", long_options,
 							&option_index);
 		if (c == -1)
 			break;
@@ -364,6 +366,9 @@ static int parse_option(int argc, char **argv)
 		case 'o':
 			memset(output_filename, 0, sizeof(output_filename));
 			strncpy(output_filename, optarg, strlen(optarg));
+			break;
+		case 'e':
+			strncpy(oneline_src, optarg, strlen(optarg));
 			break;
 		case 'V':
 			verbose = 1;
@@ -381,8 +386,8 @@ static int parse_option(int argc, char **argv)
 		}
 	}
 
-	if (optind >= argc)
-		usage("parse options failure\n");
+//	if (optind >= argc)
+//		usage("parse options failure\n");
 
 	return optind;
 }
@@ -394,7 +399,12 @@ static void compile(const char *input)
 	struct stat sb;
 	int fdin, fdout;
 
-	/* input */
+	if (oneline_src[0] != '\0') {
+		init_dummy_global_state();
+		cl = ktapc_parser(oneline_src, input);
+		goto dump;
+	}
+
 	fdin = open(input, O_RDONLY);
 	if (fdin < 0) {
 		fprintf(stderr, "open file %s failed\n", input);
@@ -414,6 +424,7 @@ static void compile(const char *input)
 	munmap(buff, sb.st_size);
 	close(fdin);
 
+ dump:
 	if (dump_bytecode) {
 		dump_function(1, cl->l.p);
 		exit(0);
@@ -452,7 +463,11 @@ int main(int argc, char **argv)
 		usage("");
 
 	src_argindex = parse_option(argc, argv);
-	filename = argv[src_argindex];
+
+	if (oneline_src[0] != '\0')
+		filename = "oneline";
+	else
+		filename = argv[src_argindex];
 	compile(filename);
 
 	ktapvm_argv = (char **)malloc(sizeof(char *)*(argc-src_argindex+1));
