@@ -57,8 +57,7 @@ Examples
 -------------------------------------
 1) simplest one-line tracing script  
 
-	#one-line script to trace all static tracepoint
-	trace '*:*' function (e) { print(e) }
+	ktap -e 'trace "*:*" function (e) { print(e) }'
 
 2) simple syscall tracing  
 
