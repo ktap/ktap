@@ -10,11 +10,8 @@ Implementing
 - non-mainthread error exit problem(like printf arg mismatch)
 - ktapio support global and percpu mode
 - event library support(more type logic into compiler)
-- ARM support
-- kprobe/uprobe support
 - improve printf performance
 - call ktap script in while loop shell script issue
-- maintaince different kernel version branch of ktap
 - splice io output
 - kernel_string()/user_string()
 - only tracing on cpu: ktap -c cpu *.kp
@@ -23,14 +20,12 @@ Implementing
 - support ktap -c cmd, ktap -p $pid
 - optimize tracepoints_histogram.kp, use perf event id as key index, boost performance
 - support thread local based variable/map, and cpu variables
-- support ktap thread exit, but need to probe_end function before exit
 - unified extendable library interface
 - product more useful ktap script
 - not-tracing mode support(side effects mode)
 - ktap Manual/Doc/ppt/pdf/man writing
-- more lightwight traceing infrastructure support
+- more lightwight tracing infrastructure support
 - parrot research: use opcode generate like parrot?
-- ktap -e "oneline scripting"
 - distro packages: yum install ktap, apt-get install ktap
 - website in ktap.org (ROR on free hosting site? fast deployment)
 - conference
@@ -44,17 +39,22 @@ Implementing
   replace function in runtime
 - research a new powerful interpreter serves for ktap and systemtap, even dtrace
   for static compiled language, use systemtap is enough.
-- benchmark for ktap
-- sometimes cannot stop script
 - let ktap support stapsdt in userspace binary (for example: libc)
 	(See: readelf -n /lib/libc.so.6)
 	(http://sourceware.org/systemtap/wiki/AddingUserSpaceProbingToApps)
 	(http://www.sourceware.org/ml/systemtap/2010-q3/msg00145.html)
 	(EVENTDEF: trace "stapsdt:libc:setjmp" function (e) { BODY } )
+- add selftest of ktap
+- benchmark for ktap
 
 Completed
 ---------
 
+- maintaince different kernel version branch of ktap
+- ARM support
+- kprobe/uprobe support
+- ktap -e "oneline scripting"
+- sometimes cannot stop script
 - eventdef should be parsed in compiler, not interpreter, and unify tracepoint and kprobe/uprobe
 - event based tracing infrastructure
 - Drop ftrace.patch
