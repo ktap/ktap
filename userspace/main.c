@@ -268,6 +268,7 @@ static void usage(const char *msg)
 		"usage: ktap [options] [filenames]\n"
 		"Available options are:\n"
 		"  -o name  output to file  name default is ktapc.out\n"
+		"  -e program one-line program executing\n"
 		"  -v       version info\n"
 		"  -V       verbose\n"
 		"  -b       list bytecode\n");
