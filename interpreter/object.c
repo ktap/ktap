@@ -81,7 +81,7 @@ void kp_showobj(ktap_state *ks, const ktap_value *v)
 		break;
 	case KTAP_TSHRSTR:
 	case KTAP_TLNGSTR:
-		kp_printf(ks, "\"%s\"", getstr(rawtsvalue(v)));
+		kp_printf(ks, "%s", svalue(v));
 		break;
 	case KTAP_TUSERDATA:
 		kp_printf(ks, "%d", uvalue(v));
