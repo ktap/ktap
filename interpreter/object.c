@@ -91,7 +91,7 @@ void kp_showobj(ktap_state *ks, const ktap_value *v)
 		break;
 #ifdef __KERNEL__
 	case KTAP_TEVENT:
-		kp_show_event(ks);
+		kp_transport_event_write(ks, evalue(v));
 		break;
 #endif
         default:

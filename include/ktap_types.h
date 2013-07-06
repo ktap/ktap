@@ -264,11 +264,12 @@ typedef struct ktap_global_state {
 
 	struct ktap_state *mainthread;
 #ifdef __KERNEL__
+	struct ring_buffer *buffer;
+	struct dentry *trace_pipe_dentry;
 	int verbose;
 	int nr_builtin_cfunction;
 	ktap_value *cfunction_tbl;
 	struct task_struct *task;
-	struct rchan *ktap_chan;
 	int trace_enabled;
 	struct list_head timers;
 	struct list_head probe_events_head;

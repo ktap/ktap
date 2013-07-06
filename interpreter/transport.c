@@ -22,35 +22,32 @@
 #include <linux/ftrace_event.h>
 #include "../include/ktap.h"
 
-static struct dentry *ktap_trace_dentry;
 
-static struct ring_buffer *buffer;
+struct ktap_trace_entry {
+	struct ftrace_event_call *call;
+	struct trace_entry ent;
+};
 
-/*
- * Trace iterator - used by printout routines who present trace
- * results to users and which routines might sleep, etc:
- * Copied from struct trace_iterator in include/linux/ftrace_event.h
- */
 struct ktap_trace_iterator {
 	struct ring_buffer	*buffer;
-	struct mutex		mutex;
+	struct ktap_trace_entry	*ent;
 	void			*private;
 
-	/* trace_seq for __print_flags() and __print_symbolic() etc. */
-	struct trace_seq	tmp_seq;
-
-	/* The below is zeroed out in pipe_read */
-	struct trace_seq	seq;
-	struct trace_entry	*ent;
-	unsigned long		lost_events;
-	int			leftover;
-	int			ent_size;
-	int			cpu;
-	u64			ts;
-
-	loff_t			pos;
-	long			idx;
+	struct trace_iterator	iter;
 };
+
+enum ktap_trace_type {
+	__TRACE_FIRST_TYPE = 0,
+
+	TRACE_PRINT,
+	TRACE_STACK,
+	TRACE_USER_STACK,
+
+	__TRACE_LAST_TYPE,
+};
+
+#define KTAP_TRACE_ITER(iter)	\
+	container_of(iter, struct ktap_trace_iterator, iter)
 
 ssize_t trace_seq_to_user(struct trace_seq *s, char __user *ubuf, size_t cnt)
 {
@@ -76,42 +73,73 @@ ssize_t trace_seq_to_user(struct trace_seq *s, char __user *ubuf, size_t cnt)
 	return cnt;
 }
 
-static int trace_empty(struct ktap_trace_iterator *iter)
+static int trace_empty(struct trace_iterator *iter)
 {
+	struct ktap_trace_iterator *ktap_iter = KTAP_TRACE_ITER(iter);
 	int cpu;
 
 	for_each_online_cpu(cpu) {
-		if (!ring_buffer_empty_cpu(iter->buffer, cpu))
+		if (!ring_buffer_empty_cpu(ktap_iter->buffer, cpu))
 			return 0;
 	}
 
 	return 1;
 }
 
-static void trace_consume(struct ktap_trace_iterator *iter)
+static void trace_consume(struct trace_iterator *iter)
 {
-	ring_buffer_consume(iter->buffer, iter->cpu, &iter->ts,
+	struct ktap_trace_iterator *ktap_iter = KTAP_TRACE_ITER(iter);
+
+	ring_buffer_consume(ktap_iter->buffer, iter->cpu, &iter->ts,
 			    &iter->lost_events);
 }
 
-static enum print_line_t print_trace_line(struct ktap_trace_iterator *iter)
+/* todo: export kernel function ftrace_find_event in future */
+static enum print_line_t print_trace_fmt(struct trace_iterator *iter)
 {
-	struct trace_entry *entry = iter->ent;
-	char *str = (char *)(entry + 1);
+	struct ktap_trace_iterator *ktap_iter = KTAP_TRACE_ITER(iter);
+	struct ktap_trace_entry *entry = ktap_iter->ent;
+	struct trace_event *ev;
 
-	if (!trace_seq_printf(&iter->seq, "%s", str))
-		return TRACE_TYPE_PARTIAL_LINE;
+	iter->ent = (struct trace_entry *)(entry + 1); /* raw data */
 
-	return TRACE_TYPE_HANDLED;
+	ev = &(entry->call->event);
+
+	if (ev) {
+		int ret = ev->funcs->trace(iter, 0, ev);
+
+		/* overwrite '\n' at the ending */
+		iter->seq.buffer[iter->seq.len - 1] = '\0';
+		return ret;
+	}
+
+	return TRACE_TYPE_PARTIAL_LINE;
 }
 
-static struct trace_entry *
-peek_next_entry(struct ktap_trace_iterator *iter, int cpu, u64 *ts,
+static enum print_line_t print_trace_line(struct trace_iterator *iter)
+{
+	struct ktap_trace_iterator *ktap_iter = KTAP_TRACE_ITER(iter);
+	struct ktap_trace_entry *entry = ktap_iter->ent;
+	char *str = (char *)(entry + 1);
+
+	if (entry->ent.type == TRACE_PRINT) {
+		if (!trace_seq_printf(&iter->seq, "%s", str))
+			return TRACE_TYPE_PARTIAL_LINE;
+
+		return TRACE_TYPE_HANDLED;
+	}
+
+	return print_trace_fmt(iter);
+}
+
+static struct ktap_trace_entry *
+peek_next_entry(struct trace_iterator *iter, int cpu, u64 *ts,
 		unsigned long *lost_events)
 {
+	struct ktap_trace_iterator *ktap_iter = KTAP_TRACE_ITER(iter);
 	struct ring_buffer_event *event;
 
-	event = ring_buffer_peek(buffer, cpu, ts, lost_events);
+	event = ring_buffer_peek(ktap_iter->buffer, cpu, ts, lost_events);
 	if (event) {
 		iter->ent_size = ring_buffer_event_length(event);
 		return ring_buffer_event_data(event);
@@ -120,12 +148,13 @@ peek_next_entry(struct ktap_trace_iterator *iter, int cpu, u64 *ts,
 	return NULL;
 }
 
-static struct trace_entry *
-__find_next_entry(struct ktap_trace_iterator *iter, int *ent_cpu,
+static struct ktap_trace_entry *
+__find_next_entry(struct trace_iterator *iter, int *ent_cpu,
 		  unsigned long *missing_events, u64 *ent_ts)
 {
-	struct ring_buffer *buffer = iter->buffer;
-	struct trace_entry *ent, *next = NULL;
+	struct ktap_trace_iterator *ktap_iter = KTAP_TRACE_ITER(iter);
+	struct ring_buffer *buffer = ktap_iter->buffer;
+	struct ktap_trace_entry *ent, *next = NULL;
 	unsigned long lost_events = 0, next_lost = 0;
 	u64 next_ts = 0, ts;
 	int next_cpu = -1;
@@ -164,14 +193,16 @@ __find_next_entry(struct ktap_trace_iterator *iter, int *ent_cpu,
 }
 
 /* Find the next real entry, and increment the iterator to the next entry */
-static void *trace_find_next_entry_inc(struct ktap_trace_iterator *iter)
+static void *trace_find_next_entry_inc(struct trace_iterator *iter)
 {
-	iter->ent = __find_next_entry(iter, &iter->cpu,
+	struct ktap_trace_iterator *ktap_iter = KTAP_TRACE_ITER(iter);
+
+	ktap_iter->ent = __find_next_entry(iter, &iter->cpu,
 				      &iter->lost_events, &iter->ts);
-	if (iter->ent)
+	if (ktap_iter->ent)
 		iter->idx++;
 
-	return iter->ent ? iter : NULL;
+	return ktap_iter->ent ? ktap_iter : NULL;
 }
 
 static void poll_wait_pipe(void)
@@ -184,8 +215,9 @@ static void poll_wait_pipe(void)
 
 static int tracing_wait_pipe(struct file *filp)
 {
-	struct ktap_trace_iterator *iter = filp->private_data;
-	ktap_state *ks = iter->private;
+	struct trace_iterator *iter = filp->private_data;
+	struct ktap_trace_iterator *ktap_iter = KTAP_TRACE_ITER(iter);
+	ktap_state *ks = ktap_iter->private;
 
 	while (trace_empty(iter)) {
 
@@ -211,7 +243,8 @@ static int tracing_wait_pipe(struct file *filp)
 static ssize_t
 tracing_read_pipe(struct file *filp, char __user *ubuf, size_t cnt, loff_t *ppos)
 {
-	struct ktap_trace_iterator *iter = filp->private_data;
+	struct trace_iterator *iter = filp->private_data;
+	struct ktap_trace_iterator *ktap_iter = KTAP_TRACE_ITER(iter);
 	ssize_t sret;
 
 	/* return any leftover data */
@@ -241,8 +274,8 @@ waitagain:
 
 	/* reset all but tr, trace, and overruns */
 	memset(&iter->seq, 0,
-	       sizeof(struct ktap_trace_iterator) -
-	       offsetof(struct ktap_trace_iterator, seq));
+	       sizeof(struct trace_iterator) -
+	       offsetof(struct trace_iterator, seq));
 	iter->pos = -1;
 
 	while (trace_find_next_entry_inc(iter) != NULL) {
@@ -267,7 +300,7 @@ waitagain:
 		 * One of the trace_seq_* functions is not used properly.
 		 */
 		WARN_ONCE(iter->seq.full, "full flag set for trace type %d",
-			  iter->ent->type);
+			  ktap_iter->ent->ent.type);
 	}
 
 	/* Now copy what we have to the user */
@@ -290,18 +323,18 @@ out:
 
 static int tracing_open_pipe(struct inode *inode, struct file *filp)
 {
-	struct ktap_trace_iterator *iter;
+	struct ktap_trace_iterator *ktap_iter;
 	ktap_state *ks = inode->i_private;
 
 	/* create a buffer to store the information to pass to userspace */
-	iter = kzalloc(sizeof(*iter), GFP_KERNEL);
-	if (!iter)
+	ktap_iter = kzalloc(sizeof(*ktap_iter), GFP_KERNEL);
+	if (!ktap_iter)
 		return -ENOMEM;
 
-	iter->private = ks;
-	iter->buffer = buffer;
-	mutex_init(&iter->mutex);
-	filp->private_data = iter;
+	ktap_iter->private = ks;
+	ktap_iter->buffer = G(ks)->buffer;
+	mutex_init(&ktap_iter->iter.mutex);
+	filp->private_data = &ktap_iter->iter;
 
 	nonseekable_open(inode, filp);
 
@@ -310,10 +343,11 @@ static int tracing_open_pipe(struct inode *inode, struct file *filp)
 
 static int tracing_release_pipe(struct inode *inode, struct file *file)
 {
-	struct ktap_trace_iterator *iter = file->private_data;
+	struct trace_iterator *iter = file->private_data;
+	struct ktap_trace_iterator *ktap_iter = KTAP_TRACE_ITER(iter);
 
 	mutex_destroy(&iter->mutex);
-	kfree(iter);
+	kfree(ktap_iter);
 	return 0;
 }
 
@@ -325,19 +359,48 @@ static const struct file_operations tracing_pipe_fops = {
 	.llseek		= no_llseek,
 };
 
-void kp_transport_write(ktap_state *ks, const void *data, size_t length)
+void kp_transport_event_write(ktap_state *ks, struct ktap_event *e)
 {
+	struct ring_buffer *buffer = G(ks)->buffer;
 	struct ring_buffer_event *event;
-	struct trace_entry *entry;
+	struct ktap_trace_entry *entry;
+	int data_size = e->entry_size;
+	void *data = e->entry;
 
-	event = ring_buffer_lock_reserve(buffer, sizeof(*entry) + length);
+	event = ring_buffer_lock_reserve(buffer, sizeof(*entry) + data_size);
 	if (!event) {
 		return;
 	} else {
 		entry = ring_buffer_event_data(event);
 
 		//tracing_generic_entry_update(entry, flags, pc);
-		tracing_generic_entry_update(entry, 0, 0);
+		tracing_generic_entry_update(&entry->ent, 0, 0);
+		entry->call = e->call;
+		entry->ent.type = e->call->event.type;
+		memcpy(entry + 1, data, data_size);
+
+		ring_buffer_unlock_commit(buffer, event);
+	}
+}
+void kp_transport_write(ktap_state *ks, const void *data, size_t length)
+{
+	struct ring_buffer *buffer = G(ks)->buffer;
+	struct ring_buffer_event *event;
+	struct ktap_trace_entry *entry;
+	int size;
+
+	size = sizeof(struct ktap_trace_entry) + length;
+
+	event = ring_buffer_lock_reserve(buffer, size);
+	if (!event) {
+		return;
+	} else {
+		entry = ring_buffer_event_data(event);
+
+		//tracing_generic_entry_update(entry, flags, pc);
+		tracing_generic_entry_update(&entry->ent, 0, 0);
+		entry->ent.type = TRACE_PRINT;
+		entry->call = NULL;
 		memcpy(entry + 1, data, length);
 
 		ring_buffer_unlock_commit(buffer, event);
@@ -346,14 +409,16 @@ void kp_transport_write(ktap_state *ks, const void *data, size_t length)
 
 void kp_transport_exit(ktap_state *ks)
 {
-	ring_buffer_free(buffer);
-	debugfs_remove(ktap_trace_dentry);
+	ring_buffer_free(G(ks)->buffer);
+	debugfs_remove(G(ks)->trace_pipe_dentry);
 }
 
 extern struct dentry *ktap_dir;
 
 int kp_transport_init(ktap_state *ks)
 {
+	struct ring_buffer *buffer;
+	struct dentry *dentry;
 	char filename[32] = {0};
 
 	buffer = ring_buffer_alloc(1000000, RB_FL_OVERWRITE);
@@ -362,13 +427,16 @@ int kp_transport_init(ktap_state *ks)
 
 	sprintf(filename, "trace_pipe_%d", (int)task_tgid_vnr(current));
 
-	ktap_trace_dentry = debugfs_create_file(filename, 0444, ktap_dir,
-						ks, &tracing_pipe_fops);
-	if (!ktap_trace_dentry) {
+	dentry = debugfs_create_file(filename, 0444, ktap_dir,
+				     ks, &tracing_pipe_fops);
+	if (!dentry) {
 		pr_err("ktapvm: cannot create trace_pipe file in debugfs\n");
 		ring_buffer_free(buffer);
 		return -1;
 	}
+
+	G(ks)->buffer = buffer;
+	G(ks)->trace_pipe_dentry = dentry;
 
 	return 0;
 }

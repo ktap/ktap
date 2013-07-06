@@ -11,6 +11,24 @@ typedef struct ktap_Reg {
         ktap_cfunction func;
 } ktap_Reg;
 
+struct ktap_probe_event {
+	struct list_head list;
+	int type;
+	const char *name;
+	struct perf_event *perf;
+	ktap_state *ks;
+	ktap_closure *cl;
+};
+
+/* this structure allocate on stack */
+struct ktap_event {
+	struct ktap_probe_event *pevent;
+	struct ftrace_event_call *call;
+	void *entry;
+	int entry_size;
+	struct pt_regs *regs;
+};
+
 ktap_state *kp_newstate(ktap_state **private_data, struct ktap_parm *parm, char **argv);
 void kp_exit(ktap_state *ks);
 ktap_state *kp_newthread(ktap_state *mainthread);
@@ -35,6 +53,7 @@ ktap_string *kp_event_get_ts(ktap_state *ks, int index);
 int kp_strfmt(ktap_state *ks, struct trace_seq *seq);
 
 void kp_transport_write(ktap_state *ks, const void *data, size_t length);
+void kp_transport_event_write(ktap_state *ks, struct ktap_event *e);
 void *kp_transport_reserve(ktap_state *ks, size_t length);
 void kp_transport_exit(ktap_state *ks);
 int kp_transport_init(ktap_state *ks);
@@ -44,8 +63,6 @@ void kp_user_complete(ktap_state *ks);
 void kp_exit_timers(ktap_state *ks);
 
 DECLARE_PER_CPU(bool, ktap_in_tracing);
-
-void kp_show_event(ktap_state *ks);
 
 #define kp_verbose_printf(ks, ...) \
 	if (G(ks)->verbose)	\

@@ -25,25 +25,6 @@
 #include <asm/syscall.h> //syscall_set_return_value defined here
 #include "../../include/ktap.h"
 
-/* this structure allocate on stack */
-struct ktap_event {
-	struct ktap_probe_event *pevent;
-	struct ftrace_event_call *call;
-	void *entry;
-	int entry_size;
-	struct pt_regs *regs;
-	int type;
-};
-
-struct ktap_probe_event {
-	struct list_head list;
-	int type;
-	const char *name;
-	struct perf_event *perf;
-	ktap_state *ks;
-	ktap_closure *cl;
-};
-
 DEFINE_PER_CPU(bool, ktap_in_tracing);
 
 static void ktap_call_probe_closure(ktap_state *mainthread, ktap_closure *cl,
@@ -114,15 +95,6 @@ static int event_function_tostring(ktap_state *ks)
 static void event_tostring(ktap_state *ks, struct ktap_event *e, StkId ra)
 {
 	setfvalue(ra, event_function_tostring);
-}
-/*
- * called when print(e)
- */
-void kp_show_event(ktap_state *ks)
-{
-	event_function_tostring(ks);
-	ks->top--;
-	kp_printf(ks, "%s", getstr(rawtsvalue(ks->top)));
 }
 
 /* e.name */
@@ -425,7 +397,6 @@ static void ktap_overflow_callback(struct perf_event *event,
 	e.entry = data->raw->data;
 	e.entry_size = data->raw->size;
 	e.regs = regs;
-	e.type = ktap_pevent->type;
 
 	local_irq_save(irq_flags);
 	__this_cpu_write(ktap_in_tracing, true);
