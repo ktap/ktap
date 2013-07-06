@@ -37,10 +37,6 @@
 #error "Please enable CONFIG_PERF_EVENTS before compile ktap"
 #endif
 
-#if !CONFIG_KPROBES
-#error "Please enable CONFIG_KPROBES before compile ktap"
-#endif
-
 #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 
 #include <linux/module.h>
