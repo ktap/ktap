@@ -270,7 +270,7 @@ static void usage(const char *msg)
 		"  -o name  output to file  name default is ktapc.out\n"
 		"  -v       version info\n"
 		"  -V       verbose\n"
-		"  -b       list bytecode");
+		"  -b       list bytecode\n");
 
 	exit(EXIT_FAILURE);
 }
