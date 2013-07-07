@@ -185,21 +185,22 @@ static ktap_string *internshrstr(ktap_state *ks, const char *str, size_t l)
 	ktap_global_state *g = G(ks);
 	ktap_string *ts;
 	unsigned int h = kp_string_hash(str, l, g->seed);
+	unsigned long flags;
 
-	spin_lock(&tstring_lock);
+	spin_lock_irqsave(&tstring_lock, flags);
 	for (o = g->strt.hash[lmod(h, g->strt.size)]; o != NULL;
 	     o = gch(o)->next) {
 		ts = rawgco2ts(o);
 
 		if (h == ts->tsv.hash && ts->tsv.len == l &&
 		   (memcmp(str, getstr(ts), l * sizeof(char)) == 0)) {
-			spin_unlock(&tstring_lock);
+			spin_unlock_irqrestore(&tstring_lock, flags);
 			return ts;
 		}
 	}
 
 	ts = newshrstr(ks, str, l, h);  /* not found; create a new string */
-	spin_unlock(&tstring_lock);
+	spin_unlock_irqrestore(&tstring_lock, flags);
 	return ts;
 }
 

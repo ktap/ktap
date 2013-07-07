@@ -570,6 +570,8 @@ extern ktap_global_state dummy_global_state;
 #define DEFINE_SPINLOCK
 #define spin_lock
 #define spin_unlock
+#define spin_lock_irqsave
+#define spin_unlock_irqrestore
 #endif
 
 /*
