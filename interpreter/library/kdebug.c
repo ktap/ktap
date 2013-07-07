@@ -394,9 +394,6 @@ static void ktap_overflow_callback(struct perf_event *event,
 	ktap_pevent = event->overflow_handler_context;
 	ks = ktap_pevent->ks;
 
-	if (same_thread_group(current, G(ks)->task))
-		return;
-
 	e.pevent = ktap_pevent;
 	e.call = event->tp_event;
 	e.entry = data->raw->data;
