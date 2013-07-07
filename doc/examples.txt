@@ -5,18 +5,18 @@ KTAP Script Examples
 1. syscall tracing example
 
 	trace "syscalls:*" function (e) {
-		printf("%d %d\t%s\t%s", cpu(), pid(), execname(), e.tostring())
+		print(cpu(), pid(), execname(), e)
 	}
 
 2. timer example
 	timer.s(1, function () {
-		printf("1s timer hit\n");
+		print("1s timer hit")
 	})
 
 	os.wait()
 
 3. kprobe example:
-	kdebug.probe("kprobe:schedule", function (e) {
-		printf("kprobe schedule hit\n");
-	});
+	trace "probe:schedule" function (e) {
+		print("kprobe schedule hit")
+	})
 

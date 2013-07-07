@@ -1,9 +1,6 @@
 #!/usr/bin/env ktap
 
 trace "*:*" function (e) {
-	printf("%d %d\t%s\t%s", cpu(), pid(), execname(), e.tostring())
+	print(cpu(), pid(), execname(), e)
 }
 
-trace_end function () {
-	printf("probe end\n")
-}

@@ -1,9 +1,9 @@
 #!/usr/bin/env ktap
 
 trace "probe:do_sys_open dfd=%di filename=%dx flags=%cx mode=+4($stack)" function (e) {
-	printf("%20s\tentry:\t%s", execname(), e.tostring())
+	print("entry:", execname(), e)
 }
 
 trace "probe:do_sys_open%return fd=$retval" function (e) {
-	printf("%20s\texit:\t%s", execname(), e.tostring())
+	print("exit:", execname(), e)
 }

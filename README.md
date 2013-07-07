@@ -63,7 +63,7 @@ Examples
 
 	#scripts/syscalls.kp
 	trace "syscalls:*" function (e) {
-		printf("%d %d\t%s\t%s", cpu(), pid(), execname(), e.tostring())
+		print(cpu(), pid(), execname(), e)
 	}
 
 3) histogram style syscall tracing  
@@ -83,11 +83,11 @@ Examples
 
 	#scripts/kprobes-do-sys-open.kp
 	trace "probe:do_sys_open dfd=%di filename=%dx flags=%cx mode=+4($stack)" function (e) {
-		printf("%20s\tentry:\t%s", execname(), e.tostring())
+		print("entry:", execname(), e)
 	}
 
 	trace "probe:do_sys_open%return fd=$retval" function (e) {
-		printf("%20s\texit:\t%s", execname(), e.tostring())
+		print("exit:", execname(), e)
 	}
 
 
@@ -99,11 +99,11 @@ Examples
 	#symbol resolve will support in future
 
 	trace "probe:/lib/libc.so.6:0x000773c0" function (e) {
-		printf("%20s\tentry:\t%s", execname(), e.tostring())
+		print("entry:", execname(), e)
 	}
 
 	trace "probe:/lib/libc.so.6:0x000773c0%return" function (e) {
-		printf("%20s\texit:\t%s", execname(), e.tostring())
+		print("exit:", execname(), e)
 	}
 
 Mailing list
