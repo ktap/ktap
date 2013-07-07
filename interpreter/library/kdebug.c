@@ -25,8 +25,6 @@
 #include <asm/syscall.h> //syscall_set_return_value defined here
 #include "../../include/ktap.h"
 
-DEFINE_PER_CPU(bool, ktap_in_tracing);
-
 static void ktap_call_probe_closure(ktap_state *mainthread, ktap_closure *cl,
 				    struct ktap_event *e)
 {
@@ -379,10 +377,7 @@ void perf_event_disable(struct perf_event *event)
  *
  * perf callback already consider on the recursion issue,
  * so ktap don't need to check again in here,
- * but need to care on one case:
- * callback invoked in timer expired path
  */
-
 static void ktap_overflow_callback(struct perf_event *event,
 				   struct perf_sample_data *data,
 				   struct pt_regs *regs)
@@ -390,6 +385,9 @@ static void ktap_overflow_callback(struct perf_event *event,
 	struct ktap_probe_event *ktap_pevent;
 	ktap_state  *ks;
 	struct ktap_event e;
+
+	if (unlikely(__this_cpu_read(kp_in_timer_closure)))
+		return;
 
 	ktap_pevent = event->overflow_handler_context;
 	ks = ktap_pevent->ks;

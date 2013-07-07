@@ -31,19 +31,23 @@ struct hrtimer_ktap {
 	struct list_head list;
 };
 
+/*
+ * Currently ktap disallow tracing event in timer callback closure,
+ * that will corrupt ktap_state and ktap stack, because timer closure
+ * and event closure use same irq percpu ktap_state and stack.
+ * We can use a different percpu ktap_state and stack for timer purpuse,
+ * but that's don't bring any big value with cost on memory consuming.
+ *
+ * So just simply disable tracing in timer closure
+ */
+DEFINE_PER_CPU(bool, kp_in_timer_closure);
+
 static enum hrtimer_restart hrtimer_ktap_fn(struct hrtimer *timer)
 {
 	ktap_state *ks;
 	struct hrtimer_ktap *t;
 
-	/* 
-	 * we need to make sure timer cannot running conflict with tracing
-	 * ktap_newthread use percpu ktap_state, we need to avoid timer
-	 * callback closure running with tracepoint enabled, then percpu
-	 * ktap_state will crash. so here make ktap_in_tracing as true, to
-	 * tell ktap not running any tracepoint in timer callback closure.
-	 */
-	__this_cpu_write(ktap_in_tracing, true);
+	__this_cpu_write(kp_in_timer_closure, true);
 
 	t = container_of(timer, struct hrtimer_ktap, timer);
 
@@ -55,7 +59,7 @@ static enum hrtimer_restart hrtimer_ktap_fn(struct hrtimer *timer)
 
 	hrtimer_add_expires_ns(timer, t->ns);
 
-	__this_cpu_write(ktap_in_tracing, false);
+	__this_cpu_write(kp_in_timer_closure, false);
 
 	return HRTIMER_RESTART;
 }

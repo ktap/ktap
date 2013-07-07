@@ -71,7 +71,7 @@ void kp_user_complete(ktap_state *ks);
 
 void kp_exit_timers(ktap_state *ks);
 
-DECLARE_PER_CPU(bool, ktap_in_tracing);
+DECLARE_PER_CPU(bool, kp_in_timer_closure);
 
 #define kp_verbose_printf(ks, ...) \
 	if (G(ks)->verbose)	\
