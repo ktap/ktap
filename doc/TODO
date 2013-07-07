@@ -46,6 +46,7 @@ Implementing
 	(EVENTDEF: trace "stapsdt:libc:setjmp" function (e) { BODY } )
 - add selftest of ktap
 - benchmark for ktap
+- make ktap reentrant
 
 Completed
 ---------
