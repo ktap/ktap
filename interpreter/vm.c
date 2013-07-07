@@ -995,7 +995,7 @@ static void ktap_init_arguments(ktap_state *ks, int argc, char **argv)
 
 
 #define KTAP_STACK_SIZE (BASIC_STACK_SIZE * sizeof(ktap_value))
-static void *ktap_percpu_stack;
+static void *kp_percpu_stack;
 
 static void ktap_init_state(ktap_state *ks)
 {
@@ -1010,7 +1010,7 @@ static void ktap_init_state(ktap_state *ks)
 			return;
 		}
 	} else {
-		ks->stack = per_cpu_ptr(ktap_percpu_stack, smp_processor_id());
+		ks->stack = per_cpu_ptr(kp_percpu_stack, smp_processor_id());
 	}
 
 	ks->stacksize = BASIC_STACK_SIZE;
@@ -1029,7 +1029,7 @@ static void ktap_init_state(ktap_state *ks)
 	ks->ci = ci;
 }
 
-static ktap_state *ktap_percpu_state;
+static ktap_state *kp_percpu_state;
 
 void free_all_ci(ktap_state *ks)
 {
@@ -1038,7 +1038,7 @@ void free_all_ci(ktap_state *ks)
 	for_each_possible_cpu(cpu) {
 		ktap_state *ks;
 
-		ks = per_cpu_ptr(ktap_percpu_state, cpu);
+		ks = per_cpu_ptr(kp_percpu_state, cpu);
 		free_ci(ks);
 	}
 
@@ -1068,7 +1068,7 @@ ktap_state *kp_newthread(ktap_state *mainthread)
 
 	WARN_ON_ONCE(mainthread != gs->mainthread);
 
-	ks = per_cpu_ptr(ktap_percpu_state, smp_processor_id());
+	ks = per_cpu_ptr(kp_percpu_state, smp_processor_id());
 	G(ks) = gs;
 	ks->localgc = NULL;
 	ktap_init_state(ks);
@@ -1112,11 +1112,10 @@ void kp_exit(ktap_state *ks)
 	kp_exitthread(ks);
 	free_all_ci(ks);
 
-	if (ktap_percpu_state)
-		free_percpu(ktap_percpu_state);
-	if (ktap_percpu_stack)
-		free_percpu(ktap_percpu_stack);
-
+	if (kp_percpu_state)
+		free_percpu(kp_percpu_state);
+	if (kp_percpu_stack)
+		free_percpu(kp_percpu_stack);
 	if (kp_percpu_buffer)
 		free_percpu(kp_percpu_buffer);
 
@@ -1165,12 +1164,12 @@ ktap_state *kp_newstate(ktap_state **private_data, struct ktap_parm *parm,
 	kp_init_kdebuglib(ks);
 	kp_init_timerlib(ks);
 
-	ktap_percpu_state = (ktap_state *)alloc_percpu(ktap_state);
-	if (!ktap_percpu_state)
+	kp_percpu_state = (ktap_state *)alloc_percpu(ktap_state);
+	if (!kp_percpu_state)
 		goto out;
 
-	ktap_percpu_stack = __alloc_percpu(KTAP_STACK_SIZE, __alignof__(char));
-	if (!ktap_percpu_stack)
+	kp_percpu_stack = __alloc_percpu(KTAP_STACK_SIZE, __alignof__(char));
+	if (!kp_percpu_stack)
 		goto out;
 
 	kp_percpu_buffer = __alloc_percpu(3 * PAGE_SIZE, __alignof__(char));
