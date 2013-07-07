@@ -51,7 +51,7 @@ static void ktap_call_probe_closure(ktap_state *mainthread, ktap_closure *cl,
 	kp_exitthread(ks);
 }
 
-static struct trace_iterator *percpu_trace_iterator;
+extern void *kp_percpu_buffer;
 static int event_function_tostring(ktap_state *ks)
 {
 	struct ktap_event *e = ks->current_event;
@@ -66,8 +66,8 @@ static int event_function_tostring(ktap_state *ks)
 
 	/* Simulate the iterator */
 
-	/* iter can be a bit big for the stack, use percpu*/
-	iter = per_cpu_ptr(percpu_trace_iterator, smp_processor_id());
+	/* use temp percpu buffer as trace_iterator */
+	iter = per_cpu_ptr(kp_percpu_buffer, smp_processor_id());
 
 	trace_seq_init(&iter->seq);
 	iter->ent = e->entry;
@@ -574,21 +574,12 @@ void kp_probe_exit(ktap_state *ks)
 		G(ks)->trace_end_closure = NULL;
 	}
 
-	free_percpu(percpu_trace_iterator);
-
 	G(ks)->trace_enabled = 0;
 }
 
 int kp_probe_init(ktap_state *ks)
 {
 	INIT_LIST_HEAD(&(G(ks)->probe_events_head));
-
-	/* allocate percpu data */
-	if (!G(ks)->trace_enabled) {
-		percpu_trace_iterator = alloc_percpu(struct trace_iterator);
-		if (!percpu_trace_iterator)
-			return -1;
-	}
 
 	G(ks)->trace_enabled = 1;
 	return 0;

@@ -1086,6 +1086,9 @@ static void wait_user_completion(ktap_state *ks)
 	down(&G(ks)->sync_sem);
 }
 
+/* ktap general temp percpu buffer */
+void *kp_percpu_buffer;
+
 /* todo: how to process not-mainthread exit? */
 void kp_exit(ktap_state *ks)
 {
@@ -1113,6 +1116,9 @@ void kp_exit(ktap_state *ks)
 		free_percpu(ktap_percpu_state);
 	if (ktap_percpu_stack)
 		free_percpu(ktap_percpu_stack);
+
+	if (kp_percpu_buffer)
+		free_percpu(kp_percpu_buffer);
 
 	kp_free(ks, ks);
 
@@ -1165,6 +1171,10 @@ ktap_state *kp_newstate(ktap_state **private_data, struct ktap_parm *parm,
 
 	ktap_percpu_stack = __alloc_percpu(KTAP_STACK_SIZE, __alignof__(char));
 	if (!ktap_percpu_stack)
+		goto out;
+
+	kp_percpu_buffer = __alloc_percpu(3 * PAGE_SIZE, __alignof__(char));
+	if (!kp_percpu_buffer)
 		goto out;
 
 	if (kp_probe_init(ks))
