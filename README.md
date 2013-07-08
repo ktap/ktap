@@ -72,7 +72,7 @@ Examples
 	hist = {}
 
 	trace "syscalls:sys_enter_*" function (e) {
-		    count(hist, e.name)
+		    table_count(hist, e.name)
 	}
 
 	trace_end function () {

@@ -22,6 +22,3 @@ if (0) {
 	#failed()
 }
 
-if (1+nil != nil) {
-	failed()
-}

@@ -5,7 +5,7 @@
 hist = {}
 
 trace "*:*" function (e) {
-	count(hist, execname())
+	table_count(hist, execname())
 }
 
 trace_end function () {

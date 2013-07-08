@@ -3,7 +3,7 @@
 hist = {}
 
 trace "syscalls:sys_enter_*" function (e) {
-	count(hist, execname())
+	table_count(hist, execname())
 }
 
 trace_end function () {

@@ -220,7 +220,7 @@ static int ktap_lib_user_string(ktap_state *ks)
 	return 1;
 }
 
-static int ktap_lib_count(ktap_state *ks)
+static int ktap_lib_table_count(ktap_state *ks)
 {
 	ktap_table *tbl = hvalue(kp_arg(ks, 1));
 	ktap_value *k = kp_arg(ks, 2);
@@ -280,7 +280,7 @@ static const ktap_Reg base_funcs[] = {
 	{"arch", ktap_lib_arch},
 	{"kernel_v", ktap_lib_kernel_v},
 	{"user_string", ktap_lib_user_string},
-	{"count", ktap_lib_count},
+	{"table_count", ktap_lib_table_count},
 	{"histogram", ktap_lib_histogram},
 	{"gettimeofday_us", ktap_lib_gettimeofday_us},
 	{NULL}
