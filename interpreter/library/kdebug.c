@@ -376,7 +376,9 @@ void perf_event_disable(struct perf_event *event)
  * percpu data to be context isolation(irq/sirq/nmi/process)
  *
  * perf callback already consider on the recursion issue,
- * so ktap don't need to check again in here,
+ * so ktap don't need to check again in here.
+ *
+ * Note tracepoint handler is calling with rcu_read_lock.
  */
 static void ktap_overflow_callback(struct perf_event *event,
 				   struct perf_sample_data *data,
