@@ -24,6 +24,8 @@
 #include <linux/slab.h>
 #include <linux/file.h>
 #include <linux/fs.h>
+#include <linux/hardirq.h>
+#include <linux/perf_event.h>
 #include <linux/signal.h>
 #include <linux/delay.h>
 #include <linux/sched.h>
@@ -34,6 +36,8 @@
 
 /* todo: enlarge maxstack for big system like 64-bit */
 #define KTAP_MAXSTACK           15000
+
+#define KTAP_STACK_SIZE (BASIC_STACK_SIZE * sizeof(ktap_value))
 
 #define CIST_KTAP	(1 << 0) /* call is running a ktap function */
 #define CIST_REENTRY	(1 << 2)
@@ -993,9 +997,70 @@ static void ktap_init_arguments(ktap_state *ks, int argc, char **argv)
 	}
 }
 
+/* get from kernel/trace/trace.h */
+static __always_inline int trace_get_context_bit(void)
+{
+	int bit;
 
-#define KTAP_STACK_SIZE (BASIC_STACK_SIZE * sizeof(ktap_value))
-static void *kp_percpu_stack;
+	if (in_interrupt()) {
+		if (in_nmi())
+			bit = 0;
+		else if (in_irq())
+			bit = 1;
+		else
+			bit = 2;
+	} else
+		bit = 3;
+
+	return bit;
+}
+
+/* todo: make this per-session aware */
+static void __percpu *kp_pcpu_data[KTAP_PERCPU_DATA_MAX][PERF_NR_CONTEXTS];
+
+static void *kp_percpu_data_cpu(int type, int cpu)
+{
+	return per_cpu_ptr(kp_pcpu_data[type][trace_get_context_bit()], cpu);
+}
+
+void *kp_percpu_data(int type)
+{
+	return this_cpu_ptr(kp_pcpu_data[type][trace_get_context_bit()]);
+}
+
+static void free_kp_percpu_data(void)
+{
+	int i, j;
+
+	for (i = 0; i < KTAP_PERCPU_DATA_MAX; i++) {
+		for (j = 0; j < PERF_NR_CONTEXTS; j++) {
+			free_percpu(kp_pcpu_data[i][j]);
+			kp_pcpu_data[i][j] = NULL;
+		}
+	}
+}
+
+static int alloc_kp_percpu_data(void)
+{
+	int data_size[KTAP_PERCPU_DATA_MAX] =
+		{sizeof(ktap_state), KTAP_STACK_SIZE, 3 * PAGE_SIZE};
+	int i, j;
+
+	for (i = 0; i < KTAP_PERCPU_DATA_MAX; i++) {
+		for (j = 0; j < PERF_NR_CONTEXTS; j++) {
+			void *data = __alloc_percpu(data_size[i], __alignof__(char));
+			if (!data)
+				goto fail;
+			kp_pcpu_data[i][j] = data;
+		}
+	}
+
+	return 0;
+
+ fail:
+	free_kp_percpu_data();
+	return -ENOMEM;
+}
 
 static void ktap_init_state(ktap_state *ks)
 {
@@ -1010,7 +1075,7 @@ static void ktap_init_state(ktap_state *ks)
 			return;
 		}
 	} else {
-		ks->stack = per_cpu_ptr(kp_percpu_stack, smp_processor_id());
+		ks->stack = kp_percpu_data(KTAP_PERCPU_DATA_STACK);
 	}
 
 	ks->stacksize = BASIC_STACK_SIZE;
@@ -1029,8 +1094,6 @@ static void ktap_init_state(ktap_state *ks)
 	ks->ci = ci;
 }
 
-static ktap_state *kp_percpu_state;
-
 void free_all_ci(ktap_state *ks)
 {
 	int cpu;
@@ -1038,7 +1101,7 @@ void free_all_ci(ktap_state *ks)
 	for_each_possible_cpu(cpu) {
 		ktap_state *ks;
 
-		ks = per_cpu_ptr(kp_percpu_state, cpu);
+		ks = kp_percpu_data_cpu(KTAP_PERCPU_DATA_STATE, cpu);
 		free_ci(ks);
 	}
 
@@ -1064,12 +1127,9 @@ void kp_exitthread(ktap_state *ks)
 ktap_state *kp_newthread(ktap_state *mainthread)
 {
 	ktap_state *ks;
-	ktap_global_state *gs = G(mainthread);
 
-	WARN_ON_ONCE(mainthread != gs->mainthread);
-
-	ks = per_cpu_ptr(kp_percpu_state, smp_processor_id());
-	G(ks) = gs;
+	ks = kp_percpu_data(KTAP_PERCPU_DATA_STATE);
+	G(ks) = G(mainthread);
 	ks->localgc = NULL;
 	ktap_init_state(ks);
 	return ks;
@@ -1085,9 +1145,6 @@ static void wait_user_completion(ktap_state *ks)
 	G(ks)->exit = 1;
 	down(&G(ks)->sync_sem);
 }
-
-/* ktap general temp percpu buffer */
-void *kp_percpu_buffer;
 
 /* todo: how to process not-mainthread exit? */
 void kp_exit(ktap_state *ks)
@@ -1112,12 +1169,7 @@ void kp_exit(ktap_state *ks)
 	kp_exitthread(ks);
 	free_all_ci(ks);
 
-	if (kp_percpu_state)
-		free_percpu(kp_percpu_state);
-	if (kp_percpu_stack)
-		free_percpu(kp_percpu_stack);
-	if (kp_percpu_buffer)
-		free_percpu(kp_percpu_buffer);
+	free_kp_percpu_data();
 
 	kp_free(ks, ks);
 
@@ -1164,16 +1216,7 @@ ktap_state *kp_newstate(ktap_state **private_data, struct ktap_parm *parm,
 	kp_init_kdebuglib(ks);
 	kp_init_timerlib(ks);
 
-	kp_percpu_state = (ktap_state *)alloc_percpu(ktap_state);
-	if (!kp_percpu_state)
-		goto out;
-
-	kp_percpu_stack = __alloc_percpu(KTAP_STACK_SIZE, __alignof__(char));
-	if (!kp_percpu_stack)
-		goto out;
-
-	kp_percpu_buffer = __alloc_percpu(3 * PAGE_SIZE, __alignof__(char));
-	if (!kp_percpu_buffer)
+	if (alloc_kp_percpu_data())
 		goto out;
 
 	if (kp_probe_init(ks))

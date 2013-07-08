@@ -29,6 +29,14 @@ struct ktap_event {
 	struct pt_regs *regs;
 };
 
+enum {
+	KTAP_PERCPU_DATA_STATE,
+	KTAP_PERCPU_DATA_STACK,
+	KTAP_PERCPU_DATA_BUFFER,
+
+	KTAP_PERCPU_DATA_MAX
+};
+
 ktap_state *kp_newstate(ktap_state **private_data, struct ktap_parm *parm, char **argv);
 void kp_exit(ktap_state *ks);
 ktap_state *kp_newthread(ktap_state *mainthread);
@@ -37,6 +45,7 @@ ktap_closure *kp_load(ktap_state *ks, unsigned char *buff);
 void kp_call(ktap_state *ks, StkId func, int nresults);
 void kp_optimize_code(ktap_state *ks, int level, ktap_proto *f);
 void kp_register_lib(ktap_state *ks, const char *libname, const ktap_Reg *funcs);
+void *kp_percpu_data(int type);
 
 void kp_init_baselib(ktap_state *ks);
 void kp_init_oslib(ktap_state *ks);

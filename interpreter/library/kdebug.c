@@ -51,7 +51,6 @@ static void ktap_call_probe_closure(ktap_state *mainthread, ktap_closure *cl,
 	kp_exitthread(ks);
 }
 
-extern void *kp_percpu_buffer;
 static int event_function_tostring(ktap_state *ks)
 {
 	struct ktap_event *e = ks->current_event;
@@ -67,7 +66,7 @@ static int event_function_tostring(ktap_state *ks)
 	/* Simulate the iterator */
 
 	/* use temp percpu buffer as trace_iterator */
-	iter = per_cpu_ptr(kp_percpu_buffer, smp_processor_id());
+	iter = kp_percpu_data(KTAP_PERCPU_DATA_BUFFER);
 
 	trace_seq_init(&iter->seq);
 	iter->ent = e->entry;
@@ -373,7 +372,17 @@ void perf_event_disable(struct perf_event *event)
 #endif
 
 
-/* Callback function for perf event subsystem */
+/* Callback function for perf event subsystem
+ * make ktap reentrant, don't disable irq in callback function,
+ * same as perf and ftrace. to make reentrant, we need some
+ * percpu data to be context isolation(irq/sirq/nmi/process)
+ *
+ * perf callback already consider on the recursion issue,
+ * so ktap don't need to check again in here,
+ * but need to care on one case:
+ * callback invoked in timer expired path
+ */
+
 static void ktap_overflow_callback(struct perf_event *event,
 				   struct perf_sample_data *data,
 				   struct pt_regs *regs)
@@ -381,10 +390,6 @@ static void ktap_overflow_callback(struct perf_event *event,
 	struct ktap_probe_event *ktap_pevent;
 	ktap_state  *ks;
 	struct ktap_event e;
-	unsigned long irq_flags;
-
-	if (unlikely(__this_cpu_read(ktap_in_tracing)))
-		return;
 
 	ktap_pevent = event->overflow_handler_context;
 	ks = ktap_pevent->ks;
@@ -398,13 +403,7 @@ static void ktap_overflow_callback(struct perf_event *event,
 	e.entry_size = data->raw->size;
 	e.regs = regs;
 
-	local_irq_save(irq_flags);
-	__this_cpu_write(ktap_in_tracing, true);
-
 	ktap_call_probe_closure(ks, ktap_pevent->cl, &e);
-
-	__this_cpu_write(ktap_in_tracing, false);
-	local_irq_restore(irq_flags);
 }
 
 static void perf_destructor(struct ktap_probe_event *ktap_pevent)
