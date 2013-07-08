@@ -503,7 +503,6 @@ int kp_tstring_eqlngstr(ktap_string *a, ktap_string *b);
 int kp_tstring_cmp(const ktap_string *ls, const ktap_string *rs);
 void kp_tstring_resize(ktap_state *ks, int newsize);
 void kp_tstring_freeall(ktap_state *ks);
-ktap_string *kp_tstring_assemble(ktap_state *ks, const char *str, size_t l);
 
 ktap_value *kp_table_set(ktap_state *ks, ktap_table *t, const ktap_value *key);
 ktap_table *kp_table_new(ktap_state *ks);

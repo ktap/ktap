@@ -155,19 +155,6 @@ static ktap_string *createstrobj(ktap_state *ks, const char *str, size_t l,
 	return ts;
 }
 
-ktap_string *kp_tstring_assemble(ktap_state *ks, const char *str, size_t l)
-{
-	ktap_string *ts;
-
-	ts = (ktap_string *)(str - sizeof(ktap_string));
-	gch((ktap_gcobject *)ts)->tt = KTAP_TLNGSTR;
-	ts->tsv.len = l;
-	ts->tsv.hash = 0;
-	ts->tsv.extra = 0;
-	return ts;
-}
-
-
 /*
  * creates a new short string, inserting it into string table
  */
