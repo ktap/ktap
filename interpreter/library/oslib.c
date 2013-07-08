@@ -23,16 +23,7 @@
 #include <linux/sched.h>
 #include "../../include/ktap.h"
 
-/*
- * todo: make more robust for this function
- * make this buffer percpu
- *
- * Note:
- * this function cannot be use in net console like ssh env
- * otherwise the result is not correct, and possible crash
- * you terminal
- * Use this function in raw pts terminal
- */
+/* general print function */
 void kp_printf(ktap_state *ks, const char *fmt, ...)
 {
 	char buff[1024];
@@ -74,7 +65,7 @@ static int ktap_lib_sleep(ktap_state *ks)
 	return 0;
 }
 
-/* wait forever unit interrupt by signal */
+/* wait forever until interrupt by signal */
 static int ktap_lib_wait(ktap_state *ks)
 {
 	set_current_state(TASK_INTERRUPTIBLE);
