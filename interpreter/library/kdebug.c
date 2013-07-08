@@ -81,7 +81,7 @@ static int event_function_tostring(ktap_state *ks)
 		int len = s->len >= PAGE_SIZE ? PAGE_SIZE - 1 : s->len;
 
 		s->buffer[len] = '\0';
-		setsvalue(ks->top, kp_tstring_assemble(ks, s->buffer, len + 1));
+		setsvalue(ks->top, kp_tstring_newlstr_local(ks, s->buffer, len + 1));
 	} else
 		setnilvalue(ks->top);
 
