@@ -79,21 +79,16 @@ static int ktap_lib_print(ktap_state *ks)
 	return 0;
 }
 
-static struct trace_seq mainthread_printf_seq;
-static DEFINE_PER_CPU(struct trace_seq, printf_seq);
+extern void *kp_percpu_buffer;
 
 /* don't engage with tstring when printf, use buffer directly */
 static int ktap_lib_printf(ktap_state *ks)
 {
 	struct trace_seq *seq;
 
-	if (ks == G(ks)->mainthread) {
-		seq = &mainthread_printf_seq;		
-	} else {
-		seq = &per_cpu(printf_seq, smp_processor_id());
-	}
-
+	seq = per_cpu_ptr(kp_percpu_buffer, smp_processor_id());
 	trace_seq_init(seq);
+
 	if (kp_strfmt(ks, seq)) {
 		return 0;
 	}
