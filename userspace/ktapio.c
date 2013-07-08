@@ -66,9 +66,9 @@ static void *reader_thread(void *data)
  open_again:
 	fd = open(filename, O_RDONLY);
 	if (fd < 0) {
-		usleep(1000);
+		usleep(10000);
 
-		if (failed++ == 5) {
+		if (failed++ == 10) {
 			fprintf(stderr, "Cannot open file %s\n", filename);
 			goto out;
 		}
