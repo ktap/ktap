@@ -133,7 +133,7 @@ static void event_regstr(ktap_state *ks, struct ktap_event *e, StkId ra)
 		regs->r12, regs->r13, regs->r14, regs->r15, regs->bp, regs->ip,
 		regs->cs, regs->flags, regs->sp, regs->ss);
 #endif
-	setsvalue(ra, kp_tstring_new(ks, str));
+	setsvalue(ra, kp_tstring_new_local(ks, str));
 }
 
 /* e.retval */
