@@ -70,7 +70,7 @@ static int set_timer(ktap_state *ks, int factor)
 	u64 period;
 	ktap_value *tracefunc;
 	int n = nvalue(kp_arg(ks, 1));
-	ktap_closure *cl;
+	ktap_closure *cl = NULL;
 
 	period = (u64)factor * n;
 	
@@ -79,10 +79,7 @@ static int set_timer(ktap_state *ks, int factor)
 
 		if (ttisfunc(tracefunc))
 			cl = (ktap_closure *)gcvalue(tracefunc);
-		else
-			cl = NULL;
-	} else
-		cl = NULL;
+	}
 
 	if (!cl)
 		return -1;

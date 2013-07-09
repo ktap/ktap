@@ -476,7 +476,7 @@ static int ktap_lib_probe_by_id(ktap_state *ks)
 {
 	const char *ids_str = svalue(kp_arg(ks, 1));
 	ktap_value *tracefunc;
-	ktap_closure *cl;
+	ktap_closure *cl = NULL;
 	char **argv;
 	int argc, i;
 
@@ -485,10 +485,7 @@ static int ktap_lib_probe_by_id(ktap_state *ks)
 
 		if (ttisfunc(tracefunc))
 			cl = (ktap_closure *)gcvalue(tracefunc);
-		else
-			cl = NULL;
-	} else
-		cl = NULL;
+	}
 
 	if (!cl)
 		return -1;
