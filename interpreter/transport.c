@@ -503,13 +503,15 @@ void kp_transport_exit(ktap_state *ks)
 
 extern struct dentry *ktap_dir;
 
+#define TRACE_BUF_SIZE_DEFAULT	1441792UL /* 16384 * 88 (sizeof(entry)) */
+
 int kp_transport_init(ktap_state *ks)
 {
 	struct ring_buffer *buffer;
 	struct dentry *dentry;
 	char filename[32] = {0};
 
-	buffer = ring_buffer_alloc(1000000, RB_FL_OVERWRITE);
+	buffer = ring_buffer_alloc(TRACE_BUF_SIZE_DEFAULT, RB_FL_OVERWRITE);
 	if (!buffer)
 		return -ENOMEM;
 
