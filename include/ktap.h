@@ -24,7 +24,7 @@ struct ktap_probe_event {
 struct ktap_event {
 	struct ktap_probe_event *pevent;
 	struct ftrace_event_call *call;
-	void *entry;
+	struct trace_entry *entry;
 	int entry_size;
 	struct pt_regs *regs;
 };

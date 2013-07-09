@@ -101,7 +101,7 @@ static enum print_line_t print_trace_fmt(struct trace_iterator *iter)
 	struct ktap_trace_entry *entry = ktap_iter->ent;
 	struct trace_event *ev;
 
-	iter->ent = (struct trace_entry *)(entry + 1); /* raw data */
+	iter->ent = &entry->ent;
 
 	ev = &(entry->call->event);
 
@@ -364,20 +364,16 @@ void kp_transport_event_write(ktap_state *ks, struct ktap_event *e)
 	struct ring_buffer *buffer = G(ks)->buffer;
 	struct ring_buffer_event *event;
 	struct ktap_trace_entry *entry;
-	int data_size = e->entry_size;
-	void *data = e->entry;
 
-	event = ring_buffer_lock_reserve(buffer, sizeof(*entry) + data_size);
+	event = ring_buffer_lock_reserve(buffer, sizeof(struct ftrace_event_call *) +
+						 e->entry_size);
 	if (!event) {
 		return;
 	} else {
 		entry = ring_buffer_event_data(event);
 
-		//tracing_generic_entry_update(entry, flags, pc);
-		tracing_generic_entry_update(&entry->ent, 0, 0);
 		entry->call = e->call;
-		entry->ent.type = e->call->event.type;
-		memcpy(entry + 1, data, data_size);
+		memcpy(&entry->ent, e->entry, e->entry_size);
 
 		ring_buffer_unlock_commit(buffer, event);
 	}
@@ -397,7 +393,6 @@ void kp_transport_write(ktap_state *ks, const void *data, size_t length)
 	} else {
 		entry = ring_buffer_event_data(event);
 
-		//tracing_generic_entry_update(entry, flags, pc);
 		tracing_generic_entry_update(&entry->ent, 0, 0);
 		entry->ent.type = TRACE_PRINT;
 		entry->call = NULL;

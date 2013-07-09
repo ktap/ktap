@@ -178,7 +178,7 @@ struct syscall_trace_exit {
 /* e.sc_nr */
 static void event_sc_nr(ktap_state *ks, struct ktap_event *e, StkId ra)
 {
-	struct syscall_trace_enter *entry = e->entry;
+	struct syscall_trace_enter *entry = (struct syscall_trace_enter *)e->entry;
 
 	setnvalue(ra, entry->nr);
 }
@@ -187,7 +187,7 @@ static void event_sc_nr(ktap_state *ks, struct ktap_event *e, StkId ra)
 #define EVENT_SC_ARGFUNC(n) \
 static void event_sc_arg##n(ktap_state *ks, struct ktap_event *e, StkId ra)\
 { \
-	struct syscall_trace_enter *entry = e->entry;	\
+	struct syscall_trace_enter *entry = (struct syscall_trace_enter *)e->entry;	\
 	setnvalue(ra, entry->args[n - 1]);	\
 }
 
