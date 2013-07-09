@@ -269,6 +269,7 @@ static void usage(const char *msg)
 		"Available options are:\n"
 		"  -o name  output to file  name default is ktapc.out\n"
 		"  -e program one-line program executing\n"
+		"  -p pid   target tracing pid\n"
 		"  -v       version info\n"
 		"  -V       verbose\n"
 		"  -b       list bytecode\n");
@@ -343,22 +344,25 @@ int verbose;
 static int dump_bytecode;
 static char output_filename[128];
 static char oneline_src[1024];
+static int trace_pid = -1;
 
 static int parse_option(int argc, char **argv)
 {
 	int option_index = 0;
+	char pid[32] = {0};
 
 	for (;;) {
 		static struct option long_options[] = {
 			{"output",	required_argument, NULL, 'o'},
 			{"program",	required_argument, NULL, 'e'},
+			{"pid",		required_argument, NULL, 'p'},
                         {"verbose",	no_argument, NULL, 'V'},
 			{"list_bytecode", no_argument, NULL, 'b'},
 			{"version",	no_argument, NULL, 'v'},
 			{"help",	no_argument, NULL, '?'},
 			{NULL, 0, NULL, 0}
 		};
-		int c = getopt_long(argc, argv, "o:e:Vvb?", long_options,
+		int c = getopt_long(argc, argv, "o:e:p:Vvb?", long_options,
 							&option_index);
 		if (c == -1)
 			break;
@@ -370,6 +374,10 @@ static int parse_option(int argc, char **argv)
 			break;
 		case 'e':
 			strncpy(oneline_src, optarg, strlen(optarg));
+			break;
+		case 'p':
+			strncpy(pid, optarg, strlen(optarg));
+			trace_pid = atoi(pid);
 			break;
 		case 'V':
 			verbose = 1;
@@ -501,6 +509,7 @@ int main(int argc, char **argv)
 	uparm.argv = ktapvm_argv;
 	uparm.argc = new_index;
 	uparm.verbose = verbose;
+	uparm.trace_pid = trace_pid;
 
 	/* start running into kernel ktapvm */
 	run_ktapvm();

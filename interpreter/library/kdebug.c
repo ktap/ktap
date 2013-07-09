@@ -408,7 +408,8 @@ static void perf_destructor(struct ktap_probe_event *ktap_pevent)
 	perf_event_release_kernel(ktap_pevent->perf);
 }
 
-static void start_probe_by_id(ktap_state *ks, int id, ktap_closure *cl)
+static void start_probe_by_id(ktap_state *ks, struct task_struct *task,
+			      int id, ktap_closure *cl)
 {
 	struct ktap_probe_event *ktap_pevent;
 	struct perf_event_attr attr;
@@ -429,8 +430,9 @@ static void start_probe_by_id(ktap_state *ks, int id, ktap_closure *cl)
 		ktap_pevent = kp_zalloc(arg->ks, sizeof(*ktap_pevent));
 		ktap_pevent->ks = ks;
 		ktap_pevent->cl = cl;
-		event = perf_event_create_kernel_counter(&attr, cpu, NULL,
-							 ktap_overflow_callback, ktap_pevent);
+		event = perf_event_create_kernel_counter(&attr, cpu, task,
+							 ktap_overflow_callback,
+							 ktap_pevent);
 		if (IS_ERR(event)) {
 			int err = PTR_ERR(event);
 			kp_printf(ks, "unable create tracepoint event %d on cpu %d, err: %d\n",
@@ -477,6 +479,8 @@ static int ktap_lib_probe_by_id(ktap_state *ks)
 	const char *ids_str = svalue(kp_arg(ks, 1));
 	ktap_value *tracefunc;
 	ktap_closure *cl = NULL;
+	int trace_pid = G(ks)->trace_pid;
+	struct task_struct *task = NULL;
 	char **argv;
 	int argc, i;
 
@@ -490,6 +494,14 @@ static int ktap_lib_probe_by_id(ktap_state *ks)
 	if (!cl)
 		return -1;
 
+	if (trace_pid != -1) {
+		task = pid_task(find_vpid(trace_pid), PIDTYPE_PID);
+		if (!task) {
+			kp_printf(ks, "Error: cannot find pid %d\n", trace_pid);
+			return -1;
+		}
+	}
+
 	argv = argv_split(GFP_KERNEL, ids_str, &argc);
 	if (!argv)
 		return -1;
@@ -497,7 +509,7 @@ static int ktap_lib_probe_by_id(ktap_state *ks)
 	for (i = 0; i < argc; i++) {
 		int id;
 		if (!kstrtoint(argv[i], 10, &id)) {
-			start_probe_by_id(ks, id, cl);
+			start_probe_by_id(ks, task, id, cl);
 		}
 	}
 

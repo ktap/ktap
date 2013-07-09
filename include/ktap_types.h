@@ -20,6 +20,7 @@ struct ktap_parm {
 	int argc;
 	char **argv;
 	int verbose;
+	int trace_pid;
 };
 
 enum {
@@ -264,6 +265,7 @@ typedef struct ktap_global_state {
 
 	struct ktap_state *mainthread;
 #ifdef __KERNEL__
+	pid_t trace_pid;
 	struct ring_buffer *buffer;
 	struct dentry *trace_pipe_dentry;
 	int verbose;
