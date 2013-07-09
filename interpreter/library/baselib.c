@@ -105,12 +105,21 @@ struct ktap_stack {
 	unsigned long	calls[KTAP_STACK_MAX_ENTRIES];
 };
 
+/*
+ * Note ktap_lib_print_backtrace maybe called from ktap mainthread,
+ * so we need to add preempt_disable in here to avoid race with
+ * event closure thread which maybe running in process context also.
+ */
 static int ktap_lib_print_backtrace(ktap_state *ks)
 {
 	struct stack_trace trace;
 	char str[KSYM_SYMBOL_LEN];
-	struct ktap_stack *stack = kp_percpu_data(KTAP_PERCPU_DATA_BUFFER);
+	struct ktap_stack *stack;
 	int i;
+
+	preempt_disable_notrace();
+
+	stack = kp_percpu_data(KTAP_PERCPU_DATA_BUFFER);
 
 	trace.nr_entries = 0;
 	trace.skip = 9;
@@ -129,6 +138,8 @@ static int ktap_lib_print_backtrace(ktap_state *ks)
 		sprint_symbol(str, p);
 		kp_printf(ks, " => %s\n", str);
 	}
+
+	preempt_enable_notrace();
 
 	return 0;
 }

@@ -378,6 +378,7 @@ void kp_transport_event_write(ktap_state *ks, struct ktap_event *e)
 		ring_buffer_unlock_commit(buffer, event);
 	}
 }
+
 void kp_transport_write(ktap_state *ks, const void *data, size_t length)
 {
 	struct ring_buffer *buffer = G(ks)->buffer;
