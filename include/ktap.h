@@ -13,8 +13,6 @@ typedef struct ktap_Reg {
 
 struct ktap_probe_event {
 	struct list_head list;
-	int type;
-	const char *name;
 	struct perf_event *perf;
 	ktap_state *ks;
 	ktap_closure *cl;

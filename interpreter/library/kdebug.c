@@ -427,10 +427,8 @@ static void start_probe_by_id(ktap_state *ks, int id, ktap_closure *cl)
 
 	for_each_online_cpu(cpu) {
 		ktap_pevent = kp_zalloc(arg->ks, sizeof(*ktap_pevent));
-		ktap_pevent->name = "";
 		ktap_pevent->ks = ks;
 		ktap_pevent->cl = cl;
-		ktap_pevent->type = 0;
 		event = perf_event_create_kernel_counter(&attr, cpu, NULL,
 							 ktap_overflow_callback, ktap_pevent);
 		if (IS_ERR(event)) {
