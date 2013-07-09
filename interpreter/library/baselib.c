@@ -98,49 +98,9 @@ static int ktap_lib_printf(ktap_state *ks)
 }
 
 #ifdef CONFIG_STACKTRACE
-#include <linux/stacktrace.h>
-
-#define KTAP_STACK_MAX_ENTRIES 10
-struct ktap_stack {
-	unsigned long	calls[KTAP_STACK_MAX_ENTRIES];
-};
-
-/*
- * Note ktap_lib_print_backtrace maybe called from ktap mainthread,
- * so we need to add preempt_disable in here to avoid race with
- * event closure thread which maybe running in process context also.
- */
 static int ktap_lib_print_backtrace(ktap_state *ks)
 {
-	struct stack_trace trace;
-	char str[KSYM_SYMBOL_LEN];
-	struct ktap_stack *stack;
-	int i;
-
-	preempt_disable_notrace();
-
-	stack = kp_percpu_data(KTAP_PERCPU_DATA_BUFFER);
-
-	trace.nr_entries = 0;
-	trace.skip = 9;
-	trace.max_entries = KTAP_STACK_MAX_ENTRIES;
-	trace.entries = &stack->calls[0];
-	save_stack_trace(&trace);
-
-	kp_printf(ks, "<stack trace>\n");
-
-	for (i = 0; i < trace.nr_entries && i < trace.max_entries; i++) {
-		unsigned long p = trace.entries[i];
-
-		if (p == ULONG_MAX)
-			break;
-
-		sprint_symbol(str, p);
-		kp_printf(ks, " => %s\n", str);
-	}
-
-	preempt_enable_notrace();
-
+	kp_transport_print_backtrace(ks);
 	return 0;
 }
 #else

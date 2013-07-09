@@ -20,6 +20,7 @@
 
 #include <linux/debugfs.h>
 #include <linux/ftrace_event.h>
+#include <linux/stacktrace.h>
 #include "../include/ktap.h"
 
 
@@ -73,6 +74,24 @@ ssize_t trace_seq_to_user(struct trace_seq *s, char __user *ubuf, size_t cnt)
 	return cnt;
 }
 
+int trace_seq_puts(struct trace_seq *s, const char *str)
+{
+	int len = strlen(str);
+
+	if (s->full)
+		return 0;
+
+	if (len > ((PAGE_SIZE - 1) - s->len)) {
+		s->full = 1;
+		return 0;
+	}
+
+	memcpy(s->buffer + s->len, str, len);
+	s->len += len;
+
+	return len;
+}
+
 static int trace_empty(struct trace_iterator *iter)
 {
 	struct ktap_trace_iterator *ktap_iter = KTAP_TRACE_ITER(iter);
@@ -116,6 +135,35 @@ static enum print_line_t print_trace_fmt(struct trace_iterator *iter)
 	return TRACE_TYPE_PARTIAL_LINE;
 }
 
+static enum print_line_t print_trace_stack(struct trace_iterator *iter)
+{
+	struct ktap_trace_iterator *ktap_iter = KTAP_TRACE_ITER(iter);
+	struct ktap_trace_entry *entry = ktap_iter->ent;
+	struct stack_trace trace;
+	char str[KSYM_SYMBOL_LEN];
+	int i;
+
+	trace.entries = (unsigned long *)(entry + 1);
+	trace.nr_entries = (iter->ent_size - sizeof(*entry)) /
+			   sizeof(unsigned long);
+
+	if (!trace_seq_puts(&iter->seq, "<stack trace>\n"))
+		return TRACE_TYPE_PARTIAL_LINE;
+
+	for (i = 0; i < trace.nr_entries; i++) {
+		unsigned long p = trace.entries[i];
+
+		if (p == ULONG_MAX)
+			break;
+
+		sprint_symbol(str, p);
+		if (!trace_seq_printf(&iter->seq, " => %s\n", str))
+			return TRACE_TYPE_PARTIAL_LINE;
+	}
+
+	return TRACE_TYPE_HANDLED;
+}
+
 static enum print_line_t print_trace_line(struct trace_iterator *iter)
 {
 	struct ktap_trace_iterator *ktap_iter = KTAP_TRACE_ITER(iter);
@@ -128,6 +176,9 @@ static enum print_line_t print_trace_line(struct trace_iterator *iter)
 
 		return TRACE_TYPE_HANDLED;
 	}
+
+	if (entry->ent.type == TRACE_STACK)
+		return print_trace_stack(iter);
 
 	return print_trace_fmt(iter);
 }
@@ -358,6 +409,47 @@ static const struct file_operations tracing_pipe_fops = {
 	.release	= tracing_release_pipe,
 	.llseek		= no_llseek,
 };
+
+#define KTAP_STACK_MAX_ENTRIES 10
+
+/*
+ * print_backtrace maybe called from ktap mainthread, so be
+ * care on race with event closure thread.
+ *
+ * preempt disabled in ring_buffer_lock_reserve
+ *
+ * The implementation is similar with funtion __ftrace_trace_stack.
+ */
+void kp_transport_print_backtrace(ktap_state *ks)
+{
+	struct ring_buffer *buffer = G(ks)->buffer;
+	struct ring_buffer_event *event;
+	struct ktap_trace_entry *entry;
+	int size;
+
+	size = KTAP_STACK_MAX_ENTRIES * sizeof(unsigned long);
+	event = ring_buffer_lock_reserve(buffer, sizeof(*entry) + size);
+	if (!event) {
+		return;
+	} else {
+		struct stack_trace trace;
+
+		entry = ring_buffer_event_data(event);
+		tracing_generic_entry_update(&entry->ent, 0, 0);
+		entry->call = NULL;
+		entry->ent.type = TRACE_STACK;
+
+		trace.nr_entries = 0;
+		trace.skip = 10;
+		trace.max_entries = KTAP_STACK_MAX_ENTRIES;
+		trace.entries = (unsigned long *)(entry + 1);
+		save_stack_trace(&trace);
+
+		ring_buffer_unlock_commit(buffer, event);
+	}
+
+	return;
+}
 
 void kp_transport_event_write(ktap_state *ks, struct ktap_event *e)
 {
