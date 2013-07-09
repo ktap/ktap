@@ -35,7 +35,7 @@ enum {
 	KTAP_PERCPU_DATA_MAX
 };
 
-ktap_state *kp_newstate(ktap_state **private_data, struct ktap_parm *parm, char **argv);
+ktap_state *kp_newstate(struct ktap_parm *parm, char **argv);
 void kp_exit(ktap_state *ks);
 ktap_state *kp_newthread(ktap_state *mainthread);
 void kp_exitthread(ktap_state *ks);

@@ -147,7 +147,7 @@ static int ktap_main(struct file *file, struct ktap_parm *parm)
 		return PTR_ERR(argv);
 	}
 
-	ks = kp_newstate((ktap_state **)&file->private_data, parm, argv);
+	ks = kp_newstate(parm, argv);
 
 	/* free argv memory after store into arg table */
 	free_argv(parm->argc, argv);
@@ -156,6 +156,8 @@ static int ktap_main(struct file *file, struct ktap_parm *parm)
 		vfree(buff);
 		return -ENOEXEC;
 	}
+
+	file->private_data = ks;
 
 	cl = kp_load(ks, (unsigned char *)buff);
 

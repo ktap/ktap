@@ -1178,16 +1178,13 @@ void kp_exit(ktap_state *ks)
 }
 
 /* ktap mainthread initization, main entry for ktap */
-ktap_state *kp_newstate(ktap_state **private_data, struct ktap_parm *parm,
-			char **argv)
+ktap_state *kp_newstate(struct ktap_parm *parm, char **argv)
 {
 	ktap_state *ks;
 
 	ks = kzalloc(sizeof(ktap_state) + sizeof(ktap_global_state), GFP_KERNEL);
 	if (!ks)
 		return NULL;
-
-	*private_data = ks;
 
 	G(ks) = (ktap_global_state *)(ks + 1);
 	G(ks)->mainthread = ks;
