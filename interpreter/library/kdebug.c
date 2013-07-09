@@ -199,7 +199,7 @@ EVENT_SC_ARGFUNC(5)
 EVENT_SC_ARGFUNC(6)
 
 /***************************/
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 11, 0)
+/* This definition should keep update with kernel/trace/trace.h */
 struct ftrace_event_field {
 	struct list_head        link;
 	const char              *name;
@@ -209,7 +209,6 @@ struct ftrace_event_field {
 	int                     size;
 	int                     is_signed;
 };
-#endif
 
 static struct list_head *ktap_get_fields(struct ftrace_event_call *event_call)
 {
