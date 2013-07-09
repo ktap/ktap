@@ -105,18 +105,17 @@ struct ktap_stack {
 	unsigned long	calls[KTAP_STACK_MAX_ENTRIES];
 };
 
-static DEFINE_PER_CPU(struct ktap_stack, ktap_stack);
-
 static int ktap_lib_print_backtrace(ktap_state *ks)
 {
 	struct stack_trace trace;
 	char str[KSYM_SYMBOL_LEN];
+	struct ktap_stack *stack = kp_percpu_data(KTAP_PERCPU_DATA_BUFFER);
 	int i;
 
 	trace.nr_entries = 0;
 	trace.skip = 9;
 	trace.max_entries = KTAP_STACK_MAX_ENTRIES;
-	trace.entries = &__get_cpu_var(ktap_stack).calls[0];
+	trace.entries = &stack->calls[0];
 	save_stack_trace(&trace);
 
 	kp_printf(ks, "<stack trace>\n");
