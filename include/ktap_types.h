@@ -299,8 +299,9 @@ typedef struct ktap_state {
 	int version;
 	int gcrunning;
 
-	ktap_gcobject *localgc; /* list of temp collectable objects, free when thread exit */
-	char buff[128];  /* temporary buffer for string concatentation */
+	/* list of temp collectable objects, free when thread exit */
+	ktap_gcobject *localgc;
+
 #ifdef __KERNEL__
 	struct ktap_event *current_event;
 #endif

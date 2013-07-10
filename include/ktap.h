@@ -35,6 +35,8 @@ enum {
 	KTAP_PERCPU_DATA_MAX
 };
 
+#define KTAP_PERCPU_BUFFER_SIZE	(3 * PAGE_SIZE)
+
 ktap_state *kp_newstate(struct ktap_parm *parm, char **argv);
 void kp_exit(ktap_state *ks);
 ktap_state *kp_newthread(ktap_state *mainthread);

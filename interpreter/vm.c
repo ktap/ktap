@@ -62,10 +62,15 @@ void ktap_concat(ktap_state *ks, int start, int end)
 
 		len += rawtsvalue(top + i)->tsv.len;
 	}
-	if (len <= sizeof(*ks->buff)) {
-		buffer = ks->buff;
-	} else
-		buffer = kp_malloc(ks, len);
+
+	if (len >= KTAP_PERCPU_BUFFER_SIZE) {
+		kp_printf(ks, "Error: too long string concatenation\n");
+		return;
+	}
+
+	preempt_disable_notrace();
+
+	buffer = kp_percpu_data(KTAP_PERCPU_DATA_BUFFER);
 	ptr = buffer;
 
 	for (i = start; i <= end; i++) {
@@ -76,8 +81,7 @@ void ktap_concat(ktap_state *ks, int start, int end)
 	ts = kp_tstring_newlstr(ks, buffer, len);
 	setsvalue(top + start, ts);
 
-	if (buffer != ks->buff)
-		kp_free(ks, buffer);
+	preempt_enable_notrace();
 }
 
 /* todo: compare l == r if both is tstring type? */
@@ -1043,7 +1047,7 @@ static void free_kp_percpu_data(void)
 static int alloc_kp_percpu_data(void)
 {
 	int data_size[KTAP_PERCPU_DATA_MAX] =
-		{sizeof(ktap_state), KTAP_STACK_SIZE, 3 * PAGE_SIZE};
+		{sizeof(ktap_state), KTAP_STACK_SIZE, KTAP_PERCPU_BUFFER_SIZE};
 	int i, j;
 
 	for (i = 0; i < KTAP_PERCPU_DATA_MAX; i++) {
