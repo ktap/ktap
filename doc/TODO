@@ -15,7 +15,6 @@ Implementing
 - splice io output
 - kernel_string()/user_string()
 - only tracing on cpu: ktap -c cpu *.kp
-- support ktap -bl, show listing all bytecodes
 - support trace dump only to relayfs, without to userspace when tracing
 - support ktap -c cmd, ktap -p $pid
 - optimize tracepoints_histogram.kp, use perf event id as key index, boost performance
@@ -25,20 +24,10 @@ Implementing
 - not-tracing mode support(side effects mode)
 - ktap Manual/Doc/ppt/pdf/man writing
 - more lightwight tracing infrastructure support
-- parrot research: use opcode generate like parrot?
 - distro packages: yum install ktap, apt-get install ktap
 - website in ktap.org (ROR on free hosting site? fast deployment)
-- conference
-- commit to kernel: staging first?
 - integrate luajit, and use ffi library, to boost performance
   use libffi to perform jprobe, get function arguments without gcc compiling
-- staticly typed virtual machine, it's more generic than dynamic typed vm
-  support map/splice/struct/closure
-  staticly typed is more faster than dynamic typed, with strict type checking
-- dynamic patch mechanism by ktap.
-  replace function in runtime
-- research a new powerful interpreter serves for ktap and systemtap, even dtrace
-  for static compiled language, use systemtap is enough.
 - let ktap support stapsdt in userspace binary (for example: libc)
 	(See: readelf -n /lib/libc.so.6)
 	(http://sourceware.org/systemtap/wiki/AddingUserSpaceProbingToApps)
@@ -50,6 +39,7 @@ Implementing
 Completed
 ---------
 
+- support ktap -b, show listing all bytecodes
 - make ktap reentrant
 - maintaince different kernel version branch of ktap
 - ARM support
