@@ -285,7 +285,7 @@ static void __exit exit_ktap(void)
 module_init(init_ktap);
 module_exit(exit_ktap);
 
-MODULE_AUTHOR("Jovi Zhang <bookjovi@gmail.com>");
+MODULE_AUTHOR("zhangwei(Jovi) <jovi.zhangwei@gmail.com>");
 MODULE_DESCRIPTION("ktap");
 MODULE_LICENSE("GPL");
 

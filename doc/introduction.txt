@@ -73,5 +73,5 @@ Contribution
 
 Contact
 -------
-   zhangwei(Jovi) <jovi.zhangwei@huawei.com>
+   zhangwei(Jovi) <jovi.zhangwei@gmail.com>
 
