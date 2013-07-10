@@ -84,6 +84,8 @@ static int ktap_lib_printf(ktap_state *ks)
 {
 	struct trace_seq *seq;
 
+	preempt_disable_notrace();
+
 	seq = kp_percpu_data(KTAP_PERCPU_DATA_BUFFER);
 	trace_seq_init(seq);
 
@@ -94,6 +96,7 @@ static int ktap_lib_printf(ktap_state *ks)
 	seq->buffer[seq->len] = '\0';
 	kp_transport_write(ks, seq->buffer, seq->len + 1);
 
+	preempt_enable_notrace();
 	return 0;
 }
 
