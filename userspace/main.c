@@ -275,6 +275,8 @@ static void usage(const char *msg)
 		"                specific tracing pid\n"
 		"  -C, --cpu <cpu>\n"
 		"                cpu to monitor in system-wide\n"
+		"  -T, --time\n"
+		"                show timestamp for event\n"
 		"  -V, --version\n"
 		"                version info\n"
 		"  -v, --verbose\n"
@@ -354,6 +356,7 @@ static char output_filename[128];
 static char oneline_src[1024];
 static int trace_pid = -1;
 static int trace_cpu = -1;
+static int print_timestamp;
 
 static int parse_option(int argc, char **argv)
 {
@@ -373,7 +376,7 @@ static int parse_option(int argc, char **argv)
 			{"help",	no_argument, NULL, '?'},
 			{NULL, 0, NULL, 0}
 		};
-		int c = getopt_long(argc, argv, "o:e:p:C:Vvb?", long_options,
+		int c = getopt_long(argc, argv, "o:e:p:C:TVvb?", long_options,
 							&option_index);
 		if (c == -1)
 			break;
@@ -393,6 +396,9 @@ static int parse_option(int argc, char **argv)
 		case 'C':
 			strncpy(cpu_str, optarg, strlen(optarg));
 			trace_cpu = atoi(cpu_str);
+			break;
+		case 'T':
+			print_timestamp = 1;
 			break;
 		case 'V':
 			verbose = 1;
@@ -526,6 +532,7 @@ int main(int argc, char **argv)
 	uparm.verbose = verbose;
 	uparm.trace_pid = trace_pid;
 	uparm.trace_cpu = trace_cpu;
+	uparm.print_timestamp = print_timestamp;
 
 	/* start running into kernel ktapvm */
 	run_ktapvm();

@@ -1199,6 +1199,7 @@ ktap_state *kp_newstate(struct ktap_parm *parm, char **argv)
 	G(ks)->task = current;
 	G(ks)->verbose = parm->verbose; /* for debug use */
 	G(ks)->trace_pid = (pid_t)parm->trace_pid;
+	G(ks)->print_timestamp = parm->print_timestamp;
 	INIT_LIST_HEAD(&(G(ks)->timers));
 	sema_init(&G(ks)->sync_sem, 1);
 	G(ks)->exit = 0;

@@ -4,3 +4,6 @@ trace "syscalls:*" function (e) {
 	print(cpu(), pid(), execname(), e)
 }
 
+trace_end function () {
+	print("tracing end\n")
+}

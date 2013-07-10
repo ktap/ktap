@@ -25,8 +25,7 @@
 
 #include <linux/version.h>
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3, 1, 0)
-#error "Currently ktap don't support kernel older than 3.1, if you really "
-       "want to use ktap in your older kernel, please contact ktap author"
+#error "Currently ktap don't support kernel older than 3.1"
 #endif
 
 #if !CONFIG_EVENT_TRACING

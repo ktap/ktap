@@ -22,6 +22,7 @@ struct ktap_parm {
 	int verbose;
 	int trace_pid;
 	int trace_cpu;
+	int print_timestamp;
 };
 
 /*
@@ -264,6 +265,7 @@ typedef struct ktap_global_state {
 #ifdef __KERNEL__
 	pid_t trace_pid;
 	cpumask_var_t cpumask;
+	int print_timestamp;
 	struct ring_buffer *buffer;
 	struct dentry *trace_pipe_dentry;
 	int verbose;

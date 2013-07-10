@@ -32,6 +32,7 @@ struct ktap_trace_entry {
 struct ktap_trace_iterator {
 	struct ring_buffer	*buffer;
 	struct ktap_trace_entry	*ent;
+	int			print_timestamp;
 	void			*private;
 
 	struct trace_iterator	iter;
@@ -114,6 +115,26 @@ static void trace_consume(struct trace_iterator *iter)
 			    &iter->lost_events);
 }
 
+static unsigned long long ns2usecs(cycle_t nsec)
+{
+	nsec += 500;
+	do_div(nsec, 1000);
+	return nsec;
+}
+
+static int trace_print_timestamp(struct trace_iterator *iter)
+{
+	struct trace_seq *s = &iter->seq;
+	unsigned long long t;
+	unsigned long secs, usec_rem;
+
+	t = ns2usecs(iter->ts);
+	usec_rem = do_div(t, USEC_PER_SEC);
+	secs = (unsigned long)t;
+
+	return trace_seq_printf(s, "%5lu.%06lu: ", secs, usec_rem);
+}
+
 /* todo: export kernel function ftrace_find_event in future */
 static enum print_line_t print_trace_fmt(struct trace_iterator *iter)
 {
@@ -124,6 +145,9 @@ static enum print_line_t print_trace_fmt(struct trace_iterator *iter)
 	iter->ent = &entry->ent;
 
 	ev = &(entry->call->event);
+
+	if (!trace_print_timestamp(iter))
+		return TRACE_TYPE_PARTIAL_LINE;
 
 	if (ev) {
 		int ret = ev->funcs->trace(iter, 0, ev);
@@ -293,7 +317,6 @@ static void poll_wait_pipe(void)
 	schedule_timeout(HZ / 10);
 }
 
-
 static int tracing_wait_pipe(struct file *filp)
 {
 	struct trace_iterator *iter = filp->private_data;
@@ -414,6 +437,7 @@ static int tracing_open_pipe(struct inode *inode, struct file *filp)
 
 	ktap_iter->private = ks;
 	ktap_iter->buffer = G(ks)->buffer;
+	ktap_iter->print_timestamp = G(ks)->print_timestamp;
 	mutex_init(&ktap_iter->iter.mutex);
 	filp->private_data = &ktap_iter->iter;
 
