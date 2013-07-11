@@ -30,7 +30,7 @@ Highlights
 - safty in sandbox
 - easy to use in embedd environment even without debugging info
 - a pure scripting interface for Linux tracing subsystem
-- support static tracepoint, k(ret)probe, u(ret)probe, timer, dumpstack and more
+- support static tracepoint, k(ret)probe, u(ret)probe, function trace, timer, backtrace and more
 
 Building & Running
 ------------------
@@ -55,18 +55,22 @@ Building & Running
 
 Examples
 -------------------------------------
-1) simplest one-line tracing script  
+1) simplest one-line command to enable all tracepoints  
 
 	ktap -e 'trace "*:*" function (e) { print(e) }'
 
-2) simple syscall tracing  
+2) function tracing  
+
+	ktap -e 'trace "ftrace:function" function (e) { print(pid(), e) }'
+
+3) simple syscall tracing  
 
 	#scripts/syscalls.kp
 	trace "syscalls:*" function (e) {
 		print(cpu(), pid(), execname(), e)
 	}
 
-3) histogram style syscall tracing  
+4) syscall tracing in histogram style  
 
 	#scripts/syscalls_histogram.kp
 	hist = {}
@@ -79,7 +83,7 @@ Examples
 		    histogram(hist)
 	}
 
-4) kprobe tracing  
+5) kprobe tracing  
 
 	#scripts/kprobes-do-sys-open.kp
 	trace "probe:do_sys_open dfd=%di filename=%dx flags=%cx mode=+4($stack)" function (e) {
@@ -91,7 +95,7 @@ Examples
 	}
 
 
-5) uprobe tracing  
+6) uprobe tracing  
 
 	#scripts/uprobes-malloc.kp
 	#do not use 0x000773c0 in your system,
