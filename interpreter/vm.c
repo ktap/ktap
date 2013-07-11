@@ -1214,7 +1214,7 @@ ktap_state *kp_newstate(struct ktap_parm *parm, char **argv)
 	cpu = parm->trace_cpu;
 	if (cpu != -1) {
 		if (!cpu_online(cpu)) {
-			printk(KERN_INFO "ktap: cpu is not online\n", cpu);
+			printk(KERN_INFO "ktap: cpu %d is not online\n", cpu);
 			goto out;
 		}
 
