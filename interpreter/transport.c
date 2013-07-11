@@ -146,7 +146,7 @@ static enum print_line_t print_trace_fmt(struct trace_iterator *iter)
 
 	ev = &(entry->call->event);
 
-	if (!trace_print_timestamp(iter))
+	if (ktap_iter->print_timestamp && !trace_print_timestamp(iter))
 		return TRACE_TYPE_PARTIAL_LINE;
 
 	if (ev) {
@@ -201,7 +201,7 @@ static enum print_line_t print_trace_fn(struct trace_iterator *iter)
 	struct ktap_ftrace_entry *field = (struct ktap_ftrace_entry *)ktap_iter->ent;
 	char str[KSYM_SYMBOL_LEN];
 
-	if (!trace_print_timestamp(iter))
+	if (ktap_iter->print_timestamp && !trace_print_timestamp(iter))
 		return TRACE_TYPE_PARTIAL_LINE;
 
 	sprint_symbol(str, field->ip);
