@@ -119,10 +119,6 @@ static int add_event(char *evtid_path)
 		return -1;
 	}
 
-	/* ftrace:function id is 1, but we cannot enable this tracepoint */
-	if (id == 1)
-		return 0;
-
 	ids_array[id/8] = ids_array[id/8] | (1 << (id%8));
 
 	return 0;

@@ -40,6 +40,7 @@ struct ktap_trace_iterator {
 enum ktap_trace_type {
 	__TRACE_FIRST_TYPE = 0,
 
+	TRACE_FN = 1, /* must be same as ftrace definition in kernel */
 	TRACE_PRINT,
 	TRACE_STACK,
 	TRACE_USER_STACK,
@@ -164,6 +165,32 @@ static enum print_line_t print_trace_stack(struct trace_iterator *iter)
 	return TRACE_TYPE_HANDLED;
 }
 
+struct ktap_ftrace_entry {
+	struct ktap_trace_entry entry;
+	unsigned long ip;
+	unsigned long parent_ip;
+};
+
+static enum print_line_t print_trace_fn(struct trace_iterator *iter)
+{
+	struct ktap_trace_iterator *ktap_iter = KTAP_TRACE_ITER(iter);
+	struct ktap_ftrace_entry *field = (struct ktap_ftrace_entry *)ktap_iter->ent;
+	char str[KSYM_SYMBOL_LEN];
+
+	sprint_symbol(str, field->ip);
+	if (!trace_seq_puts(&iter->seq, str))
+		return TRACE_TYPE_PARTIAL_LINE;
+
+	if (!trace_seq_puts(&iter->seq, " <- "))
+		return TRACE_TYPE_PARTIAL_LINE;
+
+	sprint_symbol(str, field->parent_ip);
+	if (!trace_seq_puts(&iter->seq, str))
+		return TRACE_TYPE_PARTIAL_LINE;
+
+	return TRACE_TYPE_HANDLED;
+}
+
 static enum print_line_t print_trace_line(struct trace_iterator *iter)
 {
 	struct ktap_trace_iterator *ktap_iter = KTAP_TRACE_ITER(iter);
@@ -179,6 +206,9 @@ static enum print_line_t print_trace_line(struct trace_iterator *iter)
 
 	if (entry->ent.type == TRACE_STACK)
 		return print_trace_stack(iter);
+
+	if (entry->ent.type == TRACE_FN)
+		return print_trace_fn(iter);
 
 	return print_trace_fmt(iter);
 }
