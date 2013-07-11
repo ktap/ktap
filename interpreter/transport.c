@@ -115,7 +115,7 @@ static void trace_consume(struct trace_iterator *iter)
 			    &iter->lost_events);
 }
 
-static unsigned long long ns2usecs(cycle_t nsec)
+unsigned long long ns2usecs(cycle_t nsec)
 {
 	nsec += 500;
 	do_div(nsec, 1000);

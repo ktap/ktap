@@ -24,6 +24,7 @@
 #include <linux/uaccess.h>
 #include <linux/utsname.h>
 #include <linux/time.h>
+#include <linux/ring_buffer.h>
 #include "../../include/ktap.h"
 
 static int ktap_lib_next(ktap_state *ks)
@@ -113,6 +114,25 @@ static int ktap_lib_print_backtrace(ktap_state *ks)
 	return 0;
 }
 #endif
+
+extern unsigned long long ns2usecs(cycle_t nsec);
+static int ktap_lib_print_trace_clock(ktap_state *ks)
+{
+	unsigned long long t;
+	unsigned long secs, usec_rem;
+	u64 timestamp;
+
+	/* use ring buffer's timestamp */
+	timestamp = ring_buffer_time_stamp(G(ks)->buffer, smp_processor_id());
+
+	t = ns2usecs(timestamp);
+	usec_rem = do_div(t, USEC_PER_SEC);
+	secs = (unsigned long)t;
+
+	kp_printf(ks, "%5lu.%06lu\n", secs, usec_rem);
+
+	return 0;
+}
 
 static int ktap_lib_exit(ktap_state *ks)
 {
@@ -244,6 +264,7 @@ static const ktap_Reg base_funcs[] = {
 	{"print", ktap_lib_print},
 	{"printf", ktap_lib_printf},
 	{"print_backtrace", ktap_lib_print_backtrace},
+	{"print_trace_clock", ktap_lib_print_trace_clock},
 	{"in_interrupt", ktap_lib_in_interrupt},
 	{"exit", ktap_lib_exit},
 	{"pid", ktap_lib_pid},
