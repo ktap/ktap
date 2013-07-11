@@ -321,7 +321,7 @@ pid_t ktap_pid;
 
 void ktap_user_complete_cb()
 {
-	ioctl(ktap_fd, KTAP_CMD_USER_COMPLETE, NULL);
+	ioctl(ktap_fd, KTAP_CMD_IOC_USER_COMPLETE, NULL);
 }
 
 #define KTAPVM_PATH "/sys/kernel/debug/ktap/ktapvm"
@@ -342,7 +342,7 @@ static void run_ktapvm()
 
 	ktapio_create((void *)ktap_user_complete_cb);
 
-	ioctl(ktap_fd, KTAP_CMD_RUN, &uparm);
+	ioctl(ktap_fd, KTAP_CMD_IOC_RUN, &uparm);
 
 	close(ktap_fd);
 	close(ktapvm_fd);

@@ -185,17 +185,17 @@ static long ktap_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	int ret;
 
 	switch (cmd) {
-	case KTAP_CMD_VERSION:
+	case KTAP_CMD_IOC_VERSION:
 		print_version();
 		return 0;
-	case KTAP_CMD_RUN:
+	case KTAP_CMD_IOC_RUN:
 		ret = copy_from_user(&parm, (void __user *)arg,
 				     sizeof(struct ktap_parm));
 		if (ret < 0)
 			return -EFAULT;
 
 		return ktap_main(file, &parm);
-	case KTAP_CMD_USER_COMPLETE:
+	case KTAP_CMD_IOC_USER_COMPLETE:
 		if (!ks)
 			return 0;
 

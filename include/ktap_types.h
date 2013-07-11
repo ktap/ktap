@@ -24,18 +24,14 @@ struct ktap_parm {
 	int trace_cpu;
 };
 
-enum {
-	KTAP_CMD_VERSION,
-	KTAP_CMD_RUN,
-	KTAP_CMD_USER_COMPLETE = 50,
-	KTAP_CMD_EVENTS_LIST,
-	KTAP_CMD_STRICT_MODE,
-	KTAP_CMD_MEM_LIMIT,
-	KTAP_CMD_SET_STACKSIZE,
-	KTAP_CMD_DEBUG,
-	KTAP_CMD_EXIT
-};
-
+/*
+ * Ioctls that can be done on a ktap fd:
+ * todo: use _IO macro in include/uapi/asm-generic/ioctl.h
+ */
+#define KTAP_CMD_IOC_VERSION		('$' + 0)
+#define KTAP_CMD_IOC_RUN		('$' + 1)
+#define KTAP_CMD_IOC_USER_COMPLETE	('$' + 2)
+#define KTAP_CMD_IOC_EXIT		('$' + 3)
 
 #define KTAP_ENV	"_ENV"
 
