@@ -426,7 +426,7 @@ static void start_probe_by_id(ktap_state *ks, struct task_struct *task,
 	attr.sample_period = 1;
 	attr.size = sizeof(attr);
 
-	for_each_online_cpu(cpu) {
+	for_each_cpu(cpu, G(ks)->cpumask) {
 		ktap_pevent = kp_zalloc(arg->ks, sizeof(*ktap_pevent));
 		ktap_pevent->ks = ks;
 		ktap_pevent->cl = cl;

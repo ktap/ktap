@@ -1175,6 +1175,7 @@ void kp_exit(ktap_state *ks)
 
 	free_kp_percpu_data();
 
+	free_cpumask_var(G(ks)->cpumask);
 	kp_free(ks, ks);
 
 	/* life ending, no return anymore*/
@@ -1185,8 +1186,10 @@ void kp_exit(ktap_state *ks)
 ktap_state *kp_newstate(struct ktap_parm *parm, char **argv)
 {
 	ktap_state *ks;
+	int cpu;
 
-	ks = kzalloc(sizeof(ktap_state) + sizeof(ktap_global_state), GFP_KERNEL);
+	ks = kzalloc(sizeof(ktap_state) + sizeof(ktap_global_state),
+		     GFP_KERNEL);
 	if (!ks)
 		return NULL;
 
@@ -1200,10 +1203,26 @@ ktap_state *kp_newstate(struct ktap_parm *parm, char **argv)
 	sema_init(&G(ks)->sync_sem, 1);
 	G(ks)->exit = 0;
 
-	if (cfunction_cache_init(ks))
+	if (kp_transport_init(ks))
 		goto out;
 
-	if (kp_transport_init(ks))
+	if( !alloc_cpumask_var(&G(ks)->cpumask, GFP_KERNEL))
+		goto out;
+
+	cpumask_copy(G(ks)->cpumask, cpu_online_mask);
+
+	cpu = parm->trace_cpu;
+	if (cpu != -1) {
+		if (!cpu_online(cpu)) {
+			printk(KERN_INFO "ktap: cpu is not online\n", cpu);
+			goto out;
+		}
+
+		cpumask_clear(G(ks)->cpumask);
+		cpumask_set_cpu(cpu, G(ks)->cpumask);
+	}
+
+	if (cfunction_cache_init(ks))
 		goto out;
 
 	kp_tstring_resize(ks, 512); /* set inital string hashtable size */
