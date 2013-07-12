@@ -265,24 +265,24 @@ static void usage(const char *msg)
 {
 	fprintf(stderr, msg);
 	fprintf(stderr,
-		"usage: ktap [options] [filenames]\n"
-		"Available options are:\n"
-		"  -o, --output <name>\n"
-		"                output to file  name default is ktapc.out\n"
-		"  -e, --program <one-line script>\n"
-		"                one-line program executing\n"
-		"  -p, --pid <pid>\n"
-		"                specific tracing pid\n"
-		"  -C, --cpu <cpu>\n"
-		"                cpu to monitor in system-wide\n"
-		"  -T, --time\n"
-		"                show timestamp for event\n"
-		"  -V, --version\n"
-		"                version info\n"
-		"  -v, --verbose\n"
-		"                verbose mode\n"
-		"  -b, --list-bc\n"
-		"                list bytecode\n");
+"Usage: ktap [options] FILE        Run script in file\n"
+"   or: ktap [options] -e SCRIPT   Run given script\n"
+"\n"
+"Options:\n"
+"  -o, --output FILE\n"
+"               send script output to file, instead of stdout\n"
+"  -p, --pid <pid>\n"
+"                specific tracing pid\n"
+"  -C, --cpu <cpu>\n"
+"                cpu to monitor in system-wide\n"
+"  -T, --time\n"
+"                show timestamp for event\n"
+"  -V, --version\n"
+"                show version\n"
+"  -v, --verbose\n"
+"                enable verbose mode\n"
+"  -b, --list-bc\n"
+"                list bytecode\n");
 
 	exit(EXIT_FAILURE);
 }
