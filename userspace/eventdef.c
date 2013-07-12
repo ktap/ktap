@@ -58,7 +58,7 @@ static int get_digit_len(int id)
 	return len;
 }
 
-static char *get_idstr()
+static char *get_idstr(char *filter_str)
 {
 	char *idstr, *ptr;
 	int total_len = 0;
@@ -69,7 +69,10 @@ static char *get_idstr()
 			total_len += get_digit_len(i) + 1;
 	}
 
-	idstr = malloc(total_len);
+	if (!total_len)
+		return NULL;
+
+	idstr = malloc(total_len + strlen(filter_str) + 1);
 	if (!idstr)
 		return NULL;
 
@@ -86,7 +89,8 @@ static char *get_idstr()
 			ptr += len;
 		}
 	}
-	*(ptr - 1) = '\0';
+
+	strcpy(ptr, filter_str);
 
 	return idstr;
 }
@@ -324,10 +328,29 @@ static int parse_events_add_stapsdt(char *old_event)
 	return -1;
 }
 
+static void strim(char *s)
+{
+	size_t size;
+	char *end;
+
+	size = strlen(s);
+	if (!size)
+		return s;
+
+	end = s + size -1;
+	while (end >= s && isspace(*end))
+		end--;
+
+	*(end + 1) = '\0';
+}
+
 ktap_string *ktapc_parse_eventdef(ktap_string *eventdef)
 {
 	const char *def_str = getstr(eventdef);
-	char sys[128] = {0}, event[128] = {0}, *separator, *idstr;
+	char sys[128] = {0}, event[128] = {0}, *idstr;
+	char *separator, *separator1, *separator2;
+	char filter_str[128] = {0};
+	int have_filter = 0;
 	int ret;
 
 	if (!ids_array) {
@@ -343,7 +366,27 @@ ktap_string *ktapc_parse_eventdef(ktap_string *eventdef)
 	}
 
 	strncpy(sys, def_str, separator - def_str);
-	strcpy(event, separator+1);
+
+	separator1 = strchr(def_str, '/');
+
+	if (separator1) {
+		char *separator2 = strchr(separator1 + 1, '/');
+
+		if (separator2) {
+			memcpy(filter_str, separator1,
+					   separator2 - separator1 + 1);
+			memcpy(event, separator + 1,
+				      separator1 - separator - 1);
+			have_filter = 1;
+		}
+	}
+
+	if (!have_filter)
+		strcpy(event, separator+1);
+
+	strim(sys);
+	strim(event);
+	strim(filter_str);
 
 	if (!strcmp(sys, "probe"))
 		ret = parse_events_add_probe(event);
@@ -355,7 +398,10 @@ ktap_string *ktapc_parse_eventdef(ktap_string *eventdef)
 	if (ret)
 		return NULL;
 
-	idstr = get_idstr();
+	idstr = get_idstr(filter_str);
+	if (!idstr)
+		return NULL;
+
 	return ktapc_ts_new(idstr);
 }
 

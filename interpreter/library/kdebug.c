@@ -368,6 +368,24 @@ void perf_event_disable(struct perf_event *event)
 }
 #endif
 
+/* todo: export this function in kernel */
+static int kp_ftrace_profile_set_filter(struct perf_event *event, int id,
+					char *filter_str)
+{
+	static int (*func)(struct perf_event *event, int id, char *filter_str);
+
+	if (func)
+		return (*func)(event, id, filter_str);
+
+	func = kallsyms_lookup_name("ftrace_profile_set_filter");
+	if (!func) {
+		printk("ktap: cannot lookup ftrace_profile_set_filter in kallsyms\n");
+		return -EINVAL;
+	}
+
+	return (*func)(event, id, filter_str);
+}
+
 
 /* Callback function for perf event subsystem
  * make ktap reentrant, don't disable irq in callback function,
@@ -409,12 +427,12 @@ static void perf_destructor(struct ktap_probe_event *ktap_pevent)
 }
 
 static void start_probe_by_id(ktap_state *ks, struct task_struct *task,
-			      int id, ktap_closure *cl)
+			      int id, char *filter, ktap_closure *cl)
 {
 	struct ktap_probe_event *ktap_pevent;
 	struct perf_event_attr attr;
 	struct perf_event *event;
-	int cpu;
+	int cpu, ret;
 
 	kp_verbose_printf(ks, "enable tracepoint event id: %d\n", id);
 
@@ -444,6 +462,16 @@ static void start_probe_by_id(ktap_state *ks, struct task_struct *task,
 		ktap_pevent->perf = event;
 		INIT_LIST_HEAD(&ktap_pevent->list);
 		list_add_tail(&ktap_pevent->list, &G(ks)->probe_events_head);
+
+		ret = kp_ftrace_profile_set_filter(event, id, filter);
+		if (ret) {
+			kp_printf(ks, "Cannot set filter %s for event id %d, "
+				"ret: %d\n", filter, id, ret);
+			perf_destructor(ktap_pevent);
+			list_del(&ktap_pevent->list);
+			kp_free(ks, ktap_pevent);
+			return;
+		}
 
 		perf_event_enable(event);
 	}
@@ -481,6 +509,8 @@ static int ktap_lib_probe_by_id(ktap_state *ks)
 	ktap_closure *cl = NULL;
 	int trace_pid = G(ks)->trace_pid;
 	struct task_struct *task = NULL;
+	char filter[128] = {0};
+	char *ptr1, *ptr2;
 	char **argv;
 	int argc, i;
 
@@ -502,6 +532,11 @@ static int ktap_lib_probe_by_id(ktap_state *ks)
 		}
 	}
 
+	ptr1 = strchr(ids_str, '/');
+	ptr2 = strchr(ptr1 + 1, '/');
+	if (ptr1 && ptr2)
+		strncpy(filter, ptr1 + 1, ptr2 - ptr1 - 1);
+
 	argv = argv_split(GFP_KERNEL, ids_str, &argc);
 	if (!argv)
 		return -1;
@@ -509,7 +544,7 @@ static int ktap_lib_probe_by_id(ktap_state *ks)
 	for (i = 0; i < argc; i++) {
 		int id;
 		if (!kstrtoint(argv[i], 10, &id)) {
-			start_probe_by_id(ks, task, id, cl);
+			start_probe_by_id(ks, task, id, filter, cl);
 		}
 	}
 

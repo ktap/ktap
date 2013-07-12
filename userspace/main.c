@@ -400,13 +400,13 @@ static int parse_option(int argc, char **argv)
 		case 'T':
 			print_timestamp = 1;
 			break;
-		case 'V':
+		case 'v':
 			verbose = 1;
 			break;
 		case 'b':
 			dump_bytecode = 1;
 			break;
-		case 'v':
+		case 'V':
 		case '?':
 			usage("");
 			break;
