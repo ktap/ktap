@@ -136,7 +136,7 @@ static int ktap_main(struct file *file, struct ktap_parm *parm)
 
 	ret = load_trunk(parm, &buff);
 	if (ret) {
-		pr_err("cannot load file %s\n", argv[0]);
+		pr_err("cannot load file\n");
 		return ret;
 	}
 
