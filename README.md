@@ -61,7 +61,9 @@ Examples
 
 2) function tracing  
 
-	ktap -e 'trace "ftrace:function" function (e) { print(pid(), e) }'
+	ktap -e 'trace "ftrace:function" function (e) { print(e) }'  
+
+	ktap -e 'trace "ftrace:function /ip==mutex*/" function (e) { print(e) }'
 
 3) simple syscall tracing  
 
