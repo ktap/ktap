@@ -335,7 +335,7 @@ static void strim(char *s)
 
 	size = strlen(s);
 	if (!size)
-		return s;
+		return;
 
 	end = s + size -1;
 	while (end >= s && isspace(*end))
