@@ -324,25 +324,6 @@ void kp_event_handle(ktap_state *ks, void *e, int index, StkId ra)
 }
 
 
-/* todo: export this function in kernel */
-static int kp_ftrace_profile_set_filter(struct perf_event *event, int id,
-					char *filter_str)
-{
-	static int (*func)(struct perf_event *event, int id, char *filter_str);
-
-	if (func)
-		return (*func)(event, id, filter_str);
-
-	func = kallsyms_lookup_name("ftrace_profile_set_filter");
-	if (!func) {
-		printk("ktap: cannot lookup ftrace_profile_set_filter in kallsyms\n");
-		return -EINVAL;
-	}
-
-	return (*func)(event, id, filter_str);
-}
-
-
 /* Callback function for perf event subsystem
  * make ktap reentrant, don't disable irq in callback function,
  * same as perf and ftrace. to make reentrant, we need some
@@ -380,6 +361,9 @@ static void perf_destructor(struct ktap_probe_event *ktap_pevent)
 {
 	perf_event_release_kernel(ktap_pevent->perf);
 }
+
+static int (*kp_ftrace_profile_set_filter)(struct perf_event *event,
+					   int event_id, char *filter_str);
 
 static void start_probe_by_id(ktap_state *ks, struct task_struct *task,
 			      int id, char *filter, ktap_closure *cl)
@@ -591,6 +575,14 @@ static const ktap_Reg kdebuglib_funcs[] = {
 
 void kp_init_kdebuglib(ktap_state *ks)
 {
+	kp_ftrace_profile_set_filter =
+		kallsyms_lookup_name("ftrace_profile_set_filter");
+	if (!kp_ftrace_profile_set_filter) {
+		printk("ktap: cannot lookup ftrace_profile_set_filter "
+		       "in kallsyms\n");
+		return;
+	}
+
 	kp_register_lib(ks, "kdebug", kdebuglib_funcs);
 }
 
