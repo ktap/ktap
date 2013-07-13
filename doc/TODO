@@ -14,8 +14,6 @@ Implementing
 - call ktap script in while loop shell script issue
 - splice io output
 - kernel_string()/user_string()
-- only tracing on cpu: ktap -c cpu *.kp
-- support trace dump only to relayfs, without to userspace when tracing
 - support ktap -c cmd, ktap -p $pid
 - optimize tracepoints_histogram.kp, use perf event id as key index, boost performance
 - support thread local based variable/map, and cpu variables
@@ -39,6 +37,7 @@ Implementing
 Completed
 ---------
 
+- only tracing on cpu: ktap -c cpu *.kp
 - support ktap -b, show listing all bytecodes
 - make ktap reentrant
 - maintaince different kernel version branch of ktap
