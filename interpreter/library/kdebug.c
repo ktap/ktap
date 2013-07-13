@@ -463,6 +463,9 @@ static void start_probe_by_id(ktap_state *ks, struct task_struct *task,
 		INIT_LIST_HEAD(&ktap_pevent->list);
 		list_add_tail(&ktap_pevent->list, &G(ks)->probe_events_head);
 
+		if (!filter)
+			continue;
+
 		ret = kp_ftrace_profile_set_filter(event, id, filter);
 		if (ret) {
 			kp_printf(ks, "Cannot set filter %s for event id %d, "
@@ -509,8 +512,8 @@ static int ktap_lib_probe_by_id(ktap_state *ks)
 	ktap_closure *cl = NULL;
 	int trace_pid = G(ks)->trace_pid;
 	struct task_struct *task = NULL;
-	char filter[128] = {0};
-	char *ptr1, *ptr2;
+	char filter_str[128] = {0};
+	char *filter = NULL, *ptr1, *ptr2;
 	char **argv;
 	int argc, i;
 
@@ -533,9 +536,13 @@ static int ktap_lib_probe_by_id(ktap_state *ks)
 	}
 
 	ptr1 = strchr(ids_str, '/');
-	ptr2 = strchr(ptr1 + 1, '/');
-	if (ptr1 && ptr2)
-		strncpy(filter, ptr1 + 1, ptr2 - ptr1 - 1);
+	if (ptr1) {
+		ptr2 = strchr(ptr1 + 1, '/');
+		if (ptr2) {
+			strncpy(filter_str, ptr1 + 1, ptr2 - ptr1 - 1);
+			filter = &filter_str[0];
+		}
+	}
 
 	argv = argv_split(GFP_KERNEL, ids_str, &argc);
 	if (!argv)
