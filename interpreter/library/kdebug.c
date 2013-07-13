@@ -324,50 +324,6 @@ void kp_event_handle(ktap_state *ks, void *e, int index, StkId ra)
 }
 
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 3, 0)
-/*
- * perf_event_enable and perf_event_disable only exported in commit
- * dcfce4a095932e6e95d83ad982be3609947963bc, which commited in Linux 3.3,
- * so we hack it in here for kernel earlier than 3.3
- * Note that ktap currently only support kernel 3.1 or later version.
- */
-void perf_event_enable(struct perf_event *event)
-{
-	static void (*func)(struct perf_event *event);
-
-	if (func) {
-		(*func)(event);
-		return;
-	}
-
-	func = kallsyms_lookup_name("perf_event_enable");
-	if (!func) {
-		printk("ktap: cannot lookup perf_event_enable in kallsyms\n");
-		return;
-	}
-
-	(*func)(event);
-}
-
-void perf_event_disable(struct perf_event *event)
-{
-	static void (*func)(struct perf_event *event);
-
-	if (func) {
-		(*func)(event);
-		return;
-	}
-
-	func = kallsyms_lookup_name("perf_event_disable");
-	if (!func) {
-		printk("ktap: cannot lookup perf_event_disable in kallsyms\n");
-		return;
-	}
-
-	(*func)(event);
-}
-#endif
-
 /* todo: export this function in kernel */
 static int kp_ftrace_profile_set_filter(struct perf_event *event, int id,
 					char *filter_str)
@@ -422,7 +378,6 @@ static void ktap_overflow_callback(struct perf_event *event,
 
 static void perf_destructor(struct ktap_probe_event *ktap_pevent)
 {
-	perf_event_disable(ktap_pevent->perf);
 	perf_event_release_kernel(ktap_pevent->perf);
 }
 
@@ -475,8 +430,6 @@ static void start_probe_by_id(ktap_state *ks, struct task_struct *task,
 			kp_free(ks, ktap_pevent);
 			return;
 		}
-
-		perf_event_enable(event);
 	}
 }
 
