@@ -40,6 +40,17 @@ static char tracing_events_path[] = "/sys/kernel/debug/tracing/events";
 #define IDS_ARRAY_SIZE 4096
 static u8 *ids_array;
 
+#define set_id(id)	\
+	do { \
+		ids_array[id/8] = ids_array[id/8] | (1 << (id%8));	\
+	} while(0)
+
+#define clear_id(id)	\
+	do { \
+		ids_array[id/8] = ids_array[id/8] & ~ (1 << (id%8));	\
+	} while(0)
+
+
 static int get_digit_len(int id)
 {
 	int len = -1;
@@ -123,7 +134,7 @@ static int add_event(char *evtid_path)
 		return -1;
 	}
 
-	ids_array[id/8] = ids_array[id/8] | (1 << (id%8));
+	set_id(id);
 
 	return 0;
 }
@@ -397,6 +408,10 @@ ktap_string *ktapc_parse_eventdef(ktap_string *eventdef)
 
 	if (ret)
 		return NULL;
+
+	/* don't trace ftrace:function when all tracepoints enabled */
+	if (!strcmp(sys, "*"))
+		clear_id(1);
 
 	idstr = get_idstr(filter_str);
 	if (!idstr)
