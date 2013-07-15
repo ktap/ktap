@@ -638,8 +638,13 @@ void kp_table_histogram(ktap_state *ks, ktap_table *t)
 	struct table_hist_record *thr;
 	char dist_str[40];
 	int i, ratio, total = 0, count = 0;
+	int size;
 
-	thr = kp_malloc(ks, sizeof(*thr) * (t->sizearray + sizenode(t)));
+	size = sizeof(*thr) * (t->sizearray + sizenode(t));
+	thr = kp_malloc(ks, size);
+	if (!thr) {
+		kp_printf(ks, "Cannot allocate %d of histogram memory", size);
+	}
 
 	for (i = 0; i < t->sizearray; i++) {
 		ktap_value *v = &t->array[i];

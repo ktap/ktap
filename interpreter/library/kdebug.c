@@ -260,9 +260,17 @@ static int event_fieldn(ktap_state *ks)
 
 	head = ktap_get_fields(e->call);
 	list_for_each_entry_reverse(field, head, link) {
-		if ((--index == 0) && (field->size == 4)) {
-			int n = *(int *)((unsigned char *)e->entry + field->offset);
-			setnvalue(ks->top++, n);
+		if (--index == 0) {
+			if (field->size == 4) {
+				int n = *(int *)((unsigned char *)e->entry +
+					field->offset);
+				setnvalue(ks->top++, n);
+			}
+			if (field->size == 8) {
+				long n = *(long *)((unsigned char *)e->entry +
+					field->offset);
+				setnvalue(ks->top++, n);
+			}
 			return 1;
 		}
 	}

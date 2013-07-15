@@ -87,7 +87,7 @@ union _ktap_value {
 	void *p;         /* light userdata */
 	int b;           /* booleans */
 	ktap_cfunction f; /* light C functions */
-	int n;         /* numbers */
+	long n;         /* numbers */
 };
 
 
