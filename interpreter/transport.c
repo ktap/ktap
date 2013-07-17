@@ -21,6 +21,7 @@
 #include <linux/debugfs.h>
 #include <linux/ftrace_event.h>
 #include <linux/stacktrace.h>
+#include <linux/clocksource.h>
 #include "../include/ktap.h"
 
 

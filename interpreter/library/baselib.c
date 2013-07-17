@@ -24,6 +24,7 @@
 #include <linux/uaccess.h>
 #include <linux/utsname.h>
 #include <linux/time.h>
+#include <linux/clocksource.h>
 #include <linux/ring_buffer.h>
 #include "../../include/ktap.h"
 
