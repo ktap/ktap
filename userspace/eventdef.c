@@ -69,11 +69,14 @@ static int get_digit_len(int id)
 	return len;
 }
 
-static char *get_idstr()
+static char *get_idstr(char *filter)
 {
 	char *idstr, *ptr;
 	int total_len = 0;
+	int filter_len;
 	int i;
+
+	filter_len = filter ? strlen(filter) : 0;
 
 	for (i = 0; i < IDS_ARRAY_SIZE*8; i++) {
 		if (ids_array[i/8] & (1 << (i%8)))
@@ -83,7 +86,7 @@ static char *get_idstr()
 	if (!total_len)
 		return NULL;
 
-	idstr = malloc(total_len + 1);
+	idstr = malloc(total_len + filter_len + 1);
 	if (!idstr)
 		return NULL;
 
@@ -100,6 +103,9 @@ static char *get_idstr()
 			ptr += len;
 		}
 	}
+
+	if (filter)
+		memcpy(ptr, filter, strlen(filter));
 
 	return idstr;
 }
@@ -422,11 +428,24 @@ static int get_sys_event_filter_str(const char *start,
 	return 0;
 }
 
+static char *get_next_eventdef(char *str)
+{
+	char *separator;
+
+	separator = strchr(str, ';');
+	if (!separator)
+		return str + strlen(str);
+
+	*separator = '\0';
+	return separator + 1;
+}
+
 ktap_string *ktapc_parse_eventdef(ktap_string *eventdef)
 {
 	const char *def_str = getstr(eventdef);
-	char *sys, *event, *filter, *idstr;
-	char *separator;
+	char *str = strdup(def_str);
+	char *sys, *event, *filter, *idstr, *g_idstr;
+	char *separator, *next;
 	int ret;
 
 	if (!ids_array) {
@@ -434,9 +453,16 @@ ktap_string *ktapc_parse_eventdef(ktap_string *eventdef)
 		if (!ids_array)
 			return NULL;
 	}
+
+	g_idstr = malloc(1024);
+	memset(g_idstr, 0, 1024);
+
+ parse_next_eventdef:
 	memset(ids_array, 0, IDS_ARRAY_SIZE);
 
-	if (get_sys_event_filter_str(def_str, &sys, &event, &filter))
+	next = get_next_eventdef(str);
+
+	if (get_sys_event_filter_str(str, &sys, &event, &filter))
 		return NULL;
 
 	if (!strcmp(sys, "probe"))
@@ -453,13 +479,16 @@ ktap_string *ktapc_parse_eventdef(ktap_string *eventdef)
 	if (!strcmp(sys, "*"))
 		clear_id(1);
 
-	idstr = get_idstr();
+	idstr = get_idstr(filter);
 	if (!idstr)
 		return NULL;
 
-	if (filter)
-		idstr = strcat(idstr, filter);
+	str = next;
+	g_idstr = strcat(g_idstr, idstr);
 
-	return ktapc_ts_new(idstr);
+	if (*next != '\0')
+		goto parse_next_eventdef;
+
+	return ktapc_ts_new(g_idstr);
 }
 
