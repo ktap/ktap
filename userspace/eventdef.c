@@ -69,7 +69,7 @@ static int get_digit_len(int id)
 	return len;
 }
 
-static char *get_idstr(char *filter_str)
+static char *get_idstr()
 {
 	char *idstr, *ptr;
 	int total_len = 0;
@@ -83,7 +83,7 @@ static char *get_idstr(char *filter_str)
 	if (!total_len)
 		return NULL;
 
-	idstr = malloc(total_len + strlen(filter_str) + 1);
+	idstr = malloc(total_len + 1);
 	if (!idstr)
 		return NULL;
 
@@ -100,8 +100,6 @@ static char *get_idstr(char *filter_str)
 			ptr += len;
 		}
 	}
-
-	strcpy(ptr, filter_str);
 
 	return idstr;
 }
@@ -355,13 +353,80 @@ static void strim(char *s)
 	*(end + 1) = '\0';
 }
 
+static int get_sys_event_filter_str(const char *start,
+				    char **sys, char **event, char **filter)
+{
+	char *separator, *separator1, *separator2;
+	char *ptr;
+	int event_len;
+
+	/* find sys */
+	separator = strchr(start, ':');
+	if (!separator || (separator == start)) {
+		return -1;
+	}
+
+	ptr = malloc(separator - start + 1);
+	if (!ptr)
+		return -1;
+
+	strncpy(ptr, start, separator - start);
+	ptr[separator - start] = '\0';
+
+	strim(ptr);
+	*sys = ptr;
+
+	/* find event */
+	if (*(separator + 1) == '\0')
+		return -1;
+
+	separator1 = strchr(separator + 1, '/');
+	if (separator1 == separator + 1)
+		return -1;
+
+	if (!separator1)
+		event_len = strlen(separator + 1);
+	else
+		event_len = separator1 - separator - 1;
+
+	ptr = malloc(event_len + 1);
+	if (!ptr)
+		return -1;
+
+	memcpy(ptr, separator + 1, event_len);
+	ptr[event_len] = '\0';
+
+	strim(ptr);
+	*event = ptr;
+
+	if (!separator1) {
+		*filter = NULL;
+		return 0;
+	}
+
+	/* find filter */
+	separator2 = strchr(separator1 + 1, '/');
+	if (!separator2)
+		return -1;
+
+	ptr = malloc(separator2 - separator1 + 2);
+	if (!ptr)
+		return -1;
+
+	memcpy(ptr, separator1, separator2 - separator1 + 1);
+	ptr[separator2 - separator1 + 1] = '\0';
+
+	strim(ptr);
+	*filter = ptr;
+
+	return 0;
+}
+
 ktap_string *ktapc_parse_eventdef(ktap_string *eventdef)
 {
 	const char *def_str = getstr(eventdef);
-	char sys[128] = {0}, event[128] = {0}, *idstr;
-	char *separator, *separator1, *separator2;
-	char filter_str[128] = {0};
-	int have_filter = 0;
+	char *sys, *event, *filter, *idstr;
+	char *separator;
 	int ret;
 
 	if (!ids_array) {
@@ -371,33 +436,8 @@ ktap_string *ktapc_parse_eventdef(ktap_string *eventdef)
 	}
 	memset(ids_array, 0, IDS_ARRAY_SIZE);
 
-	separator = strchr(def_str, ':');
-	if (!separator || (separator == def_str)) {
+	if (get_sys_event_filter_str(def_str, &sys, &event, &filter))
 		return NULL;
-	}
-
-	strncpy(sys, def_str, separator - def_str);
-
-	separator1 = strchr(def_str, '/');
-
-	if (separator1) {
-		char *separator2 = strchr(separator1 + 1, '/');
-
-		if (separator2) {
-			memcpy(filter_str, separator1,
-					   separator2 - separator1 + 1);
-			memcpy(event, separator + 1,
-				      separator1 - separator - 1);
-			have_filter = 1;
-		}
-	}
-
-	if (!have_filter)
-		strcpy(event, separator+1);
-
-	strim(sys);
-	strim(event);
-	strim(filter_str);
 
 	if (!strcmp(sys, "probe"))
 		ret = parse_events_add_probe(event);
@@ -413,9 +453,12 @@ ktap_string *ktapc_parse_eventdef(ktap_string *eventdef)
 	if (!strcmp(sys, "*"))
 		clear_id(1);
 
-	idstr = get_idstr(filter_str);
+	idstr = get_idstr();
 	if (!idstr)
 		return NULL;
+
+	if (filter)
+		idstr = strcat(idstr, filter);
 
 	return ktapc_ts_new(idstr);
 }
