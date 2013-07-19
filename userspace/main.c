@@ -50,9 +50,14 @@ ktap_proto *ktapc_newproto()
 	return kp_newproto(NULL);
 }
 
-ktap_value *ktapc_table_set(ktap_table *t, const ktap_value *key)
+ktap_value *ktapc_table_get(ktap_table *t, const ktap_value *key)
 {
-	return kp_table_set(NULL, t, key);
+	return kp_table_get(t, key);
+}
+
+void ktapc_table_setvalue(ktap_table *t, const ktap_value *key, ktap_value *val)
+{
+	kp_table_setvalue(NULL, t, key, val);
 }
 
 ktap_table *ktapc_table_new()

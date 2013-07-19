@@ -981,7 +981,7 @@ static void ktap_init_arguments(ktap_state *ks, int argc, char **argv)
 	
 	setsvalue(&arg_tsval, kp_tstring_new(ks, "arg"));
 	sethvalue(&arg_tblval, arg_tbl);
-	setobj(kp_table_set(ks, global_tbl, &arg_tsval), &arg_tblval);
+	kp_table_setvalue(ks, global_tbl, &arg_tsval, &arg_tblval);
 
 	if (!argc)
 		return;

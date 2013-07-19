@@ -308,8 +308,9 @@ static void freeexp(FuncState *fs, expdesc *e)
 
 static int addk(FuncState *fs, ktap_value *key, ktap_value *v)
 {
-	ktap_value *idx = ktapc_table_set(fs->h, key);
+	ktap_value *idx = ktapc_table_get(fs->h, key);
 	ktap_proto *f = fs->f;
+	ktap_value kn;
 	int k, oldsize;
 
 	if (ttisnumber(idx)) {
@@ -323,9 +324,11 @@ static int addk(FuncState *fs, ktap_value *key, ktap_value *v)
 	/* constant not found; create a new entry */
 	oldsize = f->sizek;
 	k = fs->nk;
+
 	/* numerical value does not need GC barrier;
 	   table has no metatable, so it does not need to invalidate cache */
-	setnvalue(idx, (ktap_Number)(k));
+	setnvalue(&kn, (ktap_Number)k);
+	ktapc_table_setvalue(fs->h, key, &kn);
 	ktapc_growvector(f->k, k, f->sizek, ktap_value, MAXARG_Ax, "constants");
 	while (oldsize < f->sizek)
 		setnilvalue(&f->k[oldsize++]);

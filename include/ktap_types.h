@@ -231,6 +231,9 @@ typedef struct Node {
 
 typedef struct ktap_table {
 	CommonHeader;
+#ifdef __KERNEL__
+	arch_spinlock_t lock;
+#endif
 	u8 flags;  /* 1<<p means tagmethod(p) is not present */
 	u8 lsizenode;  /* log2 of size of `node' array */
 	int sizearray;  /* size of `array' array */
@@ -520,6 +523,7 @@ int kp_table_length(ktap_state *ks, ktap_table *t);
 void kp_table_dump(ktap_state *ks, ktap_table *t);
 void kp_table_histogram(ktap_state *ks, ktap_table *t);
 int kp_table_next(ktap_state *ks, ktap_table *t, StkId key);
+void kp_table_atomic_inc(ktap_state *ks, ktap_table *t, ktap_value *key, int n);
 
 void kp_obj_dump(ktap_state *ks, const ktap_value *v);
 void kp_showobj(ktap_state *ks, const ktap_value *v);

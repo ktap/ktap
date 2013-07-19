@@ -219,18 +219,13 @@ static int ktap_lib_table_count(ktap_state *ks)
 	ktap_table *tbl = hvalue(kp_arg(ks, 1));
 	ktap_value *k = kp_arg(ks, 2);
 	int n;
-	ktap_value *v;
 
 	if (kp_arg_nr(ks) > 2)
 		n = nvalue(kp_arg(ks, 3));
 	else
 		n = 1;
 
-	v = kp_table_set(ks, tbl, k);
-	if (unlikely(isnil(v))) {
-		setnvalue(v, 1);
-	} else
-		setnvalue(v, nvalue(v) + n);
+	kp_table_atomic_inc(ks, tbl, k, n);
 
 	return 0;
 }

@@ -124,14 +124,16 @@ void lex_syntaxerror(LexState *ls, const char *msg)
 ktap_string *lex_newstring(LexState *ls, const char *str, size_t l)
 {
 	ktap_value *o;  /* entry for `str' */
+	ktap_value val;  /* entry for `str' */
 	ktap_value tsv;
 	ktap_string *ts = ktapc_ts_newlstr(str, l);  /* create new string */
 	setsvalue(&tsv, ts); 
-	o = ktapc_table_set(ls->fs->h, &tsv);
+	o = ktapc_table_get(ls->fs->h, &tsv);
 	if (ttisnil(o)) {  /* not in use yet? (see 'addK') */
 		/* boolean value does not need GC barrier;
 		table has no metatable, so it does not need to invalidate cache */
-		setbvalue(o, 1);  /* t[string] = true */
+		setbvalue(&val, 1);  /* t[string] = true */
+		ktapc_table_setvalue(ls->fs->h, &tsv, &val);
 	}
 	return ts;
 }
