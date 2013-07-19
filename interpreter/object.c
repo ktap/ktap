@@ -26,10 +26,11 @@
 #include "../include/ktap_types.h"
 #endif
 
+#ifdef __KERNEL__
+
 #define KTAP_ALLOC_FLAGS ((GFP_KERNEL | __GFP_NORETRY | __GFP_NOWARN) \
 			 & ~__GFP_WAIT)
 
-#ifdef __KERNEL__
 void *kp_malloc(ktap_state *ks, int size)
 {
 	return kmalloc(size, KTAP_ALLOC_FLAGS);
@@ -43,6 +44,26 @@ void kp_free(ktap_state *ks, void *addr)
 void *kp_reallocv(ktap_state *ks, void *addr, int oldsize, int newsize)
 {
 	return krealloc(addr, newsize, KTAP_ALLOC_FLAGS);
+
+#if 0
+	if (newsize <= PAGE_SIZE)
+		return krealloc(addr, newsize, KTAP_ALLOC_FLAGS);
+	else {
+		void *new_addr;
+
+		printk("kp_reallocv __get_free_pages %d\n", newsize);
+		new_addr = (void *)__get_free_pages(KTAP_ALLOC_FLAGS, get_order(newsize));
+		if (!new_addr) {
+			printk("kp_reallocv __get_free_pages %d failed\n", newsize);
+			return NULL;
+		}
+
+		memset(new_addr, 0, newsize);
+		memcpy(new_addr, addr, oldsize);
+
+		return new_addr;
+	}
+#endif
 }
 
 void *kp_zalloc(ktap_state *ks, int size)

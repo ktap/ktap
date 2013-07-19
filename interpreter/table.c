@@ -21,8 +21,9 @@
  */
 
 #ifdef __KERNEL__
-#include <linux/spinlock.h>
 #include "../include/ktap.h"
+#include <linux/spinlock.h>
+#include <linux/kallsyms.h>
 #include <linux/sort.h>
 #else
 #include "../include/ktap_types.h"
@@ -717,6 +718,8 @@ void kp_table_dump(ktap_state *ks, ktap_table *t)
 	kp_puts(ks, "}");
 }
 
+#ifdef __KERNEL__
+
 struct table_hist_record {
 	ktap_value key;
 	ktap_value val;
@@ -734,6 +737,8 @@ static int hist_record_cmp(const void *r1, const void *r2)
 	} else
 		return -1;
 }
+
+#define HISTOGRAM_DEFAULT_TOP_NUM	20
 
 #define DISTRIBUTION_STR "------------- Distribution -------------"
 /* histogram: key should be number or string, value must be number */
@@ -784,7 +789,7 @@ void kp_table_histogram(ktap_state *ks, ktap_table *t)
 
 	kp_printf(ks, "%32s%s%s\n", "value ", DISTRIBUTION_STR, " count");
 	dist_str[sizeof(dist_str) - 1] = '\0';
-	for (i = 0; i < count; i++) {
+	for (i = 0; i < HISTOGRAM_DEFAULT_TOP_NUM; i++) {
 		ktap_value *key = &thr[i].key;
 		ktap_value *val = &thr[i].val;
 
@@ -805,10 +810,18 @@ void kp_table_histogram(ktap_state *ks, ktap_table *t)
 
 			kp_printf(ks, "%32s |%s%-10d\n", keystr, dist_str,
 					nvalue(val));
-		} else
-			kp_printf(ks, "%32d | %s%-10d\n", nvalue(key),
-					dist_str, nvalue(val));
+		} else {
+			char str[KSYM_SYMBOL_LEN];
+
+			/* suppose it's a symbol, fix it in future */
+			sprint_symbol_no_offset(str, nvalue(key));
+			kp_printf(ks, "%32s | %s%-10d\n", str, dist_str,
+							  nvalue(val));
+		}
 	}
+
+	if (count > HISTOGRAM_DEFAULT_TOP_NUM)
+		kp_printf(ks, "%32s |\n", "...");
 
 	goto out;
 
@@ -818,4 +831,4 @@ void kp_table_histogram(ktap_state *ks, ktap_table *t)
  out:
 	kp_free(ks, thr);
 }
-
+#endif

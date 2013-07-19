@@ -1,0 +1,13 @@
+#!/usr/bin/env ktap
+
+#kernel function profiler
+
+profiler = {}
+
+trace 'ftrace:function' function (e) {
+	table_count(profiler, e.field(1))
+}
+
+trace_end function () {
+	histogram(profiler)
+}
