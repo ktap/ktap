@@ -125,7 +125,7 @@ static int load_constants(struct load_state *S, ktap_proto *f)
 			setsvalue(o, READ_STRING(S));
 			break;
 		default:
-			kp_printf(S->ks, "ktap: load_constants: unknow ktap_value\n");
+			kp_puts(S->ks, "ktap: load_constants: unknow ktap_value\n");
 			return -1;
 			
 		}

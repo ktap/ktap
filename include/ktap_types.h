@@ -556,6 +556,7 @@ int kp_str2d(const char *s, size_t len, ktap_Number *result);
 #define kp_reallocv(ks, block, osize, nsize)	krealloc(block, nsize, KTAP_ALLOC_FLAGS)
 #define kp_zalloc(ks, size)			kzalloc(size, KTAP_ALLOC_FLAGS)
 void kp_printf(ktap_state *ks, const char *fmt, ...);
+void kp_puts(ktap_state *ks, const char *str);
 #else
 /*
  * this is used for ktapc tstring operation, tstring need G(ks)->strt
@@ -568,6 +569,7 @@ extern ktap_global_state dummy_global_state;
 #define kp_free(ks, block)			free(block)
 #define kp_reallocv(ks, block, osize, nsize)	realloc(block, nsize)
 #define kp_printf(ks, args...)			printf(args)
+#define kp_puts(ks, str)			printf("%s", str)
 #define kp_exit(ks)				exit(EXIT_FAILURE)
 
 #define DEFINE_SPINLOCK

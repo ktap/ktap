@@ -38,9 +38,14 @@ void kp_printf(ktap_state *ks, const char *fmt, ...)
 	kp_transport_write(ks, buff, len + 1);
 }
 
+void kp_puts(ktap_state *ks, const char *str)
+{
+	kp_transport_write(ks, str, strlen(str) + 1);
+}
+
 static int ktap_lib_clock(ktap_state *ks)
 {
-	kp_printf(ks, "ktap_clock\n");
+	kp_puts(ks, "ktap_clock\n");
 	return 0;
 }
 

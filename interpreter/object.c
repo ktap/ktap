@@ -31,7 +31,7 @@ void kp_obj_dump(ktap_state *ks, const ktap_value *v)
 {
 	switch (ttype(v)) {
 	case KTAP_TNIL:
-		kp_printf(ks, "NIL");
+		kp_puts(ks, "NIL");
 		break;
 	case KTAP_TNUMBER:
 		kp_printf(ks, "NUMBER %d", nvalue(v));
@@ -65,13 +65,13 @@ void kp_showobj(ktap_state *ks, const ktap_value *v)
 {
 	switch (ttype(v)) {
 	case KTAP_TNIL:
-		kp_printf(ks, "nil");
+		kp_puts(ks, "nil");
 		break;
 	case KTAP_TNUMBER:
 		kp_printf(ks, "%d", nvalue(v));
 		break;
 	case KTAP_TBOOLEAN:
-		kp_printf(ks, "%s", (bvalue(v) == 1) ? "true" : "false");
+		kp_puts(ks, (bvalue(v) == 1) ? "true" : "false");
 		break;
 	case KTAP_TLIGHTUSERDATA:
 		kp_printf(ks, "%d", pvalue(v));
@@ -81,7 +81,7 @@ void kp_showobj(ktap_state *ks, const ktap_value *v)
 		break;
 	case KTAP_TSHRSTR:
 	case KTAP_TLNGSTR:
-		kp_printf(ks, "%s", svalue(v));
+		kp_puts(ks, svalue(v));
 		break;
 	case KTAP_TUSERDATA:
 		kp_printf(ks, "%d", uvalue(v));

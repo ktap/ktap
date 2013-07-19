@@ -72,11 +72,11 @@ static int ktap_lib_print(ktap_state *ks)
 	for (i = 1; i <= n; i++) {
 		ktap_value *arg = kp_arg(ks, i);
 		if (i > 1)
-			kp_printf(ks, "\t");
+			kp_puts(ks, "\t");
 		kp_showobj(ks, arg);
 	}
 
-	kp_printf(ks, "\n");
+	kp_puts(ks, "\n");
 
 	return 0;
 }
@@ -111,7 +111,7 @@ static int ktap_lib_print_backtrace(ktap_state *ks)
 #else
 static int ktap_lib_print_backtrace(ktap_state *ks)
 {
-	kp_printf(ks, "Please enable CONFIG_STACKTRACE before use ktap print_backtrace\n");
+	kp_puts(ks, "Please enable CONFIG_STACKTRACE before use ktap print_backtrace\n");
 	return 0;
 }
 #endif

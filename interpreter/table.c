@@ -578,7 +578,7 @@ void kp_table_dump(ktap_state *ks, ktap_table *t)
 {
 	int i, count = 0;
 
-	kp_printf(ks, "{");
+	kp_puts(ks, "{");
 	for (i = 0; i < t->sizearray; i++) {
 		ktap_value *v = &t->array[i];
 
@@ -586,11 +586,11 @@ void kp_table_dump(ktap_state *ks, ktap_table *t)
 			continue;
 
 		if (count)
-			kp_printf(ks, ", ");
+			kp_puts(ks, ", ");
 
 		kp_printf(ks, "(%d: ", i + 1);
 		kp_showobj(ks, v);
-		kp_printf(ks, ")");
+		kp_puts(ks, ")");
 		count++;
 	}
 
@@ -601,16 +601,16 @@ void kp_table_dump(ktap_state *ks, ktap_table *t)
 			continue;
 
 		if (count)
-			kp_printf(ks, ", ");
+			kp_puts(ks, ", ");
 
-		kp_printf(ks, "(");
+		kp_puts(ks, "(");
 		kp_showobj(ks, gkey(n));
-		kp_printf(ks, ": ");
+		kp_puts(ks, ": ");
 		kp_showobj(ks, gval(n));
-		kp_printf(ks, ")");
+		kp_puts(ks, ")");
 		count++;
 	}
-	kp_printf(ks, "}");
+	kp_puts(ks, "}");
 }
 
 struct table_hist_record {
@@ -709,7 +709,7 @@ void kp_table_histogram(ktap_state *ks, ktap_table *t)
 	goto out;
 
  error:
-	kp_printf(ks, "error: table histogram only handle "
+	kp_puts(ks, "error: table histogram only handle "
 			" (key: string/number val: number)\n");
  out:
 	kp_free(ks, thr);

@@ -556,14 +556,14 @@ static int ktap_lib_traceoff(ktap_state *ks)
 
 static void wait_interrupt(ktap_state *ks)
 {
-	kp_printf(ks, "Press Control-C to stop.\n");
+	kp_puts(ks, "Press Control-C to stop.\n");
 	set_current_state(TASK_INTERRUPTIBLE);
 	schedule();
 
 	flush_signals(current);
 
 	/* newline for handle CTRL+C display as ^C */
-	kp_printf(ks, "\n");
+	kp_puts(ks, "\n");
 }
 
 void kp_probe_exit(ktap_state *ks)

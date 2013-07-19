@@ -55,7 +55,7 @@ void ktap_concat(ktap_state *ks, int start, int end)
 
 	for (i = start; i <= end; i++) {
 		if (!ttisstring(top + i)) {
-			kp_printf(ks, "cannot concat non-string\n");
+			kp_puts(ks, "cannot concat non-string\n");
 			setnilvalue(top + start);
 			return;
 		}
@@ -64,7 +64,7 @@ void ktap_concat(ktap_state *ks, int start, int end)
 	}
 
 	if (len >= KTAP_PERCPU_BUFFER_SIZE) {
-		kp_printf(ks, "Error: too long string concatenation\n");
+		kp_puts(ks, "Error: too long string concatenation\n");
 		return;
 	}
 
@@ -375,7 +375,7 @@ static int precall(ktap_state *ks, StkId func, int nresults)
 		ks->top = ci->top;
 		return 0;
 	default:
-		kp_printf(ks, "cannot call nil function\n");
+		kp_puts(ks, "cannot call nil function\n");
 		return -1;
 	}
 
@@ -402,7 +402,7 @@ static int precall(ktap_state *ks, StkId func, int nresults)
 		ktap_Number nb = nvalue(rb), nc = nvalue(rc); \
 		setnvalue(ra, op(nb, nc)); \
 	} else {	\
-		kp_printf(ks, "Error: Cannot make arith operation\n");	\
+		kp_puts(ks, "Error: Cannot make arith operation\n");	\
 		return;	\
 	} }
 
@@ -534,7 +534,7 @@ static void ktap_execute(ktap_state *ks)
 	case OP_DIV:
 		/* divide 0 checking */
 		if (!nvalue(RKC(instr))) {
-			kp_printf(ks, "error: divide 0 arith operation, exit\n");
+			kp_puts(ks, "error: divide 0 arith operation, exit\n");
 			return;
 		}
 		arith_op(ks, NUMDIV);
@@ -542,13 +542,13 @@ static void ktap_execute(ktap_state *ks)
 	case OP_MOD:
 		/* divide 0 checking */
 		if (!nvalue(RKC(instr))) {
-			kp_printf(ks, "error: mod 0 arith operation, exit\n");
+			kp_puts(ks, "error: mod 0 arith operation, exit\n");
 			return;
 		}
 		arith_op(ks, NUMMOD);
 		break;
 	case OP_POW:
-		kp_printf(ks, "ktap don't support pow arith in kernel, exit\n");
+		kp_puts(ks, "ktap don't support pow arith in kernel, exit\n");
 		return;
 		//arith_op(ks, NUMPOW);
 		break;
