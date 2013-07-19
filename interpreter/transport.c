@@ -24,15 +24,8 @@
 #include <linux/clocksource.h>
 #include "../include/ktap.h"
 
-
-struct ktap_trace_entry {
-	struct ftrace_event_call *call;
-	struct trace_entry ent;
-};
-
 struct ktap_trace_iterator {
 	struct ring_buffer	*buffer;
-	struct ktap_trace_entry	*ent;
 	int			print_timestamp;
 	void			*private;
 
@@ -136,16 +129,16 @@ static int trace_print_timestamp(struct trace_iterator *iter)
 	return trace_seq_printf(s, "%5lu.%06lu: ", secs, usec_rem);
 }
 
-/* todo: export kernel function ftrace_find_event in future */
+/* todo: export kernel function ftrace_find_event in future, and make faster */
+struct trace_event *(*ftrace_find_event)(int type);
+
 static enum print_line_t print_trace_fmt(struct trace_iterator *iter)
 {
 	struct ktap_trace_iterator *ktap_iter = KTAP_TRACE_ITER(iter);
-	struct ktap_trace_entry *entry = ktap_iter->ent;
+	struct trace_entry *entry = iter->ent;
 	struct trace_event *ev;
 
-	iter->ent = &entry->ent;
-
-	ev = &(entry->call->event);
+	ev = ftrace_find_event(entry->type);
 
 	if (ktap_iter->print_timestamp && !trace_print_timestamp(iter))
 		return TRACE_TYPE_PARTIAL_LINE;
@@ -163,8 +156,7 @@ static enum print_line_t print_trace_fmt(struct trace_iterator *iter)
 
 static enum print_line_t print_trace_stack(struct trace_iterator *iter)
 {
-	struct ktap_trace_iterator *ktap_iter = KTAP_TRACE_ITER(iter);
-	struct ktap_trace_entry *entry = ktap_iter->ent;
+	struct trace_entry *entry = iter->ent;
 	struct stack_trace trace;
 	char str[KSYM_SYMBOL_LEN];
 	int i;
@@ -191,7 +183,7 @@ static enum print_line_t print_trace_stack(struct trace_iterator *iter)
 }
 
 struct ktap_ftrace_entry {
-	struct ktap_trace_entry entry;
+	struct trace_entry entry;
 	unsigned long ip;
 	unsigned long parent_ip;
 };
@@ -199,7 +191,7 @@ struct ktap_ftrace_entry {
 static enum print_line_t print_trace_fn(struct trace_iterator *iter)
 {
 	struct ktap_trace_iterator *ktap_iter = KTAP_TRACE_ITER(iter);
-	struct ktap_ftrace_entry *field = (struct ktap_ftrace_entry *)ktap_iter->ent;
+	struct ktap_ftrace_entry *field = (struct ktap_ftrace_entry *)iter->ent;
 	char str[KSYM_SYMBOL_LEN];
 
 	if (ktap_iter->print_timestamp && !trace_print_timestamp(iter))
@@ -221,27 +213,26 @@ static enum print_line_t print_trace_fn(struct trace_iterator *iter)
 
 static enum print_line_t print_trace_line(struct trace_iterator *iter)
 {
-	struct ktap_trace_iterator *ktap_iter = KTAP_TRACE_ITER(iter);
-	struct ktap_trace_entry *entry = ktap_iter->ent;
+	struct trace_entry *entry = iter->ent;
 	char *str = (char *)(entry + 1);
 
-	if (entry->ent.type == TRACE_PRINT) {
+	if (entry->type == TRACE_PRINT) {
 		if (!trace_seq_printf(&iter->seq, "%s", str))
 			return TRACE_TYPE_PARTIAL_LINE;
 
 		return TRACE_TYPE_HANDLED;
 	}
 
-	if (entry->ent.type == TRACE_STACK)
+	if (entry->type == TRACE_STACK)
 		return print_trace_stack(iter);
 
-	if (entry->ent.type == TRACE_FN)
+	if (entry->type == TRACE_FN)
 		return print_trace_fn(iter);
 
 	return print_trace_fmt(iter);
 }
 
-static struct ktap_trace_entry *
+static struct trace_entry *
 peek_next_entry(struct trace_iterator *iter, int cpu, u64 *ts,
 		unsigned long *lost_events)
 {
@@ -257,13 +248,13 @@ peek_next_entry(struct trace_iterator *iter, int cpu, u64 *ts,
 	return NULL;
 }
 
-static struct ktap_trace_entry *
+static struct trace_entry *
 __find_next_entry(struct trace_iterator *iter, int *ent_cpu,
 		  unsigned long *missing_events, u64 *ent_ts)
 {
 	struct ktap_trace_iterator *ktap_iter = KTAP_TRACE_ITER(iter);
 	struct ring_buffer *buffer = ktap_iter->buffer;
-	struct ktap_trace_entry *ent, *next = NULL;
+	struct trace_entry *ent, *next = NULL;
 	unsigned long lost_events = 0, next_lost = 0;
 	u64 next_ts = 0, ts;
 	int next_cpu = -1;
@@ -304,14 +295,12 @@ __find_next_entry(struct trace_iterator *iter, int *ent_cpu,
 /* Find the next real entry, and increment the iterator to the next entry */
 static void *trace_find_next_entry_inc(struct trace_iterator *iter)
 {
-	struct ktap_trace_iterator *ktap_iter = KTAP_TRACE_ITER(iter);
-
-	ktap_iter->ent = __find_next_entry(iter, &iter->cpu,
+	iter->ent = __find_next_entry(iter, &iter->cpu,
 				      &iter->lost_events, &iter->ts);
-	if (ktap_iter->ent)
+	if (iter->ent)
 		iter->idx++;
 
-	return ktap_iter->ent ? ktap_iter : NULL;
+	return iter->ent ? iter : NULL;
 }
 
 static void poll_wait_pipe(void)
@@ -352,7 +341,6 @@ static ssize_t
 tracing_read_pipe(struct file *filp, char __user *ubuf, size_t cnt, loff_t *ppos)
 {
 	struct trace_iterator *iter = filp->private_data;
-	struct ktap_trace_iterator *ktap_iter = KTAP_TRACE_ITER(iter);
 	ssize_t sret;
 
 	/* return any leftover data */
@@ -408,7 +396,7 @@ waitagain:
 		 * One of the trace_seq_* functions is not used properly.
 		 */
 		WARN_ONCE(iter->seq.full, "full flag set for trace type %d",
-			  ktap_iter->ent->ent.type);
+			  iter->ent->type);
 	}
 
 	/* Now copy what we have to the user */
@@ -482,7 +470,7 @@ void kp_transport_print_backtrace(ktap_state *ks)
 {
 	struct ring_buffer *buffer = G(ks)->buffer;
 	struct ring_buffer_event *event;
-	struct ktap_trace_entry *entry;
+	struct trace_entry *entry;
 	int size;
 
 	size = KTAP_STACK_MAX_ENTRIES * sizeof(unsigned long);
@@ -493,9 +481,8 @@ void kp_transport_print_backtrace(ktap_state *ks)
 		struct stack_trace trace;
 
 		entry = ring_buffer_event_data(event);
-		tracing_generic_entry_update(&entry->ent, 0, 0);
-		entry->call = NULL;
-		entry->ent.type = TRACE_STACK;
+		tracing_generic_entry_update(entry, 0, 0);
+		entry->type = TRACE_STACK;
 
 		trace.nr_entries = 0;
 		trace.skip = 10;
@@ -513,7 +500,7 @@ void kp_transport_event_write(ktap_state *ks, struct ktap_event *e)
 {
 	struct ring_buffer *buffer = G(ks)->buffer;
 	struct ring_buffer_event *event;
-	struct ktap_trace_entry *entry;
+	struct trace_entry *entry;
 
 	event = ring_buffer_lock_reserve(buffer, sizeof(struct ftrace_event_call *) +
 						 e->entry_size);
@@ -522,8 +509,7 @@ void kp_transport_event_write(ktap_state *ks, struct ktap_event *e)
 	} else {
 		entry = ring_buffer_event_data(event);
 
-		entry->call = e->call;
-		memcpy(&entry->ent, e->entry, e->entry_size);
+		memcpy(entry, e->entry, e->entry_size);
 
 		ring_buffer_unlock_commit(buffer, event);
 	}
@@ -533,10 +519,10 @@ void kp_transport_write(ktap_state *ks, const void *data, size_t length)
 {
 	struct ring_buffer *buffer = G(ks)->buffer;
 	struct ring_buffer_event *event;
-	struct ktap_trace_entry *entry;
+	struct trace_entry *entry;
 	int size;
 
-	size = sizeof(struct ktap_trace_entry) + length;
+	size = sizeof(struct trace_entry) + length;
 
 	event = ring_buffer_lock_reserve(buffer, size);
 	if (!event) {
@@ -544,9 +530,8 @@ void kp_transport_write(ktap_state *ks, const void *data, size_t length)
 	} else {
 		entry = ring_buffer_event_data(event);
 
-		tracing_generic_entry_update(&entry->ent, 0, 0);
-		entry->ent.type = TRACE_PRINT;
-		entry->call = NULL;
+		tracing_generic_entry_update(entry, 0, 0);
+		entry->type = TRACE_PRINT;
 		memcpy(entry + 1, data, length);
 
 		ring_buffer_unlock_commit(buffer, event);
@@ -568,6 +553,12 @@ int kp_transport_init(ktap_state *ks)
 	struct ring_buffer *buffer;
 	struct dentry *dentry;
 	char filename[32] = {0};
+
+	ftrace_find_event = kallsyms_lookup_name("ftrace_find_event");
+	if (!ftrace_find_event) {
+		printk("ktap: cannot lookup ftrace_find_event in kallsyms\n");
+		return -EINVAL;
+	}
 
 	buffer = ring_buffer_alloc(TRACE_BUF_SIZE_DEFAULT, RB_FL_OVERWRITE);
 	if (!buffer)
