@@ -1,6 +1,6 @@
 #!/usr/bin/env ktap
 
-trace "ftrace:function /ip==arch_jump_label_transform/" function (e) {
+trace "ftrace:function /ip==mutex*/" function (e) {
 	print_backtrace()
 	print(cpu(), pid(), execname(), e)
 }
