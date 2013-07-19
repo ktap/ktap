@@ -37,6 +37,7 @@ enum ktap_trace_type {
 
 	TRACE_FN = 1, /* must be same as ftrace definition in kernel */
 	TRACE_PRINT,
+	TRACE_BPUTS,
 	TRACE_STACK,
 	TRACE_USER_STACK,
 
@@ -211,6 +212,14 @@ static enum print_line_t print_trace_fn(struct trace_iterator *iter)
 	return TRACE_TYPE_HANDLED;
 }
 
+static enum print_line_t print_trace_bputs(struct trace_iterator *iter)
+{
+	if (!trace_seq_puts(&iter->seq, (const char *)(*(unsigned long *)(iter->ent + 1))))
+		return TRACE_TYPE_PARTIAL_LINE;
+
+	return TRACE_TYPE_HANDLED;
+}
+
 static enum print_line_t print_trace_line(struct trace_iterator *iter)
 {
 	struct trace_entry *entry = iter->ent;
@@ -222,6 +231,9 @@ static enum print_line_t print_trace_line(struct trace_iterator *iter)
 
 		return TRACE_TYPE_HANDLED;
 	}
+
+	if (entry->type == TRACE_BPUTS)
+		return print_trace_bputs(iter);
 
 	if (entry->type == TRACE_STACK)
 		return print_trace_stack(iter);
@@ -533,6 +545,49 @@ void kp_transport_write(ktap_state *ks, const void *data, size_t length)
 		tracing_generic_entry_update(entry, 0, 0);
 		entry->type = TRACE_PRINT;
 		memcpy(entry + 1, data, length);
+
+		ring_buffer_unlock_commit(buffer, event);
+	}
+}
+
+/* general print function */
+void kp_printf(ktap_state *ks, const char *fmt, ...)
+{
+	char buff[1024];
+	va_list args;
+	int len;
+
+	va_start(args, fmt);
+	len = vscnprintf(buff, 1024, fmt, args);
+	va_end(args);
+
+	buff[len] = '\0';
+	kp_transport_write(ks, buff, len + 1);
+}
+
+void __kp_puts(ktap_state *ks, const char *str)
+{
+	kp_transport_write(ks, str, strlen(str) + 1);
+}
+
+void __kp_bputs(ktap_state *ks, const char *str)
+{
+	struct ring_buffer *buffer = G(ks)->buffer;
+	struct ring_buffer_event *event;
+	struct trace_entry *entry;
+	int size;
+
+	size = sizeof(struct trace_entry) + sizeof(unsigned long *);
+
+	event = ring_buffer_lock_reserve(buffer, size);
+	if (!event) {
+		return;
+	} else {
+		entry = ring_buffer_event_data(event);
+
+		tracing_generic_entry_update(entry, 0, 0);
+		entry->type = TRACE_BPUTS;
+		*(unsigned long *)(entry + 1) = str;
 
 		ring_buffer_unlock_commit(buffer, event);
 	}

@@ -556,7 +556,20 @@ int kp_str2d(const char *s, size_t len, ktap_Number *result);
 #define kp_reallocv(ks, block, osize, nsize)	krealloc(block, nsize, KTAP_ALLOC_FLAGS)
 #define kp_zalloc(ks, size)			kzalloc(size, KTAP_ALLOC_FLAGS)
 void kp_printf(ktap_state *ks, const char *fmt, ...);
-void kp_puts(ktap_state *ks, const char *str);
+extern void __kp_puts(ktap_state *ks, const char *str);
+extern void __kp_bputs(ktap_state *ks, const char *str);
+
+#define kp_puts(ks, str) ({						\
+	static const char *trace_printk_fmt				\
+		__attribute__((section("__trace_printk_fmt"))) =	\
+		__builtin_constant_p(str) ? str : NULL;			\
+									\
+	if (__builtin_constant_p(str))					\
+		__kp_bputs(ks, trace_printk_fmt);		\
+	else								\
+		__kp_puts(ks, str);		\
+})
+
 #else
 /*
  * this is used for ktapc tstring operation, tstring need G(ks)->strt

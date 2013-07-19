@@ -23,26 +23,6 @@
 #include <linux/sched.h>
 #include "../../include/ktap.h"
 
-/* general print function */
-void kp_printf(ktap_state *ks, const char *fmt, ...)
-{
-	char buff[1024];
-	va_list args;
-	int len;
-
-	va_start(args, fmt);
-	len = vscnprintf(buff, 1024, fmt, args);
-	va_end(args);
-
-	buff[len] = '\0';
-	kp_transport_write(ks, buff, len + 1);
-}
-
-void kp_puts(ktap_state *ks, const char *str)
-{
-	kp_transport_write(ks, str, strlen(str) + 1);
-}
-
 static int ktap_lib_clock(ktap_state *ks)
 {
 	kp_puts(ks, "ktap_clock\n");
