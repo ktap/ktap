@@ -19,6 +19,7 @@
  */
 
 #include <linux/module.h>
+#include <linux/ctype.h>
 #include <linux/version.h>
 #include <linux/perf_event.h>
 #include <linux/ftrace_event.h>
@@ -381,7 +382,8 @@ static void start_probe_by_id(ktap_state *ks, struct task_struct *task,
 	struct perf_event *event;
 	int cpu, ret;
 
-	kp_verbose_printf(ks, "enable tracepoint event id: %d\n", id);
+	kp_verbose_printf(ks, "enable tracepoint event id: %d, filter: %s\n",
+				id, filter);
 
 	memset(&attr, 0, sizeof(attr));
 	attr.type = PERF_TYPE_TRACEPOINT;	
@@ -453,14 +455,13 @@ static void end_probes(struct ktap_state *ks)
 static int ktap_lib_probe_by_id(ktap_state *ks)
 {
 	const char *ids_str = svalue(kp_arg(ks, 1));
+	const char *start;
 	ktap_value *tracefunc;
 	ktap_closure *cl = NULL;
 	int trace_pid = G(ks)->trace_pid;
 	struct task_struct *task = NULL;
 	char filter_str[128] = {0};
-	char *filter = NULL, *ptr1, *ptr2;
-	char **argv;
-	int argc, i;
+	char *filter, *ptr1, *ptr2, *sep, *ptr;
 
 	if (kp_arg_nr(ks) >= 2) {
 		tracefunc = kp_arg(ks, 2);
@@ -480,27 +481,47 @@ static int ktap_lib_probe_by_id(ktap_state *ks)
 		}
 	}
 
-	ptr1 = strchr(ids_str, '/');
+	start = ids_str;
+
+	/* todo: improve this to make faster */
+ again:
+	filter = NULL;
+
+	sep = strchr(start, ';');
+	if (!sep)
+		ptr1 = strchr(start, '/');
+	else
+		ptr1 = strnchr(start, sep - start, '/');
+
 	if (ptr1) {
 		ptr2 = strchr(ptr1 + 1, '/');
 		if (ptr2) {
+			memset(filter_str, 0, sizeof(filter_str));
 			strncpy(filter_str, ptr1 + 1, ptr2 - ptr1 - 1);
 			filter = &filter_str[0];
 		}
 	}
 
-	argv = argv_split(GFP_KERNEL, ids_str, &argc);
-	if (!argv)
-		return -1;
-
-	for (i = 0; i < argc; i++) {
+	for (ptr = start; *ptr != ';' && *ptr != '\0' && *ptr != '/'; ptr++) {
+		char token[32] = {0};
 		int id;
-		if (!kstrtoint(argv[i], 10, &id)) {
-			start_probe_by_id(ks, task, id, filter, cl);
+		int i = 0;
+
+		if (*ptr == ' ')
+			continue;
+
+		while (isdigit(*ptr)) {
+			token[i++] = *ptr++;
 		}
+
+		if (!kstrtoint(token, 10, &id))
+			start_probe_by_id(ks, task, id, filter, cl);
 	}
 
-	argv_free(argv);
+	if (sep && (*(sep + 1) != '\0')) {
+		start = sep + 1;
+		goto again;
+	}
 
 	return 0;
 }
