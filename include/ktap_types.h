@@ -552,13 +552,11 @@ int kp_str2d(const char *s, size_t len, ktap_Number *result);
 #ifdef __KERNEL__
 #define G(ks)   (ks->g)
 
-#define KTAP_ALLOC_FLAGS ((GFP_KERNEL | __GFP_NORETRY | __GFP_NOWARN) \
-			 & ~__GFP_WAIT)
+void *kp_malloc(ktap_state *ks, int size);
+void kp_free(ktap_state *ks, void *addr);
+void *kp_reallocv(ktap_state *ks, void *addr, int oldsize, int newsize);
+void *kp_zalloc(ktap_state *ks, int size);
 
-#define kp_malloc(ks, size)			kmalloc(size, KTAP_ALLOC_FLAGS)
-#define kp_free(ks, block)			kfree(block)
-#define kp_reallocv(ks, block, osize, nsize)	krealloc(block, nsize, KTAP_ALLOC_FLAGS)
-#define kp_zalloc(ks, size)			kzalloc(size, KTAP_ALLOC_FLAGS)
 void kp_printf(ktap_state *ks, const char *fmt, ...);
 extern void __kp_puts(ktap_state *ks, const char *str);
 extern void __kp_bputs(ktap_state *ks, const char *str);

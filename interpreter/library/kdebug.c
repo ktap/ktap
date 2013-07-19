@@ -394,7 +394,7 @@ static void start_probe_by_id(ktap_state *ks, struct task_struct *task,
 	attr.size = sizeof(attr);
 
 	for_each_cpu(cpu, G(ks)->cpumask) {
-		ktap_pevent = kp_zalloc(arg->ks, sizeof(*ktap_pevent));
+		ktap_pevent = kp_zalloc(ks, sizeof(*ktap_pevent));
 		ktap_pevent->ks = ks;
 		ktap_pevent->cl = cl;
 		event = perf_event_create_kernel_counter(&attr, cpu, task,

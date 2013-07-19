@@ -26,6 +26,30 @@
 #include "../include/ktap_types.h"
 #endif
 
+#define KTAP_ALLOC_FLAGS ((GFP_KERNEL | __GFP_NORETRY | __GFP_NOWARN) \
+			 & ~__GFP_WAIT)
+
+#ifdef __KERNEL__
+void *kp_malloc(ktap_state *ks, int size)
+{
+	return kmalloc(size, KTAP_ALLOC_FLAGS);
+}
+
+void kp_free(ktap_state *ks, void *addr)
+{
+	kfree(addr);
+}
+
+void *kp_reallocv(ktap_state *ks, void *addr, int oldsize, int newsize)
+{
+	return krealloc(addr, newsize, KTAP_ALLOC_FLAGS);
+}
+
+void *kp_zalloc(ktap_state *ks, int size)
+{
+	return kzalloc(size, KTAP_ALLOC_FLAGS);
+}
+#endif
 
 void kp_obj_dump(ktap_state *ks, const ktap_value *v)
 {
