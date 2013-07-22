@@ -259,6 +259,12 @@ static int event_fieldn(ktap_state *ks)
 	struct ftrace_event_field *field;
 	struct list_head *head;
 
+	if (index <= 0) {
+		setnilvalue(ks->top++);
+		return 1;
+	}
+
+	/* this is very slow and not safe, fix it in future */
 	head = ktap_get_fields(e->call);
 	list_for_each_entry_reverse(field, head, link) {
 		if (--index == 0) {
