@@ -598,6 +598,12 @@ void kp_table_setvalue(ktap_state *ks, ktap_table *t,
 {
 	unsigned long flags;
 
+	if (isnil(key)) {
+		kp_printf(ks, "table index is nil\n");
+		kp_exit(ks);
+		return;
+	}
+
 	kp_table_lock(t);
 	setobj(table_set(ks, t, key), val);
 	kp_table_unlock(t);
@@ -634,6 +640,12 @@ void kp_table_atomic_inc(ktap_state *ks, ktap_table *t, ktap_value *key, int n)
 {
 	unsigned long flags;
 	const ktap_value *v;
+
+	if (isnil(key)) {
+		kp_printf(ks, "table index is nil\n");
+		kp_exit(ks);
+		return;
+	}
 
 	kp_table_lock(t);
 
