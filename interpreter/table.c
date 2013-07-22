@@ -392,6 +392,11 @@ static void table_resize(ktap_state *ks, ktap_table *t, int nasize, int nhsize)
 	int oldhsize = t->lsizenode;
 	Node *nold = t->node;  /* save old hash ... */
 
+#ifdef __KERNEL__
+	kp_verbose_printf(ks, "verbose: table resize, nasize: %d, nhsize: %d\n",
+				nasize, nhsize);
+#endif
+
 	if (nasize > oldasize)  /* array part must grow? */
 		setarrayvector(ks, t, nasize);
 
@@ -720,6 +725,15 @@ void kp_table_dump(ktap_state *ks, ktap_table *t)
 
 #ifdef __KERNEL__
 
+static void string_convert(char *output, const char *input)
+{
+	if (strlen(input) > 32) {
+		strncpy(output, input, 32-4);
+		memset(output + 32-4, '.', 3);
+	} else
+		memcpy(output, input, strlen(input));
+}
+
 struct table_hist_record {
 	ktap_value key;
 	ktap_value val;
@@ -799,24 +813,19 @@ void kp_table_histogram(ktap_state *ks, ktap_table *t)
 
 		if (ttisstring(key)) {
 			char buf[32 + 1] = {0};
-			const char *keystr;
 
-			if (strlen(svalue(key)) > 32) {
-				strncpy(buf, svalue(key), 32-4);
-				memset(buf + 32-4, '.', 3);
-				keystr = buf;
-			} else
-				keystr = svalue(key);
-
-			kp_printf(ks, "%32s |%s%-10d\n", keystr, dist_str,
-					nvalue(val));
+			string_convert(buf, svalue(key));
+			kp_printf(ks, "%32s |%s%-10d\n", buf, dist_str,
+				      nvalue(val));
 		} else {
 			char str[KSYM_SYMBOL_LEN];
+			char buf[32 + 1] = {0};
 
 			/* suppose it's a symbol, fix it in future */
 			sprint_symbol_no_offset(str, nvalue(key));
-			kp_printf(ks, "%32s | %s%-10d\n", str, dist_str,
-							  nvalue(val));
+			string_convert(buf, str);
+			kp_printf(ks, "%32s | %s%-10d\n", buf, dist_str,
+				      nvalue(val));
 		}
 	}
 
