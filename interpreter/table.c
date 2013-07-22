@@ -393,7 +393,7 @@ static void table_resize(ktap_state *ks, ktap_table *t, int nasize, int nhsize)
 	Node *nold = t->node;  /* save old hash ... */
 
 #ifdef __KERNEL__
-	kp_verbose_printf(ks, "verbose: table resize, nasize: %d, nhsize: %d\n",
+	kp_verbose_printf(ks, "table resize, nasize: %d, nhsize: %d\n",
 				nasize, nhsize);
 #endif
 

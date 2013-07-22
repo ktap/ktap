@@ -312,7 +312,7 @@ ktap_string *ktapc_parse_eventdef(ktap_string *eventdef);
 extern int verbose;
 #define verbose_printf(...) \
 	if (verbose)	\
-		printf(__VA_ARGS__);
+		printf("[verbose] " __VA_ARGS__);
 
 #define ktapc_equalobj(t1, t2)	kp_equalobjv(NULL, t1, t2)
 

@@ -259,7 +259,7 @@ static int parse_events_add_kprobe(char *old_event)
 	} else
 		sprintf(probe_event, "p:kprobes/kp%d %s", event_seq, event);
 
-	verbose_printf("[verbose] kprobe event %s\n", probe_event);
+	verbose_printf("kprobe event %s\n", probe_event);
 
 	ret = write(fd, probe_event, strlen(probe_event));
 	if (ret <= 0) {
@@ -308,7 +308,7 @@ static int parse_events_add_uprobe(char *old_event)
 	} else
 		sprintf(probe_event, "p:uprobes/kp%d %s", event_seq, event);
 
-	verbose_printf("[verbose] uprobe event %s\n", probe_event);
+	verbose_printf("uprobe event %s\n", probe_event);
 	ret = write(fd, probe_event, strlen(probe_event));
 	if (ret <= 0) {
 		fprintf(stderr, "Cannot write %s to %s\n", probe_event,
@@ -469,7 +469,7 @@ ktap_string *ktapc_parse_eventdef(ktap_string *eventdef)
 	if (get_sys_event_filter_str(str, &sys, &event, &filter))
 		return NULL;
 
-	verbose_printf("[verbose] parse_eventdef: sys[%s], event[%s], filter[%s]\n",
+	verbose_printf("parse_eventdef: sys[%s], event[%s], filter[%s]\n",
 		       sys, event, filter);
 
 	if (!strcmp(sys, "probe"))

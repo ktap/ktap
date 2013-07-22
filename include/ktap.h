@@ -76,7 +76,7 @@ DECLARE_PER_CPU(bool, kp_in_timer_closure);
 
 #define kp_verbose_printf(ks, ...) \
 	if (G(ks)->verbose)	\
-		kp_printf(ks, __VA_ARGS__);
+		kp_printf(ks, "[verbose] "__VA_ARGS__);
 
 /* get argument operation macro */
 #define kp_arg(ks, n)	((ks)->ci->func + (n))
