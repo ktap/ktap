@@ -17,8 +17,8 @@ function func_entry (e) {
 
 function func_exit (e) {
 	local durtion = gettimeofday_us() - percpu_entry_timestamp[cpu()]
-	count(percpu_count, cpu(), durtion)
-	count(percpu_num, cpu())
+	table_count(percpu_count, cpu(), durtion)
+	table_count(percpu_num, cpu())
 
 	if (durtion > percpu_count_max[cpu()]) {
 		percpu_count_max[cpu()] = durtion
