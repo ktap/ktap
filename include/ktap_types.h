@@ -587,12 +587,6 @@ extern ktap_global_state dummy_global_state;
 #define kp_printf(ks, args...)			printf(args)
 #define kp_puts(ks, str)			printf("%s", str)
 #define kp_exit(ks)				exit(EXIT_FAILURE)
-
-#define DEFINE_SPINLOCK
-#define spin_lock
-#define spin_unlock
-#define spin_lock_irqsave
-#define spin_unlock_irqrestore
 #endif
 
 /*

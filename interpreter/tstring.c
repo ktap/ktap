@@ -174,7 +174,9 @@ static ktap_string *newshrstr(ktap_state *ks, const char *str, size_t l,
 	return s;
 }
 
-static DEFINE_SPINLOCK(tstring_lock);
+#ifdef __KERNEL__
+static arch_spinlock_t tstring_lock = (arch_spinlock_t)__ARCH_SPIN_LOCK_UNLOCKED;
+#endif
 
 /*
  * checks whether short string exists and reuses it or creates a new one
@@ -187,20 +189,27 @@ static ktap_string *internshrstr(ktap_state *ks, const char *str, size_t l)
 	unsigned int h = kp_string_hash(str, l, g->seed);
 	unsigned long flags;
 
-	spin_lock_irqsave(&tstring_lock, flags);
+#ifdef __KERNEL__
+	local_irq_save(flags);
+	arch_spin_lock(&tstring_lock);
+#endif
+
 	for (o = g->strt.hash[lmod(h, g->strt.size)]; o != NULL;
 	     o = gch(o)->next) {
 		ts = rawgco2ts(o);
 
 		if (h == ts->tsv.hash && ts->tsv.len == l &&
-		   (memcmp(str, getstr(ts), l * sizeof(char)) == 0)) {
-			spin_unlock_irqrestore(&tstring_lock, flags);
-			return ts;
-		}
+		   (memcmp(str, getstr(ts), l * sizeof(char)) == 0))
+			goto out;
 	}
 
 	ts = newshrstr(ks, str, l, h);  /* not found; create a new string */
-	spin_unlock_irqrestore(&tstring_lock, flags);
+
+ out:
+#ifdef __KERNEL__
+	arch_spin_unlock(&tstring_lock);
+	local_irq_restore(flags);
+#endif
 	return ts;
 }
 
