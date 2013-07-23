@@ -772,7 +772,7 @@ void kp_table_histogram(ktap_state *ks, ktap_table *t)
 {
 	struct table_hist_record *thr;
 	char dist_str[40];
-	int i, ratio, total = 0, count = 0;
+	int i, ratio, total = 0, count = 0, top_num;
 	int size;
 
 	size = sizeof(*thr) * (t->sizearray + sizenode(t));
@@ -815,7 +815,9 @@ void kp_table_histogram(ktap_state *ks, ktap_table *t)
 
 	kp_printf(ks, "%32s%s%s\n", "value ", DISTRIBUTION_STR, " count");
 	dist_str[sizeof(dist_str) - 1] = '\0';
-	for (i = 0; i < HISTOGRAM_DEFAULT_TOP_NUM; i++) {
+
+	top_num = min(HISTOGRAM_DEFAULT_TOP_NUM, count);
+	for (i = 0; i < top_num; i++) {
 		ktap_value *key = &thr[i].key;
 		ktap_value *val = &thr[i].val;
 
