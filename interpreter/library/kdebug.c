@@ -363,6 +363,9 @@ static void ktap_overflow_callback(struct perf_event *event,
 	ktap_pevent = event->overflow_handler_context;
 	ks = ktap_pevent->ks;
 
+	if (unlikely(ks->stop))
+		return;
+
 	e.pevent = ktap_pevent;
 	e.call = event->tp_event;
 	e.entry = data->raw->data;
@@ -563,10 +566,7 @@ static int ktap_lib_traceoff(ktap_state *ks)
 static void wait_interrupt(ktap_state *ks)
 {
 	kp_puts(ks, "Press Control-C to stop.\n");
-	set_current_state(TASK_INTERRUPTIBLE);
-	schedule();
-
-	flush_signals(current);
+	kp_wait(ks);
 
 	/* newline for handle CTRL+C display as ^C */
 	kp_puts(ks, "\n");

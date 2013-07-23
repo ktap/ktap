@@ -69,6 +69,7 @@ void kp_transport_exit(ktap_state *ks);
 int kp_transport_init(ktap_state *ks);
 
 void kp_user_complete(ktap_state *ks);
+void kp_wait(ktap_state *ks);
 
 void kp_exit_timers(ktap_state *ks);
 

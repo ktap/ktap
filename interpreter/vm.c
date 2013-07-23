@@ -1150,11 +1150,29 @@ static void wait_user_completion(ktap_state *ks)
 	down(&G(ks)->sync_sem);
 }
 
+/* kp_wait: used for mainthread waiting for exit */
+void kp_wait(ktap_state *ks)
+{
+	if (ks != G(ks)->mainthread)
+		return;
+
+	while (!ks->stop) {
+		set_current_state(TASK_INTERRUPTIBLE);
+		/* sleep for 100 msecs, and try again. */
+		schedule_timeout(HZ / 10);
+
+		if (signal_pending(current)) {
+			flush_signals(current);
+			break;
+		}
+	}
+}
+
 /* todo: how to process not-mainthread exit? */
 void kp_exit(ktap_state *ks)
 {
 	if (ks != G(ks)->mainthread) {
-		wake_up_process(G(ks)->task);
+		G(ks)->mainthread->stop = 1;
 		return;
 	}
 

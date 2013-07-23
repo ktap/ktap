@@ -288,6 +288,7 @@ typedef struct ktap_state {
 	CommonHeader;
 	u8 status;
 	ktap_global_state *g;
+	int stop;
 	StkId top;
 	ktap_callinfo *ci;
 	const unsigned long *oldpc;
