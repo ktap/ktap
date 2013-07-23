@@ -47,6 +47,8 @@ static enum hrtimer_restart hrtimer_ktap_fn(struct hrtimer *timer)
 	ktap_state *ks;
 	struct hrtimer_ktap *t;
 
+	rcu_read_lock_sched_notrace();
+
 	__this_cpu_write(kp_in_timer_closure, true);
 
 	t = container_of(timer, struct hrtimer_ktap, timer);
@@ -60,6 +62,8 @@ static enum hrtimer_restart hrtimer_ktap_fn(struct hrtimer *timer)
 	hrtimer_add_expires_ns(timer, t->ns);
 
 	__this_cpu_write(kp_in_timer_closure, false);
+
+	rcu_read_unlock_sched_notrace();
 
 	return HRTIMER_RESTART;
 }
