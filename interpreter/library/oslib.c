@@ -38,10 +38,9 @@ static int ktap_lib_sleep(ktap_state *ks)
 {
 	ktap_value *time = kp_arg(ks, 1);
 
-	/* only mainthread can sleep
+	/* only mainthread can sleep */
 	if (ks != G(ks)->mainthread)
 		return 0;
-	*/
 
 	msleep_interruptible(nvalue(time));
 
