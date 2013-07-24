@@ -349,9 +349,6 @@ static int precall(ktap_state *ks, StkId func, int nresults)
 		ci->top = ks->top + KTAP_MINSTACK;
 		ci->callstatus = 0;
 		n = (*f)(ks);
-		if (n < 0)
-			return n;
-
 		poscall(ks, ks->top - n);
 		return 1;
 	case KTAP_TLCL:	
@@ -632,9 +629,6 @@ static void ktap_execute(ktap_state *ks)
 			ks->top = ra + b;
 
 		ret = precall(ks, ra, nresults);
-		if (ret == -1)
-			return;
-
 		if (ret) { /* C function */
 			if (nresults >= 0)
 				ks->top = ci->top;
@@ -813,6 +807,8 @@ static void ktap_execute(ktap_state *ks)
 		setobj(ra, cfunc);
 		}
 		break;
+	case OP_EXIT:
+		return;
 	}
 
 	goto mainloop;
@@ -1146,7 +1142,7 @@ void kp_user_complete(ktap_state *ks)
 
 static void wait_user_completion(ktap_state *ks)
 {
-	G(ks)->exit = 1;
+	G(ks)->wait_user = 1;
 	down(&G(ks)->sync_sem);
 }
 
@@ -1154,6 +1150,9 @@ static void wait_user_completion(ktap_state *ks)
 void kp_wait(ktap_state *ks)
 {
 	if (ks != G(ks)->mainthread)
+		return;
+
+	if (G(ks)->exit)
 		return;
 
 	ks->stop = 0;
@@ -1170,14 +1169,16 @@ void kp_wait(ktap_state *ks)
 	}
 }
 
-/* todo: how to process not-mainthread exit? */
 void kp_exit(ktap_state *ks)
 {
-	if (ks != G(ks)->mainthread) {
-		G(ks)->mainthread->stop = 1;
-		return;
-	}
+	set_next_as_exit(ks);
 
+	G(ks)->mainthread->stop = 1;
+	G(ks)->exit = 1;
+}
+
+void kp_final_exit(ktap_state *ks)
+{
 	kp_probe_exit(ks);
 	kp_exit_timers(ks);
 
@@ -1197,9 +1198,6 @@ void kp_exit(ktap_state *ks)
 
 	free_cpumask_var(G(ks)->cpumask);
 	kp_free(ks, ks);
-
-	/* life ending, no return anymore*/
-	do_exit(0);
 }
 
 /* ktap mainthread initization, main entry for ktap */
@@ -1268,7 +1266,7 @@ ktap_state *kp_newstate(struct ktap_parm *parm, char **argv)
 	return ks;
 
  out:
-	kp_exit(ks);
+	kp_final_exit(ks);
 	return NULL;
 }
 

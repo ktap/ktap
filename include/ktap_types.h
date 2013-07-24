@@ -279,6 +279,7 @@ typedef struct ktap_global_state {
 	struct list_head timers;
 	struct list_head probe_events_head;
 	int exit;
+	int wait_user;
 	struct semaphore sync_sem;
 	ktap_closure *trace_end_closure;
 #endif

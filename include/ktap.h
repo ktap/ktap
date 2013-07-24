@@ -39,6 +39,7 @@ enum {
 
 ktap_state *kp_newstate(struct ktap_parm *parm, char **argv);
 void kp_exit(ktap_state *ks);
+void kp_final_exit(ktap_state *ks);
 ktap_state *kp_newthread(ktap_state *mainthread);
 void kp_exitthread(ktap_state *ks);
 ktap_closure *kp_load(ktap_state *ks, unsigned char *buff);
@@ -74,6 +75,22 @@ void kp_wait(ktap_state *ks);
 void kp_exit_timers(ktap_state *ks);
 
 DECLARE_PER_CPU(bool, kp_in_timer_closure);
+
+extern unsigned int kp_stub_exit_instr;
+
+static inline void set_next_as_exit(ktap_state *ks)
+{
+	ktap_callinfo *ci;
+
+	ci = ks->ci;
+	ci->u.l.savedpc = &kp_stub_exit_instr;
+
+	/* See precall, ci changed to ci->prev after invoke C function */
+	if (ci->prev) {
+		ci = ci->prev;
+		ci->u.l.savedpc = &kp_stub_exit_instr;
+	}
+}
 
 #define kp_verbose_printf(ks, ...) \
 	if (G(ks)->verbose)	\

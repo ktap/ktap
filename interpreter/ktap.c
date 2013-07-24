@@ -168,7 +168,7 @@ static int ktap_main(struct file *file, struct ktap_parm *parm)
 		kp_call(ks, ks->top - 1, 0);
 	}
 
-	kp_exit(ks);
+	kp_final_exit(ks);
 	return 0;
 }
 
@@ -253,6 +253,7 @@ static const struct file_operations ktapvm_fops = {
 };
 
 struct dentry *ktap_dir;
+unsigned int kp_stub_exit_instr;
 
 static int __init init_ktap(void)
 {
@@ -272,6 +273,8 @@ static int __init init_ktap(void)
 		debugfs_remove_recursive(ktap_dir);
 		return -1;
 	}
+
+	SET_OPCODE(kp_stub_exit_instr, OP_EXIT);
 
 	return 0;
 }
