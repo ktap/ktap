@@ -482,7 +482,7 @@ static int ktap_lib_probe_by_id(ktap_state *ks)
 	int trace_pid = G(ks)->trace_pid;
 	struct task_struct *task = NULL;
 	char filter_str[128] = {0};
-	char *filter, *ptr1, *ptr2, *sep, *ptr;
+	char *filter, *ptr1, *sep, *ptr;
 
 	if (kp_arg_nr(ks) >= 2) {
 		tracefunc = kp_arg(ks, 2);
@@ -504,7 +504,6 @@ static int ktap_lib_probe_by_id(ktap_state *ks)
 
 	start = ids_str;
 
-	/* todo: improve this to make faster */
  again:
 	filter = NULL;
 
@@ -515,11 +514,15 @@ static int ktap_lib_probe_by_id(ktap_state *ks)
 		ptr1 = strnchr(start, sep - start, '/');
 
 	if (ptr1) {
-		ptr2 = strchr(ptr1 + 1, '/');
+		char *ptr2 = strrchr(ptr1 + 1, '/');
+
 		if (ptr2) {
 			memset(filter_str, 0, sizeof(filter_str));
 			strncpy(filter_str, ptr1 + 1, ptr2 - ptr1 - 1);
 			filter = &filter_str[0];
+		} else {
+			kp_printf(ks, "cannot parse ids_str: %s\n", ids_str);
+			return -1;
 		}
 	}
 

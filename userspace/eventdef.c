@@ -395,12 +395,10 @@ static int get_sys_event_filter_str(char *start,
 	}
 
 	if (*end == '/') {
-		char *filter_start = end;
+		char *filter_start;
 
-		while (*--filter_start != '/' && filter_start > separator) {
-		}
-
-		if (filter_start == separator)
+		filter_start = strchr(separator, '/');
+		if (filter_start == end)
 			return -1;
 
 		ptr = malloc(end - filter_start + 2);
