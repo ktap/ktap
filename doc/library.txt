@@ -70,10 +70,7 @@ KTAP Standard Libraries
 
 5. Operating System Facilities
 ------------------------------
- os.clock: 
- os.info:
- os.sleep:
- os.wait:
+ os.sleep
 
 6. timer Functions
 ------------------

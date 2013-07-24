@@ -23,17 +23,6 @@
 #include <linux/sched.h>
 #include "../../include/ktap.h"
 
-static int ktap_lib_clock(ktap_state *ks)
-{
-	kp_puts(ks, "ktap_clock\n");
-	return 0;
-}
-
-static int ktap_lib_info(ktap_state *ks)
-{
-	return 0;
-}
-
 static int ktap_lib_sleep(ktap_state *ks)
 {
 	ktap_value *time = kp_arg(ks, 1);
@@ -49,22 +38,8 @@ static int ktap_lib_sleep(ktap_state *ks)
 	return 0;
 }
 
-/* wait forever until interrupt by signal */
-static int ktap_lib_wait(ktap_state *ks)
-{
-	set_current_state(TASK_INTERRUPTIBLE);
-	schedule();
-	if (fatal_signal_pending(current))
-		kp_exit(ks);
-
-	return 0;
-}
-
 static const ktap_Reg oslib_funcs[] = {
-	{"clock", ktap_lib_clock},
-	{"info", ktap_lib_info},
 	{"sleep", ktap_lib_sleep},
-	{"wait", ktap_lib_wait},
 	{NULL}
 };
 
