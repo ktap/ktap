@@ -408,7 +408,7 @@ static int get_sys_event_filter_str(char *start,
 			return -1;
 
 		memcpy(ptr, filter_start, end - filter_start + 1);
-		ptr[end - filter_start + 2] = '\0';
+		ptr[end - filter_start + 1] = '\0';
 
 		*filter = ptr;
 
