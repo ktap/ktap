@@ -25,6 +25,7 @@
 #include <linux/spinlock.h>
 #include <linux/kallsyms.h>
 #include <linux/sort.h>
+#include <linux/version.h>
 #else
 #include "../include/ktap_types.h"
 
@@ -836,7 +837,11 @@ void kp_table_histogram(ktap_state *ks, ktap_table *t)
 			char buf[32 + 1] = {0};
 
 			/* suppose it's a symbol, fix it in future */
+#if LINUX_VERSION_CODE > KERNEL_VERSION(3, 5, 0)
 			sprint_symbol_no_offset(str, nvalue(key));
+#else
+			sprint_symbol(str, nvalue(key));
+#endif
 			string_convert(buf, str);
 			kp_printf(ks, "%32s | %s%-10d\n", buf, dist_str,
 				      nvalue(val));
