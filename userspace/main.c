@@ -511,7 +511,7 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	ktapvm_argv[0] = malloc(sizeof(strlen(filename)) + 1);
+	ktapvm_argv[0] = malloc(strlen(filename) + 1);
 	if (!ktapvm_argv[0]) {
 		fprintf(stderr, "canno allocate memory\n");
 		return -1;
