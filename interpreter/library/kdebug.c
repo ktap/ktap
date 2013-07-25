@@ -401,6 +401,18 @@ static void start_probe_by_id(ktap_state *ks, struct task_struct *task,
 			   PERF_SAMPLE_CPU | PERF_SAMPLE_PERIOD;
 	attr.sample_period = 1;
 	attr.size = sizeof(attr);
+	attr.disabled = 0;
+
+	/*
+	 * don't tracing until ktap_wait, the reason is:
+	 * 1). some event may hit before apply filter
+	 * 2). more simple to manage tracing thread
+	 *
+	 * Another way to do this is make attr.disabled as 1, then use
+	 * perf_event_enable after filter apply, however, perf_event_enable
+	 * was not exported in kernel older than 3.3, so we drop this method.
+	 */
+	ks->stop = 1;
 
 	for_each_cpu(cpu, G(ks)->cpumask) {
 		ktap_pevent = kp_zalloc(ks, sizeof(*ktap_pevent));

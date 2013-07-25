@@ -1156,6 +1156,8 @@ void kp_wait(ktap_state *ks)
 	if (ks != G(ks)->mainthread)
 		return;
 
+	ks->stop = 0;
+
 	while (!ks->stop) {
 		set_current_state(TASK_INTERRUPTIBLE);
 		/* sleep for 100 msecs, and try again. */
