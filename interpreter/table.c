@@ -226,7 +226,7 @@ static int findindex(ktap_state *ks, ktap_table *t, StkId key)
 
 			if (n == NULL)
 				/* key not found */
-				kp_runerror(ks, "invalid key to next");
+				kp_error(ks, "invalid table key to next");
 		}
 	}
 }
@@ -370,8 +370,11 @@ static void setnodevector(ktap_state *ks, ktap_table *t, int size)
 	} else {
 		int i;
 		lsize = ceillog2(size);
-		if (lsize > MAXBITS)
-			kp_runerror(ks, "table overflow");
+		if (lsize > MAXBITS) {
+			kp_error(ks, "table overflow\n");
+			return;
+		}
+
 		size = twoto(lsize);
 		t->node = kp_malloc(ks, size * sizeof(Node));
 		for (i = 0; i < size; i++) {

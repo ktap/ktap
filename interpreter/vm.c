@@ -194,8 +194,7 @@ static void gettable(ktap_state *ks, const ktap_value *t, ktap_value *key, StkId
 	if (!isnil(t)) {
 		setobj(val, kp_table_get(hvalue(t), key));
 	} else {
-		kp_puts(ks, "error: attempt to access nil table\n");
-		kp_exit(ks);
+		kp_error(ks, "attempt to access nil table\n");
 	}
 }
 
@@ -204,8 +203,7 @@ static void settable(ktap_state *ks, const ktap_value *t, ktap_value *key, StkId
 	if (!isnil(t)) {
 		kp_table_setvalue(ks, hvalue(t), key, val);
 	} else {
-		kp_puts(ks, "error: attempt to access nil table\n");
-		kp_exit(ks);
+		kp_error(ks, "error: attempt to access nil table\n");
 	}
 }
 
@@ -226,7 +224,7 @@ static void growstack(ktap_state *ks, int n)
 		newsize = needed;
 
 	if (newsize > KTAP_MAXSTACK) {  /* stack overflow? */
-		kp_runerror(ks, "stack overflow");
+		kp_error(ks, "stack overflow\n");
 		return;
 	}
 
@@ -382,8 +380,7 @@ static int precall(ktap_state *ks, StkId func, int nresults)
 		ks->top = ci->top;
 		return 0;
 	default:
-		kp_puts(ks, "error: attempt to call nil function\n");
-		kp_exit(ks);
+		kp_error(ks, "attempt to call nil function\n");
 	}
 
 	return 0;
@@ -541,7 +538,7 @@ static void ktap_execute(ktap_state *ks)
 	case OP_DIV:
 		/* divide 0 checking */
 		if (!nvalue(RKC(instr))) {
-			kp_puts(ks, "error: divide 0 arith operation, exit\n");
+			kp_error(ks, "divide 0 arith operation\n");
 			return;
 		}
 		arith_op(ks, NUMDIV);
@@ -549,13 +546,13 @@ static void ktap_execute(ktap_state *ks)
 	case OP_MOD:
 		/* divide 0 checking */
 		if (!nvalue(RKC(instr))) {
-			kp_puts(ks, "error: mod 0 arith operation, exit\n");
+			kp_error(ks, "mod 0 arith operation\n");
 			return;
 		}
 		arith_op(ks, NUMMOD);
 		break;
 	case OP_POW:
-		kp_puts(ks, "ktap don't support pow arith in kernel, exit\n");
+		kp_error(ks, "ktap don't support pow arith in kernel\n");
 		return;
 		//arith_op(ks, NUMPOW);
 		break;
@@ -717,12 +714,16 @@ static void ktap_execute(ktap_state *ks)
 		const ktap_value *plimit = ra + 1;
 		const ktap_value *pstep = ra + 2;
 
-		if (!ktap_tonumber(init, ra))
-			kp_runerror(ks, KTAP_QL("for") " initial value must be a number");
-		else if (!ktap_tonumber(plimit, ra + 1))
-			kp_runerror(ks, KTAP_QL("for") " limit must be a number");
-		else if (!ktap_tonumber(pstep, ra + 2))
-			kp_runerror(ks, KTAP_QL("for") " step must be a number");
+		if (!ktap_tonumber(init, ra)) {
+			kp_error(ks, KTAP_QL("for") " initial value must be a number\n");
+			return;
+		} else if (!ktap_tonumber(plimit, ra + 1)) {
+			kp_error(ks, KTAP_QL("for") " limit must be a number\n");
+			return;
+		} else if (!ktap_tonumber(pstep, ra + 2)) {
+			kp_error(ks, KTAP_QL("for") " step must be a number\n");
+			return;
+		}
 
 		setnvalue(ra, NUMSUB(nvalue(ra), nvalue(pstep)));
 		ci->u.l.savedpc += GETARG_sBx(instr);

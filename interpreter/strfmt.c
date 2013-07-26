@@ -46,8 +46,10 @@ static const char *scanformat(ktap_state *ks, const char *strfrmt, char *form)
 	while (*p != '\0' && strchr(FLAGS, *p) != NULL)
 		p++;  /* skip flags */
 
-	if ((size_t)(p - strfrmt) >= sizeof(FLAGS)/sizeof(char))
-		kp_runerror(ks, "invalid format (repeated flags)");
+	if ((size_t)(p - strfrmt) >= sizeof(FLAGS)/sizeof(char)) {
+		kp_error(ks, "invalid format (repeated flags)\n");
+		return NULL;
+	}
 
 	if (isdigit(uchar(*p)))
 		p++;  /* skip width */
@@ -63,8 +65,10 @@ static const char *scanformat(ktap_state *ks, const char *strfrmt, char *form)
 			p++;  /* (2 digits at most) */
 	}
 
-	if (isdigit(uchar(*p)))
-		kp_runerror(ks, "invalid format (width or precision too long)");
+	if (isdigit(uchar(*p))) {
+		kp_error(ks, "invalid format (width or precision too long)\n");
+		return NULL;
+	}
 
 	*(form++) = '%';
 	memcpy(form, strfrmt, (p - strfrmt + 1) * sizeof(char));
@@ -91,7 +95,7 @@ static void addlenmod(char *form, const char *lenmod)
 
 static void ktap_argerror(ktap_state *ks, int narg, const char *extramsg)
 {
-	kp_runerror(ks, "bad argument #%d: (%s)", narg, extramsg);
+	kp_error(ks, "bad argument #%d: (%s)\n", narg, extramsg);
 }
 
 
@@ -165,7 +169,7 @@ int kp_strfmt(ktap_state *ks, struct trace_seq *seq)
 				}
 			}
 			default: /* also treat cases `pnLlh' */
-				kp_runerror(ks, "invalid option " KTAP_QL("%%%c") " to "
+				kp_error(ks, "invalid option " KTAP_QL("%%%c") " to "
 					KTAP_QL("format"), *(strfrmt - 1));
 			}
 		}

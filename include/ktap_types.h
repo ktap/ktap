@@ -543,11 +543,9 @@ int kp_str2d(const char *s, size_t len, ktap_Number *result);
 #define kp_realloc(ks, v, osize, nsize, t) \
 	((v) = (t *)kp_reallocv(ks, v, osize * sizeof(t), nsize * sizeof(t)))
 
-
-/* todo: print callchain to user in kernel */
-#define kp_runerror(ks, args...) \
+#define kp_error(ks, args...) \
 	do { \
-		kp_printf(ks, args);	\
+		kp_printf(ks, "error: "args);	\
 		kp_exit(ks);	\
 	} while(0)
 
