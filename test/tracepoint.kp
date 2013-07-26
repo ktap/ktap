@@ -13,11 +13,10 @@ trace "sched:*" function (e) {
 	count = count + 1
 }
 
-os.sleep(10)
-
-kdebug.traceoff()
-
-if (!count) {
-	failed()
-}
+timer.s(1, function () {
+	if (count == 0) {
+		failed()
+	}
+	exit()
+})
 
