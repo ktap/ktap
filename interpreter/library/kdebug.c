@@ -578,22 +578,13 @@ static int ktap_lib_traceoff(ktap_state *ks)
 	return 0;
 }
 
-static void wait_interrupt(ktap_state *ks)
-{
-	kp_puts(ks, "Press Control-C to stop.\n");
-	kp_wait(ks);
-
-	/* newline for handle CTRL+C display as ^C */
-	kp_puts(ks, "\n");
-}
-
 void kp_probe_exit(ktap_state *ks)
 {
 	if (!G(ks)->trace_enabled)
 		return;
 
 	if (!list_empty(&G(ks)->probe_events_head))
-		wait_interrupt(ks);
+		kp_wait(ks);
 
 	end_probes(ks);
 

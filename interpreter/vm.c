@@ -191,12 +191,22 @@ static void pushclosure(ktap_state *ks, ktap_proto *p, Upval **encup, StkId base
 
 static void gettable(ktap_state *ks, const ktap_value *t, ktap_value *key, StkId val)
 {
-	setobj(val, kp_table_get(hvalue(t), key));
+	if (!isnil(t)) {
+		setobj(val, kp_table_get(hvalue(t), key));
+	} else {
+		kp_puts(ks, "error: attempt access nil table\n");
+		kp_exit(ks);
+	}
 }
 
 static void settable(ktap_state *ks, const ktap_value *t, ktap_value *key, StkId val)
 {
-	kp_table_setvalue(ks, hvalue(t), key, val);
+	if (!isnil(t)) {
+		kp_table_setvalue(ks, hvalue(t), key, val);
+	} else {
+		kp_puts(ks, "error: attempt access nil table\n");
+		kp_exit(ks);
+	}
 }
 
 static void growstack(ktap_state *ks, int n)
@@ -1155,6 +1165,8 @@ void kp_wait(ktap_state *ks)
 	if (G(ks)->exit)
 		return;
 
+	kp_puts(ks, "Press Control-C to stop.\n");
+
 	ks->stop = 0;
 
 	while (!ks->stop) {
@@ -1167,6 +1179,9 @@ void kp_wait(ktap_state *ks)
 			break;
 		}
 	}
+
+	/* newline for handle CTRL+C display as ^C */
+	kp_puts(ks, "\n");
 }
 
 void kp_exit(ktap_state *ks)
