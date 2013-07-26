@@ -194,7 +194,7 @@ static void gettable(ktap_state *ks, const ktap_value *t, ktap_value *key, StkId
 	if (!isnil(t)) {
 		setobj(val, kp_table_get(hvalue(t), key));
 	} else {
-		kp_puts(ks, "error: attempt access nil table\n");
+		kp_puts(ks, "error: attempt to access nil table\n");
 		kp_exit(ks);
 	}
 }
@@ -204,7 +204,7 @@ static void settable(ktap_state *ks, const ktap_value *t, ktap_value *key, StkId
 	if (!isnil(t)) {
 		kp_table_setvalue(ks, hvalue(t), key, val);
 	} else {
-		kp_puts(ks, "error: attempt access nil table\n");
+		kp_puts(ks, "error: attempt to access nil table\n");
 		kp_exit(ks);
 	}
 }
@@ -382,7 +382,7 @@ static int precall(ktap_state *ks, StkId func, int nresults)
 		ks->top = ci->top;
 		return 0;
 	default:
-		kp_puts(ks, "cannot call nil function\n");
+		kp_puts(ks, "error: attempt to call nil function\n");
 		return -1;
 	}
 
