@@ -1,22 +1,14 @@
 #!/usr/bin/env ktap
 
-function failed() {
-	printf("failed\n");
-	exit(-1);
-}
-
-#----------------------------------------#
-
 count = 0
 trace "probe:schedule" function (e) {
 	count = count + 1
 }
 
-os.sleep(3)
-
-kdebug.traceoff()
-
-if (!count) {
-	failed()
-}
+timer.s(1, function () {
+	if (count == 0) {
+		printf("failed\n");
+	}
+	exit()
+})
 
