@@ -1,0 +1,5 @@
+#!/usr/bin/env ktap
+
+trace 'sched:sched_switch' function (e) {
+	printf("%s ... ", e.field(1))
+}
