@@ -51,9 +51,6 @@ KTAP TRACING
      this method is suit for tracepoint events, it will parse tracepoint events raw data
      into human readable string.
      the result is mostly same as each entry of /sys/kernel/debug/tracing/trace
- e.format
-     this method is suit for tracepoint events, it's a inmutable string for each event,
-     see /sys/kernel/debug/tracing/events/*/*/format
  e.sc_nr
      get syscall number of event, only valid for syscall events.
  e.sc_arg1
