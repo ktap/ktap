@@ -583,7 +583,8 @@ void kp_probe_exit(ktap_state *ks)
 	if (!G(ks)->trace_enabled)
 		return;
 
-	if (!list_empty(&G(ks)->probe_events_head))
+	if (!list_empty(&G(ks)->probe_events_head) ||
+		!list_empty(&G(ks)->timers))
 		kp_wait(ks);
 
 	end_probes(ks);
