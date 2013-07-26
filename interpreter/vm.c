@@ -383,7 +383,7 @@ static int precall(ktap_state *ks, StkId func, int nresults)
 		return 0;
 	default:
 		kp_puts(ks, "error: attempt to call nil function\n");
-		return -1;
+		kp_exit(ks);
 	}
 
 	return 0;
