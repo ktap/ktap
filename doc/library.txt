@@ -68,10 +68,6 @@ KTAP Standard Libraries
 5. Input and Output Facilities
 ------------------------------
 
-5. Operating System Facilities
-------------------------------
- os.sleep
-
 6. timer Functions
 ------------------
   timer.s   (N, func)

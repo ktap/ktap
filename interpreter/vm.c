@@ -1268,7 +1268,6 @@ ktap_state *kp_newstate(struct ktap_parm *parm, char **argv)
 
 	/* init library */
 	kp_init_baselib(ks);
-	kp_init_oslib(ks);
 	kp_init_kdebuglib(ks);
 	kp_init_timerlib(ks);
 
