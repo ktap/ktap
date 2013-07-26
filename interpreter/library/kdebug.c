@@ -227,6 +227,27 @@ static void event_fieldnum(ktap_state *ks, struct ktap_event *e, StkId ra)
 	setnvalue(ra, num);
 }
 
+static void get_field_value(ktap_state *ks, struct ktap_event *e,
+			    struct ftrace_event_field *field, ktap_value *ra)
+{
+	void *value = (unsigned char *)e->entry + field->offset;
+
+	if (field->size == 4) {
+		int n = *(int *)value;
+		setnvalue(ra, n);
+		return;
+	} else if (field->size == 8) {
+		long n = *(long *)value;
+		setnvalue(ra, n);
+		return;
+	}
+
+	if (!strncmp(field->type, "char", 4)) {
+		setsvalue(ra, kp_tstring_new(ks, (char *)value));
+		return;
+	}
+}
+
 static int event_fieldn(ktap_state *ks)
 {
 	struct ktap_event *e = ks->current_event;
@@ -243,16 +264,8 @@ static int event_fieldn(ktap_state *ks)
 	head = ktap_get_fields(e->call);
 	list_for_each_entry_reverse(field, head, link) {
 		if (--index == 0) {
-			if (field->size == 4) {
-				int n = *(int *)((unsigned char *)e->entry +
-					field->offset);
-				setnvalue(ks->top++, n);
-			}
-			if (field->size == 8) {
-				long n = *(long *)((unsigned char *)e->entry +
-					field->offset);
-				setnvalue(ks->top++, n);
-			}
+			get_field_value(ks, e, field, ks->top);
+			ks->top++;
 			return 1;
 		}
 	}
