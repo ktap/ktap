@@ -71,8 +71,6 @@ KTAP TRACING
      [k/u]retprobe return value or syscall exit return value
  e.set_retval(N)
      set return value of [k/u]retprobe or syscall exit
- e.allfield
-     return all fields of events, only valid for tracepoints.
 
 2). kdebug.probe_end (endfunc)
  This function is used for invoking a function when tracing end, it will wait unitl

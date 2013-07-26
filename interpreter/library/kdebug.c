@@ -227,25 +227,6 @@ static void event_fieldnum(ktap_state *ks, struct ktap_event *e, StkId ra)
 	setnvalue(ra, num);
 }
 
-/* e.allfield */
-static void event_allfield(ktap_state *ks, struct ktap_event *e, StkId ra)
-{
-	char s[128];
-	int len, pos = 0;
-	struct ftrace_event_field *field;
-	struct list_head *head;
-
-	head = ktap_get_fields(e->call);
-	list_for_each_entry_reverse(field, head, link) {
-		len = sprintf(s + pos, "[%s-%s-%d-%d-%d] ", field->name, field->type,
-				 field->offset, field->size, field->is_signed);
-		pos += len;
-	}
-	s[pos] = '\0';
-
-	setsvalue(ra, kp_tstring_new_local(ks, s));
-}
-
 static int event_fieldn(ktap_state *ks)
 {
 	struct ktap_event *e = ks->current_event;
@@ -302,7 +283,6 @@ static struct event_field_tbl {
 	{"regstr", event_regstr},
 	{"retval", event_retval},
 	{"set_retval", event_set_retval},
-	{"allfield", event_allfield},
 	{"fieldnum", event_fieldnum},
 	{"field", event_field}
 };
