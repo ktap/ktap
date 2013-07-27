@@ -5,9 +5,6 @@
 Implementing
 ------------
 
-- ktap exit to userspace(for cleanup uprobe related resources)
-- kmalloc return error issue in ktapvm
-
 - GC
 - read kernel memory by symbol
 - non-mainthread error exit problem(like printf arg mismatch)
