@@ -33,7 +33,36 @@
 
 void *kp_malloc(ktap_state *ks, int size)
 {
-	return kmalloc(size, KTAP_ALLOC_FLAGS);
+	void *addr;
+
+	/*
+	 * Normally we don't want to trace under memory pressure,
+	 * so we use a simple rule to handle memory allocation failure:
+	 *
+	 * retry until allocation success, this will make caller don't need
+	 * to handle the unlikely failure case, then ktap exit.
+	 *
+	 * In this approach, if user find there have memory allocation failure,
+	 * user should re-run the ktap script, or fix the memory pressure
+	 * issue, or figure out why the script need so many memory.
+	 *
+	 * Perhaps return pre-allocated stub memory trunk when allocate failed
+	 * is a better approch?
+	 */
+	addr = kmalloc(size, KTAP_ALLOC_FLAGS);
+	if (unlikely(!addr)) {
+		kp_error(ks, "kmalloc size %d failed, retry again\n", size);
+		printk("ktap kmalloc size %d failed, retry again\n", size);
+		dump_stack();
+		while (1) {
+			addr = kmalloc(size, KTAP_ALLOC_FLAGS);
+			if (addr)
+				break;
+		}
+		kp_printf(ks, "kmalloc retry success after failed, exit\n");
+	}
+
+	return addr;
 }
 
 void kp_free(ktap_state *ks, void *addr)
@@ -43,32 +72,42 @@ void kp_free(ktap_state *ks, void *addr)
 
 void *kp_reallocv(ktap_state *ks, void *addr, int oldsize, int newsize)
 {
-	return krealloc(addr, newsize, KTAP_ALLOC_FLAGS);
+	void *new_addr;
 
-#if 0
-	if (newsize <= PAGE_SIZE)
-		return krealloc(addr, newsize, KTAP_ALLOC_FLAGS);
-	else {
-		void *new_addr;
-
-		printk("kp_reallocv __get_free_pages %d\n", newsize);
-		new_addr = (void *)__get_free_pages(KTAP_ALLOC_FLAGS, get_order(newsize));
-		if (!new_addr) {
-			printk("kp_reallocv __get_free_pages %d failed\n", newsize);
-			return NULL;
+	new_addr = krealloc(addr, newsize, KTAP_ALLOC_FLAGS);
+	if (unlikely(!new_addr)) {
+		kp_error(ks, "krealloc size %d failed, retry again\n", newsize);
+		printk("ktap krealloc size %d failed, retry again\n", newsize);
+		dump_stack();
+		while (1) {
+			new_addr = krealloc(addr, newsize, KTAP_ALLOC_FLAGS);
+			if (new_addr)
+				break;
 		}
-
-		memset(new_addr, 0, newsize);
-		memcpy(new_addr, addr, oldsize);
-
-		return new_addr;
+		kp_printf(ks, "krealloc retry success after failed, exit\n");
 	}
-#endif
+
+	return new_addr;
 }
 
 void *kp_zalloc(ktap_state *ks, int size)
 {
-	return kzalloc(size, KTAP_ALLOC_FLAGS);
+	void *addr;
+
+	addr = kzalloc(size, KTAP_ALLOC_FLAGS);
+	if (unlikely(!addr)) {
+		kp_error(ks, "kzalloc size %d failed, retry again\n", size);
+		printk("ktap kzalloc size %d failed, retry again\n", size);
+		dump_stack();
+		while (1) {
+			addr = kzalloc(size, KTAP_ALLOC_FLAGS);
+			if (addr)
+				break;
+		}
+		kp_printf(ks, "kzalloc retry success after failed, exit\n");
+	}
+
+	return addr;
 }
 #endif
 
