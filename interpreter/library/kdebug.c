@@ -576,7 +576,7 @@ void kp_probe_exit(ktap_state *ks)
 	end_probes(ks);
 
 	/* call trace_end_closure after probed end */
-	if (G(ks)->trace_end_closure) {
+	if (!G(ks)->exit && G(ks)->trace_end_closure) {
 		setcllvalue(ks->top, G(ks)->trace_end_closure);
 		incr_top(ks);
 		kp_call(ks, ks->top - 1, 0);
