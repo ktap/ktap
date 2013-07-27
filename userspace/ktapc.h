@@ -308,6 +308,7 @@ void ktapio_exit(void);
 int ktapio_create(void *);
 
 ktap_string *ktapc_parse_eventdef(ktap_string *eventdef);
+void cleanup_event_resources(void);
 
 extern int verbose;
 #define verbose_printf(...) \

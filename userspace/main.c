@@ -541,5 +541,7 @@ int main(int argc, char **argv)
 
 	/* start running into kernel ktapvm */
 	run_ktapvm();
+
+	cleanup_event_resources();
 }
 

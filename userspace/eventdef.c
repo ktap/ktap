@@ -232,11 +232,26 @@ static int parse_events_add_tracepoint(char *sys, char *event)
 		return add_tracepoint_event(sys, event);
 }
 
+enum {
+	KPROBE_EVENT,
+	UPROBE_EVENT,
+};
+
+struct probe_list {
+	struct probe_list *next;
+	int type;
+	int kp_seq;
+	char *probe_event;
+};
+
+static struct probe_list *probe_list_head;
+
 #define KPROBE_EVENTS_PATH "/sys/kernel/debug/tracing/kprobe_events"
 
 static int parse_events_add_kprobe(char *old_event)
 {
 	static int event_seq = 0;
+	struct probe_list *pl;
 	char probe_event[128] = {0};
 	char event_id_path[128] = {0};
 	char *event;
@@ -255,12 +270,22 @@ static int parse_events_add_kprobe(char *old_event)
 	r = strstr(event, "%return");
 	if (r) {
 		memset(r, ' ', 7);
-		sprintf(probe_event, "r:kprobes/kp%d %s", event_seq, event);
+		snprintf(probe_event, 128, "r:kprobes/kp%d %s", event_seq, event);
 	} else
-		sprintf(probe_event, "p:kprobes/kp%d %s", event_seq, event);
+		snprintf(probe_event, 128, "p:kprobes/kp%d %s", event_seq, event);
+
+	free(event);
+
+	pl = malloc(sizeof(struct probe_list));
+	if (!pl)
+		return -1;
+
+	pl->type = KPROBE_EVENT;
+	pl->kp_seq = event_seq;
+	pl->next = probe_list_head;
+	probe_list_head = pl;
 
 	verbose_printf("kprobe event %s\n", probe_event);
-
 	ret = write(fd, probe_event, strlen(probe_event));
 	if (ret <= 0) {
 		fprintf(stderr, "Cannot write %s to %s\n", probe_event,
@@ -286,6 +311,7 @@ static int parse_events_add_kprobe(char *old_event)
 static int parse_events_add_uprobe(char *old_event)
 {
 	static int event_seq = 0;
+	struct probe_list *pl;
 	char probe_event[128] = {0};
 	char event_id_path[128] = {0};
 	char *event;
@@ -304,9 +330,20 @@ static int parse_events_add_uprobe(char *old_event)
 	r = strstr(event, "%return");
 	if (r) {
 		memset(r, ' ', 7);
-		sprintf(probe_event, "r:uprobes/kp%d %s", event_seq, event);
+		snprintf(probe_event, 128, "r:uprobes/kp%d %s", event_seq, event);
 	} else
-		sprintf(probe_event, "p:uprobes/kp%d %s", event_seq, event);
+		snprintf(probe_event, 128, "p:uprobes/kp%d %s", event_seq, event);
+
+	free(event);
+
+	pl = malloc(sizeof(struct probe_list));
+	if (!pl)
+		return -1;
+
+	pl->type = UPROBE_EVENT;
+	pl->kp_seq = event_seq;
+	pl->next = probe_list_head;
+	probe_list_head = pl;
 
 	verbose_printf("uprobe event %s\n", probe_event);
 	ret = write(fd, probe_event, strlen(probe_event));
@@ -496,5 +533,39 @@ ktap_string *ktapc_parse_eventdef(ktap_string *eventdef)
 		goto parse_next_eventdef;
 
 	return ktapc_ts_new(g_idstr);
+}
+
+void cleanup_event_resources(void)
+{
+	struct probe_list *pl;
+	const char *path;
+	char probe_event[32] = {0};
+	int fd, ret;
+
+	for (pl = probe_list_head; pl; pl = pl->next) {
+		if (pl->type == KPROBE_EVENT) {
+			path = KPROBE_EVENTS_PATH;
+			snprintf(probe_event, 32, "-:kprobes/kp%d", pl->kp_seq);
+		} else if (pl->type == UPROBE_EVENT) {
+			path = UPROBE_EVENTS_PATH;
+			snprintf(probe_event, 32, "-:uprobes/kp%d", pl->kp_seq);
+		}
+
+		fd = open(path, O_WRONLY);
+		if (fd < 0) {
+			fprintf(stderr, "Cannot open %s\n", UPROBE_EVENTS_PATH);
+			continue;
+		}
+
+		ret = write(fd, probe_event, strlen(probe_event));
+		if (ret <= 0) {
+			fprintf(stderr, "Cannot write %s to %s\n", probe_event,
+					path);
+			close(fd);
+			continue;
+		}
+
+		close(fd);
+	}
 }
 
