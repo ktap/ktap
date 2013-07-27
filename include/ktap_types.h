@@ -110,34 +110,34 @@ typedef union ktap_udata {
 /*
  * Description of an upvalue for function prototypes
  */
-typedef struct Upvaldesc {
+typedef struct ktap_upvaldesc {
 	ktap_string *name;  /* upvalue name (for debug information) */
 	u8 instack;  /* whether it is in stack */
 	u8 idx;  /* index of upvalue (in stack or in outer function's list) */
-} Upvaldesc;
+} ktap_upvaldesc;
 
 /*
  * Description of a local variable for function prototypes
  * (used for debug information)
  */
-typedef struct LocVar {
+typedef struct ktap_locvar {
 	ktap_string *varname;
 	int startpc;  /* first point where variable is active */
 	int endpc;    /* first point where variable is dead */
-} LocVar;
+} ktap_locvar;
 
 
-typedef struct Upval {
+typedef struct ktap_upval {
 	CommonHeader;
 	ktap_value *v;  /* points to stack or to its own value */
 	union {
 		ktap_value value;  /* the value (when closed) */
 		struct {  /* double linked list (when open) */
-			struct Upval *prev;
-			struct Upval *next;
+			struct ktap_upval *prev;
+			struct ktap_upval *next;
 		} l;
 	} u;
-} Upval;
+} ktap_upval;
 
 
 #define ktap_closure_header \
@@ -153,7 +153,7 @@ typedef struct ktap_cclosure {
 typedef struct ktap_lclosure {
 	ktap_closure_header;
 	struct ktap_proto *p;
-	struct Upval *upvals[1];  /* list of upvalues */
+	struct ktap_upval *upvals[1];  /* list of upvalues */
 } ktap_lclosure;
 
 
@@ -169,8 +169,8 @@ typedef struct ktap_proto {
 	unsigned int *code;
 	struct ktap_proto **p;  /* functions defined inside the function */
 	int *lineinfo;  /* map from opcodes to source lines (debug information) */
-	struct LocVar *locvars;  /* information about local variables (debug information) */
-	struct Upvaldesc *upvalues;  /* upvalue information */
+	struct ktap_locvar *locvars;  /* information about local variables (debug information) */
+	struct ktap_upvaldesc *upvalues;  /* upvalue information */
 	ktap_closure *cache;  /* last created closure with this prototype */
 	ktap_string  *source;  /* used for debug information */
 	int sizeupvalues;  /* size of 'upvalues' */
@@ -262,7 +262,7 @@ typedef struct ktap_global_state {
 
 	ktap_gcobject *allgc; /* list of all collectable objects */
 
-	Upval uvhead; /* head of double-linked list of all open upvalues */
+	ktap_upval uvhead; /* head of double-linked list of all open upvalues */
 
 	struct ktap_state *mainthread;
 #ifdef __KERNEL__
@@ -329,7 +329,7 @@ union ktap_gcobject {
   struct ktap_closure cl;
   struct ktap_table h;
   struct ktap_proto p;
-  struct Upval uv;
+  struct ktap_upval uv;
   struct ktap_state th;  /* thread */
 };
 
@@ -534,7 +534,7 @@ ktap_gcobject *kp_newobject(ktap_state *ks, int type, size_t size, ktap_gcobject
 int kp_equalobjv(ktap_state *ks, const ktap_value *t1, const ktap_value *t2);
 ktap_closure *kp_newlclosure(ktap_state *ks, int n);
 ktap_proto *kp_newproto(ktap_state *ks);
-Upval *kp_newupval(ktap_state *ks);
+ktap_upval *kp_newupval(ktap_state *ks);
 void kp_free_all_gcobject(ktap_state *ks);
 void kp_header(u8 *h);
 

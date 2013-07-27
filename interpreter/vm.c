@@ -131,12 +131,12 @@ static const ktap_value *ktap_tonumber(const ktap_value *obj, ktap_value *n)
 	return NULL;
 }
 
-static Upval *findupval(ktap_state *ks, StkId level)
+static ktap_upval *findupval(ktap_state *ks, StkId level)
 {
 	ktap_global_state *g = G(ks);
 	ktap_gcobject **pp = &ks->openupval;
-	Upval *p;
-	Upval *uv;
+	ktap_upval *p;
+	ktap_upval *uv;
 
 	while (*pp != NULL && (p = gco2uv(*pp))->v >= level) {
 		//ktap_gcobject *o = obj2gco(p);
@@ -150,7 +150,7 @@ static Upval *findupval(ktap_state *ks, StkId level)
 	}
 
 	/* not found: create a new one */
-	uv = &kp_newobject(ks, KTAP_TUPVAL, sizeof(Upval), pp)->uv;
+	uv = &kp_newobject(ks, KTAP_TUPVAL, sizeof(ktap_upval), pp)->uv;
 	uv->v = level;  /* current value lives in the stack */
 	uv->u.l.prev = &g->uvhead;  /* double link it in `uvhead' list */
 	uv->u.l.next = g->uvhead.u.l.next;
@@ -165,11 +165,11 @@ static void function_close (ktap_state *ks, StkId level)
 }
 
 /* create a new closure */
-static void pushclosure(ktap_state *ks, ktap_proto *p, Upval **encup, StkId base,
+static void pushclosure(ktap_state *ks, ktap_proto *p, ktap_upval **encup, StkId base,
 			StkId ra)
 {
 	int nup = p->sizeupvalues;
-	Upvaldesc *uv = p->upvalues;
+	ktap_upvaldesc *uv = p->upvalues;
 	int i;
 	ktap_closure *ncl = kp_newlclosure(ks, nup);
 
@@ -501,7 +501,7 @@ static void ktap_execute(ktap_state *ks)
 		break;
 		}
 	case OP_SETUPVAL: {
-		Upval *uv = cl->upvals[GETARG_B(instr)];
+		ktap_upval *uv = cl->upvals[GETARG_B(instr)];
 		setobj(uv->v, ra);
 		break;
 		}

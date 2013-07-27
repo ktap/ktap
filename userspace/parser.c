@@ -166,7 +166,7 @@ static int registerlocalvar(LexState *ls, ktap_string *varname)
 	int oldsize = f->sizelocvars;
 
 	ktapc_growvector(f->locvars, fs->nlocvars, f->sizelocvars,
-			 LocVar, SHRT_MAX, "local variables");
+			 ktap_locvar, SHRT_MAX, "local variables");
 
 	while (oldsize < f->sizelocvars)
 		f->locvars[oldsize++].varname = NULL;
@@ -196,7 +196,7 @@ static void new_localvarliteral_(LexState *ls, const char *name, size_t sz)
 #define new_localvarliteral(ls,v) \
 	new_localvarliteral_(ls, "" v, (sizeof(v)/sizeof(char))-1)
 
-static LocVar *getlocvar(FuncState *fs, int i)
+static ktap_locvar *getlocvar(FuncState *fs, int i)
 {
 	int idx = fs->ls->dyd->actvar.arr[fs->firstlocal + i].idx;
 
@@ -225,7 +225,7 @@ static void removevars(FuncState *fs, int tolevel)
 static int searchupvalue(FuncState *fs, ktap_string *name)
 {
 	int i;
-	Upvaldesc *up = fs->f->upvalues;
+	ktap_upvaldesc *up = fs->f->upvalues;
 
 	for (i = 0; i < fs->nups; i++) {
 		if (ktapc_ts_eqstr(up[i].name, name))
@@ -241,7 +241,7 @@ static int newupvalue(FuncState *fs, ktap_string *name, expdesc *v)
 
 	checklimit(fs, fs->nups + 1, MAXUPVAL, "upvalues");
 	ktapc_growvector(f->upvalues, fs->nups, f->sizeupvalues,
-			 Upvaldesc, MAXUPVAL, "upvalues");
+			 ktap_upvaldesc, MAXUPVAL, "upvalues");
 
 	while (oldsize < f->sizeupvalues)
 		f->upvalues[oldsize++].name = NULL;
@@ -588,9 +588,9 @@ static void close_func(LexState *ls)
 	f->sizek = fs->nk;
 	ktapc_reallocvector(f->p, f->sizep, fs->np, ktap_proto *);
 	f->sizep = fs->np;
-	ktapc_reallocvector(f->locvars, f->sizelocvars, fs->nlocvars, LocVar);
+	ktapc_reallocvector(f->locvars, f->sizelocvars, fs->nlocvars, ktap_locvar);
 	f->sizelocvars = fs->nlocvars;
-	ktapc_reallocvector(f->upvalues, f->sizeupvalues, fs->nups, Upvaldesc);
+	ktapc_reallocvector(f->upvalues, f->sizeupvalues, fs->nups, ktap_upvaldesc);
 	f->sizeupvalues = fs->nups;
 	ktap_assert((int)(fs->bl == NULL));
 	ls->fs = fs->prev;

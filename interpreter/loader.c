@@ -151,7 +151,7 @@ static int load_upvalues(struct load_state *S, ktap_proto *f)
 	int i,n;
 
 	n = READ_INT(S);
-	f->upvalues = NEW_VECTOR(S, n * sizeof(Upvaldesc));
+	f->upvalues = NEW_VECTOR(S, n * sizeof(ktap_upvaldesc));
 	f->sizeupvalues = n;
 
 	for (i = 0; i < n; i++)
@@ -175,7 +175,7 @@ static int load_debuginfo(struct load_state *S, ktap_proto *f)
 	f->lineinfo = NEW_VECTOR(S, n * sizeof(int));
 	READ_VECTOR(S, f->lineinfo, n * sizeof(int));
 	n = READ_INT(S);
-	f->locvars = NEW_VECTOR(S, n * sizeof(struct LocVar));
+	f->locvars = NEW_VECTOR(S, n * sizeof(struct ktap_locvar));
 	f->sizelocvars = n;
 	for (i = 0; i < n; i++)
 		f->locvars[i].varname = NULL;
@@ -284,7 +284,7 @@ ktap_closure *kp_load(ktap_state *ks, unsigned char *buff)
 
 	f = &cl->l;
 	for (i = 0; i < f->nupvalues; i++) {  /* initialize upvalues */
-		Upval *up = kp_newupval(ks);
+		ktap_upval *up = kp_newupval(ks);
 		f->upvals[i] = up;
 	}
 

@@ -234,11 +234,11 @@ ktap_gcobject *kp_newobject(ktap_state *ks, int type, size_t size, ktap_gcobject
 	return o;
 }
 
-Upval *kp_newupval(ktap_state *ks)
+ktap_upval *kp_newupval(ktap_state *ks)
 {
-	Upval *uv;
+	ktap_upval *uv;
 
-	uv = &kp_newobject(ks, KTAP_TUPVAL, sizeof(Upval), NULL)->uv;
+	uv = &kp_newobject(ks, KTAP_TUPVAL, sizeof(ktap_upval), NULL)->uv;
 	uv->v = &uv->u.value;
 	setnilvalue(uv->v);
 	return uv;
