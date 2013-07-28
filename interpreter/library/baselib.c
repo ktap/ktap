@@ -111,7 +111,8 @@ static int ktap_lib_print_backtrace(ktap_state *ks)
 #else
 static int ktap_lib_print_backtrace(ktap_state *ks)
 {
-	kp_puts(ks, "Please enable CONFIG_STACKTRACE before use ktap print_backtrace\n");
+	kp_error(ks, "Please enable CONFIG_STACKTRACE before use "
+		     "ktap print_backtrace\n");
 	return 0;
 }
 #endif
@@ -232,7 +233,8 @@ static int ktap_lib_table_count(ktap_state *ks)
 
 static int ktap_lib_histogram(ktap_state *ks)
 {
-	kp_table_histogram(ks, hvalue(kp_arg(ks, 1))); /* need to check firstly */
+	/* need to check firstly */
+	kp_table_histogram(ks, hvalue(kp_arg(ks, 1)));
 	return 0;
 }
 
@@ -250,11 +252,7 @@ static int ktap_lib_gettimeofday_us(ktap_state *ks)
 
 
 static const ktap_Reg base_funcs[] = {
-//	{"collectgarbage", ktap_collectgarbage},
-//	{"error", ktap_error},
 	{"pairs", ktap_lib_pairs},
-//	{"tonumber", ktap_tonumber},
-//	{"tostring", ktap_tostring},
 //	{"type", ktap_type},
 	{"len", ktap_lib_len},
 	{"print", ktap_lib_print},

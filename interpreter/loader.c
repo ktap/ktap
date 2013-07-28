@@ -78,7 +78,8 @@ static ktap_string *load_string(struct load_state *S)
 	else {
 		char *s = GET_CURRENT(S);
 		ADD_POS(S, size);
-		ts = kp_tstring_newlstr(S->ks, s, size - 1); /* remove trailing '\0' */
+		/* remove trailing '\0' */
+		ts = kp_tstring_newlstr(S->ks, s, size - 1);
 		return ts;
 	}
 }
@@ -118,14 +119,18 @@ static int load_constants(struct load_state *S, ktap_proto *f)
 			setbvalue(o, READ_CHAR(S));
 			break;
 		case KTAP_TNUMBER:
-			/* todo: kernel not support fp, check double when loading */
+			/*
+			 * todo: kernel not support fp, check double when
+			 * loading
+			 */
 			setnvalue(o, READ_NUMBER(S));
 			break;
 		case KTAP_TSTRING:
 			setsvalue(o, READ_STRING(S));
 			break;
 		default:
-			kp_puts(S->ks, "ktap: load_constants: unknow ktap_value\n");
+			kp_error(S->ks, "ktap: load_constants: "
+					"unknow ktap_value\n");
 			return -1;
 			
 		}
@@ -211,7 +216,8 @@ static int load_function(struct load_state *S, ktap_proto *f)
 }
 
 
-#define error(S, why)	kp_printf(S->ks, "load failed: %s precompiled chunk\n", why)
+#define error(S, why) \
+	kp_error(S->ks, "load failed: %s precompiled chunk\n", why)
 
 #define N0	KTAPC_HEADERSIZE
 #define N1	(sizeof(KTAP_SIGNATURE) - sizeof(char))

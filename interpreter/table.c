@@ -92,7 +92,8 @@ static const Node dummynode_ = {
 #define isdummy(n)	((n) == dummynode)
 
 static void table_setint(ktap_state *ks, ktap_table *t, int key, ktap_value *v);
-static ktap_value *table_set(ktap_state *ks, ktap_table *t, const ktap_value *key);
+static ktap_value *table_set(ktap_state *ks, ktap_table *t,
+			     const ktap_value *key);
 static void setnodevector(ktap_state *ks, ktap_table *t, int size);
 
 static int ceillog2(unsigned int x)
@@ -118,8 +119,8 @@ static int ceillog2(unsigned int x)
 
 ktap_table *kp_table_new(ktap_state *ks)
 {
-	ktap_table *t = &kp_newobject(ks, KTAP_TTABLE, sizeof(ktap_table), NULL)->h;
-
+	ktap_table *t = &kp_newobject(ks, KTAP_TTABLE, sizeof(ktap_table),
+				      NULL)->h;
 	t->flags = (u8)(~0);
 	t->array = NULL;
 	t->sizearray = 0;
@@ -168,7 +169,8 @@ static Node *mainposition (const ktap_table *t, const ktap_value *key)
 	case KTAP_TLNGSTR: {
 		ktap_string *s = rawtsvalue(key);
 		if (s->tsv.extra == 0) {  /* no hash? */
-			s->tsv.hash = kp_string_hash(getstr(s), s->tsv.len, s->tsv.hash);
+			s->tsv.hash = kp_string_hash(getstr(s), s->tsv.len,
+						     s->tsv.hash);
 			s->tsv.extra = 1;  /* now it has its hash */
 		}
 		return hashstr(t, rawtsvalue(key));
@@ -195,7 +197,8 @@ static int arrayindex(const ktap_value *key)
 			return k;
 	}
 
-	return -1;  /* `key' did not match some condition */
+	/* `key' did not match some condition */
+	return -1;
 }
 
 /*
@@ -275,9 +278,15 @@ static int computesizes (int nums[], int *narray)
 	for (i = 0, twotoi = 1; twotoi/2 < *narray; i++, twotoi *= 2) {
 		if (nums[i] > 0) {
 			a += nums[i];
-			if (a > twotoi/2) {  /* more than half elements present? */
-				n = twotoi;  /* optimal size (till now) */
-				na = a;  /* all elements smaller than n will go to array part */
+			/* more than half elements present? */
+			if (a > twotoi/2) {
+				/* optimal size (till now) */
+				n = twotoi;
+				/* 
+				 * all elements smaller than n will go to
+				 * array part
+				 */
+				na = a;
 			}
 		}
 		if (a == *narray)
@@ -292,7 +301,8 @@ static int countint(const ktap_value *key, int *nums)
 {
 	int k = arrayindex(key);
 
-	if (0 < k && k <= MAXASIZE) {  /* is `key' an appropriate array index? */
+	/* is `key' an appropriate array index? */
+	if (0 < k && k <= MAXASIZE) {
 		nums[ceillog2(k)]++;  /* count as such */
 		return 1;
 	} else
@@ -307,7 +317,8 @@ static int numusearray(const ktap_table *t, int *nums)
 	int ause = 0;  /* summation of `nums' */
 	int i = 1;  /* count to traverse all array keys */
 
-	for (lg=0, ttlg=1; lg <= MAXBITS; lg++, ttlg *= 2) {  /* for each slice */
+	/* for each slice */
+	for (lg=0, ttlg=1; lg <= MAXBITS; lg++, ttlg *= 2) {
 		int lc = 0;  /* counter */
 		int lim = ttlg;
 
@@ -327,8 +338,6 @@ static int numusearray(const ktap_table *t, int *nums)
 	}
 	return ause;
 }
-
-
 
 static int numusehash(const ktap_table *t, int *nums, int *pnasize)
 {
@@ -423,7 +432,8 @@ static void table_resize(ktap_state *ks, ktap_table *t, int nasize, int nhsize)
 	for (i = twoto(oldhsize) - 1; i >= 0; i--) {
 		Node *old = nold+i;
 		if (!ttisnil(gval(old))) {
-			/* doesn't need barrier/invalidate cache, as entry was
+			/*
+			 * doesn't need barrier/invalidate cache, as entry was
 			 * already present in the table
 			 */
 			setobj(table_set(ks, t, gkey(old)), gval(old));
@@ -459,7 +469,8 @@ void kp_table_resizearray(ktap_state *ks, ktap_table *t, int nasize)
 static void rehash(ktap_state *ks, ktap_table *t, const ktap_value *ek)
 {
 	int nasize, na;
-	int nums[MAXBITS+1];  /* nums[i] = number of keys with 2^(i-1) < k <= 2^i */
+	/* nums[i] = number of keys with 2^(i-1) < k <= 2^i */
+	int nums[MAXBITS+1];
 	int i;
 	int totaluse;
 
@@ -533,7 +544,8 @@ static const ktap_value *table_getstr(ktap_table *t, ktap_string *key)
 	Node *n = hashstr(t, key);
 
 	do {  /* check whether `key' is somewhere in the chain */
-		if (ttisshrstring(gkey(n)) && eqshrstr(rawtsvalue(gkey(n)), key))
+		if (ttisshrstring(gkey(n)) && eqshrstr(rawtsvalue(gkey(n)),
+								key))
 			return gval(n);  /* that's it */
 		else
 			n = gnext(n);
@@ -586,7 +598,8 @@ const ktap_value *kp_table_get(ktap_table *t, const ktap_value *key)
 	return val;
 }
 
-static ktap_value *table_set(ktap_state *ks, ktap_table *t, const ktap_value *key)
+static ktap_value *table_set(ktap_state *ks, ktap_table *t,
+			     const ktap_value *key)
 {
 	const ktap_value *p = table_get(t, key);
 
@@ -740,7 +753,6 @@ void kp_table_dump(ktap_state *ks, ktap_table *t)
 }
 
 #ifdef __KERNEL__
-
 static void string_convert(char *output, const char *input)
 {
 	if (strlen(input) > 32) {
@@ -815,7 +827,8 @@ void kp_table_histogram(ktap_state *ks, ktap_table *t)
 		total += nvalue(gval(n));
 	}
 
-	sort(thr, count, sizeof(struct table_hist_record), hist_record_cmp, NULL);
+	sort(thr, count, sizeof(struct table_hist_record),
+	     hist_record_cmp, NULL);
 
 	kp_printf(ks, "%32s%s%s\n", "value ", DISTRIBUTION_STR, " count");
 	dist_str[sizeof(dist_str) - 1] = '\0';

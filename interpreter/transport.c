@@ -214,7 +214,8 @@ static enum print_line_t print_trace_fn(struct trace_iterator *iter)
 
 static enum print_line_t print_trace_bputs(struct trace_iterator *iter)
 {
-	if (!trace_seq_puts(&iter->seq, (const char *)(*(unsigned long *)(iter->ent + 1))))
+	if (!trace_seq_puts(&iter->seq,
+			    (const char *)(*(unsigned long *)(iter->ent + 1))))
 		return TRACE_TYPE_PARTIAL_LINE;
 
 	return TRACE_TYPE_HANDLED;
@@ -350,7 +351,8 @@ static int tracing_wait_pipe(struct file *filp)
 }
 
 static ssize_t
-tracing_read_pipe(struct file *filp, char __user *ubuf, size_t cnt, loff_t *ppos)
+tracing_read_pipe(struct file *filp, char __user *ubuf, size_t cnt,
+		  loff_t *ppos)
 {
 	struct trace_iterator *iter = filp->private_data;
 	ssize_t sret;
@@ -514,8 +516,8 @@ void kp_transport_event_write(ktap_state *ks, struct ktap_event *e)
 	struct ring_buffer_event *event;
 	struct trace_entry *entry;
 
-	event = ring_buffer_lock_reserve(buffer, sizeof(struct ftrace_event_call *) +
-						 e->entry_size);
+	event = ring_buffer_lock_reserve(buffer, e->entry_size +
+					 sizeof(struct ftrace_event_call *));
 	if (!event) {
 		return;
 	} else {

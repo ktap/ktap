@@ -79,7 +79,8 @@ static int event_function_tostring(ktap_state *ks)
 		int len = s->len >= PAGE_SIZE ? PAGE_SIZE - 1 : s->len;
 
 		s->buffer[len] = '\0';
-		setsvalue(ks->top, kp_tstring_newlstr_local(ks, s->buffer, len + 1));
+		setsvalue(ks->top, kp_tstring_newlstr_local(ks, s->buffer,
+				   len + 1));
 	} else
 		setnilvalue(ks->top);
 
@@ -173,7 +174,8 @@ struct syscall_trace_exit {
 /* e.sc_nr */
 static void event_sc_nr(ktap_state *ks, struct ktap_event *e, StkId ra)
 {
-	struct syscall_trace_enter *entry = (struct syscall_trace_enter *)e->entry;
+	struct syscall_trace_enter *entry =
+		(struct syscall_trace_enter *)e->entry;
 
 	setnvalue(ra, entry->nr);
 }
@@ -182,7 +184,8 @@ static void event_sc_nr(ktap_state *ks, struct ktap_event *e, StkId ra)
 #define EVENT_SC_ARGFUNC(n) \
 static void event_sc_arg##n(ktap_state *ks, struct ktap_event *e, StkId ra)\
 { \
-	struct syscall_trace_enter *entry = (struct syscall_trace_enter *)e->entry;	\
+	struct syscall_trace_enter *entry =	\
+			(struct syscall_trace_enter *)e->entry;	\
 	setnvalue(ra, entry->args[n - 1]);	\
 }
 
@@ -409,8 +412,8 @@ static void start_probe_by_id(ktap_state *ks, struct task_struct *task,
 							 ktap_pevent);
 		if (IS_ERR(event)) {
 			int err = PTR_ERR(event);
-			kp_printf(ks, "unable create tracepoint event %d on cpu %d, err: %d\n",
-				  id, cpu, err);
+			kp_error(ks, "unable create tracepoint event %d "
+				     "on cpu %d, err: %d\n", id, cpu, err);
 			kp_free(ks, ktap_pevent);
 			return;
 		}
@@ -424,8 +427,8 @@ static void start_probe_by_id(ktap_state *ks, struct task_struct *task,
 
 		ret = kp_ftrace_profile_set_filter(event, id, filter);
 		if (ret) {
-			kp_printf(ks, "Cannot set filter %s for event id %d, "
-				"ret: %d\n", filter, id, ret);
+			kp_error(ks, "unable set filter %s for event id %d, "
+				     "ret: %d\n", filter, id, ret);
 			perf_destructor(ktap_pevent);
 			list_del(&ktap_pevent->list);
 			kp_free(ks, ktap_pevent);
@@ -483,7 +486,7 @@ static int ktap_lib_probe_by_id(ktap_state *ks)
 	if (trace_pid != -1) {
 		task = pid_task(find_vpid(trace_pid), PIDTYPE_PID);
 		if (!task) {
-			kp_printf(ks, "Error: cannot find pid %d\n", trace_pid);
+			kp_error(ks, "cannot find pid %d\n", trace_pid);
 			return -1;
 		}
 	}

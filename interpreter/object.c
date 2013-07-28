@@ -257,7 +257,8 @@ int kp_objlen(ktap_state *ks, const ktap_value *v)
 
 
 /* need to protect allgc field? */
-ktap_gcobject *kp_newobject(ktap_state *ks, int type, size_t size, ktap_gcobject **list)
+ktap_gcobject *kp_newobject(ktap_state *ks, int type, size_t size,
+			    ktap_gcobject **list)
 {
 	ktap_gcobject *o;
 
@@ -377,7 +378,6 @@ void kp_free_all_gcobject(ktap_state *ks)
 
 /******************************************************************************/
 
-
 /*
  * make header for precompiled chunks
  * if you change the code below be sure to update load_header and FORMAT above
@@ -396,7 +396,7 @@ void kp_header(u8 *h)
 	*h++ = (u8)(sizeof(size_t));
 	*h++ = (u8)(sizeof(Instruction));
 	*h++ = (u8)(sizeof(ktap_Number));
-	*h++ = (u8)(((ktap_Number)0.5) == 0);          /* is ktap_Number integral? */
+	*h++ = (u8)(((ktap_Number)0.5) == 0); /* is ktap_Number integral? */
 	memcpy(h, KTAPC_TAIL, sizeof(KTAPC_TAIL) - sizeof(char));
 }
 

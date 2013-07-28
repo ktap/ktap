@@ -123,7 +123,7 @@ int kp_strfmt(ktap_state *ks, struct trace_seq *seq)
 		else if (*++strfrmt == L_ESC)
 			trace_seq_putc(seq, *strfrmt++);
 		else { /* format item */
-			char form[MAX_FORMAT];  /* to store the format (`%...') */
+			char form[MAX_FORMAT];
 
 			if (++arg > argnum)
 				ktap_argerror(ks, arg, "no value");
@@ -131,17 +131,12 @@ int kp_strfmt(ktap_state *ks, struct trace_seq *seq)
 			strfrmt = scanformat(ks, strfrmt, form);
 			switch (*strfrmt++) {
 			case 'c':
-				trace_seq_printf(seq, form, nvalue(kp_arg(ks, arg)));
+				trace_seq_printf(seq, form,
+						 nvalue(kp_arg(ks, arg)));
 				break;
 			case 'd':  case 'i': {
 				ktap_Number n = nvalue(kp_arg(ks, arg));
 				INTFRM_T ni = (INTFRM_T)n;
-				#if 0
-				INTFRM_T ni = (INTFRM_T)n;
-				ktap_Number diff = n - (ktap_Number)ni;
-				ktap_argcheck(ks, -1 < diff && diff < 1, arg,
-					"not a number in proper range");
-				#endif
 				addlenmod(form, INTFRMLEN);
 				trace_seq_printf(seq, form, ni);
 				break;
@@ -155,10 +150,12 @@ int kp_strfmt(ktap_state *ks, struct trace_seq *seq)
 			}
 			case 's': {
 				const char *s = svalue(kp_arg(ks, arg));
-				size_t l = rawtsvalue((kp_arg(ks, arg)))->tsv.len;
+				size_t l = rawtsvalue((kp_arg(ks, arg)))->tsv.
+							len;
 				if (!strchr(form, '.') && l >= 100) {
 					/*
-					 * no precision and string is too long to be formatted;
+					 * no precision and string is too long
+					 * to be formatted;
 					 * keep original string
 					 */
 					trace_seq_printf(seq, "%s", s);
@@ -169,8 +166,9 @@ int kp_strfmt(ktap_state *ks, struct trace_seq *seq)
 				}
 			}
 			default: /* also treat cases `pnLlh' */
-				kp_error(ks, "invalid option " KTAP_QL("%%%c") " to "
-					KTAP_QL("format"), *(strfrmt - 1));
+				kp_error(ks, "invalid option " KTAP_QL("%%%c")
+					     " to " KTAP_QL("format"),
+					     *(strfrmt - 1));
 			}
 		}
 	}

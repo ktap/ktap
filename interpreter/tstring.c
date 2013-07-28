@@ -39,20 +39,27 @@ int kp_tstring_cmp(const ktap_string *ls, const ktap_string *rs)
 		int temp = strcmp(l, r);
 		if (temp != 0)
 			return temp;
-		else {  /* strings are equal up to a `\0' */
-			size_t len = strlen(l);  /* index of first `\0' in both strings */
-			if (len == lr)  /* r is finished? */
+		else {
+			/* strings are equal up to a `\0' */
+
+			/* index of first `\0' in both strings */
+			size_t len = strlen(l);
+
+			/* r is finished? */
+			if (len == lr)
 				return (len == ll) ? 0 : 1;
 			else if (len == ll)  /* l is finished? */
 				return -1;
 
-			/* both strings longer than `len'; go on comparing (after the `\0') */
+			/*
+			 * both strings longer than `len';
+			 * go on comparing (after the `\0')
+			 */
 			len++;
 			l += len; ll -= len; r += len; lr -= len;
 		}
 	}
 }
-
 
 /*
  * equality for long strings
@@ -65,7 +72,6 @@ int kp_tstring_eqlngstr(ktap_string *a, ktap_string *b)
 		(memcmp(getstr(a), getstr(b), len) == 0));
 }
 
-
 /*
  * equality for strings
  */
@@ -75,7 +81,6 @@ int kp_tstring_eqstr(ktap_string *a, ktap_string *b)
 	       (a->tsv.tt == KTAP_TSHRSTR ? eqshrstr(a, b) :
 				kp_tstring_eqlngstr(a, b));
 }
-
 
 #define STRING_HASHLIMIT	5
 unsigned int kp_string_hash(const char *str, size_t l, unsigned int seed)
@@ -93,16 +98,11 @@ unsigned int kp_string_hash(const char *str, size_t l, unsigned int seed)
 
 /*
  * resizes the string table
- * todo: resize when after tracing
  */
 void kp_tstring_resize(ktap_state *ks, int newsize)
 {
 	int i;
 	ktap_stringtable *tb = &G(ks)->strt;
-
-	/* todo: */
-	/* cannot resize while GC is traversing strings */
-	//ktapc_runtilstate(L, ~bitmask(GCSsweepstring));
 
 	if (newsize > tb->size) {
 		kp_realloc(ks, tb->hash, tb->size, newsize, ktap_gcobject *);
@@ -122,7 +122,6 @@ void kp_tstring_resize(ktap_state *ks, int newsize)
 
 			gch(p)->next = tb->hash[h];
 			tb->hash[h] = p;
-			//resetoldbit(p);  /* see MOVE OLD rule */
 			p = next;
 		}
 	}
@@ -135,12 +134,11 @@ void kp_tstring_resize(ktap_state *ks, int newsize)
 	tb->size = newsize;
 }
 
-
 /*
  * creates a new string object
  */
 static ktap_string *createstrobj(ktap_state *ks, const char *str, size_t l,
-			     int tag, unsigned int h, ktap_gcobject **list)
+				 int tag, unsigned int h, ktap_gcobject **list)
 {
 	ktap_string *ts;
 	size_t totalsize;  /* total size of TString object */
@@ -175,7 +173,8 @@ static ktap_string *newshrstr(ktap_state *ks, const char *str, size_t l,
 }
 
 #ifdef __KERNEL__
-static arch_spinlock_t tstring_lock = (arch_spinlock_t)__ARCH_SPIN_LOCK_UNLOCKED;
+static arch_spinlock_t tstring_lock =
+		(arch_spinlock_t)__ARCH_SPIN_LOCK_UNLOCKED;
 #endif
 
 /*
@@ -223,12 +222,14 @@ ktap_string *kp_tstring_newlstr(ktap_state *ks, const char *str, size_t l)
 	if (l <= STRING_MAXSHORTLEN)
 		return internshrstr(ks, str, l);
 	else
-		return createstrobj(ks, str, l, KTAP_TLNGSTR, G(ks)->seed, NULL);
+		return createstrobj(ks, str, l, KTAP_TLNGSTR, G(ks)->seed,
+				    NULL);
 }
 
 ktap_string *kp_tstring_newlstr_local(ktap_state *ks, const char *str, size_t l)
 {
-	return createstrobj(ks, str, l, KTAP_TLNGSTR, G(ks)->seed, &ks->localgc);
+	return createstrobj(ks, str, l, KTAP_TLNGSTR, G(ks)->seed,
+			    &ks->localgc);
 }
 
 /*
@@ -271,7 +272,8 @@ void kp_tstring_dump(ktap_state *ks)
 	ktap_global_state *g = G(ks);
 	int h;
 
-	kp_printf(ks, "tstring dump: strt size: %d, nuse: %d\n", g->strt.size, g->strt.nuse);
+	kp_printf(ks, "tstring dump: strt size: %d, nuse: %d\n", g->strt.size,
+								 g->strt.nuse);
 	for (h = 0; h < g->strt.size; h++) {
 		for (o = g->strt.hash[h]; o != NULL; o = gch(o)->next) {
 			ktap_string *ts = rawgco2ts(o);
@@ -279,3 +281,4 @@ void kp_tstring_dump(ktap_state *ks)
 		}
 	}
 }
+
