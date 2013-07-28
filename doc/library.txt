@@ -76,8 +76,6 @@ KTAP Standard Libraries
   timer.msec(N, func)
   timer.us  (N, func)
   timer.usec(N, func)
-  timer.ns  (N, func)
-  timer.nsec(N, func)
 
 7. Kdebug Library
 -----------------

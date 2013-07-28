@@ -121,12 +121,6 @@ static int ktap_lib_usecond(ktap_state *ks)
 	return 0;
 }
 
-static int ktap_lib_nsecond(ktap_state *ks)
-{
-	set_timer(ks, 1);
-	return 0;
-}
-
 static int ktap_lib_profile(ktap_state *ks)
 {
 	return 0;
@@ -156,8 +150,6 @@ static const ktap_Reg timerlib_funcs[] = {
 	{"msec",	ktap_lib_msecond},
 	{"us",		ktap_lib_usecond},
 	{"usec",	ktap_lib_usecond},
-	{"ns",		ktap_lib_nsecond},
-	{"nsec",	ktap_lib_nsecond},
 	{"profile",	ktap_lib_profile},
 	{NULL}
 };
