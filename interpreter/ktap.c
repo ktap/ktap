@@ -75,7 +75,7 @@ static char **copy_argv_from_user(struct ktap_parm *parm)
 	int i, j;
 	int ret;
 
-	argv = kmalloc(parm->argc * sizeof(char *), GFP_KERNEL);
+	argv = kzalloc(parm->argc * sizeof(char *), GFP_KERNEL);
 	if (!argv) {
 		pr_err("out of memory");
 		return ERR_PTR(-ENOMEM);
@@ -100,14 +100,16 @@ static char **copy_argv_from_user(struct ktap_parm *parm)
 			goto error;
 		}
 
-		strncpy_from_user(kstr, ustr, len);
+		if (strncpy_from_user(kstr, ustr, len) < 0)
+			goto error;
+
 		kstr[len] = '\0';
 		argv[i] = kstr;
 	}
 
 	return argv;
  error:
-	for (j = 0; j < i; j++)
+	for (j = 0; j <= i; j++)
 		kfree(argv[j]);
 
 	kfree(argv);

@@ -589,7 +589,7 @@ void __kp_bputs(ktap_state *ks, const char *str)
 
 		tracing_generic_entry_update(entry, 0, 0);
 		entry->type = TRACE_BPUTS;
-		*(unsigned long *)(entry + 1) = str;
+		*(unsigned long *)(entry + 1) = (unsigned long)str;
 
 		ring_buffer_unlock_commit(buffer, event);
 	}
@@ -611,7 +611,7 @@ int kp_transport_init(ktap_state *ks)
 	struct dentry *dentry;
 	char filename[32] = {0};
 
-	ftrace_find_event = kallsyms_lookup_name("ftrace_find_event");
+	ftrace_find_event = (void *)kallsyms_lookup_name("ftrace_find_event");
 	if (!ftrace_find_event) {
 		printk("ktap: cannot lookup ftrace_find_event in kallsyms\n");
 		return -EINVAL;

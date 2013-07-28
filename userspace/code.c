@@ -308,7 +308,7 @@ static void freeexp(FuncState *fs, expdesc *e)
 
 static int addk(FuncState *fs, ktap_value *key, ktap_value *v)
 {
-	ktap_value *idx = ktapc_table_get(fs->h, key);
+	const ktap_value *idx = ktapc_table_get(fs->h, key);
 	ktap_proto *f = fs->f;
 	ktap_value kn;
 	int k, oldsize;

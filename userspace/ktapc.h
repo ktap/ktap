@@ -295,7 +295,7 @@ int ktapc_ts_eqstr(ktap_string *a, ktap_string *b);
 ktap_string *ktapc_ts_newlstr(const char *str, size_t l);
 ktap_proto *ktapc_newproto();
 ktap_table *ktapc_table_new();
-ktap_value *ktapc_table_get(ktap_table *t, const ktap_value *key);
+const ktap_value *ktapc_table_get(ktap_table *t, const ktap_value *key);
 void ktapc_table_setvalue(ktap_table *t, const ktap_value *key, ktap_value *val);
 ktap_closure *ktapc_newlclosure(int n);
 char *ktapc_sprintf(const char *fmt, ...);

@@ -656,7 +656,7 @@ void kp_table_setint(ktap_state *ks, ktap_table *t, int key, ktap_value *val)
 void kp_table_atomic_inc(ktap_state *ks, ktap_table *t, ktap_value *key, int n)
 {
 	unsigned long flags;
-	const ktap_value *v;
+	ktap_value *v;
 
 	if (isnil(key)) {
 		kp_printf(ks, "table index is nil\n");

@@ -123,7 +123,7 @@ void lex_syntaxerror(LexState *ls, const char *msg)
  */
 ktap_string *lex_newstring(LexState *ls, const char *str, size_t l)
 {
-	ktap_value *o;  /* entry for `str' */
+	const ktap_value *o;  /* entry for `str' */
 	ktap_value val;  /* entry for `str' */
 	ktap_value tsv;
 	ktap_string *ts = ktapc_ts_newlstr(str, l);  /* create new string */
