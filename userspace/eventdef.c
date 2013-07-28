@@ -405,9 +405,7 @@ static void strim(char *s)
 static int get_sys_event_filter_str(char *start,
 				    char **sys, char **event, char **filter)
 {
-	char *separator, *separator1, *separator2, *end;
-	char *ptr;
-	int event_len;
+	char *separator, *separator2, *ptr, *end;
 
 	while (*start == ' ')
 		start++;
@@ -428,6 +426,14 @@ static int get_sys_event_filter_str(char *start,
 	strim(ptr);
 	*sys = ptr;
 
+	if (!strcmp(*sys, "probe") && (*(separator + 1) == '/')) {
+		/* it's uprobe event */
+		separator2 = strchr(separator + 1, ':');
+		if (!separator2)
+			return -1;
+	} else
+		separator2 = separator;
+
 	/* find filter */
 	end = start + strlen(start);
 	while (*--end == ' ') {
@@ -436,7 +442,7 @@ static int get_sys_event_filter_str(char *start,
 	if (*end == '/') {
 		char *filter_start;
 
-		filter_start = strchr(separator, '/');
+		filter_start = strchr(separator2, '/');
 		if (filter_start == end)
 			return -1;
 
