@@ -266,24 +266,16 @@ static int parse_events_add_kprobe(char *old_event)
 	}
 
 	event = strdup(old_event);
-
 	r = strstr(event, "%return");
 	if (r) {
 		memset(r, ' ', 7);
-		snprintf(probe_event, 128, "r:kprobes/kp%d %s", event_seq, event);
+		snprintf(probe_event, 128, "r:kprobes/kp%d %s",
+				event_seq, event);
 	} else
-		snprintf(probe_event, 128, "p:kprobes/kp%d %s", event_seq, event);
+		snprintf(probe_event, 128, "p:kprobes/kp%d %s",
+				event_seq, event);
 
 	free(event);
-
-	pl = malloc(sizeof(struct probe_list));
-	if (!pl)
-		return -1;
-
-	pl->type = KPROBE_EVENT;
-	pl->kp_seq = event_seq;
-	pl->next = probe_list_head;
-	probe_list_head = pl;
 
 	verbose_printf("kprobe event %s\n", probe_event);
 	ret = write(fd, probe_event, strlen(probe_event));
@@ -295,6 +287,15 @@ static int parse_events_add_kprobe(char *old_event)
 	}
 
 	close(fd);
+
+	pl = malloc(sizeof(struct probe_list));
+	if (!pl)
+		return -1;
+
+	pl->type = KPROBE_EVENT;
+	pl->kp_seq = event_seq;
+	pl->next = probe_list_head;
+	probe_list_head = pl;
 
 	sprintf(event_id_path, "/sys/kernel/debug/tracing/events/kprobes/kp%d/id",
 			event_seq);
@@ -326,24 +327,16 @@ static int parse_events_add_uprobe(char *old_event)
 	}
 
 	event = strdup(old_event);
-
 	r = strstr(event, "%return");
 	if (r) {
 		memset(r, ' ', 7);
-		snprintf(probe_event, 128, "r:uprobes/kp%d %s", event_seq, event);
+		snprintf(probe_event, 128, "r:uprobes/kp%d %s",
+				event_seq, event);
 	} else
-		snprintf(probe_event, 128, "p:uprobes/kp%d %s", event_seq, event);
+		snprintf(probe_event, 128, "p:uprobes/kp%d %s",
+				event_seq, event);
 
 	free(event);
-
-	pl = malloc(sizeof(struct probe_list));
-	if (!pl)
-		return -1;
-
-	pl->type = UPROBE_EVENT;
-	pl->kp_seq = event_seq;
-	pl->next = probe_list_head;
-	probe_list_head = pl;
 
 	verbose_printf("uprobe event %s\n", probe_event);
 	ret = write(fd, probe_event, strlen(probe_event));
@@ -355,6 +348,15 @@ static int parse_events_add_uprobe(char *old_event)
 	}
 
 	close(fd);
+
+	pl = malloc(sizeof(struct probe_list));
+	if (!pl)
+		return -1;
+
+	pl->type = UPROBE_EVENT;
+	pl->kp_seq = event_seq;
+	pl->next = probe_list_head;
+	probe_list_head = pl;
 
 	sprintf(event_id_path, "/sys/kernel/debug/tracing/events/uprobes/kp%d/id",
 			event_seq);
@@ -502,7 +504,7 @@ ktap_string *ktapc_parse_eventdef(ktap_string *eventdef)
 	next = get_next_eventdef(str);
 
 	if (get_sys_event_filter_str(str, &sys, &event, &filter))
-		return NULL;
+		goto error;
 
 	verbose_printf("parse_eventdef: sys[%s], event[%s], filter[%s]\n",
 		       sys, event, filter);
@@ -515,7 +517,7 @@ ktap_string *ktapc_parse_eventdef(ktap_string *eventdef)
 		ret = parse_events_add_tracepoint(sys, event);
 
 	if (ret)
-		return NULL;
+		goto error;
 
 	/* don't trace ftrace:function when all tracepoints enabled */
 	if (!strcmp(sys, "*"))
@@ -523,7 +525,7 @@ ktap_string *ktapc_parse_eventdef(ktap_string *eventdef)
 
 	idstr = get_idstr(filter);
 	if (!idstr)
-		return NULL;
+		goto error;
 
 	str = next;
 	g_idstr = strcat(g_idstr, idstr);
@@ -533,6 +535,10 @@ ktap_string *ktapc_parse_eventdef(ktap_string *eventdef)
 		goto parse_next_eventdef;
 
 	return ktapc_ts_new(g_idstr);
+
+ error:
+	cleanup_event_resources();
+	return NULL;
 }
 
 void cleanup_event_resources(void)
