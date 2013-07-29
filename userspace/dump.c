@@ -28,7 +28,6 @@
 #include "../include/ktap_opcodes.h"
 #include "ktapc.h"
 
-typedef int (*ktap_Writer)(const void* p, size_t sz, void* ud);
 
 typedef struct {
 	ktap_Writer writer;

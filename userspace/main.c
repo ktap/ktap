@@ -24,6 +24,9 @@
 #include <stdarg.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
+#include <sys/ioctl.h>
+#include <sys/types.h>
+#include <unistd.h>
 #include <fcntl.h>
 #include <math.h>
 #include <getopt.h>
@@ -229,11 +232,11 @@ static void dump_function(int level, ktap_proto *f)
 			break;
 		case KTAP_TNUMBER:
 			printf("\tTNUMBER: ");
-			printf("%d\n", f->k[i].val.n);
+			printf("%ld\n", f->k[i].val.n);
 			break;
 		case KTAP_TSTRING:
 			printf("\tTSTRING: ");
-			printf("%s\n", (ktap_string *)f->k[i].val.gc + 1);
+			printf("%s\n", getstr(f->k[i].val.gc));
 
 			break;
 		default:
@@ -309,8 +312,6 @@ static int ktap_trunk_mem_size = 1024;
 
 static int ktapc_writer(const void* p, size_t sz, void* ud)
 {
-	int ret;
-
 	if (uparm.trunk_len + sz > ktap_trunk_mem_size) {
 		int new_size = (uparm.trunk_len + sz) * 2;
 		uparm.trunk = realloc(uparm.trunk, new_size);
@@ -430,7 +431,7 @@ static int parse_option(int argc, char **argv)
 static void compile(const char *input)
 {
 	ktap_closure *cl;
-	unsigned char *buff;
+	char *buff;
 	struct stat sb;
 	int fdin, fdout;
 
@@ -543,5 +544,7 @@ int main(int argc, char **argv)
 	run_ktapvm();
 
 	cleanup_event_resources();
+
+	return 0;
 }
 

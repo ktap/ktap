@@ -153,7 +153,7 @@ static void inclinenumber(LexState *ls)
 		lex_syntaxerror(ls, "chunk has too many lines");
 }
 
-void lex_setinput(LexState *ls, unsigned char *ptr, ktap_string *source, int firstchar)
+void lex_setinput(LexState *ls, char *ptr, ktap_string *source, int firstchar)
 {
 	ls->decpoint = '.';
 	ls->current = firstchar;

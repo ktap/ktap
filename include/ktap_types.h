@@ -56,8 +56,7 @@ struct ktap_parm {
 #define KTAPC_HEADERSIZE	(sizeof(KTAP_SIGNATURE) - sizeof(char) + 2 + 6 + \
 				 sizeof(KTAPC_TAIL) - sizeof(char))
 
-
-typedef int Instruction;
+typedef unsigned int Instruction;
 
 typedef union ktap_gcobject ktap_gcobject;
 
@@ -587,6 +586,8 @@ extern ktap_global_state dummy_global_state;
 #define kp_puts(ks, str)			printf("%s", str)
 #define kp_exit(ks)				exit(EXIT_FAILURE)
 #endif
+
+#define __maybe_unused	__attribute__((unused))
 
 /*
  * KTAP_QL describes how error messages quote program elements.

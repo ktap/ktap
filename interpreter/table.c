@@ -152,7 +152,7 @@ static const ktap_value *table_getint(ktap_table *t, int key)
 const ktap_value *kp_table_getint(ktap_table *t, int key)
 {
 	const ktap_value *val;
-	unsigned long flags;
+	unsigned long __maybe_unused flags;
 
 	kp_table_lock(t);
 	val = table_getint(t, key);
@@ -236,7 +236,7 @@ static int findindex(ktap_state *ks, ktap_table *t, StkId key)
 
 int kp_table_next(ktap_state *ks, ktap_table *t, StkId key)
 {
-	unsigned long flags;
+	unsigned long __maybe_unused flags;
 	int i;
 	
 	kp_table_lock(t);
@@ -446,7 +446,7 @@ static void table_resize(ktap_state *ks, ktap_table *t, int nasize, int nhsize)
 
 void kp_table_resize(ktap_state *ks, ktap_table *t, int nasize, int nhsize)
 {
-	unsigned long flags;
+	unsigned long __maybe_unused flags;
 
 	kp_table_lock(t);
 	table_resize(ks, t, nasize, nhsize);
@@ -455,7 +455,7 @@ void kp_table_resize(ktap_state *ks, ktap_table *t, int nasize, int nhsize)
 
 void kp_table_resizearray(ktap_state *ks, ktap_table *t, int nasize)
 {
-	unsigned long flags;
+	unsigned long __maybe_unused flags;
 	int nsize;
 
 	kp_table_lock(t);
@@ -589,7 +589,7 @@ static const ktap_value *table_get(ktap_table *t, const ktap_value *key)
 const ktap_value *kp_table_get(ktap_table *t, const ktap_value *key)
 {
 	const ktap_value *val;
-	unsigned long flags;
+	unsigned long __maybe_unused flags;
 
 	kp_table_lock(t);
 	val = table_get(t, key);
@@ -613,7 +613,7 @@ static ktap_value *table_set(ktap_state *ks, ktap_table *t,
 void kp_table_setvalue(ktap_state *ks, ktap_table *t,
 		       const ktap_value *key, ktap_value *val)
 {
-	unsigned long flags;
+	unsigned long __maybe_unused flags;
 
 	if (isnil(key)) {
 		kp_printf(ks, "table index is nil\n");
@@ -646,7 +646,7 @@ static void table_setint(ktap_state *ks, ktap_table *t, int key, ktap_value *v)
 
 void kp_table_setint(ktap_state *ks, ktap_table *t, int key, ktap_value *val)
 {
-	unsigned long flags;
+	unsigned long __maybe_unused flags;
 
 	kp_table_lock(t);
 	table_setint(ks, t, key, val);
@@ -655,7 +655,7 @@ void kp_table_setint(ktap_state *ks, ktap_table *t, int key, ktap_value *val)
 
 void kp_table_atomic_inc(ktap_state *ks, ktap_table *t, ktap_value *key, int n)
 {
-	unsigned long flags;
+	unsigned long __maybe_unused flags;
 	ktap_value *v;
 
 	if (isnil(key)) {
@@ -677,7 +677,7 @@ void kp_table_atomic_inc(ktap_state *ks, ktap_table *t, ktap_value *key, int n)
 
 int kp_table_length(ktap_state *ks, ktap_table *t)
 {
-	unsigned long flags;
+	unsigned long __maybe_unused flags;
 	int i, len = 0;
 
 	kp_table_lock(t);

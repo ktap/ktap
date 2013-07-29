@@ -3,6 +3,8 @@
  * only can be included by userspace compiler
  */
 
+#include <ctype.h>
+
 typedef int bool;
 #define false 0
 #define true 1
@@ -124,7 +126,7 @@ typedef struct Mbuffer {
  * functions
  */
 typedef struct LexState {
-	unsigned char *ptr; /* source file reading position */
+	char *ptr; /* source file reading position */
 	int current;  /* current character (charint) */
 	int linenumber;  /* input line counter */
 	int lastline;  /* line of last token `consumed' */
@@ -283,13 +285,14 @@ typedef enum UnOpr { OPR_MINUS, OPR_NOT, OPR_LEN, OPR_NOUNOPR } UnOpr;
             ((v)=(t *)ktapc_growaux(v,&(size),sizeof(t),limit,e))
 
 
+void lex_init();
 ktap_string *lex_newstring(LexState *ls, const char *str, size_t l);
 const char *lex_token2str(LexState *ls, int token);
 void lex_syntaxerror(LexState *ls, const char *msg);
-void lex_setinput(LexState *ls, unsigned char *ptr, ktap_string *source, int firstchar);
+void lex_setinput(LexState *ls, char *ptr, ktap_string *source, int firstchar);
 void lex_next(LexState *ls);
 int lex_lookahead(LexState *ls);
-ktap_closure *ktapc_parser(unsigned char *pos, const char *name);
+ktap_closure *ktapc_parser(char *pos, const char *name);
 ktap_string *ktapc_ts_new(const char *str);
 int ktapc_ts_eqstr(ktap_string *a, ktap_string *b);
 ktap_string *ktapc_ts_newlstr(const char *str, size_t l);
@@ -316,4 +319,52 @@ extern int verbose;
 		printf("[verbose] " __VA_ARGS__);
 
 #define ktapc_equalobj(t1, t2)	kp_equalobjv(NULL, t1, t2)
+
+
+#include "../include/ktap_opcodes.h"
+
+int codegen_stringK(FuncState *fs, ktap_string *s);
+void codegen_indexed(FuncState *fs, expdesc *t, expdesc *k);
+void codegen_setreturns(FuncState *fs, expdesc *e, int nresults);
+void codegen_reserveregs(FuncState *fs, int n);
+void codegen_exp2nextreg(FuncState *fs, expdesc *e);
+void codegen_nil(FuncState *fs, int from, int n);
+void codegen_patchlist(FuncState *fs, int list, int target);
+void codegen_patchclose(FuncState *fs, int list, int level);
+int codegen_jump(FuncState *fs);
+void codegen_patchtohere(FuncState *fs, int list);
+int codegen_codeABx(FuncState *fs, OpCode o, int a, unsigned int bc);
+void codegen_ret(FuncState *fs, int first, int nret);
+void codegen_exp2anyregup(FuncState *fs, expdesc *e);
+void codegen_exp2val(FuncState *fs, expdesc *e);
+int codegen_exp2RK(FuncState *fs, expdesc *e);
+int codegen_codeABC(FuncState *fs, OpCode o, int a, int b, int c);
+void codegen_setlist(FuncState *fs, int base, int nelems, int tostore);
+void codegen_fixline (FuncState *fs, int line);
+void codegen_dischargevars(FuncState *fs, expdesc *e);
+void codegen_self(FuncState *fs, expdesc *e, expdesc *key);
+void codegen_prefix(FuncState *fs, UnOpr op, expdesc *e, int line);
+void codegen_infix(FuncState *fs, BinOpr op, expdesc *v);
+void codegen_posfix(FuncState *fs, BinOpr op, expdesc *e1, expdesc *e2, int line);
+void codegen_setoneret(FuncState *fs, expdesc *e);
+void codegen_storevar(FuncState *fs, expdesc *var, expdesc *ex);
+void codegen_goiftrue(FuncState *fs, expdesc *e);
+int codegen_getlabel(FuncState *fs);
+int codegen_codek(FuncState *fs, int reg, int k);
+int codegen_numberK(FuncState *fs, ktap_Number r);
+void codegen_checkstack(FuncState *fs, int n);
+void codegen_goiffalse(FuncState *fs, expdesc *e);
+void codegen_concat(FuncState *fs, int *l1, int l2);
+int codegen_exp2anyreg(FuncState *fs, expdesc *e);
+
+typedef int (*ktap_Writer)(const void* p, size_t sz, void* ud);
+int ktapc_dump(const ktap_proto *f, ktap_Writer w, void *data, int strip);
+
+void ktapc_chunkid(char *out, const char *source, size_t bufflen);
+int ktapc_str2d(const char *s, size_t len, ktap_Number *result);
+int ktapc_hexavalue(int c);
+ktap_Number ktapc_arith(int op, ktap_Number v1, ktap_Number v2);
+int ktapc_int2fb(unsigned int x);
+
+bool strglobmatch(const char *str, const char *pat);
 

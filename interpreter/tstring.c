@@ -186,7 +186,7 @@ static ktap_string *internshrstr(ktap_state *ks, const char *str, size_t l)
 	ktap_global_state *g = G(ks);
 	ktap_string *ts;
 	unsigned int h = kp_string_hash(str, l, g->seed);
-	unsigned long flags;
+	unsigned long __maybe_unused flags;
 
 #ifdef __KERNEL__
 	local_irq_save(flags);

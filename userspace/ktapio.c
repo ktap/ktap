@@ -94,5 +94,7 @@ int ktapio_create(void *cb)
 
 	if (pthread_create(&reader, NULL, reader_thread, cb) < 0)
 		handle_error("pthread_create reader_thread failed\n");
+
+	return 0;
 }
 

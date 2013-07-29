@@ -118,29 +118,29 @@ void kp_obj_dump(ktap_state *ks, const ktap_value *v)
 		kp_puts(ks, "NIL");
 		break;
 	case KTAP_TNUMBER:
-		kp_printf(ks, "NUMBER %d", nvalue(v));
+		kp_printf(ks, "NUMBER %ld", nvalue(v));
 		break;
 	case KTAP_TBOOLEAN:
 		kp_printf(ks, "BOOLEAN %d", bvalue(v));
 		break;
 	case KTAP_TLIGHTUSERDATA:
-		kp_printf(ks, "LIGHTUSERDATA %d", pvalue(v));
+		kp_printf(ks, "LIGHTUSERDATA 0x%lx", (unsigned long)pvalue(v));
 		break;
 	case KTAP_TLCF:
-		kp_printf(ks, "LIGHTCFCUNTION 0x%x", fvalue(v));
+		kp_printf(ks, "LIGHTCFCUNTION 0x%lx", (unsigned long)fvalue(v));
 		break;
 	case KTAP_TSHRSTR:
 	case KTAP_TLNGSTR:
 		kp_printf(ks, "SHRSTR #%s", svalue(v));
 		break;
 	case KTAP_TUSERDATA:
-		kp_printf(ks, "USERDATA %d", uvalue(v));
+		kp_printf(ks, "USERDATA 0x%lx", (unsigned long)uvalue(v));
 		break;
 	case KTAP_TTABLE:
-		kp_printf(ks, "TABLE 0x%x", hvalue(v));
+		kp_printf(ks, "TABLE 0x%lx", (unsigned long)hvalue(v));
 		break;
         default:
-		kp_printf(ks, "GCVALUE 0x%x", gcvalue(v));
+		kp_printf(ks, "GCVALUE 0x%lx", (unsigned long)gcvalue(v));
 		break;
 	}
 }
@@ -152,23 +152,23 @@ void kp_showobj(ktap_state *ks, const ktap_value *v)
 		kp_puts(ks, "nil");
 		break;
 	case KTAP_TNUMBER:
-		kp_printf(ks, "%d", nvalue(v));
+		kp_printf(ks, "%ld", nvalue(v));
 		break;
 	case KTAP_TBOOLEAN:
 		kp_puts(ks, (bvalue(v) == 1) ? "true" : "false");
 		break;
 	case KTAP_TLIGHTUSERDATA:
-		kp_printf(ks, "%d", pvalue(v));
+		kp_printf(ks, "0x%lx", (unsigned long)pvalue(v));
 		break;
 	case KTAP_TLCF:
-		kp_printf(ks, "0x%x", fvalue(v));
+		kp_printf(ks, "0x%lx", (unsigned long)fvalue(v));
 		break;
 	case KTAP_TSHRSTR:
 	case KTAP_TLNGSTR:
 		kp_puts(ks, svalue(v));
 		break;
 	case KTAP_TUSERDATA:
-		kp_printf(ks, "%d", uvalue(v));
+		kp_printf(ks, "0x%lx", (unsigned long)uvalue(v));
 		break;
 	case KTAP_TTABLE:
 		kp_table_dump(ks, hvalue(v));

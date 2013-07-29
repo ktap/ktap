@@ -32,8 +32,6 @@
 #define hasjumps(e)	((e)->t != (e)->f)
 
 void codegen_patchtohere (FuncState *fs, int list);
-void codegen_fixline (FuncState *fs, int line);
-void codegen_concat (FuncState *fs, int *l1, int l2);
 
 static int isnumeral(expdesc *e)
 {
@@ -521,7 +519,7 @@ void codegen_exp2nextreg(FuncState *fs, expdesc *e)
 	exp2reg(fs, e, fs->freereg - 1);
 }
 
-int codegen_exp2anyreg (FuncState *fs, expdesc *e)
+int codegen_exp2anyreg(FuncState *fs, expdesc *e)
 {
 	codegen_dischargevars(fs, e);
 	if (e->k == VNONRELOC) {

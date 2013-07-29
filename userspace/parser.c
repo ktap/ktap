@@ -245,9 +245,9 @@ static int newupvalue(FuncState *fs, ktap_string *name, expdesc *v)
 
 	while (oldsize < f->sizeupvalues)
 		f->upvalues[oldsize++].name = NULL;
-	f->upvalues[fs->nups].instack = (v->k == VLOCAL);
-	f->upvalues[fs->nups].idx = (u8)(v->u.info);
-	f->upvalues[fs->nups].name = name;
+	f->upvalues[(int)fs->nups].instack = (v->k == VLOCAL);
+	f->upvalues[(int)fs->nups].idx = (u8)(v->u.info);
+	f->upvalues[(int)fs->nups].name = name;
 	return fs->nups++;
 }
 
@@ -1752,7 +1752,7 @@ static void mainfunc(LexState *ls, FuncState *fs)
 	close_func(ls);
 }
 
-ktap_closure *ktapc_parser(unsigned char *ptr, const char *name)
+ktap_closure *ktapc_parser(char *ptr, const char *name)
 {
 	LexState lexstate;
 	FuncState funcstate;

@@ -491,8 +491,7 @@ ktap_string *ktapc_parse_eventdef(ktap_string *eventdef)
 {
 	const char *def_str = getstr(eventdef);
 	char *str = strdup(def_str);
-	char *sys, *event, *filter, *idstr, *g_idstr;
-	char *separator, *next;
+	char *sys, *event, *filter, *idstr, *g_idstr, *next;
 	int ret;
 
 	if (!ids_array) {
@@ -561,6 +560,9 @@ void cleanup_event_resources(void)
 		} else if (pl->type == UPROBE_EVENT) {
 			path = UPROBE_EVENTS_PATH;
 			snprintf(probe_event, 32, "-:uprobes/kp%d", pl->kp_seq);
+		} else {
+			fprintf(stderr, "Cannot cleanup event type %d\n", pl->type);
+			continue;
 		}
 
 		fd = open(path, O_WRONLY);
