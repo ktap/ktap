@@ -7,6 +7,7 @@
 #include <linux/module.h>
 #include <linux/slab.h>
 #include <linux/semaphore.h>
+#include <linux/wait.h>
 #else
 typedef char u8;
 #include <stdlib.h>
@@ -31,7 +32,6 @@ struct ktap_parm {
  */
 #define KTAP_CMD_IOC_VERSION		('$' + 0)
 #define KTAP_CMD_IOC_RUN		('$' + 1)
-#define KTAP_CMD_IOC_USER_COMPLETE	('$' + 2)
 #define KTAP_CMD_IOC_EXIT		('$' + 3)
 
 #define KTAP_ENV	"_ENV"
@@ -279,7 +279,6 @@ typedef struct ktap_global_state {
 	struct list_head probe_events_head;
 	int exit;
 	int wait_user;
-	struct semaphore sync_sem;
 	ktap_closure *trace_end_closure;
 #endif
 } ktap_global_state;

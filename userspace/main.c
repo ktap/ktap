@@ -327,11 +327,6 @@ static int ktapc_writer(const void* p, size_t sz, void* ud)
 int ktap_fd;
 pid_t ktap_pid;
 
-void ktap_user_complete_cb()
-{
-	ioctl(ktap_fd, KTAP_CMD_IOC_USER_COMPLETE, NULL);
-}
-
 #define KTAPVM_PATH "/sys/kernel/debug/ktap/ktapvm"
 
 static void run_ktapvm()
@@ -348,7 +343,7 @@ static void run_ktapvm()
 	if (ktap_fd < 0)
 		handle_error("ioctl ktapvm failed");
 
-	ktapio_create((void *)ktap_user_complete_cb);
+	ktapio_create();
 
 	ioctl(ktap_fd, KTAP_CMD_IOC_RUN, &uparm);
 

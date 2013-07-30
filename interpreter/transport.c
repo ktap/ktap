@@ -341,10 +341,8 @@ static int tracing_wait_pipe(struct file *filp)
 
 		mutex_lock(&iter->mutex);
 
-		if (G(ks)->wait_user && trace_empty(iter)) {
-			flush_signals(current);
+		if (G(ks)->wait_user && trace_empty(iter))
 			return -EINTR;
-		}
 	}
 
 	return 1;

@@ -44,17 +44,16 @@ void sigfunc(int signo)
 
 static void block_sigint()
 {
-	sigset_t mask, omask;
+	sigset_t mask;
 
 	sigemptyset(&mask);
 	sigaddset(&mask, SIGINT);
 
-	pthread_sigmask(SIG_BLOCK, &mask, &omask);
+	pthread_sigmask(SIG_BLOCK, &mask, NULL);
 }
 
 static void *reader_thread(void *data)
 {
-	void (*ktap_io_ready_cb)(void) = data;
 	char buf[MAX_BUFLEN];
 	char filename[PATH_MAX];
 	int failed = 0, fd, len;
@@ -70,7 +69,7 @@ static void *reader_thread(void *data)
 
 		if (failed++ == 10) {
 			fprintf(stderr, "Cannot open file %s\n", filename);
-			goto out;
+			return NULL;
 		}
 		goto open_again;
 	}
@@ -80,19 +79,16 @@ static void *reader_thread(void *data)
 
 	close(fd);
 
- out:
-	(*ktap_io_ready_cb)();
-
 	return NULL;
 }
 
-int ktapio_create(void *cb)
+int ktapio_create(void)
 {
 	pthread_t reader;
 
 	signal(SIGINT, sigfunc);
 
-	if (pthread_create(&reader, NULL, reader_thread, cb) < 0)
+	if (pthread_create(&reader, NULL, reader_thread, NULL) < 0)
 		handle_error("pthread_create reader_thread failed\n");
 
 	return 0;

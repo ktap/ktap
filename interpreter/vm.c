@@ -1146,15 +1146,33 @@ ktap_state *kp_newthread(ktap_state *mainthread)
 	return ks;
 }
 
-void kp_user_complete(ktap_state *ks)
-{
-	up(&G(ks)->sync_sem);
-}
-
+/*
+ * wait ktapio thread read all content in ring buffer.
+ *
+ * Here we use stupid approach to sync with ktapio thread,
+ * note that we cannot use semaphore/completion/other sync method,
+ * because ktapio thread could be killed by SIG_KILL in anytime, there
+ * have no safe way to up semaphore or wake waitqueue before thread exit.
+ *
+ * we also cannot use waitqueue of current->signal->wait_chldexit to sync
+ * exit, becasue mainthread and ktapio thread are in same thread group.
+ *
+ * Also ktap mainthread must wait ktapio thread exit, otherwise ktapio
+ * thread will oops when access ktap structure.
+ */
 static void wait_user_completion(ktap_state *ks)
 {
+	struct task_struct *tsk = G(ks)->task;
 	G(ks)->wait_user = 1;
-	down(&G(ks)->sync_sem);
+
+	while (1) {
+		set_current_state(TASK_INTERRUPTIBLE);
+		/* sleep for 100 msecs, and try again. */
+		schedule_timeout(HZ / 10);
+
+		if (get_nr_threads(tsk) == 1)
+			break;
+	}
 }
 
 /* kp_wait: used for mainthread waiting for exit */
@@ -1235,7 +1253,6 @@ ktap_state *kp_newstate(struct ktap_parm *parm, char **argv)
 	G(ks)->trace_pid = (pid_t)parm->trace_pid;
 	G(ks)->print_timestamp = parm->print_timestamp;
 	INIT_LIST_HEAD(&(G(ks)->timers));
-	sema_init(&G(ks)->sync_sem, 1);
 	G(ks)->exit = 0;
 
 	if (kp_transport_init(ks))
@@ -1277,7 +1294,6 @@ ktap_state *kp_newstate(struct ktap_parm *parm, char **argv)
 	if (kp_probe_init(ks))
 		goto out;
 
-	sema_init(&G(ks)->sync_sem, 0); /* init as 0, make not wait in exit */
 	return ks;
 
  out:

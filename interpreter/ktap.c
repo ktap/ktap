@@ -182,7 +182,6 @@ static void print_version(void)
 static long ktap_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
 	struct ktap_parm parm;
-	ktap_state *ks = file->private_data;
 	int ret;
 
 	switch (cmd) {
@@ -196,12 +195,6 @@ static long ktap_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 			return -EFAULT;
 
 		return ktap_main(file, &parm);
-	case KTAP_CMD_IOC_USER_COMPLETE:
-		if (!ks)
-			return 0;
-
-		kp_user_complete(ks);
-		break;
 	default:
 		return -EINVAL;
 	};
