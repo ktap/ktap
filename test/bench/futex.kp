@@ -1,5 +1,0 @@
-#!/usr/bin/env ktap
-
-trace "syscalls:sys_enter_futex" function (e) {}
-trace "syscalls:sys_exit_futex" function (e) {}
-
