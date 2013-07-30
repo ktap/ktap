@@ -94,7 +94,6 @@ A: I take serious on the size of vm and memory footprint. python vm is large,
    to porting language implementation into kernel with little adaption work.
 
 
-
 Q: What's the status of ktap now?
 A: Basically it works on x86-32, x86-64, powerpc, arm, it also could work for
    other hardware architecture, but not proven yet(I don't have enough hardware
@@ -109,12 +108,7 @@ A: welcome hacking.
 
 
 Q: What's the plan of ktap? any roadmap?
-A: the current plan is deliver more ktap script, and bugfix.
-   Knteroperability with kernel is also on the planing, using interoperability
-   you can operate kernel data structure or function directly,
-   this maybe happens before ktap v2.0
+A: the current plan is deliver stable ktapvm kernel modules, more ktap script,
+and bugfix.
 
-Q: Is there have any plan on upstream into mainline?
-A: Definitily. I hope ktap will upstream someday, but should not happen before
-   ktap 1.0 release.
 

@@ -52,7 +52,7 @@ KTAP Standard Libraries
 13) table_count (t, key)
  Receive table and key, atomic add into table value map with key.
 
-14) histogam (t)
+14) histogram (t)
  Receive table, output table histogram to user.
 
 
