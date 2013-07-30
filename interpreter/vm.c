@@ -1081,8 +1081,8 @@ static void ktap_init_state(ktap_state *ks)
 	if (ks == G(ks)->mainthread) {
 		ks->stack = kp_malloc(ks, KTAP_STACK_SIZE);
 		if (!ks->stack) {
-			kp_printf(ks, "cannot alloc stack %d\n",
-				    KTAP_STACK_SIZE);
+			kp_error(ks, "unable alloc stack %d\n",
+					KTAP_STACK_SIZE);
 			return;
 		}
 	} else {
