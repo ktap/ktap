@@ -66,7 +66,7 @@ static inline void sort(void *base, size_t num, size_t size,
 const struct ktap_value ktap_nilobjectv = {NILCONSTANT};
 #define ktap_nilobject	(&ktap_nilobjectv)
 
-static const Node dummynode_ = {
+static const ktap_tnode dummynode_ = {
 	{NILCONSTANT}, /* value */
 	{{NILCONSTANT, NULL}}, /* key */
 };
@@ -124,7 +124,7 @@ ktap_table *kp_table_new(ktap_state *ks)
 	t->flags = (u8)(~0);
 	t->array = NULL;
 	t->sizearray = 0;
-	t->node = (Node *)dummynode;
+	t->node = (ktap_tnode *)dummynode;
 	setnodevector(ks, t, 0);
 
 	kp_table_lock_init(t);
@@ -133,7 +133,7 @@ ktap_table *kp_table_new(ktap_state *ks)
 
 static const ktap_value *table_getint(ktap_table *t, int key)
 {
-	Node *n;
+	ktap_tnode *n;
 
 	if ((unsigned int)(key - 1) < (unsigned int)t->sizearray)
 		return &t->array[key - 1];
@@ -161,7 +161,7 @@ const ktap_value *kp_table_getint(ktap_table *t, int key)
 	return val;
 }
 
-static Node *mainposition (const ktap_table *t, const ktap_value *key)
+static ktap_tnode *mainposition (const ktap_table *t, const ktap_value *key)
 {
 	switch (ttype(key)) {
 	case KTAP_TNUMBER:
@@ -217,7 +217,7 @@ static int findindex(ktap_state *ks, ktap_table *t, StkId key)
 	if (i > 0 && i <= t->sizearray)  /* is `key' inside array part? */
 		return i - 1;  /* yes; that's the index (corrected to C) */
 	else {
-		Node *n = mainposition(t, key);
+		ktap_tnode *n = mainposition(t, key);
 		for (;;) {  /* check whether `key' is somewhere in the chain */
 			/* key may be dead already, but it is ok to use it in `next' */
 			if (kp_equalobjv(ks, gkey(n), key)) {
@@ -346,7 +346,7 @@ static int numusehash(const ktap_table *t, int *nums, int *pnasize)
 	int i = sizenode(t);
 
 	while (i--) {
-		Node *n = &t->node[i];
+		ktap_tnode *n = &t->node[i];
 		if (!isnil(gval(n))) {
 			ause += countint(gkey(n), nums);
 			totaluse++;
@@ -374,7 +374,7 @@ static void setnodevector(ktap_state *ks, ktap_table *t, int size)
 	int lsize;
 
 	if (size == 0) {  /* no elements to hash part? */
-		t->node = (Node *)dummynode;  /* use common `dummynode' */
+		t->node = (ktap_tnode *)dummynode;  /* use common `dummynode' */
 		lsize = 0;
 	} else {
 		int i;
@@ -385,9 +385,9 @@ static void setnodevector(ktap_state *ks, ktap_table *t, int size)
 		}
 
 		size = twoto(lsize);
-		t->node = kp_malloc(ks, size * sizeof(Node));
+		t->node = kp_malloc(ks, size * sizeof(ktap_tnode));
 		for (i = 0; i < size; i++) {
-			Node *n = gnode(t, i);
+			ktap_tnode *n = gnode(t, i);
 			gnext(n) = NULL;
 			setnilvalue(gkey(n));
 			setnilvalue(gval(n));
@@ -403,7 +403,7 @@ static void table_resize(ktap_state *ks, ktap_table *t, int nasize, int nhsize)
 	int i;
 	int oldasize = t->sizearray;
 	int oldhsize = t->lsizenode;
-	Node *nold = t->node;  /* save old hash ... */
+	ktap_tnode *nold = t->node;  /* save old hash ... */
 
 #ifdef __KERNEL__
 	kp_verbose_printf(ks, "table resize, nasize: %d, nhsize: %d\n",
@@ -430,7 +430,7 @@ static void table_resize(ktap_state *ks, ktap_table *t, int nasize, int nhsize)
 
 	/* re-insert elements from hash part */
 	for (i = twoto(oldhsize) - 1; i >= 0; i--) {
-		Node *old = nold+i;
+		ktap_tnode *old = nold+i;
 		if (!ttisnil(gval(old))) {
 			/*
 			 * doesn't need barrier/invalidate cache, as entry was
@@ -490,7 +490,7 @@ static void rehash(ktap_state *ks, ktap_table *t, const ktap_value *ek)
 }
 
 
-static Node *getfreepos(ktap_table *t)
+static ktap_tnode *getfreepos(ktap_table *t)
 {
 	while (t->lastfree > t->node) {
 		t->lastfree--;
@@ -503,12 +503,12 @@ static Node *getfreepos(ktap_table *t)
 
 static ktap_value *table_newkey(ktap_state *ks, ktap_table *t, const ktap_value *key)
 {
-	Node *mp;
+	ktap_tnode *mp;
 
 	mp = mainposition(t, key);
 	if (!isnil(gval(mp)) || isdummy(mp)) {  /* main position is taken? */
-		Node *othern;
-		Node *n = getfreepos(t);  /* get a free place */
+		ktap_tnode *othern;
+		ktap_tnode *n = getfreepos(t);  /* get a free place */
 		if (n == NULL) {  /* cannot find a free place? */
 			rehash(ks, t, key);  /* grow table */
 			/* whatever called 'newkey' take care of TM cache and GC barrier */
@@ -541,7 +541,7 @@ static ktap_value *table_newkey(ktap_state *ks, ktap_table *t, const ktap_value 
  */
 static const ktap_value *table_getstr(ktap_table *t, ktap_string *key)
 {
-	Node *n = hashstr(t, key);
+	ktap_tnode *n = hashstr(t, key);
 
 	do {  /* check whether `key' is somewhere in the chain */
 		if (ttisshrstring(gkey(n)) && eqshrstr(rawtsvalue(gkey(n)),
@@ -573,7 +573,7 @@ static const ktap_value *table_get(ktap_table *t, const ktap_value *key)
 		/* else go through */
 	}
 	default: {
-		Node *n = mainposition(t, key);
+		ktap_tnode *n = mainposition(t, key);
 		do {  /* check whether `key' is somewhere in the chain */
 			if (rawequalobj(gkey(n), key))
 				return gval(n);  /* that's it */
@@ -691,7 +691,7 @@ int kp_table_length(ktap_state *ks, ktap_table *t)
 	}
 
 	for (i = 0; i < sizenode(t); i++) {
-		Node *n = &t->node[i];
+		ktap_tnode *n = &t->node[i];
 
 		if (isnil(gkey(n)))
 			continue;
@@ -734,7 +734,7 @@ void kp_table_dump(ktap_state *ks, ktap_table *t)
 	}
 
 	for (i = 0; i < sizenode(t); i++) {
-		Node *n = &t->node[i];
+		ktap_tnode *n = &t->node[i];
 
 		if (isnil(gkey(n)))
 			continue;
@@ -811,7 +811,7 @@ void kp_table_histogram(ktap_state *ks, ktap_table *t)
 	}
 
 	for (i = 0; i < sizenode(t); i++) {
-		Node *n = &t->node[i];
+		ktap_tnode *n = &t->node[i];
 		int num;
 
 		if (isnil(gkey(n)))

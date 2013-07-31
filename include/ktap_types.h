@@ -213,20 +213,20 @@ typedef struct ktap_callinfo {
 /*
  * ktap_tables
  */
-typedef union Tkey {
+typedef union ktap_tkey {
 	struct {
 		union _ktap_value value_;
 		int tt_;
-		struct Node *next;  /* for chaining */
+		struct ktap_tnode *next;  /* for chaining */
 	} nk;
 	ktap_value tvk;
-} Tkey;
+} ktap_tkey;
 
 
-typedef struct Node {
+typedef struct ktap_tnode {
 	ktap_value i_val;
-	Tkey i_key;
-} Node;
+	ktap_tkey i_key;
+} ktap_tnode;
 
 
 typedef struct ktap_table {
@@ -238,8 +238,8 @@ typedef struct ktap_table {
 	u8 lsizenode;  /* log2 of size of `node' array */
 	int sizearray;  /* size of `array' array */
 	ktap_value *array;  /* array part */
-	Node *node;
-	Node *lastfree;  /* any free position is before this position */
+	ktap_tnode *node;
+	ktap_tnode *lastfree;  /* any free position is before this position */
 	ktap_gcobject *gclist;
 } ktap_table;
 
