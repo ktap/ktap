@@ -277,7 +277,7 @@ void kp_tstring_dump(ktap_state *ks)
 	for (h = 0; h < g->strt.size; h++) {
 		for (o = g->strt.hash[h]; o != NULL; o = gch(o)->next) {
 			ktap_string *ts = rawgco2ts(o);
-			kp_printf(ks, "%s [%d]\n", getstr(ts), ts->tsv.len);
+			kp_printf(ks, "%s [%d]\n", getstr(ts), (int)ts->tsv.len);
 		}
 	}
 }
