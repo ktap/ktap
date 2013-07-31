@@ -1,3 +1,49 @@
+Version 0.2 (July 31 2013)
+-------------------------
+
+= Script highlight changes from v0.1
+
+   * new tracing block syntax
+	trace EVENTDEF function (e) { BODY }
+	trace_end function (e) { BODY }
+
+   * support trace filter
+	trace 'sched:sched_switch /prev_comm == foo || next_comm == foo/
+
+   * support kprobe/kretprobe
+	trace "probe:do_sys_open dfd=%di filename=%dx flags=%cx mode=+4($stack)"
+	trace "probe:do_sys_open%return fd=$retval"
+
+   * support uprobe/uretprobe
+	trace "probe:/lib/libc.so.6:0x000773c0"
+	trace "probe:/lib/libc.so.6:0x000773c0%return"
+
+   * support function tracing
+	trace "ftrace:function /ip == mutex*/"
+
+   * support oneline scripting
+	ktap -e 'trace "syscalls:*" function (e) { print(e) }'
+
+   * specific pid or cpu to tracing
+	ktap -C cpu *.kp
+	ktap -p pid *.kp
+
+   * more sample scripts
+
+   * support calling print_backtrace() in any context
+
+   * support calling exit() in any context
+
+= Backend highlight changes from v0.1
+
+   * unified perf callback mechanism
+   * use ring buffer transport instead of relayfs
+   * reentrant in ktap tracing
+   * performance boost(use percpu data in many case)
+   * safe table/string manipulation
+   * safe ktap exit
+   * big code cleanups
+   * fixed a lot of bugs, more stable than v0.1
 
 Version 0.1 (May 2013)
 ----------------------
