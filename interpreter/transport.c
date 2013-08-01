@@ -24,6 +24,7 @@
 #include <linux/ftrace_event.h>
 #include <linux/stacktrace.h>
 #include <linux/clocksource.h>
+#include <asm/uaccess.h>
 #include "../include/ktap.h"
 
 struct ktap_trace_iterator {
