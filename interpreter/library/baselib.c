@@ -153,6 +153,15 @@ static int ktap_lib_pid(ktap_state *ks)
 	return 1;
 }
 
+static int ktap_lib_tid(ktap_state *ks)
+{
+	pid_t pid = task_pid_vnr(current);
+
+	setnvalue(ks->top, (int)pid);
+	incr_top(ks);
+	return 1;
+}
+
 static int ktap_lib_execname(ktap_state *ks)
 {
 	ktap_string *ts = kp_tstring_new(ks, current->comm);
@@ -262,6 +271,7 @@ static const ktap_Reg base_funcs[] = {
 	{"in_interrupt", ktap_lib_in_interrupt},
 	{"exit", ktap_lib_exit},
 	{"pid", ktap_lib_pid},
+	{"tid", ktap_lib_tid},
 	{"execname", ktap_lib_execname},
 	{"cpu", ktap_lib_cpu},
 	{"num_cpus", ktap_lib_num_cpus},
