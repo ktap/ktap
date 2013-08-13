@@ -492,6 +492,7 @@ ktap_string *ktapc_parse_eventdef(ktap_string *eventdef)
 	const char *def_str = getstr(eventdef);
 	char *str = strdup(def_str);
 	char *sys, *event, *filter, *idstr, *g_idstr, *next;
+	ktap_string *ts;
 	int ret;
 
 	if (!ids_array) {
@@ -500,8 +501,11 @@ ktap_string *ktapc_parse_eventdef(ktap_string *eventdef)
 			return NULL;
 	}
 
-	g_idstr = malloc(1024);
-	memset(g_idstr, 0, 1024);
+	g_idstr = malloc(4096);
+	if (!g_idstr)
+		return NULL;
+
+	memset(g_idstr, 0, 4096);
 
  parse_next_eventdef:
 	memset(ids_array, 0, IDS_ARRAY_SIZE);
@@ -533,14 +537,17 @@ ktap_string *ktapc_parse_eventdef(ktap_string *eventdef)
 		goto error;
 
 	str = next;
+
 	g_idstr = strcat(g_idstr, idstr);
 	g_idstr = strcat(g_idstr, ";");
 
 	if (*next != '\0')
 		goto parse_next_eventdef;
 
-	return ktapc_ts_new(g_idstr);
+	ts = ktapc_ts_new(g_idstr);
+	free(g_idstr);	
 
+	return ts;
  error:
 	cleanup_event_resources();
 	return NULL;

@@ -232,6 +232,7 @@ static int codegen_code(FuncState *fs, Instruction i)
 	ktapc_growvector(f->code, fs->pc, f->sizecode, Instruction,
 			 MAX_INT, "opcodes");
 	f->code[fs->pc] = i;
+
 	/* save corresponding line information */
 	ktapc_growvector(f->lineinfo, fs->pc, f->sizelineinfo, int,
 			 MAX_INT, "opcodes");
