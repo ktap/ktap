@@ -21,6 +21,7 @@
  */
 
 #include <linux/ctype.h>
+#include <linux/kallsyms.h>
 #include "../include/ktap.h"
 
 /* macro to `unsign' a character */
@@ -139,6 +140,13 @@ int kp_strfmt(ktap_state *ks, struct trace_seq *seq)
 				INTFRM_T ni = (INTFRM_T)n;
 				addlenmod(form, INTFRMLEN);
 				trace_seq_printf(seq, form, ni);
+				break;
+			}
+			case 'p': {
+				char str[KSYM_SYMBOL_LEN];
+				sprint_symbol_no_offset(str,
+						nvalue(kp_arg(ks, arg)));
+				trace_seq_puts(seq, str);
 				break;
 			}
 			case 'o':  case 'u':  case 'x':  case 'X': {
