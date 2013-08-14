@@ -5,6 +5,7 @@
 Implementing
 ------------
 
+- function graph based on ftrace:function event (see scripts/event_trigger_ftrace.kp)
 - GC
 - read kernel memory by symbol
 - non-mainthread error exit problem(like printf arg mismatch)

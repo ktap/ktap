@@ -1,0 +1,28 @@
+#!/usr/bin/env ktap
+
+
+#This ktap script will output all function calling between
+#sys_enter_open and sys_exit_open, in one cpu.
+
+soft_disabled = 1
+this_cpu = 0
+
+trace "syscalls:sys_enter_open" function (e) {
+	print(e)
+	soft_disabled = 0
+	this_cpu = cpu()
+}
+
+trace "ftrace:function" function (e) {
+	if (soft_disabled == 0 && cpu() == this_cpu) {
+		print(e)
+	}
+}
+
+trace "syscalls:sys_exit_open" function (e) {
+	print(e)
+	if (cpu() == this_cpu) {
+		exit()
+	}
+}
+
