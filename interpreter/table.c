@@ -846,7 +846,7 @@ void kp_table_histogram(ktap_state *ks, ktap_table *t)
 			char buf[32 + 1] = {0};
 
 			string_convert(buf, svalue(key));
-			kp_printf(ks, "%32s |%s%-10d\n", buf, dist_str,
+			kp_printf(ks, "%32s |%s%-7d\n", buf, dist_str,
 				      nvalue(val));
 		} else {
 			char str[KSYM_SYMBOL_LEN];
@@ -859,7 +859,7 @@ void kp_table_histogram(ktap_state *ks, ktap_table *t)
 			sprint_symbol(str, nvalue(key));
 #endif
 			string_convert(buf, str);
-			kp_printf(ks, "%32s | %s%-10d\n", buf, dist_str,
+			kp_printf(ks, "%32s | %s%-7d\n", buf, dist_str,
 				      nvalue(val));
 		}
 	}
