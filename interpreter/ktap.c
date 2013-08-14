@@ -202,23 +202,9 @@ static long ktap_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
         return 0;
 }
 
-static unsigned int ktap_poll(struct file *file, poll_table *wait)
-{
-	ktap_state *ks = file->private_data;
-
-	if (!ks)
-		return 0;
-
-	if (G(ks)->exit)
-		return POLLERR;
-
-	return 0;
-}
-
 static const struct file_operations ktap_fops = {
 	.llseek                 = no_llseek,
 	.unlocked_ioctl         = ktap_ioctl,
-	.poll			= ktap_poll,
 };
 
 static long ktapvm_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
