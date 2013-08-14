@@ -166,7 +166,7 @@ int kp_strfmt(ktap_state *ks, struct trace_seq *seq)
 					 * to be formatted;
 					 * keep original string
 					 */
-					trace_seq_printf(seq, "%s", s);
+					trace_seq_puts(seq, s);
 					break;
 				} else {
 					trace_seq_printf(seq, form, s);
