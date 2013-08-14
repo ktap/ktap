@@ -69,8 +69,6 @@ void *kp_transport_reserve(ktap_state *ks, size_t length);
 void kp_transport_exit(ktap_state *ks);
 int kp_transport_init(ktap_state *ks);
 
-void kp_wait(ktap_state *ks);
-
 void kp_exit_timers(ktap_state *ks);
 
 DECLARE_PER_CPU(bool, kp_in_timer_closure);

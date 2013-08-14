@@ -218,7 +218,7 @@ static unsigned int ktap_poll(struct file *file, poll_table *wait)
 static const struct file_operations ktap_fops = {
 	.llseek                 = no_llseek,
 	.unlocked_ioctl         = ktap_ioctl,
-	.poll			= ktap_poll
+	.poll			= ktap_poll,
 };
 
 static long ktapvm_ioctl(struct file *file, unsigned int cmd, unsigned long arg)

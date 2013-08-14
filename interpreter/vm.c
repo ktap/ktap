@@ -1176,7 +1176,7 @@ static void wait_user_completion(ktap_state *ks)
 }
 
 /* kp_wait: used for mainthread waiting for exit */
-void kp_wait(ktap_state *ks)
+static void kp_wait(ktap_state *ks)
 {
 	if (ks != G(ks)->mainthread)
 		return;
@@ -1213,6 +1213,10 @@ void kp_exit(ktap_state *ks)
 
 void kp_final_exit(ktap_state *ks)
 {
+	if (!list_empty(&G(ks)->probe_events_head) ||
+	    !list_empty(&G(ks)->timers))
+		kp_wait(ks);
+
 	kp_probe_exit(ks);
 	kp_exit_timers(ks);
 
