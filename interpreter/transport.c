@@ -152,6 +152,7 @@ static enum print_line_t print_trace_fmt(struct trace_iterator *iter)
 
 		/* overwrite '\n' at the ending */
 		iter->seq.buffer[iter->seq.len - 1] = '\0';
+		iter->seq.len--;
 		return ret;
 	}
 
