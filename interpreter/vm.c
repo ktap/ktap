@@ -1178,6 +1178,9 @@ static void wait_user_completion(ktap_state *ks)
 /* kp_wait: used for mainthread waiting for exit */
 static void kp_wait(ktap_state *ks)
 {
+	pid_t trace_pid = G(ks)->trace_pid;
+	struct task_struct *tsk = pid_task(find_vpid(trace_pid), PIDTYPE_PID);
+
 	if (ks != G(ks)->mainthread)
 		return;
 
@@ -1187,6 +1190,7 @@ static void kp_wait(ktap_state *ks)
 	kp_puts(ks, "Press Control-C to stop.\n");
 
 	ks->stop = 0;
+	G(ks)->trace_started = 1;
 
 	while (!ks->stop) {
 		set_current_state(TASK_INTERRUPTIBLE);
@@ -1196,6 +1200,12 @@ static void kp_wait(ktap_state *ks)
 		if (signal_pending(current)) {
 			flush_signals(current);
 			break;
+		}
+
+		/* stop waiting if target pid is exited */
+		if (trace_pid != -1) {
+			if (tsk->state == TASK_DEAD)
+				break;
 		}
 	}
 

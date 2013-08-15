@@ -181,6 +181,7 @@ static void print_version(void)
 
 static long ktap_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
+	ktap_state *ks;
 	struct ktap_parm parm;
 	int ret;
 
@@ -195,6 +196,9 @@ static long ktap_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 			return -EFAULT;
 
 		return ktap_main(file, &parm);
+	case KTAP_CMD_IOC_TRACING_STARTED:
+		ks = file->private_data;
+		return G(ks)->trace_started;
 	default:
 		return -EINVAL;
 	};

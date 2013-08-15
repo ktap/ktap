@@ -34,7 +34,6 @@
 
 #define handle_error(str) do { perror(str); exit(-1); } while(0)
 
-extern int ktap_fd;
 extern pid_t ktap_pid;
 
 void sigfunc(int signo)

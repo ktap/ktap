@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <signal.h>
 #include <stdarg.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
@@ -283,6 +284,8 @@ static void usage(const char *msg)
 "                specific tracing pid\n"
 "  -C, --cpu <cpu>\n"
 "                cpu to monitor in system-wide\n"
+"  -c, --cmd <cmd>\n"
+"                workload to tracing\n"
 "  -T, --time\n"
 "                show timestamp for event\n"
 "  -V, --version\n"
@@ -324,14 +327,57 @@ static int ktapc_writer(const void* p, size_t sz, void* ud)
 	return 0;
 }
 
-int ktap_fd;
-pid_t ktap_pid;
+
+static int forks;
+static char exec_cmd[128];
+static int fork_workload(int ktap_fd)
+{
+	char filename[128], *sep;
+	int pid;
+
+	sep = strchr(exec_cmd, ' ');
+	if (!sep) {
+		strncpy(filename, exec_cmd, strlen(exec_cmd));
+		filename[strlen(exec_cmd)] = '\0';
+	} else {
+		strncpy(filename, exec_cmd, sep - exec_cmd);
+		filename[sep - exec_cmd] = '\0';
+	}
+
+	pid = fork();
+	if (pid < 0)
+		handle_error("failed to fork");
+
+	if (pid > 0)
+		return pid;
+
+	signal(SIGTERM, SIG_DFL);
+
+	execvp("", (char **)exec_cmd);
+
+	sleep(1);
+	while (1) {
+		int trace_started;
+
+		trace_started = ioctl(ktap_fd, KTAP_CMD_IOC_TRACING_STARTED, 0);
+		if (trace_started)
+			break;
+
+		usleep(1);
+	}
+
+	execlp(filename, exec_cmd, NULL);
+
+	perror(exec_cmd);
+	return -1;
+}
 
 #define KTAPVM_PATH "/sys/kernel/debug/ktap/ktapvm"
 
+pid_t ktap_pid;
 static void run_ktapvm()
 {
-        int ktapvm_fd;
+        int ktapvm_fd, ktap_fd;
 
 	ktap_pid = getpid();
 
@@ -344,6 +390,9 @@ static void run_ktapvm()
 		handle_error("ioctl ktapvm failed");
 
 	ktapio_create();
+
+	if (forks)
+		uparm.trace_pid = fork_workload(ktap_fd);
 
 	ioctl(ktap_fd, KTAP_CMD_IOC_RUN, &uparm);
 
@@ -371,13 +420,14 @@ static int parse_option(int argc, char **argv)
 			{"program",	required_argument, NULL, 'e'},
 			{"pid",		required_argument, NULL, 'p'},
 			{"cpu",		required_argument, NULL, 'C'},
+			{"cmd",		required_argument, NULL, 'c'},
                         {"verbose",	no_argument, NULL, 'v'},
 			{"list-bc",	no_argument, NULL, 'b'},
 			{"version",	no_argument, NULL, 'V'},
 			{"help",	no_argument, NULL, '?'},
 			{NULL, 0, NULL, 0}
 		};
-		int c = getopt_long(argc, argv, "o:e:p:C:TVvb?", long_options,
+		int c = getopt_long(argc, argv, "o:e:p:C:c:TVvb?", long_options,
 							&option_index);
 		if (c == -1)
 			break;
@@ -397,6 +447,10 @@ static int parse_option(int argc, char **argv)
 		case 'C':
 			strncpy(cpu_str, optarg, strlen(optarg));
 			trace_cpu = atoi(cpu_str);
+			break;
+		case 'c':
+			forks = 1;
+			strncpy(exec_cmd, optarg, strlen(optarg));
 			break;
 		case 'T':
 			print_timestamp = 1;

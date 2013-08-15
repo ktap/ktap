@@ -380,8 +380,8 @@ static void start_probe_by_id(ktap_state *ks, struct task_struct *task,
 	struct perf_event *event;
 	int cpu, ret;
 
-	kp_verbose_printf(ks, "enable tracepoint event id: %d, filter: %s\n",
-				id, filter);
+	kp_verbose_printf(ks, "enable tracepoint event id: %d, filter: %s "
+			      "pid: %d\n", id, filter, task_tgid_vnr(task));
 
 	memset(&attr, 0, sizeof(attr));
 	attr.type = PERF_TYPE_TRACEPOINT;	
