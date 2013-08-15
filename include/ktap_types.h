@@ -267,6 +267,7 @@ typedef struct ktap_global_state {
 	struct ktap_state *mainthread;
 #ifdef __KERNEL__
 	pid_t trace_pid;
+	struct task_struct *trace_task;
 	cpumask_var_t cpumask;
 	int print_timestamp;
 	struct ring_buffer *buffer;

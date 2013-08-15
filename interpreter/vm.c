@@ -1028,11 +1028,6 @@ static __always_inline int trace_get_context_bit(void)
 /* todo: make this per-session aware */
 static void __percpu *kp_pcpu_data[KTAP_PERCPU_DATA_MAX][PERF_NR_CONTEXTS];
 
-static void *kp_percpu_data_cpu(int type, int cpu)
-{
-	return per_cpu_ptr(kp_pcpu_data[type][trace_get_context_bit()], cpu);
-}
-
 void *kp_percpu_data(int type)
 {
 	return this_cpu_ptr(kp_pcpu_data[type][trace_get_context_bit()]);
@@ -1111,9 +1106,18 @@ void free_all_ci(ktap_state *ks)
 
 	for_each_possible_cpu(cpu) {
 		ktap_state *ks;
+		int j;
 
-		ks = kp_percpu_data_cpu(KTAP_PERCPU_DATA_STATE, cpu);
-		free_ci(ks);
+		for (j = 0; j < PERF_NR_CONTEXTS; j++) {
+			if (!kp_pcpu_data[KTAP_PERCPU_DATA_STATE][j])
+				break;
+
+			ks = per_cpu_ptr(kp_pcpu_data[KTAP_PERCPU_DATA_STATE][j], cpu);
+			if (!ks)
+				break;
+
+			free_ci(ks);
+		}
 	}
 
 	free_ci(ks);
@@ -1178,8 +1182,7 @@ static void wait_user_completion(ktap_state *ks)
 /* kp_wait: used for mainthread waiting for exit */
 static void kp_wait(ktap_state *ks)
 {
-	pid_t trace_pid = G(ks)->trace_pid;
-	struct task_struct *tsk = pid_task(find_vpid(trace_pid), PIDTYPE_PID);
+	struct task_struct *task = G(ks)->trace_task;
 
 	if (ks != G(ks)->mainthread)
 		return;
@@ -1203,10 +1206,8 @@ static void kp_wait(ktap_state *ks)
 		}
 
 		/* stop waiting if target pid is exited */
-		if (trace_pid != -1) {
-			if (tsk->state == TASK_DEAD)
+		if (task && task->state == TASK_DEAD)
 				break;
-		}
 	}
 
 	/* newline for handle CTRL+C display as ^C */
@@ -1226,6 +1227,9 @@ void kp_final_exit(ktap_state *ks)
 	if (!list_empty(&G(ks)->probe_events_head) ||
 	    !list_empty(&G(ks)->timers))
 		kp_wait(ks);
+
+	if (G(ks)->trace_task)
+		put_task_struct(G(ks)->trace_task);
 
 	kp_probe_exit(ks);
 	kp_exit_timers(ks);
@@ -1252,6 +1256,7 @@ void kp_final_exit(ktap_state *ks)
 ktap_state *kp_newstate(struct ktap_parm *parm, char **argv)
 {
 	ktap_state *ks;
+	pid_t pid;
 	int cpu;
 
 	ks = kzalloc(sizeof(ktap_state) + sizeof(ktap_global_state),
@@ -1264,13 +1269,29 @@ ktap_state *kp_newstate(struct ktap_parm *parm, char **argv)
 	G(ks)->seed = 201236; /* todo: make more random in future */
 	G(ks)->task = current;
 	G(ks)->verbose = parm->verbose; /* for debug use */
-	G(ks)->trace_pid = (pid_t)parm->trace_pid;
 	G(ks)->print_timestamp = parm->print_timestamp;
 	INIT_LIST_HEAD(&(G(ks)->timers));
+	INIT_LIST_HEAD(&(G(ks)->probe_events_head));
 	G(ks)->exit = 0;
 
 	if (kp_transport_init(ks))
 		goto out;
+
+	pid = (pid_t)parm->trace_pid;
+	if (pid != -1) {
+		struct task_struct *task;
+
+		rcu_read_lock();
+		task = pid_task(find_vpid(pid), PIDTYPE_PID);
+		if (!task) {
+			kp_error(ks, "cannot find pid %d\n", pid);
+			rcu_read_unlock();
+			goto out;
+		}
+		G(ks)->trace_task = task;
+		get_task_struct(task);
+		rcu_read_unlock();
+	}
 
 	if( !alloc_cpumask_var(&G(ks)->cpumask, GFP_KERNEL))
 		goto out;
@@ -1311,6 +1332,7 @@ ktap_state *kp_newstate(struct ktap_parm *parm, char **argv)
 	return ks;
 
  out:
+	G(ks)->exit = 1;
 	kp_final_exit(ks);
 	return NULL;
 }

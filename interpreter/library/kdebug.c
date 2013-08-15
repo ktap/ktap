@@ -381,7 +381,8 @@ static void start_probe_by_id(ktap_state *ks, struct task_struct *task,
 	int cpu, ret;
 
 	kp_verbose_printf(ks, "enable tracepoint event id: %d, filter: %s "
-			      "pid: %d\n", id, filter, task_tgid_vnr(task));
+			      "pid: %d\n", id, filter,
+			      task ? task_tgid_vnr(task) : -1);
 
 	memset(&attr, 0, sizeof(attr));
 	attr.type = PERF_TYPE_TRACEPOINT;	
@@ -468,8 +469,7 @@ static int ktap_lib_probe_by_id(ktap_state *ks)
 	char *start;
 	ktap_value *tracefunc;
 	ktap_closure *cl = NULL;
-	int trace_pid = G(ks)->trace_pid;
-	struct task_struct *task = NULL;
+	struct task_struct *task = G(ks)->trace_task;
 	char filter_str[128] = {0};
 	char *filter, *ptr1, *sep, *ptr;
 
@@ -482,14 +482,6 @@ static int ktap_lib_probe_by_id(ktap_state *ks)
 
 	if (!cl)
 		return -1;
-
-	if (trace_pid != -1) {
-		task = pid_task(find_vpid(trace_pid), PIDTYPE_PID);
-		if (!task) {
-			kp_error(ks, "cannot find pid %d\n", trace_pid);
-			return -1;
-		}
-	}
 
 	start = (char *)ids_str;
 
@@ -587,8 +579,6 @@ void kp_probe_exit(ktap_state *ks)
 
 int kp_probe_init(ktap_state *ks)
 {
-	INIT_LIST_HEAD(&(G(ks)->probe_events_head));
-
 	G(ks)->trace_enabled = 1;
 	return 0;
 }

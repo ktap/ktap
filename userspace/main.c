@@ -369,6 +369,8 @@ static int fork_workload(int ktap_fd)
 	execlp(filename, exec_cmd, NULL);
 
 	perror(exec_cmd);
+	exit(-1);
+
 	return -1;
 }
 

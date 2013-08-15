@@ -80,6 +80,9 @@ static inline void set_next_as_exit(ktap_state *ks)
 	ktap_callinfo *ci;
 
 	ci = ks->ci;
+	if (!ci)
+		return;
+
 	ci->u.l.savedpc = &kp_stub_exit_instr;
 
 	/* See precall, ci changed to ci->prev after invoke C function */
