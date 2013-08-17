@@ -74,7 +74,7 @@ static void *reader_thread(void *data)
 	}
 
 	while ((len = read(fd, buf, sizeof(buf))) > 0)
-		write(1, buf, len);
+		write(2, buf, len);
 
 	close(fd);
 
