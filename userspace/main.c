@@ -31,7 +31,6 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <math.h>
-#include <getopt.h>
 
 #include "../include/ktap_types.h"
 #include "../include/ktap_opcodes.h"
@@ -275,26 +274,18 @@ static void usage(const char *msg)
 {
 	fprintf(stderr, msg);
 	fprintf(stderr,
-"Usage: ktap [options] FILE        Run script in file\n"
-"   or: ktap [options] -e SCRIPT   Run given script\n"
+"Usage: ktap [options] script [args] -- cmd [args]\n"
+"     or: ktap [options] -e one-liner  -- cmd [args]\n"
 "\n"
 "Options:\n"
-"  -o, --output FILE\n"
-"               send script output to file, instead of stdout\n"
-"  -p, --pid <pid>\n"
-"                specific tracing pid\n"
-"  -C, --cpu <cpu>\n"
-"                cpu to monitor in system-wide\n"
-"  -c, --cmd <cmd>\n"
-"                workload to tracing\n"
-"  -T, --time\n"
-"                show timestamp for event\n"
-"  -V, --version\n"
-"                show version\n"
-"  -v, --verbose\n"
-"                enable verbose mode\n"
-"  -b, --list-bc\n"
-"                list bytecode\n");
+"  -o file        : send script output to file, instead of stderr\n"
+"  -p pid         : specific tracing pid\n"
+"  -C cpu         : cpu to monitor in system-wide\n"
+"  -T             : show timestamp for event\n"
+"  -V             : show version\n"
+"  -v             : enable verbose mode\n"
+"  -b             : list byte codes\n"
+"  -- cmd [args]  : workload to tracing\n");
 
 	exit(EXIT_FAILURE);
 }
@@ -330,20 +321,11 @@ static int ktapc_writer(const void* p, size_t sz, void* ud)
 
 
 static int forks;
-static char exec_cmd[128];
+static char **workload_argv;
+
 static int fork_workload(int ktap_fd)
 {
-	char filename[128], *sep;
 	int pid;
-
-	sep = strchr(exec_cmd, ' ');
-	if (!sep) {
-		strncpy(filename, exec_cmd, strlen(exec_cmd));
-		filename[strlen(exec_cmd)] = '\0';
-	} else {
-		strncpy(filename, exec_cmd, sep - exec_cmd);
-		filename[sep - exec_cmd] = '\0';
-	}
 
 	pid = fork();
 	if (pid < 0)
@@ -354,7 +336,7 @@ static int fork_workload(int ktap_fd)
 
 	signal(SIGTERM, SIG_DFL);
 
-	execvp("", (char **)exec_cmd);
+	execvp("", workload_argv);
 
 	/*
 	 * waiting ktapvm prepare all tracing event
@@ -362,9 +344,9 @@ static int fork_workload(int ktap_fd)
 	 */
 	pause();
 
-	execlp(filename, exec_cmd, NULL);
+	execvp(workload_argv[0], workload_argv);
 
-	perror(exec_cmd);
+	perror(workload_argv[0]);
 	exit(-1);
 
 	return -1;
@@ -408,49 +390,63 @@ static int trace_pid = -1;
 static int trace_cpu = -1;
 static int print_timestamp;
 
-static int parse_option(int argc, char **argv)
+static const char *script_file;
+static int script_args_start;
+static int script_args_end;
+
+static void parse_option(int argc, char **argv)
 {
-	int option_index = 0;
 	char pid[32] = {0};
 	char cpu_str[32] = {0};
+	char *next_arg;
+	int i, j;
 
-	for (;;) {
-		static struct option long_options[] = {
-			{"output",	required_argument, NULL, 'o'},
-			{"program",	required_argument, NULL, 'e'},
-			{"pid",		required_argument, NULL, 'p'},
-			{"cpu",		required_argument, NULL, 'C'},
-			{"cmd",		required_argument, NULL, 'c'},
-                        {"verbose",	no_argument, NULL, 'v'},
-			{"list-bc",	no_argument, NULL, 'b'},
-			{"version",	no_argument, NULL, 'V'},
-			{"help",	no_argument, NULL, '?'},
-			{NULL, 0, NULL, 0}
-		};
-		int c = getopt_long(argc, argv, "o:e:p:C:c:TVvb?", long_options,
-							&option_index);
-		if (c == -1)
-			break;
+	
+	for (i = 1; i < argc; i++) {
+		if (argv[i][0] != '-') {
+			script_file = argv[i];
+			if (!script_file)
+				usage("");
 
-		switch (c) {
+			script_args_start = i + 1;
+			script_args_end = argc;
+
+			for (j = i + 1; i < argc; j++) {
+				if (!argv[j])
+					return;
+
+				if (argv[j][0] == '-' && argv[j][1] == '-') {
+					script_args_end = j;
+
+					forks = 1;
+					workload_argv = &argv[j + 1];
+					return;
+				}
+			}
+
+			return;
+		}
+
+		next_arg = argv[i + 1];
+
+		switch (argv[i][1]) {
 		case 'o':
-			memset(output_filename, 0, sizeof(output_filename));
-			strncpy(output_filename, optarg, strlen(optarg));
+			strncpy(output_filename, next_arg, strlen(next_arg));
+			i++;
 			break;
 		case 'e':
-			strncpy(oneline_src, optarg, strlen(optarg));
+			strncpy(oneline_src, next_arg, strlen(next_arg));
+			i++;
 			break;
 		case 'p':
-			strncpy(pid, optarg, strlen(optarg));
+			strncpy(pid, next_arg, strlen(next_arg));
 			trace_pid = atoi(pid);
+			i++;
 			break;
 		case 'C':
-			strncpy(cpu_str, optarg, strlen(optarg));
+			strncpy(cpu_str, next_arg, strlen(next_arg));
 			trace_cpu = atoi(cpu_str);
-			break;
-		case 'c':
-			forks = 1;
-			strncpy(exec_cmd, optarg, strlen(optarg));
+			i++;
 			break;
 		case 'T':
 			print_timestamp = 1;
@@ -463,18 +459,14 @@ static int parse_option(int argc, char **argv)
 			break;
 		case 'V':
 		case '?':
+		case 'h':
 			usage("");
 			break;
 		default:
-			usage("wrong argument");
+			usage("wrong argument\n");
 			break;
 		}
 	}
-
-//	if (optind >= argc)
-//		usage("parse options failure\n");
-
-	return optind;
 }
 
 static void compile(const char *input)
@@ -541,37 +533,36 @@ static void compile(const char *input)
 int main(int argc, char **argv)
 {
 	char **ktapvm_argv;
-	char *filename;
-	int src_argindex, new_index, i;
+	int new_index, i;
 
 	if (argc == 1)
 		usage("");
 
-	src_argindex = parse_option(argc, argv);
+	parse_option(argc, argv);
 
 	if (oneline_src[0] != '\0')
-		filename = "oneline";
-	else
-		filename = argv[src_argindex];
-	compile(filename);
+		script_file = "one-liner";
 
-	ktapvm_argv = (char **)malloc(sizeof(char *)*(argc-src_argindex+1));
+	compile(script_file);
+
+	ktapvm_argv = (char **)malloc(sizeof(char *)*(script_args_end -
+					script_args_start));
 	if (!ktapvm_argv) {
 		fprintf(stderr, "canno allocate ktapvm_argv\n");
 		return -1;
 	}
 
-	ktapvm_argv[0] = malloc(strlen(filename) + 1);
+	ktapvm_argv[0] = malloc(strlen(script_file) + 1);
 	if (!ktapvm_argv[0]) {
 		fprintf(stderr, "canno allocate memory\n");
 		return -1;
 	}
-	strcpy(ktapvm_argv[0], filename);
-	ktapvm_argv[0][strlen(filename)] = '\0';
+	strcpy(ktapvm_argv[0], script_file);
+	ktapvm_argv[0][strlen(script_file)] = '\0';
 
 	/* pass rest argv into ktapvm */
 	new_index = 1;
-	for (i = src_argindex + 1; i < argc; i++) {
+	for (i = script_args_start; i < script_args_end; i++) {
 		ktapvm_argv[new_index] = malloc(strlen(argv[i]) + 1);
 		if (!ktapvm_argv[new_index]) {
 			fprintf(stderr, "canno allocate memory\n");
