@@ -20,6 +20,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <sched.h>
 #include <string.h>
 #include <signal.h>
 #include <stdarg.h>
@@ -355,16 +356,11 @@ static int fork_workload(int ktap_fd)
 
 	execvp("", (char **)exec_cmd);
 
-	sleep(1);
-	while (1) {
-		int trace_started;
-
-		trace_started = ioctl(ktap_fd, KTAP_CMD_IOC_TRACING_STARTED, 0);
-		if (trace_started)
-			break;
-
-		usleep(1);
-	}
+	/*
+	 * waiting ktapvm prepare all tracing event
+	 * make it more robust in future.
+	 */
+	pause();
 
 	execlp(filename, exec_cmd, NULL);
 
@@ -393,8 +389,10 @@ static void run_ktapvm()
 
 	ktapio_create();
 
-	if (forks)
+	if (forks) {
 		uparm.trace_pid = fork_workload(ktap_fd);
+		uparm.workload = 1;
+	}
 
 	ioctl(ktap_fd, KTAP_CMD_IOC_RUN, &uparm);
 

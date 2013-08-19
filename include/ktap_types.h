@@ -22,6 +22,7 @@ struct ktap_parm {
 	char **argv;
 	int verbose;
 	int trace_pid;
+	int workload;
 	int trace_cpu;
 	int print_timestamp;
 };
@@ -32,7 +33,6 @@ struct ktap_parm {
  */
 #define KTAP_CMD_IOC_VERSION		('$' + 0)
 #define KTAP_CMD_IOC_RUN		('$' + 1)
-#define KTAP_CMD_IOC_TRACING_STARTED	('$' + 2)
 #define KTAP_CMD_IOC_EXIT		('$' + 3)
 
 #define KTAP_ENV	"_ENV"
@@ -268,6 +268,7 @@ typedef struct ktap_global_state {
 #ifdef __KERNEL__
 	pid_t trace_pid;
 	struct task_struct *trace_task;
+	int workload;
 	cpumask_var_t cpumask;
 	int print_timestamp;
 	struct ring_buffer *buffer;
@@ -277,7 +278,6 @@ typedef struct ktap_global_state {
 	ktap_value *cfunction_tbl;
 	struct task_struct *task;
 	int trace_enabled;
-	int trace_started;
 	struct list_head timers;
 	struct list_head probe_events_head;
 	int exit;

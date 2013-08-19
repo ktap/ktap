@@ -1193,7 +1193,10 @@ static void kp_wait(ktap_state *ks)
 	kp_puts(ks, "Press Control-C to stop.\n");
 
 	ks->stop = 0;
-	G(ks)->trace_started = 1;
+
+	/* tell workload process to start executing */
+	if (G(ks)->workload)
+		send_sig(SIGINT, G(ks)->trace_task, 0);
 
 	while (!ks->stop) {
 		set_current_state(TASK_INTERRUPTIBLE);
@@ -1270,6 +1273,7 @@ ktap_state *kp_newstate(struct ktap_parm *parm, char **argv)
 	G(ks)->task = current;
 	G(ks)->verbose = parm->verbose; /* for debug use */
 	G(ks)->print_timestamp = parm->print_timestamp;
+	G(ks)->workload = parm->workload;
 	INIT_LIST_HEAD(&(G(ks)->timers));
 	INIT_LIST_HEAD(&(G(ks)->probe_events_head));
 	G(ks)->exit = 0;
