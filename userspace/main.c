@@ -274,10 +274,10 @@ static void usage(const char *msg)
 {
 	fprintf(stderr, msg);
 	fprintf(stderr,
-"Usage: ktap [options] script [args] -- cmd [args]\n"
-"     or: ktap [options] -e one-liner  -- cmd [args]\n"
+"Usage: ktap [options] file [script args] -- cmd [args]\n"
+"   or: ktap [options] -e one-liner  -- cmd [args]\n"
 "\n"
-"Options:\n"
+"Options and arguments:\n"
 "  -o file        : send script output to file, instead of stderr\n"
 "  -p pid         : specific tracing pid\n"
 "  -C cpu         : cpu to monitor in system-wide\n"
@@ -285,6 +285,7 @@ static void usage(const char *msg)
 "  -V             : show version\n"
 "  -v             : enable verbose mode\n"
 "  -b             : list byte codes\n"
+"  file           : program read from script file\n"
 "  -- cmd [args]  : workload to tracing\n");
 
 	exit(EXIT_FAILURE);
