@@ -6,7 +6,7 @@ KTAP TRACING
 1. High Level Tracing Primitive
 -------------------------------
 
-1). trace EVENTDEF function (e) { body }
+1). trace EVENTDEF function (e) { action }
  This is the basic tracing block for ktap, you need to use a specific EVENTDEF
  string, and own event function.
 
@@ -21,11 +21,11 @@ KTAP TRACING
  All events is based on: /sys/kernel/debug/tracing/events/$SYS/$EVENT
 
  Note that you can use function name after EVENTDEF like below:
-	function event_func (e) { body }
+	function event_func (e) { action }
 	trace EVENTDEF event_func
  It's same as above one.
 
-2). trace_end function () { body }
+2). trace_end function () { action }
  This is based on kdebug.probe_end function.
 
 
@@ -42,7 +42,7 @@ KTAP TRACING
 
  The second argument in above examples is a function:
 
- function eventfun (e) { body }
+ function eventfun (e) { action }
 
  the argument of eventfun is a event object, we can operate on this object via several ways:
  e.name

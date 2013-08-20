@@ -15,12 +15,8 @@ It's similar with Linux Systemtap and Solaris Dtrace.
 
 KTAP have different design principles from Linux mainstream dynamic tracing
 language in that it's based on bytecode, so it doesn't depend upon GCC,
-doesn't require compiling a kernel module, safe to use in production
-environment, fulfilling the embedd ecosystem's tracing needs.
-
-KTAP also is designed for enabling great interoperability with Linux kernel,
-it gives user the power to modify and extend the system, and let users
-explore the system in an easy way.
+doesn't require compiling kernel module for each script, safe to use in
+production environment, fulfilling the embedd ecosystem's tracing needs.
 
 KTAP implementation is initial based on Lua programming language,
 Lua is a powerful, fast, lightweight, embeddable scripting language.
@@ -52,9 +48,9 @@ Building & Running
 	[root@jovi]# cd ktap
 	[root@jovi]# make       #generate ktapvm kernel module and ktap binary
 
-3) Insert ktapvm kernel module(make sure debugfs mounted)  
+3) Load ktapvm kernel module(make sure debugfs mounted)  
 
-	[root@jovi]# insmod ./ktapvm.ko
+	[root@jovi]# make load  #need to be root or have sudo access
 
 4) Running ktap  
 
@@ -63,7 +59,7 @@ Building & Running
 
 License
 -------
-ktap is GPL licensed.
+GPL v2
 
 
 Contribution

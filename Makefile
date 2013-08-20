@@ -88,6 +88,10 @@ install: mod ktap
 	install -m 644 -c *.ko /lib/modules/$(KVERSION)/ktapvm/
 	/sbin/depmod -a
 
+load:
+	rmmod ktapvm > /dev/null;
+	insmod ktapvm.ko
+
 clean:
 	$(MAKE) -C $(KERNEL_SRC) M=$(PWD) clean
 	$(RM) ktap

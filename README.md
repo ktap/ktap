@@ -11,12 +11,8 @@ It's similar with Linux Systemtap and Solaris Dtrace.
 
 KTAP have different design principles from Linux mainstream dynamic tracing
 language in that it's based on bytecode, so it doesn't depend upon GCC,
-doesn't require compiling a kernel module, safe to use in production
-environment, fulfilling the embedd ecosystem's tracing needs.
-
-KTAP also is designed for enabling great interoperability with Linux kernel,
-it gives user the power to modify and extend the system, and let users
-explore the system in an easy way.
+doesn't require compiling kernel module for each script, safe to use in
+production environment, fulfilling the embedd ecosystem's tracing needs.
 
 More information can be found at doc/ directory.
 
@@ -44,9 +40,9 @@ Building & Running
 	[root@jovi]# cd ktap
 	[root@jovi]# make       #generate ktapvm kernel module and ktap binary
 
-3) Insert ktapvm kernel module  
+3) Load ktapvm kernel module(make sure debugfs mounted)  
 
-	[root@jovi]# insmod ./ktapvm.ko
+	[root@jovi]# make load  #need to be root or have sudo access
 
 4) Running ktap  
 
@@ -55,24 +51,28 @@ Building & Running
 
 Examples
 -------------------------------------
-1) simplest one-line command to enable all tracepoints  
+1) simplest one-liner command to enable all tracepoints  
 
 	ktap -e 'trace "*:*" function (e) { print(e) }'
 
-2) function tracing  
+2) syscall tracing on target process  
+
+	trace 'trace "syscalls:*" function (e) { print(e) }' -- ls
+
+3) function tracing  
 
 	ktap -e 'trace "ftrace:function" function (e) { print(e) }'  
 
 	ktap -e 'trace "ftrace:function /ip==mutex*/" function (e) { print(e) }'
 
-3) simple syscall tracing  
+4) simple syscall tracing  
 
 	#scripts/syscalls.kp
 	trace "syscalls:*" function (e) {
 		print(cpu(), pid(), execname(), e)
 	}
 
-4) syscall tracing in histogram style  
+5) syscall tracing in histogram style  
 
 	#scripts/syscalls_histogram.kp
 	hist = {}
@@ -85,7 +85,7 @@ Examples
 		    histogram(hist)
 	}
 
-5) kprobe tracing  
+6) kprobe tracing  
 
 	#scripts/kprobes-do-sys-open.kp
 	trace "probe:do_sys_open dfd=%di filename=%dx flags=%cx mode=+4($stack)" function (e) {
@@ -97,7 +97,7 @@ Examples
 	}
 
 
-6) uprobe tracing  
+7) uprobe tracing  
 
 	#scripts/uprobes-malloc.kp
 	#do not use 0x000773c0 in your system,
@@ -131,9 +131,8 @@ You are encouraged to report bugs, provide feedback, send feature request,
 or hack on it.
 
 
-ktap links
-----------
-LWN review on ktap by Jonathan Corbet: http://lwn.net/Articles/551314/  
-presentation slides of LinuxCon Japan 2013: http://events.linuxfoundation.org/sites/events/files/lcjpcojp13_zhangwei.pdf
+links
+-----
+See doc/references.txt
 
 
