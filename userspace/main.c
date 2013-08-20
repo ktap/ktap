@@ -355,7 +355,9 @@ static int fork_workload(int ktap_fd)
 
 #define KTAPVM_PATH "/sys/kernel/debug/ktap/ktapvm"
 
+static char *output_filename;
 pid_t ktap_pid;
+
 static void run_ktapvm()
 {
         int ktapvm_fd, ktap_fd;
@@ -370,7 +372,7 @@ static void run_ktapvm()
 	if (ktap_fd < 0)
 		handle_error("ioctl ktapvm failed");
 
-	ktapio_create();
+	ktapio_create(output_filename);
 
 	if (forks) {
 		uparm.trace_pid = fork_workload(ktap_fd);
@@ -385,7 +387,6 @@ static void run_ktapvm()
 
 int verbose;
 static int dump_bytecode;
-static char output_filename[128];
 static char oneline_src[1024];
 static int trace_pid = -1;
 static int trace_cpu = -1;
@@ -402,7 +403,6 @@ static void parse_option(int argc, char **argv)
 	char *next_arg;
 	int i, j;
 
-	
 	for (i = 1; i < argc; i++) {
 		if (argv[i][0] != '-') {
 			script_file = argv[i];
@@ -412,26 +412,27 @@ static void parse_option(int argc, char **argv)
 			script_args_start = i + 1;
 			script_args_end = argc;
 
-			for (j = i + 1; i < argc; j++) {
-				if (!argv[j])
-					return;
-
-				if (argv[j][0] == '-' && argv[j][1] == '-') {
-					script_args_end = j;
-
-					forks = 1;
-					workload_argv = &argv[j + 1];
-					return;
-				}
+			for (j = i + 1; j < argc; j++) {
+				if (argv[j][0] == '-' && argv[j][1] == '-')
+					goto found_cmd;
 			}
 
 			return;
+		}
+
+		if (argv[i][0] == '-' && argv[i][1] == '-') {
+			j = i;
+			goto found_cmd;
 		}
 
 		next_arg = argv[i + 1];
 
 		switch (argv[i][1]) {
 		case 'o':
+			output_filename = malloc(strlen(next_arg) + 1);
+			if (!output_filename)
+				return;
+
 			strncpy(output_filename, next_arg, strlen(next_arg));
 			i++;
 			break;
@@ -468,6 +469,13 @@ static void parse_option(int argc, char **argv)
 			break;
 		}
 	}
+
+	return;
+
+ found_cmd:
+	script_args_end = j;
+	forks = 1;
+	workload_argv = &argv[j + 1];
 }
 
 static void compile(const char *input)
@@ -475,7 +483,7 @@ static void compile(const char *input)
 	ktap_closure *cl;
 	char *buff;
 	struct stat sb;
-	int fdin, fdout;
+	int fdin;
 
 	if (oneline_src[0] != '\0') {
 		init_dummy_global_state();
@@ -514,21 +522,6 @@ static void compile(const char *input)
 		handle_error("malloc failed");
 
 	ktapc_dump(cl->l.p, ktapc_writer, NULL, 0);
-
-	if (output_filename[0] != '\0') {
-		int ret;
-
-		fdout = open(output_filename, O_RDWR | O_CREAT | O_TRUNC, 0);
-		if (fdout < 0)
-			handle_error("open failed");
-
-		ret = write(fdout, uparm.trunk, uparm.trunk_len);
-		if (ret < 0)
-			handle_error("write failed");
-
-		close(fdout);
-		exit(0);
-	}
 }
 
 int main(int argc, char **argv)

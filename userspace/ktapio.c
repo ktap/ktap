@@ -55,9 +55,19 @@ static void *reader_thread(void *data)
 {
 	char buf[MAX_BUFLEN];
 	char filename[PATH_MAX];
-	int failed = 0, fd, len;
+	const char *output = data; 
+	int failed = 0, fd, out_fd, len;
 
 	block_sigint();
+
+	if (output) {
+		out_fd = open(output, O_CREAT | O_WRONLY | O_TRUNC);
+		if (out_fd < 0) {
+			fprintf(stderr, "Cannot open output file %s\n", output);
+			return NULL;
+		}
+	} else
+		out_fd = 2;
 
 	sprintf(filename, "/sys/kernel/debug/ktap/trace_pipe_%d", ktap_pid);
 
@@ -74,20 +84,21 @@ static void *reader_thread(void *data)
 	}
 
 	while ((len = read(fd, buf, sizeof(buf))) > 0)
-		write(2, buf, len);
+		write(out_fd, buf, len);
 
 	close(fd);
+	close(out_fd);
 
 	return NULL;
 }
 
-int ktapio_create(void)
+int ktapio_create(const char *output)
 {
 	pthread_t reader;
 
 	signal(SIGINT, sigfunc);
 
-	if (pthread_create(&reader, NULL, reader_thread, NULL) < 0)
+	if (pthread_create(&reader, NULL, reader_thread, (void *)output) < 0)
 		handle_error("pthread_create reader_thread failed\n");
 
 	return 0;

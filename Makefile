@@ -89,7 +89,6 @@ install: mod ktap
 	/sbin/depmod -a
 
 load:
-	rmmod ktapvm > /dev/null;
 	insmod ktapvm.ko
 
 clean:

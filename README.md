@@ -57,7 +57,7 @@ Examples
 
 2) syscall tracing on target process  
 
-	trace 'trace "syscalls:*" function (e) { print(e) }' -- ls
+	ktap -e 'trace "syscalls:*" function (e) { print(e) }' -- ls
 
 3) function tracing  
 
