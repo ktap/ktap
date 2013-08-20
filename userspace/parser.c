@@ -1757,7 +1757,7 @@ ktap_closure *ktapc_parser(char *ptr, const char *name)
 	ktap_lexstate lexstate;
 	ktap_funcstate funcstate;
 	Dyndata dyd;
-	Mbuffer buff;
+	ktap_mbuffer buff;
 	int firstchar = *ptr++;
 	ktap_closure *cl = ktapc_newlclosure(1);  /* create main closure */
 

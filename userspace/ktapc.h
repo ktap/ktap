@@ -102,11 +102,11 @@ typedef struct ktap_token {
 	SemInfo seminfo;
 } ktap_token;
 
-typedef struct Mbuffer {
+typedef struct ktap_mbuffer {
 	char *buffer;
 	size_t n;
 	size_t buffsize;
-} Mbuffer;
+} ktap_mbuffer;
 
 #define mbuff_init(buff)	((buff)->buffer = NULL, (buff)->buffsize = 0)
 #define mbuff(buff)		((buff)->buffer)
@@ -133,7 +133,7 @@ typedef struct ktap_lexstate {
 	ktap_token t;  /* current token */
 	ktap_token lookahead;  /* look ahead token */
 	struct ktap_funcstate *fs;  /* current function (parser) */
-	Mbuffer *buff;  /* buffer for tokens */
+	ktap_mbuffer *buff;  /* buffer for tokens */
 	struct Dyndata *dyd;  /* dynamic structures used by the parser */
 	ktap_string *source;  /* current source name */
 	ktap_string *envn;  /* environment variable name */

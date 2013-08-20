@@ -50,7 +50,7 @@ static void lexerror(ktap_lexstate *ls, const char *msg, int token);
 
 static void save(ktap_lexstate *ls, int c)
 {
-	Mbuffer *b = ls->buff;
+	ktap_mbuffer *b = ls->buff;
 	if (mbuff_len(b) + 1 > mbuff_size(b)) {
 		size_t newsize;
 		if (mbuff_size(b) >= MAX_SIZET / 2)
