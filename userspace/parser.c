@@ -50,10 +50,10 @@ typedef struct BlockCnt {
 /*
  * prototypes for recursive non-terminal functions
  */
-static void statement (LexState *ls);
-static void expr (LexState *ls, expdesc *v);
+static void statement (ktap_lexstate *ls);
+static void expr (ktap_lexstate *ls, expdesc *v);
 
-static void anchor_token(LexState *ls)
+static void anchor_token(ktap_lexstate *ls)
 {
 	/* last token from outer function must be EOS */
 	ktap_assert((int)(ls->fs != NULL) || ls->t.token == TK_EOS);
@@ -64,13 +64,13 @@ static void anchor_token(LexState *ls)
 }
 
 /* semantic error */
-static void semerror(LexState *ls, const char *msg)
+static void semerror(ktap_lexstate *ls, const char *msg)
 {
 	ls->t.token = 0;  /* remove 'near to' from final message */
 	lex_syntaxerror(ls, msg);
 }
 
-static void error_expected(LexState *ls, int token)
+static void error_expected(ktap_lexstate *ls, int token)
 {
 	lex_syntaxerror(ls,
 		ktapc_sprintf("%s expected", lex_token2str(ls, token)));
@@ -94,7 +94,7 @@ static void checklimit(FuncState *fs, int v, int l, const char *what)
 		errorlimit(fs, l, what);
 }
 
-static int testnext(LexState *ls, int c)
+static int testnext(ktap_lexstate *ls, int c)
 {
 	if (ls->t.token == c) {
 		lex_next(ls);
@@ -104,13 +104,13 @@ static int testnext(LexState *ls, int c)
 		return 0;
 }
 
-static void check (LexState *ls, int c)
+static void check (ktap_lexstate *ls, int c)
 {
 	if (ls->t.token != c)
 		error_expected(ls, c);
 }
 
-static void checknext (LexState *ls, int c)
+static void checknext (ktap_lexstate *ls, int c)
 {
 	check(ls, c);
 	lex_next(ls);
@@ -118,7 +118,7 @@ static void checknext (LexState *ls, int c)
 
 #define check_condition(ls,c,msg)	{ if (!(c)) lex_syntaxerror(ls, msg); }
 
-static void check_match(LexState *ls, int what, int who, int where)
+static void check_match(ktap_lexstate *ls, int what, int who, int where)
 {
 	if (!testnext(ls, what)) {
 		if (where == ls->linenumber)
@@ -132,7 +132,7 @@ static void check_match(LexState *ls, int what, int who, int where)
 	}
 }
 
-static ktap_string *str_checkname(LexState *ls)
+static ktap_string *str_checkname(ktap_lexstate *ls)
 {
 	ktap_string *ts;
 
@@ -149,17 +149,17 @@ static void init_exp(expdesc *e, expkind k, int i)
 	e->u.info = i;
 }
 
-static void codestring (LexState *ls, expdesc *e, ktap_string *s)
+static void codestring (ktap_lexstate *ls, expdesc *e, ktap_string *s)
 {
 	init_exp(e, VK, codegen_stringK(ls->fs, s));
 }
 
-static void checkname(LexState *ls, expdesc *e)
+static void checkname(ktap_lexstate *ls, expdesc *e)
 {
 	codestring(ls, e, str_checkname(ls));
 }
 
-static int registerlocalvar(LexState *ls, ktap_string *varname)
+static int registerlocalvar(ktap_lexstate *ls, ktap_string *varname)
 {
 	FuncState *fs = ls->fs;
 	ktap_proto *f = fs->f;
@@ -175,7 +175,7 @@ static int registerlocalvar(LexState *ls, ktap_string *varname)
 	return fs->nlocvars++;
 }
 
-static void new_localvar(LexState *ls, ktap_string *name)
+static void new_localvar(ktap_lexstate *ls, ktap_string *name)
 {
 	FuncState *fs = ls->fs;
 	Dyndata *dyd = ls->dyd;
@@ -188,7 +188,7 @@ static void new_localvar(LexState *ls, ktap_string *name)
 	dyd->actvar.arr[dyd->actvar.n++].idx = (short)reg;
 }
 
-static void new_localvarliteral_(LexState *ls, const char *name, size_t sz)
+static void new_localvarliteral_(ktap_lexstate *ls, const char *name, size_t sz)
 {
 	new_localvar(ls, lex_newstring(ls, name, sz));
 }
@@ -204,7 +204,7 @@ static ktap_locvar *getlocvar(FuncState *fs, int i)
 	return &fs->f->locvars[idx];
 }
 
-static void adjustlocalvars(LexState *ls, int nvars)
+static void adjustlocalvars(ktap_lexstate *ls, int nvars)
 {
 	FuncState *fs = ls->fs;
 
@@ -304,7 +304,7 @@ static int singlevaraux(FuncState *fs, ktap_string *n, expdesc *var, int base)
 	}
 }
 
-static void singlevar(LexState *ls, expdesc *var)
+static void singlevar(ktap_lexstate *ls, expdesc *var)
 {
 	ktap_string *varname = str_checkname(ls);
 	FuncState *fs = ls->fs;
@@ -318,7 +318,7 @@ static void singlevar(LexState *ls, expdesc *var)
 	}
 }
 
-static void adjust_assign(LexState *ls, int nvars, int nexps, expdesc *e)
+static void adjust_assign(ktap_lexstate *ls, int nvars, int nexps, expdesc *e)
 {
 	FuncState *fs = ls->fs;
 	int extra = nvars - nexps;
@@ -342,13 +342,13 @@ static void adjust_assign(LexState *ls, int nvars, int nexps, expdesc *e)
 	}
 }
 
-static void enterlevel(LexState *ls)
+static void enterlevel(ktap_lexstate *ls)
 {
 	++ls->nCcalls;
 	checklimit(ls->fs, ls->nCcalls, KTAP_MAXCCALLS, "C levels");
 }
 
-static void closegoto(LexState *ls, int g, Labeldesc *label)
+static void closegoto(ktap_lexstate *ls, int g, Labeldesc *label)
 {
 	int i;
 	FuncState *fs = ls->fs;
@@ -374,7 +374,7 @@ static void closegoto(LexState *ls, int g, Labeldesc *label)
 /*
  * try to close a goto with existing labels; this solves backward jumps
  */
-static int findlabel(LexState *ls, int g)
+static int findlabel(ktap_lexstate *ls, int g)
 {
 	int i;
 	BlockCnt *bl = ls->fs->bl;
@@ -395,7 +395,7 @@ static int findlabel(LexState *ls, int g)
 	return 0;  /* label not found; cannot close goto */
 }
 
-static int newlabelentry(LexState *ls, Labellist *l, ktap_string *name,
+static int newlabelentry(ktap_lexstate *ls, Labellist *l, ktap_string *name,
 			 int line, int pc)
 {
 	int n = l->n;
@@ -415,7 +415,7 @@ static int newlabelentry(LexState *ls, Labellist *l, ktap_string *name,
  * check whether new label 'lb' matches any pending gotos in current
  * block; solves forward jumps
  */
-static void findgotos (LexState *ls, Labeldesc *lb)
+static void findgotos (ktap_lexstate *ls, Labeldesc *lb)
 {
 	Labellist *gl = &ls->dyd->gt;
 	int i = ls->fs->bl->firstgoto;
@@ -470,7 +470,7 @@ static void enterblock(FuncState *fs, BlockCnt *bl, u8 isloop)
 /*
  * create a label named "break" to resolve break statements
  */
-static void breaklabel(LexState *ls)
+static void breaklabel(ktap_lexstate *ls)
 {
 	ktap_string *n = ktapc_ts_new("break");
 	int l = newlabelentry(ls, &ls->dyd->label, n, 0, ls->fs->pc);
@@ -482,7 +482,7 @@ static void breaklabel(LexState *ls)
  * generates an error for an undefined 'goto'; choose appropriate
  * message when label name is a reserved word (which can only be 'break')
  */
-static void undefgoto(LexState *ls, Labeldesc *gt)
+static void undefgoto(ktap_lexstate *ls, Labeldesc *gt)
 {
 	const char *msg = isreserved(gt->name)
 			? "<%s> at line %d not inside a loop"
@@ -495,7 +495,7 @@ static void undefgoto(LexState *ls, Labeldesc *gt)
 static void leaveblock (FuncState *fs)
 {
 	BlockCnt *bl = fs->bl;
-	LexState *ls = fs->ls;
+	ktap_lexstate *ls = fs->ls;
 	if (bl->previous && bl->upval) {
 		/* create a 'jump to here' to close upvalues */
 		int j = codegen_jump(fs);
@@ -521,7 +521,7 @@ static void leaveblock (FuncState *fs)
 /*
  * adds a new prototype into list of prototypes
  */
-static ktap_proto *addprototype(LexState *ls)
+static ktap_proto *addprototype(ktap_lexstate *ls)
 {
 	ktap_proto *clp;
 	FuncState *fs = ls->fs;
@@ -540,14 +540,14 @@ static ktap_proto *addprototype(LexState *ls)
 /*
  * codes instruction to create new closure in parent function
  */
-static void codeclosure (LexState *ls, expdesc *v)
+static void codeclosure (ktap_lexstate *ls, expdesc *v)
 {
 	FuncState *fs = ls->fs->prev;
 	init_exp(v, VRELOCABLE, codegen_codeABx(fs, OP_CLOSURE, 0, fs->np - 1));
 	codegen_exp2nextreg(fs, v);  /* fix it at stack top (for GC) */
 }
 
-static void open_func(LexState *ls, FuncState *fs, BlockCnt *bl)
+static void open_func(ktap_lexstate *ls, FuncState *fs, BlockCnt *bl)
 {
 	ktap_proto *f;
 
@@ -573,7 +573,7 @@ static void open_func(LexState *ls, FuncState *fs, BlockCnt *bl)
 	enterblock(fs, bl, 0);
 }
 
-static void close_func(LexState *ls)
+static void close_func(ktap_lexstate *ls)
 {
 	FuncState *fs = ls->fs;
 	ktap_proto *f = fs->f;
@@ -607,7 +607,7 @@ static void close_func(LexState *ls)
  * 'until' closes syntactical blocks, but do not close scope,
  * so it handled in separate.
  */
-static int block_follow (LexState *ls, int withuntil)
+static int block_follow (ktap_lexstate *ls, int withuntil)
 {
 	switch (ls->t.token) {
 	case TK_ELSE: case TK_ELSEIF:
@@ -622,7 +622,7 @@ static int block_follow (LexState *ls, int withuntil)
 	}
 }
 
-static void statlist(LexState *ls)
+static void statlist(ktap_lexstate *ls)
 {
 	/* statlist -> { stat [`;'] } */
 	while (!block_follow(ls, 1)) {
@@ -634,7 +634,7 @@ static void statlist(LexState *ls)
 	}
 }
 
-static void fieldsel(LexState *ls, expdesc *v)
+static void fieldsel(ktap_lexstate *ls, expdesc *v)
 {
 	/* fieldsel -> ['.' | ':'] NAME */
 	FuncState *fs = ls->fs;
@@ -646,7 +646,7 @@ static void fieldsel(LexState *ls, expdesc *v)
 	codegen_indexed(fs, v, &key);
 }
 
-static void yindex(LexState *ls, expdesc *v)
+static void yindex(ktap_lexstate *ls, expdesc *v)
 {
 	/* index -> '[' expr ']' */
 	lex_next(ls);  /* skip the '[' */
@@ -668,7 +668,7 @@ struct ConsControl {
 	int tostore;  /* number of array elements pending to be stored */
 };
 
-static void recfield (LexState *ls, struct ConsControl *cc)
+static void recfield (ktap_lexstate *ls, struct ConsControl *cc)
 {
 	/* recfield -> (NAME | `['exp1`]') = exp1 */
 	FuncState *fs = ls->fs;
@@ -718,7 +718,7 @@ static void lastlistfield(FuncState *fs, struct ConsControl *cc)
 	}
 }
 
-static void listfield(LexState *ls, struct ConsControl *cc)
+static void listfield(ktap_lexstate *ls, struct ConsControl *cc)
 {
 	/* listfield -> exp */
 	expr(ls, &cc->v);
@@ -727,7 +727,7 @@ static void listfield(LexState *ls, struct ConsControl *cc)
 	cc->tostore++;
 }
 
-static void field (LexState *ls, struct ConsControl *cc)
+static void field (ktap_lexstate *ls, struct ConsControl *cc)
 {
 	/* field -> listfield | recfield */
 	switch(ls->t.token) {
@@ -748,7 +748,7 @@ static void field (LexState *ls, struct ConsControl *cc)
 	}
 }
 
-static void constructor (LexState *ls, expdesc *t)
+static void constructor (ktap_lexstate *ls, expdesc *t)
 {
 	/* constructor -> '{' [ field { sep field } [sep] ] '}'
 		sep -> ',' | ';' */
@@ -778,7 +778,7 @@ static void constructor (LexState *ls, expdesc *t)
 
 /* }====================================================================== */
 
-static void parlist (LexState *ls)
+static void parlist (ktap_lexstate *ls)
 {
 	/* parlist -> [ param { `,' param } ] */
 	FuncState *fs = ls->fs;
@@ -809,7 +809,7 @@ static void parlist (LexState *ls)
 	codegen_reserveregs(fs, fs->nactvar);  /* reserve register for parameters */
 }
 
-static void body (LexState *ls, expdesc *e, int ismethod, int line)
+static void body (ktap_lexstate *ls, expdesc *e, int ismethod, int line)
 {
 	/* body ->  `(' parlist `)' block END */
 	FuncState new_fs;
@@ -834,7 +834,7 @@ static void body (LexState *ls, expdesc *e, int ismethod, int line)
 	close_func(ls);
 }
 
-static int explist (LexState *ls, expdesc *v)
+static int explist (ktap_lexstate *ls, expdesc *v)
 {
 	/* explist -> expr { `,' expr } */
 	int n = 1;  /* at least one expression */
@@ -848,7 +848,7 @@ static int explist (LexState *ls, expdesc *v)
 	return n;
 }
 
-static void funcargs(LexState *ls, expdesc *f, int line)
+static void funcargs(ktap_lexstate *ls, expdesc *f, int line)
 {
 	FuncState *fs = ls->fs;
 	expdesc args;
@@ -899,7 +899,7 @@ static void funcargs(LexState *ls, expdesc *f, int line)
  * Expression parsing
  * =======================================================================
  */
-static void primaryexp(LexState *ls, expdesc *v)
+static void primaryexp(ktap_lexstate *ls, expdesc *v)
 {
 	/* primaryexp -> NAME | '(' expr ')' */
 	switch (ls->t.token) {
@@ -920,7 +920,7 @@ static void primaryexp(LexState *ls, expdesc *v)
 	}
 }
 
-static void suffixedexp(LexState *ls, expdesc *v)
+static void suffixedexp(ktap_lexstate *ls, expdesc *v)
 {
 	/* suffixedexp ->
 		primaryexp { '.' NAME | '[' exp ']' | ':' NAME funcargs | funcargs } */
@@ -960,7 +960,7 @@ static void suffixedexp(LexState *ls, expdesc *v)
 	}
 }
 
-static void simpleexp(LexState *ls, expdesc *v)
+static void simpleexp(ktap_lexstate *ls, expdesc *v)
 {
 	/* simpleexp -> NUMBER | STRING | NIL | TRUE | FALSE | ... |
 		constructor | FUNCTION body | suffixedexp */
@@ -1061,7 +1061,7 @@ static const struct {
  * subexpr -> (simpleexp | unop subexpr) { binop subexpr }
  * where `binop' is any binary operator with a priority higher than `limit'
  */
-static BinOpr subexpr(LexState *ls, expdesc *v, int limit)
+static BinOpr subexpr(ktap_lexstate *ls, expdesc *v, int limit)
 {
 	BinOpr op;
 	UnOpr uop;
@@ -1095,7 +1095,7 @@ static BinOpr subexpr(LexState *ls, expdesc *v, int limit)
 	return op;  /* return first untreated operator */
 }
 
-static void expr(LexState *ls, expdesc *v)
+static void expr(ktap_lexstate *ls, expdesc *v)
 {
 	subexpr(ls, v, 0);
 }
@@ -1107,7 +1107,7 @@ static void expr(LexState *ls, expdesc *v)
  * Rules for Statements
  * =======================================================================
  */
-static void block (LexState *ls)
+static void block (ktap_lexstate *ls)
 {
 	/* block -> statlist */
 	FuncState *fs = ls->fs;
@@ -1133,7 +1133,7 @@ struct LHS_assign {
  * table. If so, save original upvalue/local value in a safe place and
  * use this safe copy in the previous assignment.
  */
-static void check_conflict(LexState *ls, struct LHS_assign *lh, expdesc *v)
+static void check_conflict(ktap_lexstate *ls, struct LHS_assign *lh, expdesc *v)
 {
 	FuncState *fs = ls->fs;
 	int extra = fs->freereg;  /* eventual position to save local variable */
@@ -1162,7 +1162,7 @@ static void check_conflict(LexState *ls, struct LHS_assign *lh, expdesc *v)
 	}
 }
 
-static void assignment(LexState *ls, struct LHS_assign *lh, int nvars)
+static void assignment(ktap_lexstate *ls, struct LHS_assign *lh, int nvars)
 {
 	expdesc e;
 
@@ -1196,7 +1196,7 @@ static void assignment(LexState *ls, struct LHS_assign *lh, int nvars)
 	codegen_storevar(ls->fs, &lh->v, &e);
 }
 
-static int cond(LexState *ls)
+static int cond(ktap_lexstate *ls)
 {
 	/* cond -> exp */
 	expdesc v;
@@ -1207,7 +1207,7 @@ static int cond(LexState *ls)
 	return v.f;
 }
 
-static void gotostat(LexState *ls, int pc)
+static void gotostat(ktap_lexstate *ls, int pc)
 {
 	int line = ls->linenumber;
 	ktap_string *label;
@@ -1238,13 +1238,13 @@ static void checkrepeated(FuncState *fs, Labellist *ll, ktap_string *label)
 }
 
 /* skip no-op statements */
-static void skipnoopstat (LexState *ls)
+static void skipnoopstat (ktap_lexstate *ls)
 {
 	while (ls->t.token == ';' || ls->t.token == TK_DBCOLON)
 		statement(ls);
 }
 
-static void labelstat (LexState *ls, ktap_string *label, int line)
+static void labelstat (ktap_lexstate *ls, ktap_string *label, int line)
 {
 	/* label -> '::' NAME '::' */
 	FuncState *fs = ls->fs;
@@ -1263,7 +1263,7 @@ static void labelstat (LexState *ls, ktap_string *label, int line)
 	findgotos(ls, &ll->arr[l]);
 }
 
-static void whilestat(LexState *ls, int line)
+static void whilestat(ktap_lexstate *ls, int line)
 {
 	/* whilestat -> WHILE cond DO block END */
 	FuncState *fs = ls->fs;
@@ -1288,7 +1288,7 @@ static void whilestat(LexState *ls, int line)
 	codegen_patchtohere(fs, condexit);  /* false conditions finish the loop */
 }
 
-static void repeatstat (LexState *ls, int line)
+static void repeatstat (ktap_lexstate *ls, int line)
 {
 	/* repeatstat -> REPEAT block UNTIL cond */
 	int condexit;
@@ -1309,7 +1309,7 @@ static void repeatstat (LexState *ls, int line)
 	leaveblock(fs);  /* finish loop */
 }
 
-static int exp1(LexState *ls)
+static int exp1(ktap_lexstate *ls)
 {
 	expdesc e;
 	int reg;
@@ -1321,7 +1321,7 @@ static int exp1(LexState *ls)
 	return reg;
 }
 
-static void forbody(LexState *ls, int base, int line, int nvars, int isnum)
+static void forbody(ktap_lexstate *ls, int base, int line, int nvars, int isnum)
 {
 	/* forbody -> DO block */
 	BlockCnt bl;
@@ -1351,7 +1351,7 @@ static void forbody(LexState *ls, int base, int line, int nvars, int isnum)
 	codegen_fixline(fs, line);
 }
 
-static void fornum(LexState *ls, ktap_string *varname, int line)
+static void fornum(ktap_lexstate *ls, ktap_string *varname, int line)
 {
 	/* fornum -> NAME = exp1,exp1[,exp1] forbody */
 	FuncState *fs = ls->fs;
@@ -1374,7 +1374,7 @@ static void fornum(LexState *ls, ktap_string *varname, int line)
 	forbody(ls, base, line, 1, 1);
 }
 
-static void forlist(LexState *ls, ktap_string *indexname)
+static void forlist(ktap_lexstate *ls, ktap_string *indexname)
 {
 	/* forlist -> NAME {,NAME} IN explist forbody */
 	FuncState *fs = ls->fs;
@@ -1400,7 +1400,7 @@ static void forlist(LexState *ls, ktap_string *indexname)
 	forbody(ls, base, line, nvars - 3, 0);
 }
 
-static void forstat(LexState *ls, int line)
+static void forstat(ktap_lexstate *ls, int line)
 {
 	/* forstat -> FOR (fornum | forlist) END */
 	FuncState *fs = ls->fs;
@@ -1427,7 +1427,7 @@ static void forstat(LexState *ls, int line)
 	leaveblock(fs);  /* loop scope (`break' jumps to this point) */
 }
 
-static void test_then_block(LexState *ls, int *escapelist)
+static void test_then_block(ktap_lexstate *ls, int *escapelist)
 {
 	/* test_then_block -> [IF | ELSEIF] cond THEN block */
 	BlockCnt bl;
@@ -1465,7 +1465,7 @@ static void test_then_block(LexState *ls, int *escapelist)
 	codegen_patchtohere(fs, jf);
 }
 
-static void ifstat(LexState *ls, int line)
+static void ifstat(ktap_lexstate *ls, int line)
 {
 	/* ifstat -> IF cond THEN block {ELSEIF cond THEN block} [ELSE block] END */
 	FuncState *fs = ls->fs;
@@ -1483,7 +1483,7 @@ static void ifstat(LexState *ls, int line)
 	codegen_patchtohere(fs, escapelist);  /* patch escape list to 'if' end */
 }
 
-static void localfunc(LexState *ls)
+static void localfunc(ktap_lexstate *ls)
 {
 	expdesc b;
 	FuncState *fs = ls->fs;
@@ -1495,7 +1495,7 @@ static void localfunc(LexState *ls)
 	getlocvar(fs, b.u.info)->startpc = fs->pc;
 }
 
-static void localstat(LexState *ls)
+static void localstat(ktap_lexstate *ls)
 {
 	/* stat -> LOCAL NAME {`,' NAME} [`=' explist] */
 	int nvars = 0;
@@ -1516,7 +1516,7 @@ static void localstat(LexState *ls)
 	adjustlocalvars(ls, nvars);
 }
 
-static int funcname(LexState *ls, expdesc *v)
+static int funcname(ktap_lexstate *ls, expdesc *v)
 {
 	/* funcname -> NAME {fieldsel} [`:' NAME] */
 	int ismethod = 0;
@@ -1531,7 +1531,7 @@ static int funcname(LexState *ls, expdesc *v)
 	return ismethod;
 }
 
-static void funcstat(LexState *ls, int line)
+static void funcstat(ktap_lexstate *ls, int line)
 {
 	/* funcstat -> FUNCTION funcname body */
 	int ismethod;
@@ -1544,7 +1544,7 @@ static void funcstat(LexState *ls, int line)
 	codegen_fixline(ls->fs, line);  /* definition `happens' in the first line */
 }
 
-static void exprstat(LexState *ls)
+static void exprstat(ktap_lexstate *ls)
 {
 	/* stat -> func | assignment */
 	FuncState *fs = ls->fs;
@@ -1560,7 +1560,7 @@ static void exprstat(LexState *ls)
 	}
 }
 
-static void retstat(LexState *ls)
+static void retstat(ktap_lexstate *ls)
 {
 	/* stat -> RETURN [explist] [';'] */
 	FuncState *fs = ls->fs;
@@ -1593,7 +1593,7 @@ static void retstat(LexState *ls)
 	testnext(ls, ';');  /* skip optional semicolon */
 }
 
-static void tracestat(LexState *ls)
+static void tracestat(ktap_lexstate *ls)
 {
 	expdesc v0, key, args;
 	expdesc *v = &v0;
@@ -1658,7 +1658,7 @@ static void tracestat(LexState *ls)
 	SETARG_C(getcode(fs, v), 1);  /* call statement uses no results */
 }
 
-static void statement (LexState *ls)
+static void statement (ktap_lexstate *ls)
 {
 	int line = ls->linenumber;  /* may be needed for error messages */
 
@@ -1737,7 +1737,7 @@ static void statement (LexState *ls)
 /*
  * compiles the main function, which is a regular vararg function with an upvalue
  */
-static void mainfunc(LexState *ls, FuncState *fs)
+static void mainfunc(ktap_lexstate *ls, FuncState *fs)
 {
 	BlockCnt bl;
 	expdesc v;
@@ -1754,14 +1754,14 @@ static void mainfunc(LexState *ls, FuncState *fs)
 
 ktap_closure *ktapc_parser(char *ptr, const char *name)
 {
-	LexState lexstate;
+	ktap_lexstate lexstate;
 	FuncState funcstate;
 	Dyndata dyd;
 	Mbuffer buff;
 	int firstchar = *ptr++;
 	ktap_closure *cl = ktapc_newlclosure(1);  /* create main closure */
 
-	memset(&lexstate, 0, sizeof(LexState));
+	memset(&lexstate, 0, sizeof(ktap_lexstate));
 	memset(&funcstate, 0, sizeof(FuncState));
 	funcstate.f = cl->l.p = ktapc_newproto();
 	funcstate.f->source = ktapc_ts_new(name);  /* create and anchor ktap_string */

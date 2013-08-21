@@ -125,7 +125,7 @@ typedef struct Mbuffer {
  * state of the lexer plus state of the parser when shared by all
  * functions
  */
-typedef struct LexState {
+typedef struct ktap_lexstate {
 	char *ptr; /* source file reading position */
 	int current;  /* current character (charint) */
 	int linenumber;  /* input line counter */
@@ -139,7 +139,7 @@ typedef struct LexState {
 	ktap_string *envn;  /* environment variable name */
 	char decpoint;  /* locale decimal point */
 	int nCcalls;
-} LexState;
+} ktap_lexstate;
 
 
 /*
@@ -225,7 +225,7 @@ typedef struct FuncState {
 	ktap_proto *f;  /* current function header */
 	ktap_table *h;  /* table to find (and reuse) elements in `k' */
 	struct FuncState *prev;  /* enclosing function */
-	struct LexState *ls;  /* lexical state */
+	struct ktap_lexstate *ls;  /* lexical state */
 	struct BlockCnt *bl;  /* chain of current blocks */
 	int pc;  /* next position to code (equivalent to `ncode') */
 	int lasttarget;   /* 'label' of last 'jump label' */
@@ -286,12 +286,12 @@ typedef enum UnOpr { OPR_MINUS, OPR_NOT, OPR_LEN, OPR_NOUNOPR } UnOpr;
 
 
 void lex_init();
-ktap_string *lex_newstring(LexState *ls, const char *str, size_t l);
-const char *lex_token2str(LexState *ls, int token);
-void lex_syntaxerror(LexState *ls, const char *msg);
-void lex_setinput(LexState *ls, char *ptr, ktap_string *source, int firstchar);
-void lex_next(LexState *ls);
-int lex_lookahead(LexState *ls);
+ktap_string *lex_newstring(ktap_lexstate *ls, const char *str, size_t l);
+const char *lex_token2str(ktap_lexstate *ls, int token);
+void lex_syntaxerror(ktap_lexstate *ls, const char *msg);
+void lex_setinput(ktap_lexstate *ls, char *ptr, ktap_string *source, int firstchar);
+void lex_next(ktap_lexstate *ls);
+int lex_lookahead(ktap_lexstate *ls);
 ktap_closure *ktapc_parser(char *pos, const char *name);
 ktap_string *ktapc_ts_new(const char *str);
 int ktapc_ts_eqstr(ktap_string *a, ktap_string *b);

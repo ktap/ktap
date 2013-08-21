@@ -46,9 +46,9 @@ static const char *const ktap_tokens [] = {
 
 #define save_and_next(ls) (save(ls, ls->current), next(ls))
 
-static void lexerror(LexState *ls, const char *msg, int token);
+static void lexerror(ktap_lexstate *ls, const char *msg, int token);
 
-static void save(LexState *ls, int c)
+static void save(ktap_lexstate *ls, int c)
 {
 	Mbuffer *b = ls->buff;
 	if (mbuff_len(b) + 1 > mbuff_size(b)) {
@@ -70,7 +70,7 @@ void lex_init()
 	}
 }
 
-const char *lex_token2str(LexState *ls, int token)
+const char *lex_token2str(ktap_lexstate *ls, int token)
 {
 	if (token < FIRST_RESERVED) {
 		ktap_assert(token == (unsigned char)token);
@@ -85,7 +85,7 @@ const char *lex_token2str(LexState *ls, int token)
 	}
 }
 
-static const char *txtToken(LexState *ls, int token)
+static const char *txtToken(ktap_lexstate *ls, int token)
 {
 	switch (token) {
 	case TK_NAME:
@@ -98,7 +98,7 @@ static const char *txtToken(LexState *ls, int token)
 	}
 }
 
-static void lexerror(LexState *ls, const char *msg, int token)
+static void lexerror(ktap_lexstate *ls, const char *msg, int token)
 {
 	char buff[KTAP_IDSIZE];
 	char *newmsg;
@@ -111,7 +111,7 @@ static void lexerror(LexState *ls, const char *msg, int token)
 	exit(EXIT_FAILURE);
 }
 
-void lex_syntaxerror(LexState *ls, const char *msg)
+void lex_syntaxerror(ktap_lexstate *ls, const char *msg)
 {
 	lexerror(ls, msg, ls->t.token);
 }
@@ -121,7 +121,7 @@ void lex_syntaxerror(LexState *ls, const char *msg)
  * it will not be collected until the end of the function's compilation
  * (by that time it should be anchored in function's prototype)
  */
-ktap_string *lex_newstring(LexState *ls, const char *str, size_t l)
+ktap_string *lex_newstring(ktap_lexstate *ls, const char *str, size_t l)
 {
 	const ktap_value *o;  /* entry for `str' */
 	ktap_value val;  /* entry for `str' */
@@ -142,7 +142,7 @@ ktap_string *lex_newstring(LexState *ls, const char *str, size_t l)
  * increment line number and skips newline sequence (any of
  * \n, \r, \n\r, or \r\n)
  */
-static void inclinenumber(LexState *ls)
+static void inclinenumber(ktap_lexstate *ls)
 {
 	int old = ls->current;
 	ktap_assert(currIsNewline(ls));
@@ -153,7 +153,7 @@ static void inclinenumber(LexState *ls)
 		lex_syntaxerror(ls, "chunk has too many lines");
 }
 
-void lex_setinput(LexState *ls, char *ptr, ktap_string *source, int firstchar)
+void lex_setinput(ktap_lexstate *ls, char *ptr, ktap_string *source, int firstchar)
 {
 	ls->decpoint = '.';
 	ls->current = firstchar;
@@ -172,7 +172,7 @@ void lex_setinput(LexState *ls, char *ptr, ktap_string *source, int firstchar)
  * LEXICAL ANALYZER
  * =======================================================
  */
-static int check_next(LexState *ls, const char *set)
+static int check_next(ktap_lexstate *ls, const char *set)
 {
 	if (ls->current == '\0' || !strchr(set, ls->current))
 		return 0;
@@ -183,7 +183,7 @@ static int check_next(LexState *ls, const char *set)
 /*
  * change all characters 'from' in buffer to 'to'
  */
-static void buffreplace(LexState *ls, char from, char to)
+static void buffreplace(ktap_lexstate *ls, char from, char to)
 {
 	size_t n = mbuff_len(ls->buff);
 	char *p = mbuff(ls->buff);
@@ -201,7 +201,7 @@ static void buffreplace(LexState *ls, char from, char to)
  * in case of format error, try to change decimal point separator to
  * the one defined in the current locale and check again
  */
-static void trydecpoint(LexState *ls, SemInfo *seminfo)
+static void trydecpoint(ktap_lexstate *ls, SemInfo *seminfo)
 {
 	char old = ls->decpoint;
 	ls->decpoint = getlocaledecpoint();
@@ -217,7 +217,7 @@ static void trydecpoint(LexState *ls, SemInfo *seminfo)
  * this function is quite liberal in what it accepts, as 'ktapc_str2d'
  * will reject ill-formed numerals.
  */
-static void read_numeral(LexState *ls, SemInfo *seminfo)
+static void read_numeral(ktap_lexstate *ls, SemInfo *seminfo)
 {
 	const char *expo = "Ee";
 	int first = ls->current;
@@ -244,7 +244,7 @@ static void read_numeral(LexState *ls, SemInfo *seminfo)
  * skip a sequence '[=*[' or ']=*]' and return its number of '='s or
  * -1 if sequence is malformed
  */
-static int skip_sep(LexState *ls)
+static int skip_sep(ktap_lexstate *ls)
 {
 	int count = 0;
 	int s = ls->current;
@@ -258,7 +258,7 @@ static int skip_sep(LexState *ls)
 	return (ls->current == s) ? count : (-count) - 1;
 }
 
-static void read_long_string(LexState *ls, SemInfo *seminfo, int sep)
+static void read_long_string(ktap_lexstate *ls, SemInfo *seminfo, int sep)
 {
 	save_and_next(ls);  /* skip 2nd `[' */
 	if (currIsNewline(ls))  /* string starts with a newline? */
@@ -298,7 +298,7 @@ static void read_long_string(LexState *ls, SemInfo *seminfo, int sep)
 			mbuff_len(ls->buff) - 2*(2 + sep));
 }
 
-static void escerror(LexState *ls, int *c, int n, const char *msg)
+static void escerror(ktap_lexstate *ls, int *c, int n, const char *msg)
 {
 	int i;
 	mbuff_reset(ls->buff);  /* prepare error message */
@@ -308,7 +308,7 @@ static void escerror(LexState *ls, int *c, int n, const char *msg)
 	lexerror(ls, msg, TK_STRING);
 }
 
-static int readhexaesc(LexState *ls)
+static int readhexaesc(ktap_lexstate *ls)
 {
 	int c[3], i;  /* keep input for error message */
 	int r = 0;  /* result accumulator */
@@ -322,7 +322,7 @@ static int readhexaesc(LexState *ls)
 	return r;
 }
 
-static int readdecesc(LexState *ls)
+static int readdecesc(ktap_lexstate *ls)
 {
 	int c[3], i;
 	int r = 0;  /* result accumulator */
@@ -336,7 +336,7 @@ static int readdecesc(LexState *ls)
 	return r;
 }
 
-static void read_string(LexState *ls, int del, SemInfo *seminfo)
+static void read_string(ktap_lexstate *ls, int del, SemInfo *seminfo)
 {
 	save_and_next(ls);  /* keep delimiter (for error messages) */
 	while (ls->current != del) {
@@ -398,7 +398,7 @@ static void read_string(LexState *ls, int del, SemInfo *seminfo)
 	seminfo->ts = lex_newstring(ls, mbuff(ls->buff) + 1, mbuff_len(ls->buff) - 2);
 }
 
-static int llex(LexState *ls, SemInfo *seminfo)
+static int llex(ktap_lexstate *ls, SemInfo *seminfo)
 {
 	mbuff_reset(ls->buff);
 
@@ -560,7 +560,7 @@ static int llex(LexState *ls, SemInfo *seminfo)
 	}
 }
 
-void lex_next(LexState *ls)
+void lex_next(ktap_lexstate *ls)
 {
 	ls->lastline = ls->linenumber;
 	if (ls->lookahead.token != TK_EOS) {  /* is there a look-ahead token? */
@@ -570,7 +570,7 @@ void lex_next(LexState *ls)
 		ls->t.token = llex(ls, &ls->t.seminfo);  /* read next token */
 }
 
-int lex_lookahead(LexState *ls)
+int lex_lookahead(ktap_lexstate *ls)
 {
 	ktap_assert(ls->lookahead.token == TK_EOS);
 	ls->lookahead.token = llex(ls, &ls->lookahead.seminfo);
