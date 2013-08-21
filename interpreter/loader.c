@@ -90,8 +90,8 @@ static int load_code(struct load_state *S, ktap_proto *f)
 	int n = READ_INT(S);
 
 	f->sizecode = n;
-	f->code = NEW_VECTOR(S, n * sizeof(Instruction));
-	READ_VECTOR(S, f->code, n * sizeof(Instruction));
+	f->code = NEW_VECTOR(S, n * sizeof(ktap_instruction));
+	READ_VECTOR(S, f->code, n * sizeof(ktap_instruction));
 
 	return 0;
 }

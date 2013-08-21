@@ -580,7 +580,7 @@ static void close_func(LexState *ls)
 
 	codegen_ret(fs, 0, 0);  /* final return */
 	leaveblock(fs);
-	ktapc_reallocvector(f->code, f->sizecode, fs->pc, Instruction);
+	ktapc_reallocvector(f->code, f->sizecode, fs->pc, ktap_instruction);
 	f->sizecode = fs->pc;
 	ktapc_reallocvector(f->lineinfo, f->sizelineinfo, fs->pc, int);
 	f->sizelineinfo = fs->pc;

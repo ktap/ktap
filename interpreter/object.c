@@ -394,7 +394,7 @@ void kp_header(u8 *h)
 	*h++ = (u8)(*(char*)&x);                    /* endianness */
 	*h++ = (u8)(sizeof(int));
 	*h++ = (u8)(sizeof(size_t));
-	*h++ = (u8)(sizeof(Instruction));
+	*h++ = (u8)(sizeof(ktap_instruction));
 	*h++ = (u8)(sizeof(ktap_Number));
 	*h++ = (u8)(((ktap_Number)0.5) == 0); /* is ktap_Number integral? */
 	memcpy(h, KTAPC_TAIL, sizeof(KTAPC_TAIL) - sizeof(char));

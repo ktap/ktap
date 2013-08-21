@@ -115,7 +115,7 @@ enum OpMode {iABC, iABx, iAsBx, iAx};  /* basic instruction format */
 
 
 /* creates a mask with `n' 1 bits at position `p' */
-#define MASK1(n,p)      ((~((~(Instruction)0)<<(n)))<<(p))
+#define MASK1(n,p)      ((~((~(ktap_instruction)0)<<(n)))<<(p))
 
 /* creates a mask with `n' 0 bits at position `p' */
 #define MASK0(n,p)      (~MASK1(n,p))
@@ -126,11 +126,11 @@ enum OpMode {iABC, iABx, iAsBx, iAx};  /* basic instruction format */
 
 #define GET_OPCODE(i)   ((OpCode)((i)>>POS_OP) & MASK1(SIZE_OP,0))
 #define SET_OPCODE(i,o) ((i) = (((i)&MASK0(SIZE_OP,POS_OP)) | \
-                ((((Instruction)o)<<POS_OP)&MASK1(SIZE_OP,POS_OP))))
+                ((((ktap_instruction)o)<<POS_OP)&MASK1(SIZE_OP,POS_OP))))
 
 #define getarg(i,pos,size)      ((int)((i)>>pos) & MASK1(size,0))
 #define setarg(i,v,pos,size)    ((i) = (((i)&MASK0(size,pos)) | \
-                ((((Instruction)v)<<pos)&MASK1(size,pos))))
+                ((((ktap_instruction)v)<<pos)&MASK1(size,pos))))
 
 #define GETARG_A(i)     getarg(i, POS_A, SIZE_A)
 #define SETARG_A(i,v)   setarg(i, v, POS_A, SIZE_A)
@@ -153,17 +153,17 @@ enum OpMode {iABC, iABx, iAsBx, iAx};  /* basic instruction format */
 #define GETARG_sBx(i)   (GETARG_Bx(i)-MAXARG_sBx)
 #define SETARG_sBx(i,b) SETARG_Bx((i), (unsigned int)(b)+MAXARG_sBx)
 
-#define CREATE_ABC(o,a,b,c)     (((Instruction)(o))<<POS_OP) \
-                        | (((Instruction)(a))<<POS_A) \
-                        | (((Instruction)(b))<<POS_B) \
-                        | (((Instruction)(c))<<POS_C)
+#define CREATE_ABC(o,a,b,c)     (((ktap_instruction)(o))<<POS_OP) \
+                        | (((ktap_instruction)(a))<<POS_A) \
+                        | (((ktap_instruction)(b))<<POS_B) \
+                        | (((ktap_instruction)(c))<<POS_C)
 
-#define CREATE_ABx(o,a,bc)      (((Instruction)(o))<<POS_OP) \
-                        | (((Instruction)(a))<<POS_A) \
-                        | (((Instruction)(bc))<<POS_Bx)
+#define CREATE_ABx(o,a,bc)      (((ktap_instruction)(o))<<POS_OP) \
+                        | (((ktap_instruction)(a))<<POS_A) \
+                        | (((ktap_instruction)(bc))<<POS_Bx)
 
-#define CREATE_Ax(o,a)          (((Instruction)(o))<<POS_OP) \
-                        | (((Instruction)(a))<<POS_Ax)
+#define CREATE_Ax(o,a)          (((ktap_instruction)(o))<<POS_OP) \
+                        | (((ktap_instruction)(a))<<POS_Ax)
 
 
 

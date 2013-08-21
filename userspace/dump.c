@@ -79,7 +79,7 @@ static void DumpString(const ktap_string *s, DumpState *D)
 	}
 }
 
-#define DumpCode(f,D)	 DumpVector(f->code, f->sizecode, sizeof(Instruction), D)
+#define DumpCode(f, D)	 DumpVector(f->code, f->sizecode, sizeof(ktap_instruction), D)
 
 static void DumpFunction(const ktap_proto *f, DumpState *D);
 

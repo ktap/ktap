@@ -40,7 +40,7 @@ static int isnumeral(expdesc *e)
 
 void codegen_nil(FuncState *fs, int from, int n)
 {
-	Instruction *previous;
+	ktap_instruction *previous;
 	int l = from + n - 1;  /* last register to set nil */
 
 	if (fs->pc > fs->lasttarget) {  /* no jumps to current position? */
@@ -88,7 +88,7 @@ static int condjump(FuncState *fs, OpCode op, int A, int B, int C)
 
 static void fixjump(FuncState *fs, int pc, int dest)
 {
-	Instruction *jmp = &fs->f->code[pc];
+	ktap_instruction *jmp = &fs->f->code[pc];
 	int offset = dest-(pc+1);
 
 	ktap_assert(dest != NO_JUMP);
@@ -117,9 +117,9 @@ static int getjump(FuncState *fs, int pc)
 		return (pc+1)+offset;  /* turn offset into absolute position */
 }
 
-static Instruction *getjumpcontrol(FuncState *fs, int pc)
+static ktap_instruction *getjumpcontrol(FuncState *fs, int pc)
 {
-	Instruction *pi = &fs->f->code[pc];
+	ktap_instruction *pi = &fs->f->code[pc];
 	if (pc >= 1 && testTMode(GET_OPCODE(*(pi-1))))
 		return pi-1;
 	else
@@ -133,7 +133,7 @@ static Instruction *getjumpcontrol(FuncState *fs, int pc)
 static int need_value(FuncState *fs, int list)
 {
 	for (; list != NO_JUMP; list = getjump(fs, list)) {
-		Instruction i = *getjumpcontrol(fs, list);
+		ktap_instruction i = *getjumpcontrol(fs, list);
 		if (GET_OPCODE(i) != OP_TESTSET)
 			return 1;
 	}
@@ -142,7 +142,7 @@ static int need_value(FuncState *fs, int list)
 
 static int patchtestreg(FuncState *fs, int node, int reg)
 {
-	Instruction *i = getjumpcontrol(fs, node);
+	ktap_instruction *i = getjumpcontrol(fs, node);
 	if (GET_OPCODE(*i) != OP_TESTSET)
 		return 0;  /* cannot patch other instructions */
 	if (reg != NO_REG && reg != GETARG_B(*i))
@@ -222,14 +222,14 @@ void codegen_concat(FuncState *fs, int *l1, int l2)
 	}
 }
 
-static int codegen_code(FuncState *fs, Instruction i)
+static int codegen_code(FuncState *fs, ktap_instruction i)
 {
 	ktap_proto *f = fs->f;
 
 	dischargejpc(fs);  /* `pc' will change */
 
 	/* put new instruction in code array */
-	ktapc_growvector(f->code, fs->pc, f->sizecode, Instruction,
+	ktapc_growvector(f->code, fs->pc, f->sizecode, ktap_instruction,
 			 MAX_INT, "opcodes");
 	f->code[fs->pc] = i;
 
@@ -460,7 +460,7 @@ static void discharge2reg(FuncState *fs, expdesc *e, int reg)
 		break;
 	}
 	case VRELOCABLE: {
-		Instruction *pc = &getcode(fs, e);
+		ktap_instruction *pc = &getcode(fs, e);
 		SETARG_A(*pc, reg);
 		break;
 	}
@@ -625,7 +625,7 @@ void codegen_self(FuncState *fs, expdesc *e, expdesc *key)
 
 static void invertjump (FuncState *fs, expdesc *e)
 {
-	Instruction *pc = getjumpcontrol(fs, e->u.info);
+	ktap_instruction *pc = getjumpcontrol(fs, e->u.info);
 	ktap_assert(testTMode(GET_OPCODE(*pc)) && GET_OPCODE(*pc) != OP_TESTSET &&
 			GET_OPCODE(*pc) != OP_TEST);
 	SETARG_A(*pc, !(GETARG_A(*pc)));
@@ -634,7 +634,7 @@ static void invertjump (FuncState *fs, expdesc *e)
 static int jumponcond(FuncState *fs, expdesc *e, int cond)
 {
 	if (e->k == VRELOCABLE) {
-		Instruction ie = getcode(fs, e);
+		ktap_instruction ie = getcode(fs, e);
 		if (GET_OPCODE(ie) == OP_NOT) {
 			fs->pc--;  /* remove previous OP_NOT */
 			return condjump(fs, OP_TEST, GETARG_B(ie), 0, !cond);

@@ -57,7 +57,7 @@ struct ktap_parm {
 #define KTAPC_HEADERSIZE	(sizeof(KTAP_SIGNATURE) - sizeof(char) + 2 + 6 + \
 				 sizeof(KTAPC_TAIL) - sizeof(char))
 
-typedef int Instruction;
+typedef int ktap_instruction;
 
 typedef union ktap_gcobject ktap_gcobject;
 
@@ -166,7 +166,7 @@ typedef struct ktap_closure {
 typedef struct ktap_proto {
 	CommonHeader;
 	ktap_value *k;  /* constants used by the function */
-	Instruction *code;
+	ktap_instruction *code;
 	struct ktap_proto **p;  /* functions defined inside the function */
 	int *lineinfo;  /* map from opcodes to source lines (debug information) */
 	struct ktap_locvar *locvars;  /* information about local variables (debug information) */
