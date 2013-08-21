@@ -191,9 +191,9 @@ static ktap_tnode *mainposition (const ktap_table *t, const ktap_value *key)
 static int arrayindex(const ktap_value *key)
 {
 	if (ttisnumber(key)) {
-		ktap_Number n = nvalue(key);
+		ktap_number n = nvalue(key);
 		int k = (int)n;
-		if ((ktap_Number)k == n)
+		if ((ktap_number)k == n)
 			return k;
 	}
 
@@ -566,9 +566,9 @@ static const ktap_value *table_get(ktap_table *t, const ktap_value *key)
 	case KTAP_TSHRSTR:
 		return table_getstr(t, rawtsvalue(key));
 	case KTAP_TNUMBER: {
-		ktap_Number n = nvalue(key);
+		ktap_number n = nvalue(key);
 		int k = (int)n;
-		if ((ktap_Number)k == nvalue(key)) /* index is int? */
+		if ((ktap_number)k == nvalue(key)) /* index is int? */
 			return table_getint(t, k);  /* use specialized version */
 		/* else go through */
 	}

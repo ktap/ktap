@@ -92,7 +92,7 @@ enum RESERVED {
 #define EOZ     (0)                    /* end of stream */
 
 typedef union {
-	ktap_Number r;
+	ktap_number r;
 	ktap_string *ts;
 } SemInfo;  /* semantics information */
 
@@ -175,7 +175,7 @@ typedef struct expdesc {
 			u8 vt;  /* whether 't' is register (VLOCAL) or upvalue (VUPVAL) */
 		} ind;
 		int info;  /* for generic use */
-		ktap_Number nval;  /* for VKNUM */
+		ktap_number nval;  /* for VKNUM */
 	} u;
 	int t;  /* patch list of `exit when true' */
 	int f;  /* patch list of `exit when false' */
@@ -351,7 +351,7 @@ void codegen_storevar(FuncState *fs, expdesc *var, expdesc *ex);
 void codegen_goiftrue(FuncState *fs, expdesc *e);
 int codegen_getlabel(FuncState *fs);
 int codegen_codek(FuncState *fs, int reg, int k);
-int codegen_numberK(FuncState *fs, ktap_Number r);
+int codegen_numberK(FuncState *fs, ktap_number r);
 void codegen_checkstack(FuncState *fs, int n);
 void codegen_goiffalse(FuncState *fs, expdesc *e);
 void codegen_concat(FuncState *fs, int *l1, int l2);
@@ -361,9 +361,9 @@ typedef int (*ktap_Writer)(const void* p, size_t sz, void* ud);
 int ktapc_dump(const ktap_proto *f, ktap_Writer w, void *data, int strip);
 
 void ktapc_chunkid(char *out, const char *source, size_t bufflen);
-int ktapc_str2d(const char *s, size_t len, ktap_Number *result);
+int ktapc_str2d(const char *s, size_t len, ktap_number *result);
 int ktapc_hexavalue(int c);
-ktap_Number ktapc_arith(int op, ktap_Number v1, ktap_Number v2);
+ktap_number ktapc_arith(int op, ktap_number v1, ktap_number v2);
 int ktapc_int2fb(unsigned int x);
 
 bool strglobmatch(const char *str, const char *pat);

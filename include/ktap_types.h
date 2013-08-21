@@ -362,7 +362,7 @@ union ktap_gcobject {
 #define check_exp(c,e)                (e)
 
 
-typedef int ktap_Number;
+typedef int ktap_number;
 
 
 #define ktap_number2int(i,n)   ((i)=(int)(n))
@@ -539,7 +539,7 @@ ktap_upval *kp_newupval(ktap_state *ks);
 void kp_free_all_gcobject(ktap_state *ks);
 void kp_header(u8 *h);
 
-int kp_str2d(const char *s, size_t len, ktap_Number *result);
+int kp_str2d(const char *s, size_t len, ktap_number *result);
 
 #define kp_realloc(ks, v, osize, nsize, t) \
 	((v) = (t *)kp_reallocv(ks, v, osize * sizeof(t), nsize * sizeof(t)))

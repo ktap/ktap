@@ -79,7 +79,7 @@ int ktapc_ceillog2(unsigned int x)
 	return l + log_2[x];
 }
 
-ktap_Number ktapc_arith(int op, ktap_Number v1, ktap_Number v2)
+ktap_number ktapc_arith(int op, ktap_number v1, ktap_number v2)
 {
 	switch (op) {
 	case KTAP_OPADD: return NUMADD(v1, v2);
@@ -112,10 +112,10 @@ static int isneg(const char **s)
 	return 0;
 }
 
-static ktap_Number readhexa(const char **s, ktap_Number r, int *count)
+static ktap_number readhexa(const char **s, ktap_number r, int *count)
 {
 	for (; isxdigit((unsigned char)(**s)); (*s)++) {  /* read integer part */
-		r = (r * 16.0) + (ktap_Number)(ktapc_hexavalue((unsigned char)(**s)));
+		r = (r * 16.0) + (ktap_number)(ktapc_hexavalue((unsigned char)(**s)));
 		(*count)++;
 	}
 
@@ -126,9 +126,9 @@ static ktap_Number readhexa(const char **s, ktap_Number r, int *count)
  * convert an hexadecimal numeric string to a number, following
  * C99 specification for 'strtod'
  */
-static ktap_Number strx2number(const char *s, char **endptr)
+static ktap_number strx2number(const char *s, char **endptr)
 {
-	ktap_Number r = 0.0;
+	ktap_number r = 0.0;
 	int e = 0, i = 0;
 	int neg = 0;  /* 1 if number is negative */
 
@@ -174,7 +174,7 @@ static ktap_Number strx2number(const char *s, char **endptr)
 	return ldexp(r, e);
 }
 
-int ktapc_str2d(const char *s, size_t len, ktap_Number *result)
+int ktapc_str2d(const char *s, size_t len, ktap_number *result)
 {
 	char *endptr;
 

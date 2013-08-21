@@ -313,7 +313,7 @@ static int addk(FuncState *fs, ktap_value *key, ktap_value *v)
 	int k, oldsize;
 
 	if (ttisnumber(idx)) {
-		ktap_Number n = nvalue(idx);
+		ktap_number n = nvalue(idx);
 		ktap_number2int(k, n);
 		if (ktapc_equalobj(&f->k[k], v))
 			return k;
@@ -326,7 +326,7 @@ static int addk(FuncState *fs, ktap_value *key, ktap_value *v)
 
 	/* numerical value does not need GC barrier;
 	   table has no metatable, so it does not need to invalidate cache */
-	setnvalue(&kn, (ktap_Number)k);
+	setnvalue(&kn, (ktap_number)k);
 	ktapc_table_setvalue(fs->h, key, &kn);
 	ktapc_growvector(f->k, k, f->sizek, ktap_value, MAXARG_Ax, "constants");
 	while (oldsize < f->sizek)
@@ -344,7 +344,7 @@ int codegen_stringK(FuncState *fs, ktap_string *s)
 	return addk(fs, &o, &o);
 }
 
-int codegen_numberK(FuncState *fs, ktap_Number r)
+int codegen_numberK(FuncState *fs, ktap_number r)
 {
 	int n;
 	ktap_value o, s;
@@ -741,7 +741,7 @@ void codegen_indexed(FuncState *fs, expdesc *t, expdesc *k)
 
 static int constfolding(OpCode op, expdesc *e1, expdesc *e2)
 {
-	ktap_Number r;
+	ktap_number r;
 
 	if (!isnumeral(e1) || !isnumeral(e2))
 		return 0;

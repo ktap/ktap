@@ -56,7 +56,7 @@ static void DumpInt(int x, DumpState *D)
 	DumpVar(x, D);
 }
 
-static void DumpNumber(ktap_Number x, DumpState *D)
+static void DumpNumber(ktap_number x, DumpState *D)
 {
 	DumpVar(x,D);
 }

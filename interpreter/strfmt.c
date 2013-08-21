@@ -136,7 +136,7 @@ int kp_strfmt(ktap_state *ks, struct trace_seq *seq)
 						 nvalue(kp_arg(ks, arg)));
 				break;
 			case 'd':  case 'i': {
-				ktap_Number n = nvalue(kp_arg(ks, arg));
+				ktap_number n = nvalue(kp_arg(ks, arg));
 				INTFRM_T ni = (INTFRM_T)n;
 				addlenmod(form, INTFRMLEN);
 				trace_seq_printf(seq, form, ni);
@@ -150,7 +150,7 @@ int kp_strfmt(ktap_state *ks, struct trace_seq *seq)
 				break;
 			}
 			case 'o':  case 'u':  case 'x':  case 'X': {
-				ktap_Number n = nvalue(kp_arg(ks, arg));
+				ktap_number n = nvalue(kp_arg(ks, arg));
 				unsigned INTFRM_T ni = (unsigned INTFRM_T)n;
 				addlenmod(form, INTFRMLEN);
 				trace_seq_printf(seq, form, ni);

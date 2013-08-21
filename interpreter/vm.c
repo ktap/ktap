@@ -390,7 +390,7 @@ static int precall(ktap_state *ks, StkId func, int nresults)
 	ktap_value *rb = RKB(instr); \
 	ktap_value *rc = RKC(instr); \
 	if (ttisnumber(rb) && ttisnumber(rc)) { \
-		ktap_Number nb = nvalue(rb), nc = nvalue(rc); \
+		ktap_number nb = nvalue(rb), nc = nvalue(rc); \
 		setnvalue(ra, op(nb, nc)); \
 	} else {	\
 		kp_puts(ks, "Error: Cannot make arith operation\n");	\
@@ -541,7 +541,7 @@ static void ktap_execute(ktap_state *ks)
 	case OP_UNM: {
 		ktap_value *rb = RB(instr);
 		if (ttisnumber(rb)) {
-			ktap_Number nb = nvalue(rb);
+			ktap_number nb = nvalue(rb);
 			setnvalue(ra, NUMUNM(nb));
 		}
 		break;
@@ -689,10 +689,10 @@ static void ktap_execute(ktap_state *ks)
 		goto newframe;
 		}
 	case OP_FORLOOP: {
-		ktap_Number step = nvalue(ra+2);
+		ktap_number step = nvalue(ra+2);
 		/* increment index */
-		ktap_Number idx = NUMADD(nvalue(ra), step);
-		ktap_Number limit = nvalue(ra+1);
+		ktap_number idx = NUMADD(nvalue(ra), step);
+		ktap_number limit = nvalue(ra+1);
 		if (NUMLT(0, step) ? NUMLE(idx, limit) : NUMLE(limit, idx)) {
 			ci->u.l.savedpc += GETARG_sBx(instr);  /* jump back */
 			setnvalue(ra, idx);  /* update internal index... */
