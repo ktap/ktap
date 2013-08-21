@@ -15,9 +15,12 @@ function ktaprun {
 
 
 
-#####################################################
-# arg.kp cannot use ktaprun because its string arguments
+#######################################################
+# Use $ktap directly if the arguments contains strings
 $KTAP arg.kp 1 testing "2 3 4"
+$KTAP -e 'print("one-liner testing")'
+$KTAP -e 'exit()'
+$KTAP -o /dev/null -e 'trace "syscalls:*" function (e) {print(e)}' -- ls > /devnull
 ktaprun arith.kp
 ktaprun concat.kp
 ktaprun count.kp
@@ -32,7 +35,13 @@ ktaprun pairs.kp
 ktaprun table.kp
 ktaprun timer.kp
 ktaprun tracepoint.kp
-ktaprun zerodivide.kp
+ktaprun -o /dev/null zerodivide.kp
+
+echo "testing kill deadloop ktap script"
+$KTAP -e 'while (1) {}' &
+pkill ktap
+sleep 1
+
 #####################################################
 rmmod ktapvm
 if test $? -ne 0; then
