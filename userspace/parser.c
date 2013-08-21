@@ -76,7 +76,7 @@ static void error_expected(ktap_lexstate *ls, int token)
 		ktapc_sprintf("%s expected", lex_token2str(ls, token)));
 }
 
-static void errorlimit(FuncState *fs, int limit, const char *what)
+static void errorlimit(ktap_funcstate *fs, int limit, const char *what)
 {
 	const char *msg;
 	int line = fs->f->linedefined;
@@ -88,7 +88,7 @@ static void errorlimit(FuncState *fs, int limit, const char *what)
 	lex_syntaxerror(fs->ls, msg);
 }
 
-static void checklimit(FuncState *fs, int v, int l, const char *what)
+static void checklimit(ktap_funcstate *fs, int v, int l, const char *what)
 {
 	if (v > l)
 		errorlimit(fs, l, what);
@@ -161,7 +161,7 @@ static void checkname(ktap_lexstate *ls, expdesc *e)
 
 static int registerlocalvar(ktap_lexstate *ls, ktap_string *varname)
 {
-	FuncState *fs = ls->fs;
+	ktap_funcstate *fs = ls->fs;
 	ktap_proto *f = fs->f;
 	int oldsize = f->sizelocvars;
 
@@ -177,7 +177,7 @@ static int registerlocalvar(ktap_lexstate *ls, ktap_string *varname)
 
 static void new_localvar(ktap_lexstate *ls, ktap_string *name)
 {
-	FuncState *fs = ls->fs;
+	ktap_funcstate *fs = ls->fs;
 	Dyndata *dyd = ls->dyd;
 	int reg = registerlocalvar(ls, name);
 
@@ -196,7 +196,7 @@ static void new_localvarliteral_(ktap_lexstate *ls, const char *name, size_t sz)
 #define new_localvarliteral(ls,v) \
 	new_localvarliteral_(ls, "" v, (sizeof(v)/sizeof(char))-1)
 
-static ktap_locvar *getlocvar(FuncState *fs, int i)
+static ktap_locvar *getlocvar(ktap_funcstate *fs, int i)
 {
 	int idx = fs->ls->dyd->actvar.arr[fs->firstlocal + i].idx;
 
@@ -206,7 +206,7 @@ static ktap_locvar *getlocvar(FuncState *fs, int i)
 
 static void adjustlocalvars(ktap_lexstate *ls, int nvars)
 {
-	FuncState *fs = ls->fs;
+	ktap_funcstate *fs = ls->fs;
 
 	fs->nactvar = (u8)(fs->nactvar + nvars);
 	for (; nvars; nvars--) {
@@ -214,7 +214,7 @@ static void adjustlocalvars(ktap_lexstate *ls, int nvars)
 	}
 }
 
-static void removevars(FuncState *fs, int tolevel)
+static void removevars(ktap_funcstate *fs, int tolevel)
 {
 	fs->ls->dyd->actvar.n -= (fs->nactvar - tolevel);
 
@@ -222,7 +222,7 @@ static void removevars(FuncState *fs, int tolevel)
 		getlocvar(fs, --fs->nactvar)->endpc = fs->pc;
 }
 
-static int searchupvalue(FuncState *fs, ktap_string *name)
+static int searchupvalue(ktap_funcstate *fs, ktap_string *name)
 {
 	int i;
 	ktap_upvaldesc *up = fs->f->upvalues;
@@ -234,7 +234,7 @@ static int searchupvalue(FuncState *fs, ktap_string *name)
 	return -1;  /* not found */
 }
 
-static int newupvalue(FuncState *fs, ktap_string *name, expdesc *v)
+static int newupvalue(ktap_funcstate *fs, ktap_string *name, expdesc *v)
 {
 	ktap_proto *f = fs->f;
 	int oldsize = f->sizeupvalues;
@@ -251,7 +251,7 @@ static int newupvalue(FuncState *fs, ktap_string *name, expdesc *v)
 	return fs->nups++;
 }
 
-static int searchvar(FuncState *fs, ktap_string *n)
+static int searchvar(ktap_funcstate *fs, ktap_string *n)
 {
 	int i;
 
@@ -266,7 +266,7 @@ static int searchvar(FuncState *fs, ktap_string *n)
  * Mark block where variable at given level was defined
  * (to emit close instructions later).
  */
-static void markupval (FuncState *fs, int level)
+static void markupval (ktap_funcstate *fs, int level)
 {
 	BlockCnt *bl = fs->bl;
 
@@ -279,7 +279,7 @@ static void markupval (FuncState *fs, int level)
  * Find variable with given name 'n'. If it is an upvalue, add this
  * upvalue into all intermediate functions.
  */
-static int singlevaraux(FuncState *fs, ktap_string *n, expdesc *var, int base)
+static int singlevaraux(ktap_funcstate *fs, ktap_string *n, expdesc *var, int base)
 {
 	if (fs == NULL)  /* no more levels? */
 		return VVOID;  /* default is global */
@@ -307,7 +307,7 @@ static int singlevaraux(FuncState *fs, ktap_string *n, expdesc *var, int base)
 static void singlevar(ktap_lexstate *ls, expdesc *var)
 {
 	ktap_string *varname = str_checkname(ls);
-	FuncState *fs = ls->fs;
+	ktap_funcstate *fs = ls->fs;
 
 	if (singlevaraux(fs, varname, var, 1) == VVOID) {  /* global name? */
 		expdesc key;
@@ -320,7 +320,7 @@ static void singlevar(ktap_lexstate *ls, expdesc *var)
 
 static void adjust_assign(ktap_lexstate *ls, int nvars, int nexps, expdesc *e)
 {
-	FuncState *fs = ls->fs;
+	ktap_funcstate *fs = ls->fs;
 	int extra = nvars - nexps;
 
 	if (hasmultret(e->k)) {
@@ -351,7 +351,7 @@ static void enterlevel(ktap_lexstate *ls)
 static void closegoto(ktap_lexstate *ls, int g, Labeldesc *label)
 {
 	int i;
-	FuncState *fs = ls->fs;
+	ktap_funcstate *fs = ls->fs;
 	Labellist *gl = &ls->dyd->gt;
 	Labeldesc *gt = &gl->arr[g];
 
@@ -434,7 +434,7 @@ static void findgotos (ktap_lexstate *ls, Labeldesc *lb)
  * the goto exits the scope of any variable (which can be the
  * upvalue), close those variables being exited.
  */
-static void movegotosout (FuncState *fs, BlockCnt *bl)
+static void movegotosout (ktap_funcstate *fs, BlockCnt *bl)
 {
 	int i = bl->firstgoto;
 	Labellist *gl = &fs->ls->dyd->gt;
@@ -454,7 +454,7 @@ static void movegotosout (FuncState *fs, BlockCnt *bl)
 	}
 }
 
-static void enterblock(FuncState *fs, BlockCnt *bl, u8 isloop)
+static void enterblock(ktap_funcstate *fs, BlockCnt *bl, u8 isloop)
 {
 	bl->isloop = isloop;
 	bl->nactvar = fs->nactvar;
@@ -492,7 +492,7 @@ static void undefgoto(ktap_lexstate *ls, Labeldesc *gt)
 	semerror(ls, msg);
 }
 
-static void leaveblock (FuncState *fs)
+static void leaveblock (ktap_funcstate *fs)
 {
 	BlockCnt *bl = fs->bl;
 	ktap_lexstate *ls = fs->ls;
@@ -524,7 +524,7 @@ static void leaveblock (FuncState *fs)
 static ktap_proto *addprototype(ktap_lexstate *ls)
 {
 	ktap_proto *clp;
-	FuncState *fs = ls->fs;
+	ktap_funcstate *fs = ls->fs;
 	ktap_proto *f = fs->f;  /* prototype of current function */
 
 	if (fs->np >= f->sizep) {
@@ -542,12 +542,12 @@ static ktap_proto *addprototype(ktap_lexstate *ls)
  */
 static void codeclosure (ktap_lexstate *ls, expdesc *v)
 {
-	FuncState *fs = ls->fs->prev;
+	ktap_funcstate *fs = ls->fs->prev;
 	init_exp(v, VRELOCABLE, codegen_codeABx(fs, OP_CLOSURE, 0, fs->np - 1));
 	codegen_exp2nextreg(fs, v);  /* fix it at stack top (for GC) */
 }
 
-static void open_func(ktap_lexstate *ls, FuncState *fs, BlockCnt *bl)
+static void open_func(ktap_lexstate *ls, ktap_funcstate *fs, BlockCnt *bl)
 {
 	ktap_proto *f;
 
@@ -575,7 +575,7 @@ static void open_func(ktap_lexstate *ls, FuncState *fs, BlockCnt *bl)
 
 static void close_func(ktap_lexstate *ls)
 {
-	FuncState *fs = ls->fs;
+	ktap_funcstate *fs = ls->fs;
 	ktap_proto *f = fs->f;
 
 	codegen_ret(fs, 0, 0);  /* final return */
@@ -637,7 +637,7 @@ static void statlist(ktap_lexstate *ls)
 static void fieldsel(ktap_lexstate *ls, expdesc *v)
 {
 	/* fieldsel -> ['.' | ':'] NAME */
-	FuncState *fs = ls->fs;
+	ktap_funcstate *fs = ls->fs;
 	expdesc key;
 
 	codegen_exp2anyregup(fs, v);
@@ -671,7 +671,7 @@ struct ConsControl {
 static void recfield (ktap_lexstate *ls, struct ConsControl *cc)
 {
 	/* recfield -> (NAME | `['exp1`]') = exp1 */
-	FuncState *fs = ls->fs;
+	ktap_funcstate *fs = ls->fs;
 	int reg = ls->fs->freereg;
 	expdesc key, val;
 	int rkkey;
@@ -690,7 +690,7 @@ static void recfield (ktap_lexstate *ls, struct ConsControl *cc)
 	fs->freereg = reg;  /* free registers */
 }
 
-static void closelistfield(FuncState *fs, struct ConsControl *cc)
+static void closelistfield(ktap_funcstate *fs, struct ConsControl *cc)
 {
 	if (cc->v.k == VVOID)
 		return;  /* there is no list item */
@@ -702,7 +702,7 @@ static void closelistfield(FuncState *fs, struct ConsControl *cc)
 	}
 }
 
-static void lastlistfield(FuncState *fs, struct ConsControl *cc)
+static void lastlistfield(ktap_funcstate *fs, struct ConsControl *cc)
 {
 	if (cc->tostore == 0)
 		return;
@@ -752,7 +752,7 @@ static void constructor (ktap_lexstate *ls, expdesc *t)
 {
 	/* constructor -> '{' [ field { sep field } [sep] ] '}'
 		sep -> ',' | ';' */
-	FuncState *fs = ls->fs;
+	ktap_funcstate *fs = ls->fs;
 	int line = ls->linenumber;
 	int pc = codegen_codeABC(fs, OP_NEWTABLE, 0, 0, 0);
 	struct ConsControl cc;
@@ -781,7 +781,7 @@ static void constructor (ktap_lexstate *ls, expdesc *t)
 static void parlist (ktap_lexstate *ls)
 {
 	/* parlist -> [ param { `,' param } ] */
-	FuncState *fs = ls->fs;
+	ktap_funcstate *fs = ls->fs;
 	ktap_proto *f = fs->f;
 	int nparams = 0;
 	f->is_vararg = 0;
@@ -812,7 +812,7 @@ static void parlist (ktap_lexstate *ls)
 static void body (ktap_lexstate *ls, expdesc *e, int ismethod, int line)
 {
 	/* body ->  `(' parlist `)' block END */
-	FuncState new_fs;
+	ktap_funcstate new_fs;
 	BlockCnt bl;
 
 	new_fs.f = addprototype(ls);
@@ -850,7 +850,7 @@ static int explist (ktap_lexstate *ls, expdesc *v)
 
 static void funcargs(ktap_lexstate *ls, expdesc *f, int line)
 {
-	FuncState *fs = ls->fs;
+	ktap_funcstate *fs = ls->fs;
 	expdesc args;
 	int base, nparams;
 
@@ -924,7 +924,7 @@ static void suffixedexp(ktap_lexstate *ls, expdesc *v)
 {
 	/* suffixedexp ->
 		primaryexp { '.' NAME | '[' exp ']' | ':' NAME funcargs | funcargs } */
-	FuncState *fs = ls->fs;
+	ktap_funcstate *fs = ls->fs;
 	int line = ls->linenumber;
 
 	primaryexp(ls, v);
@@ -987,7 +987,7 @@ static void simpleexp(ktap_lexstate *ls, expdesc *v)
 		break;
 	}
 	case TK_DOTS: {  /* vararg */
-		FuncState *fs = ls->fs;
+		ktap_funcstate *fs = ls->fs;
 		check_condition(ls, fs->f->is_vararg,
                       "cannot use " KTAP_QL("...") " outside a vararg function");
 		init_exp(v, VVARARG, codegen_codeABC(fs, OP_VARARG, 0, 1, 0));
@@ -1110,7 +1110,7 @@ static void expr(ktap_lexstate *ls, expdesc *v)
 static void block (ktap_lexstate *ls)
 {
 	/* block -> statlist */
-	FuncState *fs = ls->fs;
+	ktap_funcstate *fs = ls->fs;
 	BlockCnt bl;
 
 	enterblock(fs, &bl, 0);
@@ -1135,7 +1135,7 @@ struct LHS_assign {
  */
 static void check_conflict(ktap_lexstate *ls, struct LHS_assign *lh, expdesc *v)
 {
-	FuncState *fs = ls->fs;
+	ktap_funcstate *fs = ls->fs;
 	int extra = fs->freereg;  /* eventual position to save local variable */
 	int conflict = 0;
 
@@ -1224,7 +1224,7 @@ static void gotostat(ktap_lexstate *ls, int pc)
 }
 
 /* check for repeated labels on the same block */
-static void checkrepeated(FuncState *fs, Labellist *ll, ktap_string *label)
+static void checkrepeated(ktap_funcstate *fs, Labellist *ll, ktap_string *label)
 {
 	int i;
 	for (i = fs->bl->firstlabel; i < ll->n; i++) {
@@ -1247,7 +1247,7 @@ static void skipnoopstat (ktap_lexstate *ls)
 static void labelstat (ktap_lexstate *ls, ktap_string *label, int line)
 {
 	/* label -> '::' NAME '::' */
-	FuncState *fs = ls->fs;
+	ktap_funcstate *fs = ls->fs;
 	Labellist *ll = &ls->dyd->label;
 	int l;  /* index of new label being created */
 
@@ -1266,7 +1266,7 @@ static void labelstat (ktap_lexstate *ls, ktap_string *label, int line)
 static void whilestat(ktap_lexstate *ls, int line)
 {
 	/* whilestat -> WHILE cond DO block END */
-	FuncState *fs = ls->fs;
+	ktap_funcstate *fs = ls->fs;
 	int whileinit;
 	int condexit;
 	BlockCnt bl;
@@ -1292,7 +1292,7 @@ static void repeatstat (ktap_lexstate *ls, int line)
 {
 	/* repeatstat -> REPEAT block UNTIL cond */
 	int condexit;
-	FuncState *fs = ls->fs;
+	ktap_funcstate *fs = ls->fs;
 	int repeat_init = codegen_getlabel(fs);
 	BlockCnt bl1, bl2;
 
@@ -1325,7 +1325,7 @@ static void forbody(ktap_lexstate *ls, int base, int line, int nvars, int isnum)
 {
 	/* forbody -> DO block */
 	BlockCnt bl;
-	FuncState *fs = ls->fs;
+	ktap_funcstate *fs = ls->fs;
 	int prep, endfor;
 
 	checknext(ls, ')');
@@ -1354,7 +1354,7 @@ static void forbody(ktap_lexstate *ls, int base, int line, int nvars, int isnum)
 static void fornum(ktap_lexstate *ls, ktap_string *varname, int line)
 {
 	/* fornum -> NAME = exp1,exp1[,exp1] forbody */
-	FuncState *fs = ls->fs;
+	ktap_funcstate *fs = ls->fs;
 	int base = fs->freereg;
 
 	new_localvarliteral(ls, "(for index)");
@@ -1377,7 +1377,7 @@ static void fornum(ktap_lexstate *ls, ktap_string *varname, int line)
 static void forlist(ktap_lexstate *ls, ktap_string *indexname)
 {
 	/* forlist -> NAME {,NAME} IN explist forbody */
-	FuncState *fs = ls->fs;
+	ktap_funcstate *fs = ls->fs;
 	expdesc e;
 	int nvars = 4;  /* gen, state, control, plus at least one declared var */
 	int line;
@@ -1403,7 +1403,7 @@ static void forlist(ktap_lexstate *ls, ktap_string *indexname)
 static void forstat(ktap_lexstate *ls, int line)
 {
 	/* forstat -> FOR (fornum | forlist) END */
-	FuncState *fs = ls->fs;
+	ktap_funcstate *fs = ls->fs;
 	ktap_string *varname;
 	BlockCnt bl;
 
@@ -1431,7 +1431,7 @@ static void test_then_block(ktap_lexstate *ls, int *escapelist)
 {
 	/* test_then_block -> [IF | ELSEIF] cond THEN block */
 	BlockCnt bl;
-	FuncState *fs = ls->fs;
+	ktap_funcstate *fs = ls->fs;
 	expdesc v;
 	int jf;  /* instruction to skip 'then' code (if condition is false) */
 
@@ -1468,7 +1468,7 @@ static void test_then_block(ktap_lexstate *ls, int *escapelist)
 static void ifstat(ktap_lexstate *ls, int line)
 {
 	/* ifstat -> IF cond THEN block {ELSEIF cond THEN block} [ELSE block] END */
-	FuncState *fs = ls->fs;
+	ktap_funcstate *fs = ls->fs;
 	int escapelist = NO_JUMP;  /* exit list for finished parts */
 
 	test_then_block(ls, &escapelist);  /* IF cond THEN block */
@@ -1486,7 +1486,7 @@ static void ifstat(ktap_lexstate *ls, int line)
 static void localfunc(ktap_lexstate *ls)
 {
 	expdesc b;
-	FuncState *fs = ls->fs;
+	ktap_funcstate *fs = ls->fs;
 
 	new_localvar(ls, str_checkname(ls));  /* new local variable */
 	adjustlocalvars(ls, 1);  /* enter its scope */
@@ -1547,7 +1547,7 @@ static void funcstat(ktap_lexstate *ls, int line)
 static void exprstat(ktap_lexstate *ls)
 {
 	/* stat -> func | assignment */
-	FuncState *fs = ls->fs;
+	ktap_funcstate *fs = ls->fs;
 	struct LHS_assign v;
 
 	suffixedexp(ls, &v.v);
@@ -1563,7 +1563,7 @@ static void exprstat(ktap_lexstate *ls)
 static void retstat(ktap_lexstate *ls)
 {
 	/* stat -> RETURN [explist] [';'] */
-	FuncState *fs = ls->fs;
+	ktap_funcstate *fs = ls->fs;
 	expdesc e;
 	int first, nret;  /* registers with returned values */
 
@@ -1600,7 +1600,7 @@ static void tracestat(ktap_lexstate *ls)
 	ktap_string *kdebug_str = ktapc_ts_new("kdebug");
 	ktap_string *probe_str = ktapc_ts_new("probe_by_id");
 	ktap_string *probe_end_str = ktapc_ts_new("probe_end");
-	FuncState *fs = ls->fs;
+	ktap_funcstate *fs = ls->fs;
 	int token = ls->t.token;
 	int line = ls->linenumber;
 	int base, nparams;
@@ -1737,7 +1737,7 @@ static void statement (ktap_lexstate *ls)
 /*
  * compiles the main function, which is a regular vararg function with an upvalue
  */
-static void mainfunc(ktap_lexstate *ls, FuncState *fs)
+static void mainfunc(ktap_lexstate *ls, ktap_funcstate *fs)
 {
 	BlockCnt bl;
 	expdesc v;
@@ -1755,14 +1755,14 @@ static void mainfunc(ktap_lexstate *ls, FuncState *fs)
 ktap_closure *ktapc_parser(char *ptr, const char *name)
 {
 	ktap_lexstate lexstate;
-	FuncState funcstate;
+	ktap_funcstate funcstate;
 	Dyndata dyd;
 	Mbuffer buff;
 	int firstchar = *ptr++;
 	ktap_closure *cl = ktapc_newlclosure(1);  /* create main closure */
 
 	memset(&lexstate, 0, sizeof(ktap_lexstate));
-	memset(&funcstate, 0, sizeof(FuncState));
+	memset(&funcstate, 0, sizeof(ktap_funcstate));
 	funcstate.f = cl->l.p = ktapc_newproto();
 	funcstate.f->source = ktapc_ts_new(name);  /* create and anchor ktap_string */
 

@@ -31,14 +31,14 @@
 
 #define hasjumps(e)	((e)->t != (e)->f)
 
-void codegen_patchtohere (FuncState *fs, int list);
+void codegen_patchtohere (ktap_funcstate *fs, int list);
 
 static int isnumeral(expdesc *e)
 {
 	return (e->k == VKNUM && e->t == NO_JUMP && e->f == NO_JUMP);
 }
 
-void codegen_nil(FuncState *fs, int from, int n)
+void codegen_nil(ktap_funcstate *fs, int from, int n)
 {
 	ktap_instruction *previous;
 	int l = from + n - 1;  /* last register to set nil */
@@ -64,7 +64,7 @@ void codegen_nil(FuncState *fs, int from, int n)
 	codegen_codeABC(fs, OP_LOADNIL, from, n - 1, 0);  /* else no optimization */
 }
 
-int codegen_jump(FuncState *fs)
+int codegen_jump(ktap_funcstate *fs)
 {
 	int jpc = fs->jpc;  /* save list of jumps to here */
 	int j;
@@ -75,18 +75,18 @@ int codegen_jump(FuncState *fs)
 	return j;
 }
 
-void codegen_ret(FuncState *fs, int first, int nret)
+void codegen_ret(ktap_funcstate *fs, int first, int nret)
 {
 	codegen_codeABC(fs, OP_RETURN, first, nret+1, 0);
 }
 
-static int condjump(FuncState *fs, OpCode op, int A, int B, int C)
+static int condjump(ktap_funcstate *fs, OpCode op, int A, int B, int C)
 {
 	codegen_codeABC(fs, op, A, B, C);
 	return codegen_jump(fs);
 }
 
-static void fixjump(FuncState *fs, int pc, int dest)
+static void fixjump(ktap_funcstate *fs, int pc, int dest)
 {
 	ktap_instruction *jmp = &fs->f->code[pc];
 	int offset = dest-(pc+1);
@@ -101,13 +101,13 @@ static void fixjump(FuncState *fs, int pc, int dest)
  * returns current `pc' and marks it as a jump target (to avoid wrong
  * optimizations with consecutive instructions not in the same basic block).
  */
-int codegen_getlabel(FuncState *fs)
+int codegen_getlabel(ktap_funcstate *fs)
 {
 	fs->lasttarget = fs->pc;
 	return fs->pc;
 }
 
-static int getjump(FuncState *fs, int pc)
+static int getjump(ktap_funcstate *fs, int pc)
 {
 	int offset = GETARG_sBx(fs->f->code[pc]);
 
@@ -117,7 +117,7 @@ static int getjump(FuncState *fs, int pc)
 		return (pc+1)+offset;  /* turn offset into absolute position */
 }
 
-static ktap_instruction *getjumpcontrol(FuncState *fs, int pc)
+static ktap_instruction *getjumpcontrol(ktap_funcstate *fs, int pc)
 {
 	ktap_instruction *pi = &fs->f->code[pc];
 	if (pc >= 1 && testTMode(GET_OPCODE(*(pi-1))))
@@ -130,7 +130,7 @@ static ktap_instruction *getjumpcontrol(FuncState *fs, int pc)
  * check whether list has any jump that do not produce a value
  * (or produce an inverted value)
  */
-static int need_value(FuncState *fs, int list)
+static int need_value(ktap_funcstate *fs, int list)
 {
 	for (; list != NO_JUMP; list = getjump(fs, list)) {
 		ktap_instruction i = *getjumpcontrol(fs, list);
@@ -140,7 +140,7 @@ static int need_value(FuncState *fs, int list)
 	return 0;  /* not found */
 }
 
-static int patchtestreg(FuncState *fs, int node, int reg)
+static int patchtestreg(ktap_funcstate *fs, int node, int reg)
 {
 	ktap_instruction *i = getjumpcontrol(fs, node);
 	if (GET_OPCODE(*i) != OP_TESTSET)
@@ -153,13 +153,13 @@ static int patchtestreg(FuncState *fs, int node, int reg)
 	return 1;
 }
 
-static void removevalues(FuncState *fs, int list)
+static void removevalues(ktap_funcstate *fs, int list)
 {
 	for (; list != NO_JUMP; list = getjump(fs, list))
 		patchtestreg(fs, list, NO_REG);
 }
 
-static void patchlistaux(FuncState *fs, int list, int vtarget, int reg,
+static void patchlistaux(ktap_funcstate *fs, int list, int vtarget, int reg,
 			 int dtarget)
 {
 	while (list != NO_JUMP) {
@@ -172,13 +172,13 @@ static void patchlistaux(FuncState *fs, int list, int vtarget, int reg,
 	}
 }
 
-static void dischargejpc(FuncState *fs)
+static void dischargejpc(ktap_funcstate *fs)
 {
 	patchlistaux(fs, fs->jpc, fs->pc, NO_REG, fs->pc);
 	fs->jpc = NO_JUMP;
 }
 
-void codegen_patchlist(FuncState *fs, int list, int target)
+void codegen_patchlist(ktap_funcstate *fs, int list, int target)
 {
 	if (target == fs->pc)
 		codegen_patchtohere(fs, list);
@@ -188,7 +188,7 @@ void codegen_patchlist(FuncState *fs, int list, int target)
 	}
 }
 
-void codegen_patchclose(FuncState *fs, int list, int level)
+void codegen_patchclose(ktap_funcstate *fs, int list, int level)
 {
 	level++;  /* argument is +1 to reserve 0 as non-op */
 	while (list != NO_JUMP) {
@@ -201,13 +201,13 @@ void codegen_patchclose(FuncState *fs, int list, int level)
 	}
 }
 
-void codegen_patchtohere(FuncState *fs, int list)
+void codegen_patchtohere(ktap_funcstate *fs, int list)
 {
 	codegen_getlabel(fs);
 	codegen_concat(fs, &fs->jpc, list);
 }
 
-void codegen_concat(FuncState *fs, int *l1, int l2)
+void codegen_concat(ktap_funcstate *fs, int *l1, int l2)
 {
 	if (l2 == NO_JUMP)
 		return;
@@ -222,7 +222,7 @@ void codegen_concat(FuncState *fs, int *l1, int l2)
 	}
 }
 
-static int codegen_code(FuncState *fs, ktap_instruction i)
+static int codegen_code(ktap_funcstate *fs, ktap_instruction i)
 {
 	ktap_proto *f = fs->f;
 
@@ -240,7 +240,7 @@ static int codegen_code(FuncState *fs, ktap_instruction i)
 	return fs->pc++;
 }
 
-int codegen_codeABC(FuncState *fs, OpCode o, int a, int b, int c)
+int codegen_codeABC(ktap_funcstate *fs, OpCode o, int a, int b, int c)
 {
 	ktap_assert(getOpMode(o) == iABC);
 	//ktap_assert(getBMode(o) != OpArgN || b == 0);
@@ -249,7 +249,7 @@ int codegen_codeABC(FuncState *fs, OpCode o, int a, int b, int c)
 	return codegen_code(fs, CREATE_ABC(o, a, b, c));
 }
 
-int codegen_codeABx(FuncState *fs, OpCode o, int a, unsigned int bc)
+int codegen_codeABx(ktap_funcstate *fs, OpCode o, int a, unsigned int bc)
 {
 	ktap_assert(getOpMode(o) == iABx || getOpMode(o) == iAsBx);
 	ktap_assert(getCMode(o) == OpArgN);
@@ -257,13 +257,13 @@ int codegen_codeABx(FuncState *fs, OpCode o, int a, unsigned int bc)
 	return codegen_code(fs, CREATE_ABx(o, a, bc));
 }
 
-static int codeextraarg(FuncState *fs, int a)
+static int codeextraarg(ktap_funcstate *fs, int a)
 {
 	ktap_assert(a <= MAXARG_Ax);
 	return codegen_code(fs, CREATE_Ax(OP_EXTRAARG, a));
 }
 
-int codegen_codek(FuncState *fs, int reg, int k)
+int codegen_codek(ktap_funcstate *fs, int reg, int k)
 {
 	if (k <= MAXARG_Bx)
 		return codegen_codeABx(fs, OP_LOADK, reg, k);
@@ -274,7 +274,7 @@ int codegen_codek(FuncState *fs, int reg, int k)
 	}
 }
 
-void codegen_checkstack(FuncState *fs, int n)
+void codegen_checkstack(ktap_funcstate *fs, int n)
 {
 	int newstack = fs->freereg + n;
 
@@ -285,13 +285,13 @@ void codegen_checkstack(FuncState *fs, int n)
 	}
 }
 
-void codegen_reserveregs(FuncState *fs, int n)
+void codegen_reserveregs(ktap_funcstate *fs, int n)
 {
 	codegen_checkstack(fs, n);
 	fs->freereg += n;
 }
 
-static void freereg(FuncState *fs, int reg)
+static void freereg(ktap_funcstate *fs, int reg)
 {
 	if (!ISK(reg) && reg >= fs->nactvar) {
 		fs->freereg--;
@@ -299,13 +299,13 @@ static void freereg(FuncState *fs, int reg)
 	}
 }
 
-static void freeexp(FuncState *fs, expdesc *e)
+static void freeexp(ktap_funcstate *fs, expdesc *e)
 {
 	if (e->k == VNONRELOC)
 		freereg(fs, e->u.info);
 }
 
-static int addk(FuncState *fs, ktap_value *key, ktap_value *v)
+static int addk(ktap_funcstate *fs, ktap_value *key, ktap_value *v)
 {
 	const ktap_value *idx = ktapc_table_get(fs->h, key);
 	ktap_proto *f = fs->f;
@@ -336,7 +336,7 @@ static int addk(FuncState *fs, ktap_value *key, ktap_value *v)
 	return k;
 }
 
-int codegen_stringK(FuncState *fs, ktap_string *s)
+int codegen_stringK(ktap_funcstate *fs, ktap_string *s)
 {
 	ktap_value o;
 
@@ -344,7 +344,7 @@ int codegen_stringK(FuncState *fs, ktap_string *s)
 	return addk(fs, &o, &o);
 }
 
-int codegen_numberK(FuncState *fs, ktap_number r)
+int codegen_numberK(ktap_funcstate *fs, ktap_number r)
 {
 	int n;
 	ktap_value o, s;
@@ -361,14 +361,14 @@ int codegen_numberK(FuncState *fs, ktap_number r)
 	return n;
 }
 
-static int boolK(FuncState *fs, int b)
+static int boolK(ktap_funcstate *fs, int b)
 {
 	ktap_value o;
 	setbvalue(&o, b);
 	return addk(fs, &o, &o);
 }
 
-static int nilK(FuncState *fs)
+static int nilK(ktap_funcstate *fs)
 {
 	ktap_value k, v;
 	setnilvalue(&v);
@@ -377,7 +377,7 @@ static int nilK(FuncState *fs)
 	return addk(fs, &k, &v);
 }
 
-void codegen_setreturns(FuncState *fs, expdesc *e, int nresults)
+void codegen_setreturns(ktap_funcstate *fs, expdesc *e, int nresults)
 {
 	if (e->k == VCALL) {  /* expression is an open function call? */
 		SETARG_C(getcode(fs, e), nresults+1);
@@ -389,7 +389,7 @@ void codegen_setreturns(FuncState *fs, expdesc *e, int nresults)
 	}
 }
 
-void codegen_setoneret(FuncState *fs, expdesc *e)
+void codegen_setoneret(ktap_funcstate *fs, expdesc *e)
 {
 	if (e->k == VCALL) {  /* expression is an open function call? */
 		e->k = VNONRELOC;
@@ -400,7 +400,7 @@ void codegen_setoneret(FuncState *fs, expdesc *e)
 	}
 }
 
-void codegen_dischargevars(FuncState *fs, expdesc *e)
+void codegen_dischargevars(ktap_funcstate *fs, expdesc *e)
 {
 	switch (e->k) {
 	case VLOCAL: {
@@ -433,13 +433,13 @@ void codegen_dischargevars(FuncState *fs, expdesc *e)
 	}
 }
 
-static int code_label(FuncState *fs, int A, int b, int jump)
+static int code_label(ktap_funcstate *fs, int A, int b, int jump)
 {
 	codegen_getlabel(fs);  /* those instructions may be jump targets */
 	return codegen_codeABC(fs, OP_LOADBOOL, A, b, jump);
 }
 
-static void discharge2reg(FuncState *fs, expdesc *e, int reg)
+static void discharge2reg(ktap_funcstate *fs, expdesc *e, int reg)
 {
 	codegen_dischargevars(fs, e);
 	switch (e->k) {
@@ -478,7 +478,7 @@ static void discharge2reg(FuncState *fs, expdesc *e, int reg)
 	e->k = VNONRELOC;
 }
 
-static void discharge2anyreg(FuncState *fs, expdesc *e)
+static void discharge2anyreg(ktap_funcstate *fs, expdesc *e)
 {
 	if (e->k != VNONRELOC) {
 		codegen_reserveregs(fs, 1);
@@ -486,7 +486,7 @@ static void discharge2anyreg(FuncState *fs, expdesc *e)
 	}
 }
 
-static void exp2reg(FuncState *fs, expdesc *e, int reg)
+static void exp2reg(ktap_funcstate *fs, expdesc *e, int reg)
 {
 	discharge2reg(fs, e, reg);
 	if (e->k == VJMP)
@@ -512,7 +512,7 @@ static void exp2reg(FuncState *fs, expdesc *e, int reg)
 	e->k = VNONRELOC;
 }
 
-void codegen_exp2nextreg(FuncState *fs, expdesc *e)
+void codegen_exp2nextreg(ktap_funcstate *fs, expdesc *e)
 {
 	codegen_dischargevars(fs, e);
 	freeexp(fs, e);
@@ -520,7 +520,7 @@ void codegen_exp2nextreg(FuncState *fs, expdesc *e)
 	exp2reg(fs, e, fs->freereg - 1);
 }
 
-int codegen_exp2anyreg(FuncState *fs, expdesc *e)
+int codegen_exp2anyreg(ktap_funcstate *fs, expdesc *e)
 {
 	codegen_dischargevars(fs, e);
 	if (e->k == VNONRELOC) {
@@ -535,13 +535,13 @@ int codegen_exp2anyreg(FuncState *fs, expdesc *e)
 	return e->u.info;
 }
 
-void codegen_exp2anyregup(FuncState *fs, expdesc *e)
+void codegen_exp2anyregup(ktap_funcstate *fs, expdesc *e)
 {
 	if (e->k != VUPVAL || hasjumps(e))
 		codegen_exp2anyreg(fs, e);
 }
 
-void codegen_exp2val(FuncState *fs, expdesc *e)
+void codegen_exp2val(ktap_funcstate *fs, expdesc *e)
 {
 	if (hasjumps(e))
 		codegen_exp2anyreg(fs, e);
@@ -549,7 +549,7 @@ void codegen_exp2val(FuncState *fs, expdesc *e)
 		codegen_dischargevars(fs, e);
 }
 
-int codegen_exp2RK(FuncState *fs, expdesc *e)
+int codegen_exp2RK(ktap_funcstate *fs, expdesc *e)
 {
 	codegen_exp2val(fs, e);
 	switch (e->k) {
@@ -582,7 +582,7 @@ int codegen_exp2RK(FuncState *fs, expdesc *e)
 	return codegen_exp2anyreg(fs, e);
 }
 
-void codegen_storevar(FuncState *fs, expdesc *var, expdesc *ex)
+void codegen_storevar(ktap_funcstate *fs, expdesc *var, expdesc *ex)
 {
 	switch (var->k) {
 	case VLOCAL: {
@@ -609,7 +609,7 @@ void codegen_storevar(FuncState *fs, expdesc *var, expdesc *ex)
 	freeexp(fs, ex);
 }
 
-void codegen_self(FuncState *fs, expdesc *e, expdesc *key)
+void codegen_self(ktap_funcstate *fs, expdesc *e, expdesc *key)
 {
 	int ereg;
 
@@ -623,7 +623,7 @@ void codegen_self(FuncState *fs, expdesc *e, expdesc *key)
 	freeexp(fs, key);
 }
 
-static void invertjump (FuncState *fs, expdesc *e)
+static void invertjump (ktap_funcstate *fs, expdesc *e)
 {
 	ktap_instruction *pc = getjumpcontrol(fs, e->u.info);
 	ktap_assert(testTMode(GET_OPCODE(*pc)) && GET_OPCODE(*pc) != OP_TESTSET &&
@@ -631,7 +631,7 @@ static void invertjump (FuncState *fs, expdesc *e)
 	SETARG_A(*pc, !(GETARG_A(*pc)));
 }
 
-static int jumponcond(FuncState *fs, expdesc *e, int cond)
+static int jumponcond(ktap_funcstate *fs, expdesc *e, int cond)
 {
 	if (e->k == VRELOCABLE) {
 		ktap_instruction ie = getcode(fs, e);
@@ -646,7 +646,7 @@ static int jumponcond(FuncState *fs, expdesc *e, int cond)
 	return condjump(fs, OP_TESTSET, NO_REG, e->u.info, cond);
 }
 
-void codegen_goiftrue(FuncState *fs, expdesc *e)
+void codegen_goiftrue(ktap_funcstate *fs, expdesc *e)
 {
 	int pc;  /* pc of last jump */
 
@@ -671,7 +671,7 @@ void codegen_goiftrue(FuncState *fs, expdesc *e)
 	e->t = NO_JUMP;
 }
 
-void codegen_goiffalse(FuncState *fs, expdesc *e)
+void codegen_goiffalse(ktap_funcstate *fs, expdesc *e)
 {
 	int pc;  /* pc of last jump */
 	codegen_dischargevars(fs, e);
@@ -694,7 +694,7 @@ void codegen_goiffalse(FuncState *fs, expdesc *e)
 	e->f = NO_JUMP;
 }
 
-static void codenot(FuncState *fs, expdesc *e)
+static void codenot(ktap_funcstate *fs, expdesc *e)
 {
 	codegen_dischargevars(fs, e);
 	switch (e->k) {
@@ -729,7 +729,7 @@ static void codenot(FuncState *fs, expdesc *e)
 	removevalues(fs, e->t);
 }
 
-void codegen_indexed(FuncState *fs, expdesc *t, expdesc *k)
+void codegen_indexed(ktap_funcstate *fs, expdesc *t, expdesc *k)
 {
 	ktap_assert(!hasjumps(t));
 	t->u.ind.t = t->u.info;
@@ -757,7 +757,7 @@ static int constfolding(OpCode op, expdesc *e1, expdesc *e2)
 	return 1;
 }
 
-static void codearith(FuncState *fs, OpCode op,
+static void codearith(ktap_funcstate *fs, OpCode op,
 		      expdesc *e1, expdesc *e2, int line)
 {
 	if (constfolding(op, e1, e2))
@@ -779,7 +779,7 @@ static void codearith(FuncState *fs, OpCode op,
 	}
 }
 
-static void codecomp(FuncState *fs, OpCode op, int cond, expdesc *e1,
+static void codecomp(ktap_funcstate *fs, OpCode op, int cond, expdesc *e1,
 		     expdesc *e2)
 {
 	int o1 = codegen_exp2RK(fs, e1);
@@ -796,7 +796,7 @@ static void codecomp(FuncState *fs, OpCode op, int cond, expdesc *e1,
 	e1->k = VJMP;
 }
 
-void codegen_prefix(FuncState *fs, UnOpr op, expdesc *e, int line)
+void codegen_prefix(ktap_funcstate *fs, UnOpr op, expdesc *e, int line)
 {
 	expdesc e2;
 
@@ -827,7 +827,7 @@ void codegen_prefix(FuncState *fs, UnOpr op, expdesc *e, int line)
 	}
 }
 
-void codegen_infix(FuncState *fs, BinOpr op, expdesc *v)
+void codegen_infix(ktap_funcstate *fs, BinOpr op, expdesc *v)
 {
 	switch (op) {
 	case OPR_AND: {
@@ -853,7 +853,7 @@ void codegen_infix(FuncState *fs, BinOpr op, expdesc *v)
 	}
 }
 
-void codegen_posfix(FuncState *fs, BinOpr op, expdesc *e1, expdesc *e2, int line)
+void codegen_posfix(ktap_funcstate *fs, BinOpr op, expdesc *e1, expdesc *e2, int line)
 {
 	switch (op) {
 	case OPR_AND: {
@@ -901,12 +901,12 @@ void codegen_posfix(FuncState *fs, BinOpr op, expdesc *e1, expdesc *e2, int line
 	}
 }
 
-void codegen_fixline(FuncState *fs, int line)
+void codegen_fixline(ktap_funcstate *fs, int line)
 {
 	fs->f->lineinfo[fs->pc - 1] = line;
 }
 
-void codegen_setlist(FuncState *fs, int base, int nelems, int tostore)
+void codegen_setlist(ktap_funcstate *fs, int base, int nelems, int tostore)
 {
 	int c =  (nelems - 1)/LFIELDS_PER_FLUSH + 1;
 	int b = (tostore == KTAP_MULTRET) ? 0 : tostore;
