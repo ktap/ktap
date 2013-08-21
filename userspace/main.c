@@ -358,9 +358,10 @@ static int fork_workload(int ktap_fd)
 static char *output_filename;
 pid_t ktap_pid;
 
-static void run_ktapvm()
+static int run_ktapvm()
 {
         int ktapvm_fd, ktap_fd;
+	int ret;
 
 	ktap_pid = getpid();
 
@@ -379,10 +380,12 @@ static void run_ktapvm()
 		uparm.workload = 1;
 	}
 
-	ioctl(ktap_fd, KTAP_CMD_IOC_RUN, &uparm);
+	ret = ioctl(ktap_fd, KTAP_CMD_IOC_RUN, &uparm);
 
 	close(ktap_fd);
 	close(ktapvm_fd);
+
+	return ret;
 }
 
 int verbose;
@@ -528,6 +531,7 @@ int main(int argc, char **argv)
 {
 	char **ktapvm_argv;
 	int new_index, i;
+	int ret;
 
 	if (argc == 1)
 		usage("");
@@ -575,10 +579,9 @@ int main(int argc, char **argv)
 	uparm.print_timestamp = print_timestamp;
 
 	/* start running into kernel ktapvm */
-	run_ktapvm();
+	ret = run_ktapvm();
 
 	cleanup_event_resources();
-
-	return 0;
+	return ret;
 }
 

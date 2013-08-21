@@ -126,6 +126,7 @@ static void free_argv(int argc, char **argv)
 	kfree(argv);
 }
 
+static atomic_t ktap_running = ATOMIC_INIT(0);
 
 /* Ktap Main Entry */
 static int ktap_main(struct file *file, struct ktap_parm *parm)
@@ -136,16 +137,23 @@ static int ktap_main(struct file *file, struct ktap_parm *parm)
 	char **argv;
 	int ret;
 
+	if (atomic_inc_return(&ktap_running) != 1) {
+		atomic_dec(&ktap_running);
+		pr_info("only one ktap thread allow to run\n");
+		return -EBUSY;
+	}
+
 	ret = load_trunk(parm, &buff);
 	if (ret) {
 		pr_err("cannot load file\n");
-		return ret;
+		goto out;
 	}
 
 	argv = copy_argv_from_user(parm);
 	if (IS_ERR(argv)) {
 		vfree(buff);
-		return PTR_ERR(argv);
+		ret = PTR_ERR(argv);
+		goto out;
 	}
 
 	ks = kp_newstate(parm, argv);
@@ -155,7 +163,8 @@ static int ktap_main(struct file *file, struct ktap_parm *parm)
 
 	if (unlikely(!ks)) {
 		vfree(buff);
-		return -ENOEXEC;
+		ret = -ENOEXEC;
+		goto out;
 	}
 
 	file->private_data = ks;
@@ -171,7 +180,10 @@ static int ktap_main(struct file *file, struct ktap_parm *parm)
 	}
 
 	kp_final_exit(ks);
-	return 0;
+
+ out:
+	atomic_dec(&ktap_running);	
+	return ret;
 }
 
 
