@@ -787,6 +787,7 @@ static int hist_record_cmp(const void *r1, const void *r2)
 void kp_table_histogram(ktap_state *ks, ktap_table *t)
 {
 	struct table_hist_record *thr;
+	unsigned long __maybe_unused flags;
 	char dist_str[40];
 	int i, ratio, total = 0, count = 0, top_num;
 	int size;
@@ -794,8 +795,11 @@ void kp_table_histogram(ktap_state *ks, ktap_table *t)
 	size = sizeof(*thr) * (t->sizearray + sizenode(t));
 	thr = kp_malloc(ks, size);
 	if (!thr) {
-		kp_printf(ks, "Cannot allocate %d of histogram memory", size);
+		kp_error(ks, "Cannot allocate %d of histogram memory", size);
+		return;
 	}
+
+	kp_table_lock(t);
 
 	for (i = 0; i < t->sizearray; i++) {
 		ktap_value *v = &t->array[i];
@@ -826,6 +830,8 @@ void kp_table_histogram(ktap_state *ks, ktap_table *t)
 		count++;
 		total += nvalue(gval(n));
 	}
+
+	kp_table_unlock(t);
 
 	sort(thr, count, sizeof(struct table_hist_record),
 	     hist_record_cmp, NULL);
