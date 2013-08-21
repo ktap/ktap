@@ -97,10 +97,10 @@ typedef union {
 } SemInfo;  /* semantics information */
 
 
-typedef struct Token {
+typedef struct ktap_token {
 	int token;
 	SemInfo seminfo;
-} Token;
+} ktap_token;
 
 typedef struct Mbuffer {
 	char *buffer;
@@ -130,8 +130,8 @@ typedef struct ktap_lexstate {
 	int current;  /* current character (charint) */
 	int linenumber;  /* input line counter */
 	int lastline;  /* line of last token `consumed' */
-	Token t;  /* current token */
-	Token lookahead;  /* look ahead token */
+	ktap_token t;  /* current token */
+	ktap_token lookahead;  /* look ahead token */
 	struct ktap_funcstate *fs;  /* current function (parser) */
 	Mbuffer *buff;  /* buffer for tokens */
 	struct Dyndata *dyd;  /* dynamic structures used by the parser */
