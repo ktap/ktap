@@ -11,16 +11,15 @@ $COMMAND
 echo -e "\n\t\tPass 3 without tracing"
 $COMMAND
 
-../../ktap -e 'trace "syscalls:sys_*_futex" function (e) {}' &
+echo ""
+
+KTAP_ONE_LINER='trace "syscalls:sys_*_futex" function (e) {}'
 
 echo -e "\n\t\tPass 1 with tracing"
-echo ""
-$COMMAND
+../../ktap -e "$KTAP_ONE_LINER" -- $COMMAND
 echo -e "\n\t\tPass 2 with tracing"
-$COMMAND
+../../ktap -e "$KTAP_ONE_LINER" -- $COMMAND
 echo -e "\n\t\tPass 3 with tracing"
-$COMMAND
-
-pkill ktap
+../../ktap -e "$KTAP_ONE_LINER" -- $COMMAND
 
 rm -rf ./sembench
