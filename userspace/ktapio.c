@@ -61,7 +61,8 @@ static void *reader_thread(void *data)
 	block_sigint();
 
 	if (output) {
-		out_fd = open(output, O_CREAT | O_WRONLY | O_TRUNC);
+		out_fd = open(output, O_CREAT | O_WRONLY | O_TRUNC,
+					S_IRUSR|S_IWUSR);
 		if (out_fd < 0) {
 			fprintf(stderr, "Cannot open output file %s\n", output);
 			return NULL;
