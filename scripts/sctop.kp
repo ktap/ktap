@@ -1,0 +1,11 @@
+#! /usr/bin/env ktap
+
+syscalls = {}
+
+trace "syscalls:sys_enter_*" function (e) {
+	table_count(syscalls, e.name)
+}
+
+timer.s(5, function () {
+	histogram(syscalls)
+})
