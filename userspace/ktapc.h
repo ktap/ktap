@@ -166,7 +166,7 @@ typedef enum {
 #define vkisvar(k)      (VLOCAL <= (k) && (k) <= VINDEXED)
 #define vkisinreg(k)    ((k) == VNONRELOC || (k) == VLOCAL)
 
-typedef struct expdesc {
+typedef struct ktap_expdesc {
 	expkind k;
 	union {
 		struct {  /* for indexed variables (VINDEXED) */
@@ -179,7 +179,7 @@ typedef struct expdesc {
 	} u;
 	int t;  /* patch list of `exit when true' */
 	int f;  /* patch list of `exit when false' */
-} expdesc;
+} ktap_expdesc;
 
 
 typedef struct ktap_vardesc {
@@ -322,10 +322,10 @@ extern int verbose;
 #include "../include/ktap_opcodes.h"
 
 int codegen_stringK(ktap_funcstate *fs, ktap_string *s);
-void codegen_indexed(ktap_funcstate *fs, expdesc *t, expdesc *k);
-void codegen_setreturns(ktap_funcstate *fs, expdesc *e, int nresults);
+void codegen_indexed(ktap_funcstate *fs, ktap_expdesc *t, ktap_expdesc *k);
+void codegen_setreturns(ktap_funcstate *fs, ktap_expdesc *e, int nresults);
 void codegen_reserveregs(ktap_funcstate *fs, int n);
-void codegen_exp2nextreg(ktap_funcstate *fs, expdesc *e);
+void codegen_exp2nextreg(ktap_funcstate *fs, ktap_expdesc *e);
 void codegen_nil(ktap_funcstate *fs, int from, int n);
 void codegen_patchlist(ktap_funcstate *fs, int list, int target);
 void codegen_patchclose(ktap_funcstate *fs, int list, int level);
@@ -333,27 +333,27 @@ int codegen_jump(ktap_funcstate *fs);
 void codegen_patchtohere(ktap_funcstate *fs, int list);
 int codegen_codeABx(ktap_funcstate *fs, OpCode o, int a, unsigned int bc);
 void codegen_ret(ktap_funcstate *fs, int first, int nret);
-void codegen_exp2anyregup(ktap_funcstate *fs, expdesc *e);
-void codegen_exp2val(ktap_funcstate *fs, expdesc *e);
-int codegen_exp2RK(ktap_funcstate *fs, expdesc *e);
+void codegen_exp2anyregup(ktap_funcstate *fs, ktap_expdesc *e);
+void codegen_exp2val(ktap_funcstate *fs, ktap_expdesc *e);
+int codegen_exp2RK(ktap_funcstate *fs, ktap_expdesc *e);
 int codegen_codeABC(ktap_funcstate *fs, OpCode o, int a, int b, int c);
 void codegen_setlist(ktap_funcstate *fs, int base, int nelems, int tostore);
 void codegen_fixline (ktap_funcstate *fs, int line);
-void codegen_dischargevars(ktap_funcstate *fs, expdesc *e);
-void codegen_self(ktap_funcstate *fs, expdesc *e, expdesc *key);
-void codegen_prefix(ktap_funcstate *fs, UnOpr op, expdesc *e, int line);
-void codegen_infix(ktap_funcstate *fs, BinOpr op, expdesc *v);
-void codegen_posfix(ktap_funcstate *fs, BinOpr op, expdesc *e1, expdesc *e2, int line);
-void codegen_setoneret(ktap_funcstate *fs, expdesc *e);
-void codegen_storevar(ktap_funcstate *fs, expdesc *var, expdesc *ex);
-void codegen_goiftrue(ktap_funcstate *fs, expdesc *e);
+void codegen_dischargevars(ktap_funcstate *fs, ktap_expdesc *e);
+void codegen_self(ktap_funcstate *fs, ktap_expdesc *e, ktap_expdesc *key);
+void codegen_prefix(ktap_funcstate *fs, UnOpr op, ktap_expdesc *e, int line);
+void codegen_infix(ktap_funcstate *fs, BinOpr op, ktap_expdesc *v);
+void codegen_posfix(ktap_funcstate *fs, BinOpr op, ktap_expdesc *e1, ktap_expdesc *e2, int line);
+void codegen_setoneret(ktap_funcstate *fs, ktap_expdesc *e);
+void codegen_storevar(ktap_funcstate *fs, ktap_expdesc *var, ktap_expdesc *ex);
+void codegen_goiftrue(ktap_funcstate *fs, ktap_expdesc *e);
 int codegen_getlabel(ktap_funcstate *fs);
 int codegen_codek(ktap_funcstate *fs, int reg, int k);
 int codegen_numberK(ktap_funcstate *fs, ktap_number r);
 void codegen_checkstack(ktap_funcstate *fs, int n);
-void codegen_goiffalse(ktap_funcstate *fs, expdesc *e);
+void codegen_goiffalse(ktap_funcstate *fs, ktap_expdesc *e);
 void codegen_concat(ktap_funcstate *fs, int *l1, int l2);
-int codegen_exp2anyreg(ktap_funcstate *fs, expdesc *e);
+int codegen_exp2anyreg(ktap_funcstate *fs, ktap_expdesc *e);
 
 typedef int (*ktap_Writer)(const void* p, size_t sz, void* ud);
 int ktapc_dump(const ktap_proto *f, ktap_Writer w, void *data, int strip);

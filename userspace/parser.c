@@ -51,7 +51,7 @@ typedef struct BlockCnt {
  * prototypes for recursive non-terminal functions
  */
 static void statement (ktap_lexstate *ls);
-static void expr (ktap_lexstate *ls, expdesc *v);
+static void expr (ktap_lexstate *ls, ktap_expdesc *v);
 
 static void anchor_token(ktap_lexstate *ls)
 {
@@ -142,19 +142,19 @@ static ktap_string *str_checkname(ktap_lexstate *ls)
 	return ts;
 }
 
-static void init_exp(expdesc *e, expkind k, int i)
+static void init_exp(ktap_expdesc *e, expkind k, int i)
 {
 	e->f = e->t = NO_JUMP;
 	e->k = k;
 	e->u.info = i;
 }
 
-static void codestring (ktap_lexstate *ls, expdesc *e, ktap_string *s)
+static void codestring (ktap_lexstate *ls, ktap_expdesc *e, ktap_string *s)
 {
 	init_exp(e, VK, codegen_stringK(ls->fs, s));
 }
 
-static void checkname(ktap_lexstate *ls, expdesc *e)
+static void checkname(ktap_lexstate *ls, ktap_expdesc *e)
 {
 	codestring(ls, e, str_checkname(ls));
 }
@@ -234,7 +234,7 @@ static int searchupvalue(ktap_funcstate *fs, ktap_string *name)
 	return -1;  /* not found */
 }
 
-static int newupvalue(ktap_funcstate *fs, ktap_string *name, expdesc *v)
+static int newupvalue(ktap_funcstate *fs, ktap_string *name, ktap_expdesc *v)
 {
 	ktap_proto *f = fs->f;
 	int oldsize = f->sizeupvalues;
@@ -279,7 +279,7 @@ static void markupval (ktap_funcstate *fs, int level)
  * Find variable with given name 'n'. If it is an upvalue, add this
  * upvalue into all intermediate functions.
  */
-static int singlevaraux(ktap_funcstate *fs, ktap_string *n, expdesc *var, int base)
+static int singlevaraux(ktap_funcstate *fs, ktap_string *n, ktap_expdesc *var, int base)
 {
 	if (fs == NULL)  /* no more levels? */
 		return VVOID;  /* default is global */
@@ -304,13 +304,13 @@ static int singlevaraux(ktap_funcstate *fs, ktap_string *n, expdesc *var, int ba
 	}
 }
 
-static void singlevar(ktap_lexstate *ls, expdesc *var)
+static void singlevar(ktap_lexstate *ls, ktap_expdesc *var)
 {
 	ktap_string *varname = str_checkname(ls);
 	ktap_funcstate *fs = ls->fs;
 
 	if (singlevaraux(fs, varname, var, 1) == VVOID) {  /* global name? */
-		expdesc key;
+		ktap_expdesc key;
 		singlevaraux(fs, ls->envn, var, 1);  /* get environment variable */
 		ktap_assert(var->k == VLOCAL || var->k == VUPVAL);
 		codestring(ls, &key, varname);  /* key is variable name */
@@ -318,7 +318,7 @@ static void singlevar(ktap_lexstate *ls, expdesc *var)
 	}
 }
 
-static void adjust_assign(ktap_lexstate *ls, int nvars, int nexps, expdesc *e)
+static void adjust_assign(ktap_lexstate *ls, int nvars, int nexps, ktap_expdesc *e)
 {
 	ktap_funcstate *fs = ls->fs;
 	int extra = nvars - nexps;
@@ -540,7 +540,7 @@ static ktap_proto *addprototype(ktap_lexstate *ls)
 /*
  * codes instruction to create new closure in parent function
  */
-static void codeclosure (ktap_lexstate *ls, expdesc *v)
+static void codeclosure (ktap_lexstate *ls, ktap_expdesc *v)
 {
 	ktap_funcstate *fs = ls->fs->prev;
 	init_exp(v, VRELOCABLE, codegen_codeABx(fs, OP_CLOSURE, 0, fs->np - 1));
@@ -634,11 +634,11 @@ static void statlist(ktap_lexstate *ls)
 	}
 }
 
-static void fieldsel(ktap_lexstate *ls, expdesc *v)
+static void fieldsel(ktap_lexstate *ls, ktap_expdesc *v)
 {
 	/* fieldsel -> ['.' | ':'] NAME */
 	ktap_funcstate *fs = ls->fs;
-	expdesc key;
+	ktap_expdesc key;
 
 	codegen_exp2anyregup(fs, v);
 	lex_next(ls);  /* skip the dot or colon */
@@ -646,7 +646,7 @@ static void fieldsel(ktap_lexstate *ls, expdesc *v)
 	codegen_indexed(fs, v, &key);
 }
 
-static void yindex(ktap_lexstate *ls, expdesc *v)
+static void yindex(ktap_lexstate *ls, ktap_expdesc *v)
 {
 	/* index -> '[' expr ']' */
 	lex_next(ls);  /* skip the '[' */
@@ -661,8 +661,8 @@ static void yindex(ktap_lexstate *ls, expdesc *v)
  * =======================================================================
  */
 struct ConsControl {
-	expdesc v;  /* last list item read */
-	expdesc *t;  /* table descriptor */
+	ktap_expdesc v;  /* last list item read */
+	ktap_expdesc *t;  /* table descriptor */
 	int nh;  /* total number of `record' elements */
 	int na;  /* total number of array elements */
 	int tostore;  /* number of array elements pending to be stored */
@@ -673,7 +673,7 @@ static void recfield (ktap_lexstate *ls, struct ConsControl *cc)
 	/* recfield -> (NAME | `['exp1`]') = exp1 */
 	ktap_funcstate *fs = ls->fs;
 	int reg = ls->fs->freereg;
-	expdesc key, val;
+	ktap_expdesc key, val;
 	int rkkey;
 
 	if (ls->t.token == TK_NAME) {
@@ -748,7 +748,7 @@ static void field (ktap_lexstate *ls, struct ConsControl *cc)
 	}
 }
 
-static void constructor (ktap_lexstate *ls, expdesc *t)
+static void constructor (ktap_lexstate *ls, ktap_expdesc *t)
 {
 	/* constructor -> '{' [ field { sep field } [sep] ] '}'
 		sep -> ',' | ';' */
@@ -809,7 +809,7 @@ static void parlist (ktap_lexstate *ls)
 	codegen_reserveregs(fs, fs->nactvar);  /* reserve register for parameters */
 }
 
-static void body (ktap_lexstate *ls, expdesc *e, int ismethod, int line)
+static void body (ktap_lexstate *ls, ktap_expdesc *e, int ismethod, int line)
 {
 	/* body ->  `(' parlist `)' block END */
 	ktap_funcstate new_fs;
@@ -834,7 +834,7 @@ static void body (ktap_lexstate *ls, expdesc *e, int ismethod, int line)
 	close_func(ls);
 }
 
-static int explist (ktap_lexstate *ls, expdesc *v)
+static int explist (ktap_lexstate *ls, ktap_expdesc *v)
 {
 	/* explist -> expr { `,' expr } */
 	int n = 1;  /* at least one expression */
@@ -848,10 +848,10 @@ static int explist (ktap_lexstate *ls, expdesc *v)
 	return n;
 }
 
-static void funcargs(ktap_lexstate *ls, expdesc *f, int line)
+static void funcargs(ktap_lexstate *ls, ktap_expdesc *f, int line)
 {
 	ktap_funcstate *fs = ls->fs;
-	expdesc args;
+	ktap_expdesc args;
 	int base, nparams;
 
 	switch (ls->t.token) {
@@ -899,7 +899,7 @@ static void funcargs(ktap_lexstate *ls, expdesc *f, int line)
  * Expression parsing
  * =======================================================================
  */
-static void primaryexp(ktap_lexstate *ls, expdesc *v)
+static void primaryexp(ktap_lexstate *ls, ktap_expdesc *v)
 {
 	/* primaryexp -> NAME | '(' expr ')' */
 	switch (ls->t.token) {
@@ -920,7 +920,7 @@ static void primaryexp(ktap_lexstate *ls, expdesc *v)
 	}
 }
 
-static void suffixedexp(ktap_lexstate *ls, expdesc *v)
+static void suffixedexp(ktap_lexstate *ls, ktap_expdesc *v)
 {
 	/* suffixedexp ->
 		primaryexp { '.' NAME | '[' exp ']' | ':' NAME funcargs | funcargs } */
@@ -935,14 +935,14 @@ static void suffixedexp(ktap_lexstate *ls, expdesc *v)
 			break;
 		}
 		case '[': {  /* `[' exp1 `]' */
-			expdesc key;
+			ktap_expdesc key;
 			codegen_exp2anyregup(fs, v);
 			yindex(ls, &key);
 			codegen_indexed(fs, v, &key);
 			break;
 		}
 		case ':': {  /* `:' NAME funcargs */
-			expdesc key;
+			ktap_expdesc key;
 			lex_next(ls);
 			checkname(ls, &key);
 			codegen_self(fs, v, &key);
@@ -960,7 +960,7 @@ static void suffixedexp(ktap_lexstate *ls, expdesc *v)
 	}
 }
 
-static void simpleexp(ktap_lexstate *ls, expdesc *v)
+static void simpleexp(ktap_lexstate *ls, ktap_expdesc *v)
 {
 	/* simpleexp -> NUMBER | STRING | NIL | TRUE | FALSE | ... |
 		constructor | FUNCTION body | suffixedexp */
@@ -1061,7 +1061,7 @@ static const struct {
  * subexpr -> (simpleexp | unop subexpr) { binop subexpr }
  * where `binop' is any binary operator with a priority higher than `limit'
  */
-static BinOpr subexpr(ktap_lexstate *ls, expdesc *v, int limit)
+static BinOpr subexpr(ktap_lexstate *ls, ktap_expdesc *v, int limit)
 {
 	BinOpr op;
 	UnOpr uop;
@@ -1080,7 +1080,7 @@ static BinOpr subexpr(ktap_lexstate *ls, expdesc *v, int limit)
 	/* expand while operators have priorities higher than `limit' */
 	op = getbinopr(ls->t.token);
 	while (op != OPR_NOBINOPR && priority[op].left > limit) {
-		expdesc v2;
+		ktap_expdesc v2;
 		BinOpr nextop;
 		int line = ls->linenumber;
 
@@ -1095,7 +1095,7 @@ static BinOpr subexpr(ktap_lexstate *ls, expdesc *v, int limit)
 	return op;  /* return first untreated operator */
 }
 
-static void expr(ktap_lexstate *ls, expdesc *v)
+static void expr(ktap_lexstate *ls, ktap_expdesc *v)
 {
 	subexpr(ls, v, 0);
 }
@@ -1124,7 +1124,7 @@ static void block (ktap_lexstate *ls)
  */
 struct LHS_assign {
 	struct LHS_assign *prev;
-	expdesc v;  /* variable (global, local, upvalue, or indexed) */
+	ktap_expdesc v;  /* variable (global, local, upvalue, or indexed) */
 };
 
 /*
@@ -1133,7 +1133,7 @@ struct LHS_assign {
  * table. If so, save original upvalue/local value in a safe place and
  * use this safe copy in the previous assignment.
  */
-static void check_conflict(ktap_lexstate *ls, struct LHS_assign *lh, expdesc *v)
+static void check_conflict(ktap_lexstate *ls, struct LHS_assign *lh, ktap_expdesc *v)
 {
 	ktap_funcstate *fs = ls->fs;
 	int extra = fs->freereg;  /* eventual position to save local variable */
@@ -1164,7 +1164,7 @@ static void check_conflict(ktap_lexstate *ls, struct LHS_assign *lh, expdesc *v)
 
 static void assignment(ktap_lexstate *ls, struct LHS_assign *lh, int nvars)
 {
-	expdesc e;
+	ktap_expdesc e;
 
 	check_condition(ls, vkisvar(lh->v.k), "syntax error");
 	if (testnext(ls, ',')) {  /* assignment -> ',' suffixedexp assignment */
@@ -1199,7 +1199,7 @@ static void assignment(ktap_lexstate *ls, struct LHS_assign *lh, int nvars)
 static int cond(ktap_lexstate *ls)
 {
 	/* cond -> exp */
-	expdesc v;
+	ktap_expdesc v;
 	expr(ls, &v);  /* read condition */
 	if (v.k == VNIL)
 		v.k = VFALSE;  /* `falses' are all equal here */
@@ -1311,7 +1311,7 @@ static void repeatstat (ktap_lexstate *ls, int line)
 
 static int exp1(ktap_lexstate *ls)
 {
-	expdesc e;
+	ktap_expdesc e;
 	int reg;
 
 	expr(ls, &e);
@@ -1378,7 +1378,7 @@ static void forlist(ktap_lexstate *ls, ktap_string *indexname)
 {
 	/* forlist -> NAME {,NAME} IN explist forbody */
 	ktap_funcstate *fs = ls->fs;
-	expdesc e;
+	ktap_expdesc e;
 	int nvars = 4;  /* gen, state, control, plus at least one declared var */
 	int line;
 	int base = fs->freereg;
@@ -1432,7 +1432,7 @@ static void test_then_block(ktap_lexstate *ls, int *escapelist)
 	/* test_then_block -> [IF | ELSEIF] cond THEN block */
 	BlockCnt bl;
 	ktap_funcstate *fs = ls->fs;
-	expdesc v;
+	ktap_expdesc v;
 	int jf;  /* instruction to skip 'then' code (if condition is false) */
 
 	lex_next(ls);  /* skip IF or ELSEIF */
@@ -1485,7 +1485,7 @@ static void ifstat(ktap_lexstate *ls, int line)
 
 static void localfunc(ktap_lexstate *ls)
 {
-	expdesc b;
+	ktap_expdesc b;
 	ktap_funcstate *fs = ls->fs;
 
 	new_localvar(ls, str_checkname(ls));  /* new local variable */
@@ -1500,7 +1500,7 @@ static void localstat(ktap_lexstate *ls)
 	/* stat -> LOCAL NAME {`,' NAME} [`=' explist] */
 	int nvars = 0;
 	int nexps;
-	expdesc e;
+	ktap_expdesc e;
 
 	do {
 		new_localvar(ls, str_checkname(ls));
@@ -1516,7 +1516,7 @@ static void localstat(ktap_lexstate *ls)
 	adjustlocalvars(ls, nvars);
 }
 
-static int funcname(ktap_lexstate *ls, expdesc *v)
+static int funcname(ktap_lexstate *ls, ktap_expdesc *v)
 {
 	/* funcname -> NAME {fieldsel} [`:' NAME] */
 	int ismethod = 0;
@@ -1535,7 +1535,7 @@ static void funcstat(ktap_lexstate *ls, int line)
 {
 	/* funcstat -> FUNCTION funcname body */
 	int ismethod;
-	expdesc v, b;
+	ktap_expdesc v, b;
 
 	lex_next(ls);  /* skip FUNCTION */
 	ismethod = funcname(ls, &v);
@@ -1564,7 +1564,7 @@ static void retstat(ktap_lexstate *ls)
 {
 	/* stat -> RETURN [explist] [';'] */
 	ktap_funcstate *fs = ls->fs;
-	expdesc e;
+	ktap_expdesc e;
 	int first, nret;  /* registers with returned values */
 
 	if (block_follow(ls, 1) || ls->t.token == ';')
@@ -1595,8 +1595,8 @@ static void retstat(ktap_lexstate *ls)
 
 static void tracestat(ktap_lexstate *ls)
 {
-	expdesc v0, key, args;
-	expdesc *v = &v0;
+	ktap_expdesc v0, key, args;
+	ktap_expdesc *v = &v0;
 	ktap_string *kdebug_str = ktapc_ts_new("kdebug");
 	ktap_string *probe_str = ktapc_ts_new("probe_by_id");
 	ktap_string *probe_end_str = ktapc_ts_new("probe_end");
@@ -1740,7 +1740,7 @@ static void statement (ktap_lexstate *ls)
 static void mainfunc(ktap_lexstate *ls, ktap_funcstate *fs)
 {
 	BlockCnt bl;
-	expdesc v;
+	ktap_expdesc v;
 
 	open_func(ls, fs, &bl);
 	fs->f->is_vararg = 1;  /* main function is always vararg */
