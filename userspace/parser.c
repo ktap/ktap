@@ -352,7 +352,7 @@ static void closegoto(ktap_lexstate *ls, int g, Labeldesc *label)
 {
 	int i;
 	ktap_funcstate *fs = ls->fs;
-	Labellist *gl = &ls->dyd->gt;
+	ktap_labellist *gl = &ls->dyd->gt;
 	Labeldesc *gt = &gl->arr[g];
 
 	ktap_assert(ktapc_ts_eqstr(gt->name, label->name));
@@ -395,7 +395,7 @@ static int findlabel(ktap_lexstate *ls, int g)
 	return 0;  /* label not found; cannot close goto */
 }
 
-static int newlabelentry(ktap_lexstate *ls, Labellist *l, ktap_string *name,
+static int newlabelentry(ktap_lexstate *ls, ktap_labellist *l, ktap_string *name,
 			 int line, int pc)
 {
 	int n = l->n;
@@ -417,7 +417,7 @@ static int newlabelentry(ktap_lexstate *ls, Labellist *l, ktap_string *name,
  */
 static void findgotos (ktap_lexstate *ls, Labeldesc *lb)
 {
-	Labellist *gl = &ls->dyd->gt;
+	ktap_labellist *gl = &ls->dyd->gt;
 	int i = ls->fs->bl->firstgoto;
 
 	while (i < gl->n) {
@@ -437,7 +437,7 @@ static void findgotos (ktap_lexstate *ls, Labeldesc *lb)
 static void movegotosout (ktap_funcstate *fs, BlockCnt *bl)
 {
 	int i = bl->firstgoto;
-	Labellist *gl = &fs->ls->dyd->gt;
+	ktap_labellist *gl = &fs->ls->dyd->gt;
 
 	/* correct pending gotos to current block and try to close it
 		with visible labels */
@@ -1224,7 +1224,7 @@ static void gotostat(ktap_lexstate *ls, int pc)
 }
 
 /* check for repeated labels on the same block */
-static void checkrepeated(ktap_funcstate *fs, Labellist *ll, ktap_string *label)
+static void checkrepeated(ktap_funcstate *fs, ktap_labellist *ll, ktap_string *label)
 {
 	int i;
 	for (i = fs->bl->firstlabel; i < ll->n; i++) {
@@ -1248,7 +1248,7 @@ static void labelstat (ktap_lexstate *ls, ktap_string *label, int line)
 {
 	/* label -> '::' NAME '::' */
 	ktap_funcstate *fs = ls->fs;
-	Labellist *ll = &ls->dyd->label;
+	ktap_labellist *ll = &ls->dyd->label;
 	int l;  /* index of new label being created */
 
 	checkrepeated(fs, ll, label);  /* check for repeated labels */

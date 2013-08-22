@@ -197,11 +197,11 @@ typedef struct Labeldesc {
 
 
 /* list of labels or gotos */
-typedef struct Labellist {
+typedef struct ktap_labellist {
 	Labeldesc *arr;  /* array */
 	int n;  /* number of entries in use */
 	int size;  /* array size */
-} Labellist;
+} ktap_labellist;
 
 
 /* dynamic structures used by the parser */
@@ -211,8 +211,8 @@ typedef struct ktap_dyndata {
 		int n;
 		int size;
 	} actvar;
-	Labellist gt;  /* list of pending gotos */
-	Labellist label;   /* list of active labels */
+	ktap_labellist gt;  /* list of pending gotos */
+	ktap_labellist label;   /* list of active labels */
 } ktap_dyndata;
 
 
@@ -238,8 +238,6 @@ typedef struct ktap_funcstate {
 	u8 nups;  /* number of upvalues */
 	u8 freereg;  /* first free register */
 } ktap_funcstate;
-
-
 
 
 /*
