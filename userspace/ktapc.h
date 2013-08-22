@@ -355,8 +355,8 @@ void codegen_goiffalse(ktap_funcstate *fs, ktap_expdesc *e);
 void codegen_concat(ktap_funcstate *fs, int *l1, int l2);
 int codegen_exp2anyreg(ktap_funcstate *fs, ktap_expdesc *e);
 
-typedef int (*ktap_Writer)(const void* p, size_t sz, void* ud);
-int ktapc_dump(const ktap_proto *f, ktap_Writer w, void *data, int strip);
+typedef int (*ktap_writer)(const void* p, size_t sz, void* ud);
+int ktapc_dump(const ktap_proto *f, ktap_writer w, void *data, int strip);
 
 void ktapc_chunkid(char *out, const char *source, size_t bufflen);
 int ktapc_str2d(const char *s, size_t len, ktap_number *result);

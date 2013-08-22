@@ -30,7 +30,7 @@
 
 
 typedef struct {
-	ktap_Writer writer;
+	ktap_writer writer;
 	void *data;
 	int strip;
 	int status;
@@ -170,7 +170,7 @@ static void DumpHeader(DumpState *D)
 /*
  * dump ktap function as precompiled chunk
  */
-int ktapc_dump(const ktap_proto *f, ktap_Writer w, void *data, int strip)
+int ktapc_dump(const ktap_proto *f, ktap_writer w, void *data, int strip)
 {
 	DumpState D;
 
