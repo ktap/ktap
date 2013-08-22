@@ -217,7 +217,7 @@ typedef struct ktap_dyndata {
 
 
 /* control of blocks */
-struct BlockCnt;  /* defined in lparser.c */
+struct ktap_blockcnt;  /* defined in lparser.c */
 
 
 /* state needed to generate code for a given function */
@@ -226,7 +226,7 @@ typedef struct ktap_funcstate {
 	ktap_table *h;  /* table to find (and reuse) elements in `k' */
 	struct ktap_funcstate *prev;  /* enclosing function */
 	struct ktap_lexstate *ls;  /* lexical state */
-	struct BlockCnt *bl;  /* chain of current blocks */
+	struct ktap_blockcnt *bl;  /* chain of current blocks */
 	int pc;  /* next position to code (equivalent to `ncode') */
 	int lasttarget;   /* 'label' of last 'jump label' */
 	int jpc;  /* list of pending jumps to `pc' */

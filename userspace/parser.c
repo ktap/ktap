@@ -38,14 +38,14 @@
 /*
  * nodes for block list (list of active blocks)
  */
-typedef struct BlockCnt {
-	struct BlockCnt *previous;  /* chain */
+typedef struct ktap_blockcnt {
+	struct ktap_blockcnt *previous;  /* chain */
 	short firstlabel;  /* index of first label in this block */
 	short firstgoto;  /* index of first pending goto in this block */
 	u8 nactvar;  /* # active locals outside the block */
 	u8 upval;  /* true if some variable in the block is an upvalue */
 	 u8 isloop;  /* true if `block' is a loop */
-} BlockCnt;
+} ktap_blockcnt;
 
 /*
  * prototypes for recursive non-terminal functions
@@ -268,7 +268,7 @@ static int searchvar(ktap_funcstate *fs, ktap_string *n)
  */
 static void markupval (ktap_funcstate *fs, int level)
 {
-	BlockCnt *bl = fs->bl;
+	ktap_blockcnt *bl = fs->bl;
 
 	while (bl->nactvar > level)
 		bl = bl->previous;
@@ -377,7 +377,7 @@ static void closegoto(ktap_lexstate *ls, int g, ktap_labeldesc *label)
 static int findlabel(ktap_lexstate *ls, int g)
 {
 	int i;
-	BlockCnt *bl = ls->fs->bl;
+	ktap_blockcnt *bl = ls->fs->bl;
 	ktap_dyndata *dyd = ls->dyd;
 	ktap_labeldesc *gt = &dyd->gt.arr[g];
 
@@ -434,7 +434,7 @@ static void findgotos (ktap_lexstate *ls, ktap_labeldesc *lb)
  * the goto exits the scope of any variable (which can be the
  * upvalue), close those variables being exited.
  */
-static void movegotosout (ktap_funcstate *fs, BlockCnt *bl)
+static void movegotosout (ktap_funcstate *fs, ktap_blockcnt *bl)
 {
 	int i = bl->firstgoto;
 	ktap_labellist *gl = &fs->ls->dyd->gt;
@@ -454,7 +454,7 @@ static void movegotosout (ktap_funcstate *fs, BlockCnt *bl)
 	}
 }
 
-static void enterblock(ktap_funcstate *fs, BlockCnt *bl, u8 isloop)
+static void enterblock(ktap_funcstate *fs, ktap_blockcnt *bl, u8 isloop)
 {
 	bl->isloop = isloop;
 	bl->nactvar = fs->nactvar;
@@ -494,7 +494,7 @@ static void undefgoto(ktap_lexstate *ls, ktap_labeldesc *gt)
 
 static void leaveblock (ktap_funcstate *fs)
 {
-	BlockCnt *bl = fs->bl;
+	ktap_blockcnt *bl = fs->bl;
 	ktap_lexstate *ls = fs->ls;
 	if (bl->previous && bl->upval) {
 		/* create a 'jump to here' to close upvalues */
@@ -547,7 +547,7 @@ static void codeclosure (ktap_lexstate *ls, ktap_expdesc *v)
 	codegen_exp2nextreg(fs, v);  /* fix it at stack top (for GC) */
 }
 
-static void open_func(ktap_lexstate *ls, ktap_funcstate *fs, BlockCnt *bl)
+static void open_func(ktap_lexstate *ls, ktap_funcstate *fs, ktap_blockcnt *bl)
 {
 	ktap_proto *f;
 
@@ -813,7 +813,7 @@ static void body (ktap_lexstate *ls, ktap_expdesc *e, int ismethod, int line)
 {
 	/* body ->  `(' parlist `)' block END */
 	ktap_funcstate new_fs;
-	BlockCnt bl;
+	ktap_blockcnt bl;
 
 	new_fs.f = addprototype(ls);
 	new_fs.f->linedefined = line;
@@ -1111,7 +1111,7 @@ static void block (ktap_lexstate *ls)
 {
 	/* block -> statlist */
 	ktap_funcstate *fs = ls->fs;
-	BlockCnt bl;
+	ktap_blockcnt bl;
 
 	enterblock(fs, &bl, 0);
 	statlist(ls);
@@ -1269,7 +1269,7 @@ static void whilestat(ktap_lexstate *ls, int line)
 	ktap_funcstate *fs = ls->fs;
 	int whileinit;
 	int condexit;
-	BlockCnt bl;
+	ktap_blockcnt bl;
 
 	lex_next(ls);  /* skip WHILE */
 	whileinit = codegen_getlabel(fs);
@@ -1294,7 +1294,7 @@ static void repeatstat (ktap_lexstate *ls, int line)
 	int condexit;
 	ktap_funcstate *fs = ls->fs;
 	int repeat_init = codegen_getlabel(fs);
-	BlockCnt bl1, bl2;
+	ktap_blockcnt bl1, bl2;
 
 	enterblock(fs, &bl1, 1);  /* loop block */
 	enterblock(fs, &bl2, 0);  /* scope block */
@@ -1324,7 +1324,7 @@ static int exp1(ktap_lexstate *ls)
 static void forbody(ktap_lexstate *ls, int base, int line, int nvars, int isnum)
 {
 	/* forbody -> DO block */
-	BlockCnt bl;
+	ktap_blockcnt bl;
 	ktap_funcstate *fs = ls->fs;
 	int prep, endfor;
 
@@ -1405,7 +1405,7 @@ static void forstat(ktap_lexstate *ls, int line)
 	/* forstat -> FOR (fornum | forlist) END */
 	ktap_funcstate *fs = ls->fs;
 	ktap_string *varname;
-	BlockCnt bl;
+	ktap_blockcnt bl;
 
 	enterblock(fs, &bl, 1);  /* scope for loop and control variables */
 	lex_next(ls);  /* skip `for' */
@@ -1430,7 +1430,7 @@ static void forstat(ktap_lexstate *ls, int line)
 static void test_then_block(ktap_lexstate *ls, int *escapelist)
 {
 	/* test_then_block -> [IF | ELSEIF] cond THEN block */
-	BlockCnt bl;
+	ktap_blockcnt bl;
 	ktap_funcstate *fs = ls->fs;
 	ktap_expdesc v;
 	int jf;  /* instruction to skip 'then' code (if condition is false) */
@@ -1739,7 +1739,7 @@ static void statement (ktap_lexstate *ls)
  */
 static void mainfunc(ktap_lexstate *ls, ktap_funcstate *fs)
 {
-	BlockCnt bl;
+	ktap_blockcnt bl;
 	ktap_expdesc v;
 
 	open_func(ls, fs, &bl);
