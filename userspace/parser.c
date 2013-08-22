@@ -184,7 +184,7 @@ static void new_localvar(ktap_lexstate *ls, ktap_string *name)
 	checklimit(fs, dyd->actvar.n + 1 - fs->firstlocal,
 		   MAXVARS, "local variables");
 	ktapc_growvector(dyd->actvar.arr, dyd->actvar.n + 1,
-			 dyd->actvar.size, Vardesc, MAX_INT, "local variables");
+			 dyd->actvar.size, ktap_vardesc, MAX_INT, "local variables");
 	dyd->actvar.arr[dyd->actvar.n++].idx = (short)reg;
 }
 

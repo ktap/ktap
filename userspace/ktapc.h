@@ -182,9 +182,9 @@ typedef struct expdesc {
 } expdesc;
 
 
-typedef struct Vardesc {
+typedef struct ktap_vardesc {
 	short idx;  /* variable index in stack */
-} Vardesc;
+} ktap_vardesc;
 
 
 /* description of pending goto statements and label statements */
@@ -207,7 +207,7 @@ typedef struct ktap_labellist {
 /* dynamic structures used by the parser */
 typedef struct ktap_dyndata {
 	struct {  /* list of active local variables */
-		Vardesc *arr;
+		ktap_vardesc *arr;
 		int n;
 		int size;
 	} actvar;
