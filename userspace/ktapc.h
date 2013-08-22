@@ -134,7 +134,7 @@ typedef struct ktap_lexstate {
 	ktap_token lookahead;  /* look ahead token */
 	struct ktap_funcstate *fs;  /* current function (parser) */
 	ktap_mbuffer *buff;  /* buffer for tokens */
-	struct Dyndata *dyd;  /* dynamic structures used by the parser */
+	struct ktap_dyndata *dyd;  /* dynamic structures used by the parser */
 	ktap_string *source;  /* current source name */
 	ktap_string *envn;  /* environment variable name */
 	char decpoint;  /* locale decimal point */
@@ -205,7 +205,7 @@ typedef struct Labellist {
 
 
 /* dynamic structures used by the parser */
-typedef struct Dyndata {
+typedef struct ktap_dyndata {
 	struct {  /* list of active local variables */
 		Vardesc *arr;
 		int n;
@@ -213,7 +213,7 @@ typedef struct Dyndata {
 	} actvar;
 	Labellist gt;  /* list of pending gotos */
 	Labellist label;   /* list of active labels */
-} Dyndata;
+} ktap_dyndata;
 
 
 /* control of blocks */
@@ -232,7 +232,7 @@ typedef struct ktap_funcstate {
 	int jpc;  /* list of pending jumps to `pc' */
 	int nk;  /* number of elements in `k' */
 	int np;  /* number of elements in `p' */
-	int firstlocal;  /* index of first local var (in Dyndata array) */
+	int firstlocal;  /* index of first local var (in ktap_dyndata array) */
 	short nlocvars;  /* number of elements in 'f->locvars' */
 	u8 nactvar;  /* number of active local variables */
 	u8 nups;  /* number of upvalues */

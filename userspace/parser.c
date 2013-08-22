@@ -178,7 +178,7 @@ static int registerlocalvar(ktap_lexstate *ls, ktap_string *varname)
 static void new_localvar(ktap_lexstate *ls, ktap_string *name)
 {
 	ktap_funcstate *fs = ls->fs;
-	Dyndata *dyd = ls->dyd;
+	ktap_dyndata *dyd = ls->dyd;
 	int reg = registerlocalvar(ls, name);
 
 	checklimit(fs, dyd->actvar.n + 1 - fs->firstlocal,
@@ -378,7 +378,7 @@ static int findlabel(ktap_lexstate *ls, int g)
 {
 	int i;
 	BlockCnt *bl = ls->fs->bl;
-	Dyndata *dyd = ls->dyd;
+	ktap_dyndata *dyd = ls->dyd;
 	Labeldesc *gt = &dyd->gt.arr[g];
 
 	/* check labels in current block for a match */
@@ -1756,7 +1756,7 @@ ktap_closure *ktapc_parser(char *ptr, const char *name)
 {
 	ktap_lexstate lexstate;
 	ktap_funcstate funcstate;
-	Dyndata dyd;
+	ktap_dyndata dyd;
 	ktap_mbuffer buff;
 	int firstchar = *ptr++;
 	ktap_closure *cl = ktapc_newlclosure(1);  /* create main closure */
@@ -1769,7 +1769,7 @@ ktap_closure *ktapc_parser(char *ptr, const char *name)
 	lex_init();
 
 	mbuff_init(&buff);
-	memset(&dyd, 0, sizeof(Dyndata));
+	memset(&dyd, 0, sizeof(ktap_dyndata));
 	lexstate.buff = &buff;
 	lexstate.dyd = &dyd;
 	lex_setinput(&lexstate, ptr, funcstate.f->source, firstchar);
