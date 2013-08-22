@@ -188,17 +188,17 @@ typedef struct Vardesc {
 
 
 /* description of pending goto statements and label statements */
-typedef struct Labeldesc {
+typedef struct ktap_labeldesc {
 	ktap_string *name;  /* label identifier */
 	int pc;  /* position in code */
 	int line;  /* line where it appeared */
 	u8 nactvar;  /* local level where it appears in current block */
-} Labeldesc;
+} ktap_labeldesc;
 
 
 /* list of labels or gotos */
 typedef struct ktap_labellist {
-	Labeldesc *arr;  /* array */
+	ktap_labeldesc *arr;  /* array */
 	int n;  /* number of entries in use */
 	int size;  /* array size */
 } ktap_labellist;

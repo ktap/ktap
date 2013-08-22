@@ -348,12 +348,12 @@ static void enterlevel(ktap_lexstate *ls)
 	checklimit(ls->fs, ls->nCcalls, KTAP_MAXCCALLS, "C levels");
 }
 
-static void closegoto(ktap_lexstate *ls, int g, Labeldesc *label)
+static void closegoto(ktap_lexstate *ls, int g, ktap_labeldesc *label)
 {
 	int i;
 	ktap_funcstate *fs = ls->fs;
 	ktap_labellist *gl = &ls->dyd->gt;
-	Labeldesc *gt = &gl->arr[g];
+	ktap_labeldesc *gt = &gl->arr[g];
 
 	ktap_assert(ktapc_ts_eqstr(gt->name, label->name));
 	if (gt->nactvar < label->nactvar) {
@@ -379,11 +379,11 @@ static int findlabel(ktap_lexstate *ls, int g)
 	int i;
 	BlockCnt *bl = ls->fs->bl;
 	ktap_dyndata *dyd = ls->dyd;
-	Labeldesc *gt = &dyd->gt.arr[g];
+	ktap_labeldesc *gt = &dyd->gt.arr[g];
 
 	/* check labels in current block for a match */
 	for (i = bl->firstlabel; i < dyd->label.n; i++) {
-		Labeldesc *lb = &dyd->label.arr[i];
+		ktap_labeldesc *lb = &dyd->label.arr[i];
 		if (ktapc_ts_eqstr(lb->name, gt->name)) {  /* correct label? */
 			if (gt->nactvar > lb->nactvar &&
 				(bl->upval || dyd->label.n > bl->firstlabel))
@@ -401,7 +401,7 @@ static int newlabelentry(ktap_lexstate *ls, ktap_labellist *l, ktap_string *name
 	int n = l->n;
 
 	ktapc_growvector(l->arr, n, l->size,
-			 Labeldesc, SHRT_MAX, "labels/gotos");
+			 ktap_labeldesc, SHRT_MAX, "labels/gotos");
 	l->arr[n].name = name;
 	l->arr[n].line = line;
 	l->arr[n].nactvar = ls->fs->nactvar;
@@ -415,7 +415,7 @@ static int newlabelentry(ktap_lexstate *ls, ktap_labellist *l, ktap_string *name
  * check whether new label 'lb' matches any pending gotos in current
  * block; solves forward jumps
  */
-static void findgotos (ktap_lexstate *ls, Labeldesc *lb)
+static void findgotos (ktap_lexstate *ls, ktap_labeldesc *lb)
 {
 	ktap_labellist *gl = &ls->dyd->gt;
 	int i = ls->fs->bl->firstgoto;
@@ -442,7 +442,7 @@ static void movegotosout (ktap_funcstate *fs, BlockCnt *bl)
 	/* correct pending gotos to current block and try to close it
 		with visible labels */
 	while (i < gl->n) {
-		Labeldesc *gt = &gl->arr[i];
+		ktap_labeldesc *gt = &gl->arr[i];
 
 		if (gt->nactvar > bl->nactvar) {
 			if (bl->upval)
@@ -482,7 +482,7 @@ static void breaklabel(ktap_lexstate *ls)
  * generates an error for an undefined 'goto'; choose appropriate
  * message when label name is a reserved word (which can only be 'break')
  */
-static void undefgoto(ktap_lexstate *ls, Labeldesc *gt)
+static void undefgoto(ktap_lexstate *ls, ktap_labeldesc *gt)
 {
 	const char *msg = isreserved(gt->name)
 			? "<%s> at line %d not inside a loop"
