@@ -94,12 +94,12 @@ enum RESERVED {
 typedef union {
 	ktap_number r;
 	ktap_string *ts;
-} SemInfo;  /* semantics information */
+} ktap_seminfo;  /* semantics information */
 
 
 typedef struct ktap_token {
 	int token;
-	SemInfo seminfo;
+	ktap_seminfo seminfo;
 } ktap_token;
 
 typedef struct ktap_mbuffer {

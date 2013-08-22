@@ -201,7 +201,7 @@ static void buffreplace(ktap_lexstate *ls, char from, char to)
  * in case of format error, try to change decimal point separator to
  * the one defined in the current locale and check again
  */
-static void trydecpoint(ktap_lexstate *ls, SemInfo *seminfo)
+static void trydecpoint(ktap_lexstate *ls, ktap_seminfo *seminfo)
 {
 	char old = ls->decpoint;
 	ls->decpoint = getlocaledecpoint();
@@ -217,7 +217,7 @@ static void trydecpoint(ktap_lexstate *ls, SemInfo *seminfo)
  * this function is quite liberal in what it accepts, as 'ktapc_str2d'
  * will reject ill-formed numerals.
  */
-static void read_numeral(ktap_lexstate *ls, SemInfo *seminfo)
+static void read_numeral(ktap_lexstate *ls, ktap_seminfo *seminfo)
 {
 	const char *expo = "Ee";
 	int first = ls->current;
@@ -258,7 +258,7 @@ static int skip_sep(ktap_lexstate *ls)
 	return (ls->current == s) ? count : (-count) - 1;
 }
 
-static void read_long_string(ktap_lexstate *ls, SemInfo *seminfo, int sep)
+static void read_long_string(ktap_lexstate *ls, ktap_seminfo *seminfo, int sep)
 {
 	save_and_next(ls);  /* skip 2nd `[' */
 	if (currIsNewline(ls))  /* string starts with a newline? */
@@ -336,7 +336,7 @@ static int readdecesc(ktap_lexstate *ls)
 	return r;
 }
 
-static void read_string(ktap_lexstate *ls, int del, SemInfo *seminfo)
+static void read_string(ktap_lexstate *ls, int del, ktap_seminfo *seminfo)
 {
 	save_and_next(ls);  /* keep delimiter (for error messages) */
 	while (ls->current != del) {
@@ -398,7 +398,7 @@ static void read_string(ktap_lexstate *ls, int del, SemInfo *seminfo)
 	seminfo->ts = lex_newstring(ls, mbuff(ls->buff) + 1, mbuff_len(ls->buff) - 2);
 }
 
-static int llex(ktap_lexstate *ls, SemInfo *seminfo)
+static int llex(ktap_lexstate *ls, ktap_seminfo *seminfo)
 {
 	mbuff_reset(ls->buff);
 
