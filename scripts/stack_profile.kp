@@ -1,0 +1,27 @@
+#!/usr/bin/env ktap
+
+# This ktap script samples stacktrace of system per 10us,
+# you can use generated output to make a flame graph.
+#
+# Flame Graphs:
+# http://dtrace.org/blogs/brendan/2012/03/17/linux-kernel-performance-flame-graphs/
+
+s= {}
+
+timer.us(10, function () {
+	table_count(s, backtrace())
+})
+
+timer.s(60, function () {
+	exit()
+})
+
+trace_end function () {
+	for (k, v in pairs(s)) {
+		print(k)
+		printf("%d\n\n", v)
+	}
+}
+	
+
+
