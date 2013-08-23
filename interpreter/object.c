@@ -145,6 +145,42 @@ void kp_obj_dump(ktap_state *ks, const ktap_value *v)
 	}
 }
 
+#ifdef __KERNEL__
+#include <linux/stacktrace.h>
+#include <linux/kallsyms.h>
+
+static void kp_btrace_dump(ktap_state *ks, ktap_btrace *bt)
+{
+	char str[KSYM_SYMBOL_LEN];
+	int i;
+
+	for (i = 0; i < bt->nr_entries; i++) {
+		unsigned long p = bt->entries[i];
+
+		if (p == ULONG_MAX)
+			break;
+
+		sprint_symbol_no_offset(str, p);
+		kp_printf(ks, "%s\n", str);
+	}
+}
+
+static int kp_btrace_equal(ktap_btrace *bt1, ktap_btrace *bt2)
+{
+	int i;
+
+	if (bt1->nr_entries != bt2->nr_entries)
+		return 0;
+
+	for (i = 0; i < bt1->nr_entries; i++) {
+		if (bt1->entries[i] != bt2->entries[i])
+			return 0;
+	}
+
+	return 1;
+}
+#endif
+
 void kp_showobj(ktap_state *ks, const ktap_value *v)
 {
 	switch (ttype(v)) {
@@ -177,9 +213,12 @@ void kp_showobj(ktap_state *ks, const ktap_value *v)
 	case KTAP_TEVENT:
 		kp_transport_event_write(ks, evalue(v));
 		break;
+	case KTAP_TBTRACE:
+		kp_btrace_dump(ks, btvalue(v));
+		break;
 #endif
         default:
-		kp_printf(ks, "[unknown value type: %d]", ttype(v));
+		kp_error(ks, "print unknown value type: %d\n", ttype(v));
 		break;
 	}
 }
@@ -215,6 +254,10 @@ int kp_equalobjv(ktap_state *ks, const ktap_value *t1, const ktap_value *t2)
 			return 1;
 		else if (ks == NULL)
 			return 0;
+#ifdef __KERNEL__
+	case KTAP_TBTRACE:
+		return kp_btrace_equal(btvalue(t1), btvalue(t2));
+#endif
 	default:
 		return gcvalue(t1) == gcvalue(t2);
 	}
@@ -255,7 +298,6 @@ int kp_objlen(ktap_state *ks, const ktap_value *v)
 	return 0;
 }
 
-
 /* need to protect allgc field? */
 ktap_gcobject *kp_newobject(ktap_state *ks, int type, size_t size,
 			    ktap_gcobject **list)
@@ -284,6 +326,28 @@ ktap_upval *kp_newupval(ktap_state *ks)
 	return uv;
 }
 
+ktap_btrace *kp_newbacktrace(ktap_state *ks)
+{
+	ktap_btrace *bt;
+
+	bt = &kp_newobject(ks, KTAP_TBTRACE, sizeof(ktap_btrace), NULL)->bt;
+	return bt;
+}
+
+void kp_objclone(ktap_state *ks, const ktap_value *o, ktap_value *newo)
+{
+	if (ttisbtrace(o)) {
+		ktap_btrace *bt;
+		bt = kp_newbacktrace(ks);
+		bt->nr_entries = btvalue(o)->nr_entries;
+		memcpy(&bt->entries[0], &btvalue(o)->entries[0],
+					sizeof(bt->entries));
+		setbtvalue(newo, bt);
+	} else {
+		kp_error(ks, "cannot clone ktap value type %d\n", ttype(o));
+		setnilvalue(newo);
+	}
+}
 
 ktap_closure *kp_newlclosure(ktap_state *ks, int n)
 {

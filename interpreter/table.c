@@ -183,6 +183,9 @@ static ktap_tnode *mainposition (const ktap_table *t, const ktap_value *key)
 		return hashpointer(t, pvalue(key));
 	case KTAP_TLCF:
 		return hashpointer(t, fvalue(key));
+	case KTAP_TBTRACE:
+		/* use first entry as hash key, cannot use gcvalue as key */
+		return hashpointer(t, btvalue(key)->entries[0]);
 	default:
 		return hashpointer(t, gcvalue(key));
 	}
@@ -501,9 +504,11 @@ static ktap_tnode *getfreepos(ktap_table *t)
 }
 
 
-static ktap_value *table_newkey(ktap_state *ks, ktap_table *t, const ktap_value *key)
+static ktap_value *table_newkey(ktap_state *ks, ktap_table *t,
+				const ktap_value *key)
 {
 	ktap_tnode *mp;
+	ktap_value newkey;
 
 	mp = mainposition(t, key);
 	if (!isnil(gval(mp)) || isdummy(mp)) {  /* main position is taken? */
@@ -531,7 +536,14 @@ static ktap_value *table_newkey(ktap_state *ks, ktap_table *t, const ktap_value 
 			mp = n;
 		}
 	}
-	setobj(gkey(mp), key);
+
+	/* special handling for cloneable object, maily for btrace object */
+	if (ttisclone(key))
+		kp_objclone(ks, key, &newkey);
+	else
+		newkey = *key;
+
+	setobj(gkey(mp), &newkey);
 	return gval(mp);
 }
 
@@ -608,7 +620,6 @@ static ktap_value *table_set(ktap_state *ks, ktap_table *t,
 	else
 		return table_newkey(ks, t, key);
 }
-
 
 void kp_table_setvalue(ktap_state *ks, ktap_table *t,
 		       const ktap_value *key, ktap_value *val)

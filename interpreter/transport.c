@@ -472,8 +472,6 @@ static const struct file_operations tracing_pipe_fops = {
 	.llseek		= no_llseek,
 };
 
-#define KTAP_STACK_MAX_ENTRIES 10
-
 /*
  * print_backtrace maybe called from ktap mainthread, so be
  * care on race with event closure thread.

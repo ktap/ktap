@@ -1047,8 +1047,9 @@ static void free_kp_percpu_data(void)
 
 static int alloc_kp_percpu_data(void)
 {
-	int data_size[KTAP_PERCPU_DATA_MAX] =
-		{sizeof(ktap_state), KTAP_STACK_SIZE, KTAP_PERCPU_BUFFER_SIZE};
+	int data_size[KTAP_PERCPU_DATA_MAX] = {
+		sizeof(ktap_state), KTAP_STACK_SIZE, KTAP_PERCPU_BUFFER_SIZE,
+		sizeof(ktap_btrace)};
 	int i, j;
 
 	for (i = 0; i < KTAP_PERCPU_DATA_MAX; i++) {

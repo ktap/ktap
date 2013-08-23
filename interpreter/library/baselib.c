@@ -26,6 +26,7 @@
 #include <linux/time.h>
 #include <linux/clocksource.h>
 #include <linux/ring_buffer.h>
+#include <linux/stacktrace.h>
 #include "../../include/ktap.h"
 
 static int ktap_lib_next(ktap_state *ks)
@@ -116,6 +117,25 @@ static int ktap_lib_print_backtrace(ktap_state *ks)
 	return 0;
 }
 #endif
+
+static int ktap_lib_backtrace(ktap_state *ks)
+{
+	struct stack_trace trace;
+	ktap_btrace *bt;
+
+	bt = kp_percpu_data(KTAP_PERCPU_DATA_BTRACE);
+
+	trace.nr_entries = 0;
+	trace.skip = 10;
+	trace.max_entries = KTAP_STACK_MAX_ENTRIES;
+	trace.entries = &bt->entries[0];
+	save_stack_trace(&trace);
+
+	bt->nr_entries = trace.nr_entries;
+	setbtvalue(ks->top, bt);
+	incr_top(ks);
+	return 1;
+}
 
 extern unsigned long long ns2usecs(cycle_t nsec);
 static int ktap_lib_print_trace_clock(ktap_state *ks)
@@ -267,6 +287,7 @@ static const ktap_Reg base_funcs[] = {
 	{"print", ktap_lib_print},
 	{"printf", ktap_lib_printf},
 	{"print_backtrace", ktap_lib_print_backtrace},
+	{"backtrace", ktap_lib_backtrace},
 	{"print_trace_clock", ktap_lib_print_trace_clock},
 	{"in_interrupt", ktap_lib_in_interrupt},
 	{"exit", ktap_lib_exit},

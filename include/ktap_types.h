@@ -140,6 +140,14 @@ typedef struct ktap_upval {
 } ktap_upval;
 
 
+#define KTAP_STACK_MAX_ENTRIES 10
+
+typedef struct ktap_btrace {
+	CommonHeader;
+	unsigned int nr_entries;
+	unsigned long entries[KTAP_STACK_MAX_ENTRIES];
+} ktap_btrace;
+
 #define ktap_closure_header \
 	CommonHeader; u8 nupvalues; ktap_gcobject *gclist
 
@@ -281,6 +289,7 @@ typedef struct ktap_global_state {
 	struct list_head timers;
 	struct list_head probe_events_head;
 	int exit;
+	int error;
 	int wait_user;
 	ktap_closure *trace_end_closure;
 #endif
@@ -332,6 +341,7 @@ union ktap_gcobject {
   struct ktap_proto p;
   struct ktap_upval uv;
   struct ktap_state th;  /* thread */
+  struct ktap_btrace bt;  /* thread */
 };
 
 #define gch(o)	(&(o)->gch)
@@ -398,6 +408,8 @@ typedef int ktap_number;
 
 #define KTAP_TEVENT		13
 
+#define KTAP_TBTRACE		14
+
 
 #define ttype(o)	((o->type) & 0x3F)
 #define settype(obj, t)	((obj)->type = (t))
@@ -427,6 +439,7 @@ typedef int ktap_number;
 #define rawuvalue(o)	(&val_(o).gc->u)
 #define uvalue(o)	(&rawuvalue(o)->uv)
 #define evalue(o)	(val_(o).p)
+#define btvalue(o)	(&val_(o).gc->bt)
 
 #define gcvalue(o)	(val_(o).gc)
 
@@ -442,7 +455,9 @@ typedef int ktap_number;
 #define ttisboolean(o)		((o)->type == KTAP_TBOOLEAN)
 #define ttisequal(o1,o2)        ((o1)->type == (o2)->type)
 #define ttisevent(o)		((o)->type == KTAP_TEVENT)
+#define ttisbtrace(o)		((o)->type == KTAP_TBTRACE)
 
+#define ttisclone(o)		ttisbtrace(o)
 
 
 #define setnilvalue(obj) {ktap_value *io = (obj); settype(io, KTAP_TNIL);}
@@ -475,6 +490,10 @@ typedef int ktap_number;
 
 #define setevalue(obj, x) \
   { ktap_value *io=(obj); val_(io).p = (x); settype(io, KTAP_TEVENT); }
+
+#define setbtvalue(obj,x) \
+  { ktap_value *io=(obj); \
+    val_(io).gc = (ktap_gcobject *)(x); settype(io, KTAP_TBTRACE); }
 
 #define setobj(obj1,obj2) \
         { const ktap_value *io2=(obj2); ktap_value *io1=(obj1); \
@@ -531,6 +550,7 @@ void kp_table_atomic_inc(ktap_state *ks, ktap_table *t, ktap_value *key, int n);
 void kp_obj_dump(ktap_state *ks, const ktap_value *v);
 void kp_showobj(ktap_state *ks, const ktap_value *v);
 int kp_objlen(ktap_state *ks, const ktap_value *rb);
+void kp_objclone(ktap_state *ks, const ktap_value *o, ktap_value *newo);
 ktap_gcobject *kp_newobject(ktap_state *ks, int type, size_t size, ktap_gcobject **list);
 int kp_equalobjv(ktap_state *ks, const ktap_value *t1, const ktap_value *t2);
 ktap_closure *kp_newlclosure(ktap_state *ks, int n);
@@ -547,6 +567,7 @@ int kp_str2d(const char *s, size_t len, ktap_number *result);
 #define kp_error(ks, args...) \
 	do { \
 		kp_printf(ks, "error: "args);	\
+		G(ks)->error = 1; \
 		kp_exit(ks);	\
 	} while(0)
 
