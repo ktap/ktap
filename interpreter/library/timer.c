@@ -39,6 +39,8 @@ struct hrtimer_ktap {
  * but that's don't bring any big value with cost on memory consuming.
  *
  * So just simply disable tracing in timer closure
+ *
+ * todo: export perf_swevent_put_recursion_context to slove this issue.
  */
 DEFINE_PER_CPU(bool, kp_in_timer_closure);
 
