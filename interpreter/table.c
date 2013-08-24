@@ -679,7 +679,7 @@ void kp_table_atomic_inc(ktap_state *ks, ktap_table *t, ktap_value *key, int n)
 
 	v = table_set(ks, t, key);
 	if (isnil(v)) {
-		setnvalue(v, 1);
+		setnvalue(v, n);
 	} else
 		setnvalue(v, nvalue(v) + n);
 
