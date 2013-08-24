@@ -289,10 +289,10 @@ typedef struct ktap_global_state {
 	struct list_head timers;
 	struct list_head probe_events_head;
 	int exit;
-	int error;
 	int wait_user;
 	ktap_closure *trace_end_closure;
 #endif
+	int error;
 } ktap_global_state;
 
 typedef struct ktap_state {
