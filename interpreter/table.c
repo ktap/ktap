@@ -241,7 +241,7 @@ int kp_table_next(ktap_state *ks, ktap_table *t, StkId key)
 {
 	unsigned long __maybe_unused flags;
 	int i;
-	
+
 	kp_table_lock(t);
 
 	i = findindex(ks, t, key);  /* find original element */

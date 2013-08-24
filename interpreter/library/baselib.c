@@ -47,6 +47,11 @@ static int ktap_lib_pairs(ktap_state *ks)
 {
 	ktap_table *t = hvalue(kp_arg(ks, 1));
 
+	if (isnil(kp_arg(ks, 1))) {
+		kp_error(ks, "table is nil in pairs\n");
+		return 0;
+	}
+
 	setfvalue(ks->top++, ktap_lib_next);
 	sethvalue(ks->top++, t);
 	setnilvalue(ks->top++);
