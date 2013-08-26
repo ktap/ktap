@@ -1,60 +1,53 @@
 #!/usr/bin/env ktap
 
-percpu_entry_timestamp = {}
-percpu_count = {}
-percpu_count_max = {}
-percpu_count_min = {}
-percpu_num = {}
+#Demo for thread-local variable
 
-for (cpu = 0, num_cpus() - 1, 1) {
-	percpu_count_max[cpu] = 0
-	percpu_count_min[cpu] = 0
-}
-
-function func_entry (e) {
-	percpu_entry_timestamp[cpu()] = gettimeofday_us()
-}
-
-function func_exit (e) {
-	local durtion = gettimeofday_us() - percpu_entry_timestamp[cpu()]
-	table_count(percpu_count, cpu(), durtion)
-	table_count(percpu_num, cpu())
-
-	if (durtion > percpu_count_max[cpu()]) {
-		percpu_count_max[cpu()] = durtion
-	}
-	local min = percpu_count_min[cpu()]
-	if (min  == 0 || durtion < min) {
-		percpu_count_min[cpu()] = durtion
-	}
-}
+self = {}
+count_max = 0
+count_min = 0
+count_num = 0
+total_time = 0
 
 printf("measure time of function vfs_read\n");
 
-trace "probe:vfs_read" func_entry
-trace "probe:vfs_read%return" func_exit
-
-trace_end function () {
-	printf("cpu\tnum\tavg\tmax\tmin\n");
-	printf("-----------------------------------\n")
-
-	for (cpu = 0, num_cpus() - 1, 1) {
-		if (percpu_num[cpu] != nil) {
-			printf("%d:\t%d\t%dus\t%d\t%d\n", cpu, percpu_num[cpu],
-				percpu_count[cpu]/percpu_num[cpu],
-				percpu_count_max[cpu], percpu_count_min[cpu])
-		}
+trace "probe:vfs_read" function (e) {
+	if (execname() == "ktap") {
+		return
 	}
+
+	self[tid()] = gettimeofday_us()
 }
 
-#Result:
-#[root@jovi ktap]# ./ktap scripts/funtion_time.kp
-#Press Control-C to stop.
-#measure time of function vfs_read:
-#^C
-#cpu     num     average
-#-----------------------
-#0:      94      5us
-#1:      25      4934us
+trace "probe:vfs_read%return" function (e) {
+	if (execname() == "ktap") {
+		return
+	}
+
+	if (self[tid()] ==0) {
+		return
+	}
+
+	local durtion = gettimeofday_us() - self[tid()]
+	if (durtion > count_max) {
+		count_max = durtion
+	}
+	local min = count_min
+	if (min == 0 || durtion < min) {
+		count_min = durtion
+	}
+
+	count_num = count_num + 1
+	total_time = total_time + durtion
+
+	self[tid()] = 0
+}
+
+trace_end function () {
+	printf("avg\tmax\tmin\n");
+	printf("-------------------\n")
+
+	printf("%dus\t%d\t%d\n", total_time/count_num,
+		count_max, count_min)
+}
 
 
