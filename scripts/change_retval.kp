@@ -6,7 +6,3 @@ trace "syscalls:sys_exit_open" function (e) {
 	}
 }
 
-trace_end function () {
-	printf("probe ending\n");
-}
-
