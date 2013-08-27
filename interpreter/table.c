@@ -763,6 +763,40 @@ void kp_table_dump(ktap_state *ks, ktap_table *t)
 	kp_puts(ks, "}");
 }
 
+/*
+ * table-clear only set nil of all elements, not free t->array and nodes.
+ * we assume user will reuse table soon after clear table, so reserve array
+ * and nodes will avoid memory allocation when insert key-value again.
+ */
+void kp_table_clear(ktap_state *ks, ktap_table *t)
+{
+	unsigned long __maybe_unused flags;
+	int i;
+
+	kp_table_lock(t);
+
+	for (i = 0; i < t->sizearray; i++) {
+		ktap_value *v = &t->array[i];
+
+		if (isnil(v))
+			continue;
+
+		setnilvalue(v);
+	}
+
+	for (i = 0; i < sizenode(t); i++) {
+		ktap_tnode *n = &t->node[i];
+
+		if (isnil(gkey(n)))
+			continue;
+
+		setnilvalue(gkey(n));
+		setnilvalue(gval(n));
+	}
+
+	kp_table_unlock(t);
+}
+
 #ifdef __KERNEL__
 static void string_convert(char *output, const char *input)
 {

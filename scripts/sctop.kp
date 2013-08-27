@@ -1,12 +1,13 @@
 #! /usr/bin/env ktap
 
-syscalls = {}
+s = {}
 
 trace "syscalls:sys_enter_*" function (e) {
-	table_count(syscalls, e.name)
+	table_count(s, e.name)
 }
 
 timer.s(5, function () {
 	ansi.clear_screen()
-	histogram(syscalls)
+	histogram(s)
+	delete(s)
 })

@@ -271,6 +271,13 @@ static int ktap_lib_histogram(ktap_state *ks)
 	return 0;
 }
 
+static int ktap_lib_delete(ktap_state *ks)
+{
+	ktap_table *t = hvalue(kp_arg(ks, 1));
+	kp_table_clear(ks, t);
+	return 0;
+}
+
 static int ktap_lib_gettimeofday_us(ktap_state *ks)
 {
 	struct timeval tv;
@@ -305,6 +312,7 @@ static const ktap_Reg base_funcs[] = {
 	{"user_string", ktap_lib_user_string},
 	{"table_count", ktap_lib_table_count},
 	{"histogram", ktap_lib_histogram},
+	{"delete", ktap_lib_delete},
 	{"gettimeofday_us", ktap_lib_gettimeofday_us},
 	{NULL}
 };
