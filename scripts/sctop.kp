@@ -7,5 +7,6 @@ trace "syscalls:sys_enter_*" function (e) {
 }
 
 timer.s(5, function () {
+	ansi.clear_screen()
 	histogram(syscalls)
 })

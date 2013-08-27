@@ -43,6 +43,7 @@ function humanread_x(bytes) {
 }
 
 timer.s(1, function () {
+	ansi.clear_screen()
 	for (exec, count in pairs(total_io)) {
 		local readnum = reads[exec]
 		local writenum = writes[exec]
