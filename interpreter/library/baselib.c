@@ -97,9 +97,8 @@ static int ktap_lib_printf(ktap_state *ks)
 	seq = kp_percpu_data(KTAP_PERCPU_DATA_BUFFER);
 	trace_seq_init(seq);
 
-	if (kp_strfmt(ks, seq)) {
+	if (kp_strfmt(ks, seq))
 		return 0;
-	}
 
 	seq->buffer[seq->len] = '\0';
 	kp_transport_write(ks, seq->buffer, seq->len + 1);

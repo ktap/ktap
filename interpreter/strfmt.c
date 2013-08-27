@@ -99,13 +99,6 @@ static void ktap_argerror(ktap_state *ks, int narg, const char *extramsg)
 	kp_error(ks, "bad argument #%d: (%s)\n", narg, extramsg);
 }
 
-
-#define ktap_argcheck(ks, cond, numarg, extramsg)  \
-		do { \
-			if (cond) \
-				ktap_argerror(ks, (numarg), (extramsg)); \
-		} while (0)
-
 int kp_strfmt(ktap_state *ks, struct trace_seq *seq)
 {
 	int arg = 1;
@@ -126,8 +119,10 @@ int kp_strfmt(ktap_state *ks, struct trace_seq *seq)
 		else { /* format item */
 			char form[MAX_FORMAT];
 
-			if (++arg > argnum)
+			if (++arg > argnum) {
 				ktap_argerror(ks, arg, "no value");
+				return -1;
+			}
 
 			strfrmt = scanformat(ks, strfrmt, form);
 			switch (*strfrmt++) {
@@ -157,9 +152,17 @@ int kp_strfmt(ktap_state *ks, struct trace_seq *seq)
 				break;
 			}
 			case 's': {
-				const char *s = svalue(kp_arg(ks, arg));
-				size_t l = rawtsvalue((kp_arg(ks, arg)))->tsv.
-							len;
+				ktap_value *v = kp_arg(ks, arg);
+				const char *s;
+				size_t l;
+
+				if (isnil(v)) {
+					trace_seq_puts(seq, "nil");
+					return 0;
+				}
+
+				s = svalue(v);
+				l = rawtsvalue(v)->tsv.len;
 				if (!strchr(form, '.') && l >= 100) {
 					/*
 					 * no precision and string is too long
