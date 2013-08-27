@@ -1327,6 +1327,7 @@ ktap_state *kp_newstate(struct ktap_parm *parm, char **argv)
 	kp_init_baselib(ks);
 	kp_init_kdebuglib(ks);
 	kp_init_timerlib(ks);
+	kp_init_ansilib(ks);
 
 	if (alloc_kp_percpu_data())
 		goto out;

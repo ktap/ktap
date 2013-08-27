@@ -53,6 +53,7 @@ void kp_init_baselib(ktap_state *ks);
 void kp_init_oslib(ktap_state *ks);
 void kp_init_kdebuglib(ktap_state *ks);
 void kp_init_timerlib(ktap_state *ks);
+void kp_init_ansilib(ktap_state *ks);
 
 void kp_event_handle(ktap_state *ks, void *e, int field, StkId ra);
 int kp_probe_init(ktap_state *ks);

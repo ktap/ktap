@@ -17,7 +17,8 @@ INTP = interpreter
 LIBDIR = $(INTP)/library
 
 LIB_OBJS = 
-LIB_OBJS += $(LIBDIR)/baselib.o $(LIBDIR)/kdebug.o $(LIBDIR)/timer.o
+LIB_OBJS += $(LIBDIR)/baselib.o $(LIBDIR)/kdebug.o $(LIBDIR)/timer.o \
+		$(LIBDIR)/ansilib.o
 
 INTP_OBJS = 
 INTP_OBJS += $(INTP)/ktap.o $(INTP)/loader.o $(INTP)/object.o $(INTP)/tstring.o \
