@@ -92,7 +92,13 @@ install: mod ktap
 load:
 	insmod ktapvm.ko
 
+test: FORCE
+	cd test; ./run_test.sh; cd -
+
 clean:
 	$(MAKE) -C $(KERNEL_SRC) M=$(PWD) clean
 	$(RM) ktap
+
+PHONY += FORCE
+FORCE:
 
