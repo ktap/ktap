@@ -290,6 +290,26 @@ static int ktap_lib_gettimeofday_us(ktap_state *ks)
 	return 1;
 }
 
+/*
+ * use gdb to get field offset of struct task_struct, for example:
+ *
+ * gdb vmlinux
+ * (gdb)p &(((struct task_struct *)0).prio)
+ */
+static int ktap_lib_curr_task_info(ktap_state *ks)
+{
+	int offset = nvalue(kp_arg(ks, 1));
+
+	if (offset >= sizeof(struct task_struct)) {
+		setnilvalue(ks->top++);
+		kp_error(ks, "access out of bound value of task_struct\n");
+		return 1;
+	}
+
+	setnvalue(ks->top, *(unsigned int *)((unsigned long)current + offset));
+	incr_top(ks);
+	return 1;
+}
 
 static const ktap_Reg base_funcs[] = {
 	{"pairs", ktap_lib_pairs},
@@ -314,6 +334,7 @@ static const ktap_Reg base_funcs[] = {
 	{"histogram", ktap_lib_histogram},
 	{"delete", ktap_lib_delete},
 	{"gettimeofday_us", ktap_lib_gettimeofday_us},
+	{"curr_taskinfo", ktap_lib_curr_task_info},
 	{NULL}
 };
 
