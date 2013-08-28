@@ -55,6 +55,14 @@ KTAP Standard Libraries
 14) histogram (t)
  Receive table, output table histogram to user.
 
+15) curr_task_info (offset, fetch_bytes)
+ fetch value in field offset of task_struct structure, argument fetch_bytes
+ could be 4 or 8, if fetch_bytes is not given, default is 4.
+
+ user may need to get field offset by gdb, for example:
+ gdb vmlinux
+ (gdb)p &(((struct task_struct *)0).prio)
+
 
 2. Table Manipulation
 ---------------------

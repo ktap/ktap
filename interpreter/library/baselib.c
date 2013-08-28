@@ -299,6 +299,12 @@ static int ktap_lib_gettimeofday_us(ktap_state *ks)
 static int ktap_lib_curr_task_info(ktap_state *ks)
 {
 	int offset = nvalue(kp_arg(ks, 1));
+	int fetch_bytes;
+
+	if (kp_arg_nr(ks) == 1)
+		fetch_bytes = 4; /* default fetch 4 bytes*/
+	else
+		fetch_bytes = nvalue(kp_arg(ks, 2));
 
 	if (offset >= sizeof(struct task_struct)) {
 		setnilvalue(ks->top++);
@@ -306,7 +312,23 @@ static int ktap_lib_curr_task_info(ktap_state *ks)
 		return 1;
 	}
 
-	setnvalue(ks->top, *(unsigned int *)((unsigned long)current + offset));
+#define RET_VALUE ((unsigned long)current + offset)
+
+	switch (fetch_bytes) {
+	case 4:
+		setnvalue(ks->top, *(unsigned int *)RET_VALUE);
+		break;
+	case 8:
+		setnvalue(ks->top, *(unsigned long *)RET_VALUE);
+		break;
+	default:
+		kp_error(ks, "unsupported fetch bytes in curr_task_info\n");
+		setnilvalue(ks->top);
+		break;
+	}
+
+#undef RET_VALUE
+
 	incr_top(ks);
 	return 1;
 }
