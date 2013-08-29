@@ -45,7 +45,11 @@ static int ktap_lib_next(ktap_state *ks)
 
 static int ktap_lib_pairs(ktap_state *ks)
 {
-	ktap_table *t = hvalue(kp_arg(ks, 1));
+	ktap_table *t;
+
+	kp_arg_check(ks, 1, KTAP_TTABLE);
+
+	t = hvalue(kp_arg(ks, 1));
 
 	if (isnil(kp_arg(ks, 1))) {
 		kp_error(ks, "table is nil in pairs\n");
@@ -233,9 +237,13 @@ static int ktap_lib_kernel_v(ktap_state *ks)
 
 static int ktap_lib_user_string(ktap_state *ks)
 {
-	unsigned long addr = nvalue(kp_arg(ks, 1));
+	unsigned long addr;
 	char str[256] = {0};
 	int ret;
+
+	kp_arg_check(ks, 1, KTAP_TNUMBER);
+
+	addr = nvalue(kp_arg(ks, 1));
 
 	pagefault_disable();
 	ret = __copy_from_user_inatomic((void *)str, (const void *)addr, 256);
@@ -250,9 +258,13 @@ static int ktap_lib_user_string(ktap_state *ks)
 
 static int ktap_lib_table_count(ktap_state *ks)
 {
-	ktap_table *tbl = hvalue(kp_arg(ks, 1));
+	ktap_table *tbl;
 	ktap_value *k = kp_arg(ks, 2);
 	int n;
+
+	kp_arg_check(ks, 1, KTAP_TTABLE);
+
+	tbl = hvalue(kp_arg(ks, 1));
 
 	if (kp_arg_nr(ks) > 2)
 		n = nvalue(kp_arg(ks, 3));
@@ -266,15 +278,17 @@ static int ktap_lib_table_count(ktap_state *ks)
 
 static int ktap_lib_histogram(ktap_state *ks)
 {
-	/* need to check firstly */
+	kp_arg_check(ks, 1, KTAP_TTABLE);
+
 	kp_table_histogram(ks, hvalue(kp_arg(ks, 1)));
 	return 0;
 }
 
 static int ktap_lib_delete(ktap_state *ks)
 {
-	ktap_table *t = hvalue(kp_arg(ks, 1));
-	kp_table_clear(ks, t);
+	kp_arg_check(ks, 1, KTAP_TTABLE);
+
+	kp_table_clear(ks, hvalue(kp_arg(ks, 1)));
 	return 0;
 }
 
@@ -298,13 +312,19 @@ static int ktap_lib_gettimeofday_us(ktap_state *ks)
  */
 static int ktap_lib_curr_task_info(ktap_state *ks)
 {
-	int offset = nvalue(kp_arg(ks, 1));
+	int offset;
 	int fetch_bytes;
 
+	kp_arg_check(ks, 1, KTAP_TNUMBER);
+
+	offset = nvalue(kp_arg(ks, 1));
+	
 	if (kp_arg_nr(ks) == 1)
 		fetch_bytes = 4; /* default fetch 4 bytes*/
-	else
+	else {
+		kp_arg_check(ks, 2, KTAP_TNUMBER);
 		fetch_bytes = nvalue(kp_arg(ks, 2));
+	}
 
 	if (offset >= sizeof(struct task_struct)) {
 		setnilvalue(ks->top++);

@@ -73,23 +73,18 @@ static enum hrtimer_restart hrtimer_ktap_fn(struct hrtimer *timer)
 static int set_timer(ktap_state *ks, int factor)
 {
 	struct hrtimer_ktap *t;
+	ktap_closure *cl;
 	u64 period;
-	ktap_value *tracefunc;
-	int n = nvalue(kp_arg(ks, 1));
-	ktap_closure *cl = NULL;
+	int n;
+
+	kp_arg_check(ks, 1, KTAP_TNUMBER);
+	kp_arg_check(ks, 2, KTAP_TFUNCTION);
+
+	n = nvalue(kp_arg(ks, 1));
+	cl = clvalue(kp_arg(ks, 2));
 
 	period = (u64)factor * n;
 	
-	if (kp_arg_nr(ks) >= 2) {
-		tracefunc = kp_arg(ks, 2);
-
-		if (ttisfunc(tracefunc))
-			cl = (ktap_closure *)gcvalue(tracefunc);
-	}
-
-	if (!cl)
-		return -1;
-
 	t = kp_malloc(ks, sizeof(*t));
 	t->ks = ks;
 	t->cl = cl;

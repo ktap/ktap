@@ -102,4 +102,12 @@ static inline void set_next_as_exit(ktap_state *ks)
 #define kp_arg(ks, n)	((ks)->ci->func + (n))
 #define kp_arg_nr(ks)	((int)(ks->top - (ks->ci->func + 1)))
 
+#define kp_arg_check(ks, narg, type)				\
+	do {							\
+		if (unlikely(ttypenv(kp_arg(ks, narg)) != type)) {	\
+			kp_error(ks, "wrong type of argument %d\n", narg);\
+			return -1;				\
+		}						\
+	} while (0)
+
 #endif /* __KTAP_H__ */

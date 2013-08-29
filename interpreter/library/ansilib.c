@@ -48,7 +48,11 @@ static int ktap_lib_clear_screen(ktap_state *ks)
 
 static int ktap_lib_set_color(ktap_state *ks)
 {
-	int fg = nvalue(kp_arg(ks, 1));
+	int fg;
+
+	kp_arg_check(ks, 1, KTAP_TNUMBER);
+
+	fg = nvalue(kp_arg(ks, 1));
 	kp_printf(ks, "\033[%dm", fg);
 	return 0;
 }
@@ -66,9 +70,13 @@ static int ktap_lib_set_color(ktap_state *ks)
  */
 static int ktap_lib_set_color2(ktap_state *ks)
 {
-	int fg = nvalue(kp_arg(ks, 1));
-	int bg = nvalue(kp_arg(ks, 2));
+	int fg, bg;
 	
+	kp_arg_check(ks, 1, KTAP_TNUMBER);
+	kp_arg_check(ks, 2, KTAP_TNUMBER);
+
+	fg = nvalue(kp_arg(ks, 1));
+	bg = nvalue(kp_arg(ks, 2));
 	kp_printf(ks, "\033[%d;%dm", fg, bg);
 	return 0;
 }
@@ -89,9 +97,15 @@ static int ktap_lib_set_color2(ktap_state *ks)
  */
 static int ktap_lib_set_color3(ktap_state *ks)
 {
-	int fg = nvalue(kp_arg(ks, 1));
-	int bg = nvalue(kp_arg(ks, 2));
-	int attr = nvalue(kp_arg(ks, 3));
+	int fg, bg, attr;
+
+	kp_arg_check(ks, 1, KTAP_TNUMBER);
+	kp_arg_check(ks, 2, KTAP_TNUMBER);
+	kp_arg_check(ks, 3, KTAP_TNUMBER);
+
+	fg = nvalue(kp_arg(ks, 1));
+	bg = nvalue(kp_arg(ks, 2));
+	attr = nvalue(kp_arg(ks, 3));
 
 	if (attr)
 		kp_printf(ks, "\033[%d;%d;%dm", fg, bg, attr);

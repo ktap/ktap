@@ -465,23 +465,18 @@ static void end_probes(struct ktap_state *ks)
 
 static int ktap_lib_probe_by_id(ktap_state *ks)
 {
-	const char *ids_str = svalue(kp_arg(ks, 1));
+	const char *ids_str;
 	char *start;
-	ktap_value *tracefunc;
-	ktap_closure *cl = NULL;
+	ktap_closure *cl;
 	struct task_struct *task = G(ks)->trace_task;
 	char filter_str[128] = {0};
 	char *filter, *ptr1, *sep, *ptr;
 
-	if (kp_arg_nr(ks) >= 2) {
-		tracefunc = kp_arg(ks, 2);
+	kp_arg_check(ks, 1, KTAP_TSTRING);
+	kp_arg_check(ks, 2, KTAP_TFUNCTION);
 
-		if (ttisfunc(tracefunc))
-			cl = (ktap_closure *)gcvalue(tracefunc);
-	}
-
-	if (!cl)
-		return -1;
+	ids_str = svalue(kp_arg(ks, 1));
+	cl = clvalue(kp_arg(ks, 2));
 
 	start = (char *)ids_str;
 
@@ -533,14 +528,9 @@ static int ktap_lib_probe_by_id(ktap_state *ks)
 
 static int ktap_lib_probe_end(ktap_state *ks)
 {
-	ktap_value *endfunc;
+	kp_arg_check(ks, 1, KTAP_TFUNCTION);
 
-	if (kp_arg_nr(ks) == 0)
-		return 0;
-
-	endfunc = kp_arg(ks, 1);
-
-	G(ks)->trace_end_closure = clvalue(endfunc);
+	G(ks)->trace_end_closure = clvalue(kp_arg(ks, 1));
 	return 0;
 }
 
