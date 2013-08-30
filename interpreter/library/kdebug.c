@@ -37,11 +37,6 @@ static void ktap_call_probe_closure(ktap_state *mainthread, ktap_closure *cl,
 	func = ks->top;
 	incr_top(ks);
 
-	if (cl->l.p->numparams) {
-		setevalue(ks->top, e);
-		incr_top(ks);
-	}
-
 	ks->current_event = e;
 
 	kp_call(ks, func, 0);
@@ -50,22 +45,20 @@ static void ktap_call_probe_closure(ktap_state *mainthread, ktap_closure *cl,
 	kp_exitthread(ks);
 }
 
-static int event_function_tostring(ktap_state *ks)
+void kp_event_tostring(ktap_state *ks, struct trace_seq *seq)
 {
 	struct ktap_event *e = ks->current_event;
 	struct trace_iterator *iter;
 	struct trace_event *ev;
 	enum print_line_t ret = TRACE_TYPE_NO_CONSUME;
 
-	if (!e->call) {
-		setnilvalue(ks->top);
-		goto out;
-	}
-
 	/* Simulate the iterator */
 
-	/* use temp percpu buffer as trace_iterator */
-	iter = kp_percpu_data(KTAP_PERCPU_DATA_BUFFER);
+	/*
+	 * use temp percpu buffer as trace_iterator
+	 * we cannot use same temp buffer as printf.
+	 */
+	iter = kp_percpu_data(KTAP_PERCPU_DATA_BUFFER2);
 
 	trace_seq_init(&iter->seq);
 	iter->ent = e->entry;
@@ -79,29 +72,11 @@ static int event_function_tostring(ktap_state *ks)
 		int len = s->len >= PAGE_SIZE ? PAGE_SIZE - 1 : s->len;
 
 		s->buffer[len] = '\0';
-		setsvalue(ks->top, kp_tstring_newlstr_local(ks, s->buffer,
-				   len + 1));
-	} else
-		setnilvalue(ks->top);
-
- out:
-	incr_top(ks);
-
-	return 1;
+		trace_seq_puts(seq, s->buffer);
+	}
 }
 
-/* e.tostring() */
-static void event_tostring(ktap_state *ks, struct ktap_event *e, StkId ra)
-{
-	setfvalue(ra, event_function_tostring);
-}
-
-/* e.name */
-static void event_name(ktap_state *ks, struct ktap_event *e, StkId ra)
-{
-	setsvalue(ra, kp_tstring_new(ks, e->call->name));
-}
-
+#if 0
 /* check pt_regs defintion in linux/arch/x86/include/asm/ptrace.h */
 /* support other architecture pt_regs showing */
 static void event_regstr(ktap_state *ks, struct ktap_event *e, StkId ra)
@@ -131,70 +106,7 @@ static void event_regstr(ktap_state *ks, struct ktap_event *e, StkId ra)
 #endif
 	setsvalue(ra, kp_tstring_new_local(ks, str));
 }
-
-/* e.retval */
-static void event_retval(ktap_state *ks, struct ktap_event *e, StkId ra)
-{
-	struct pt_regs *regs = e->regs;
-
-	setnvalue(ra, regs_return_value(regs));
-}
-
-static int ktap_function_set_retval(ktap_state *ks)
-{
-	struct ktap_event *e = ks->current_event;
-	int n = nvalue(kp_arg(ks, 1));
-
-	/* use syscall_set_return_value as generic return value set macro */
-	syscall_set_return_value(current, e->regs, n, 0);
-
-	return 0;
-}
-
-/* e.set_retval*/
-static void event_set_retval(ktap_state *ks, struct ktap_event *e, StkId ra)
-{
-	setfvalue(ra, ktap_function_set_retval);
-}
-
-
-#define ENTRY_HEADSIZE sizeof(struct trace_entry)
-struct syscall_trace_enter {
-	struct trace_entry      ent;
-	int                     nr;
-	unsigned long           args[];
-};
-
-struct syscall_trace_exit {
-	struct trace_entry      ent;
-	int                     nr;
-	long                    ret;
-};
-
-/* e.sc_nr */
-static void event_sc_nr(ktap_state *ks, struct ktap_event *e, StkId ra)
-{
-	struct syscall_trace_enter *entry =
-		(struct syscall_trace_enter *)e->entry;
-
-	setnvalue(ra, entry->nr);
-}
-
-
-#define EVENT_SC_ARGFUNC(n) \
-static void event_sc_arg##n(ktap_state *ks, struct ktap_event *e, StkId ra)\
-{ \
-	struct syscall_trace_enter *entry =	\
-			(struct syscall_trace_enter *)e->entry;	\
-	setnvalue(ra, entry->args[n - 1]);	\
-}
-
-EVENT_SC_ARGFUNC(1)
-EVENT_SC_ARGFUNC(2)
-EVENT_SC_ARGFUNC(3)
-EVENT_SC_ARGFUNC(4)
-EVENT_SC_ARGFUNC(5)
-EVENT_SC_ARGFUNC(6)
+#endif
 
 /***************************/
 /* This definition should keep update with kernel/trace/trace.h */
@@ -213,21 +125,6 @@ static struct list_head *ktap_get_fields(struct ftrace_event_call *event_call)
 	if (!event_call->class->get_fields)
 		return &event_call->class->fields;
 	return event_call->class->get_fields(event_call);
-}
-
-/* e.fieldnum */
-static void event_fieldnum(ktap_state *ks, struct ktap_event *e, StkId ra)
-{
-	struct ftrace_event_field *field;
-	struct list_head *head;
-	int num = 0;
-
-	head = ktap_get_fields(e->call);
-	list_for_each_entry(field, head, link) {
-		num++;
-	}
-
-	setnvalue(ra, num);
 }
 
 static void get_field_value(ktap_state *ks, struct ktap_event *e,
@@ -251,82 +148,25 @@ static void get_field_value(ktap_state *ks, struct ktap_event *e,
 	}
 }
 
-static int event_fieldn(ktap_state *ks)
+void kp_event_getarg(ktap_state *ks, ktap_value *ra, int n)
 {
 	struct ktap_event *e = ks->current_event;
-	int index = nvalue(kp_arg(ks, 1));
+	int index = n;
 	struct ftrace_event_field *field;
 	struct list_head *head;
-
-	if (index <= 0) {
-		setnilvalue(ks->top++);
-		return 1;
-	}
 
 	/* this is very slow and not safe, fix it in future */
 	head = ktap_get_fields(e->call);
 	list_for_each_entry_reverse(field, head, link) {
 		if (--index == 0) {
-			get_field_value(ks, e, field, ks->top);
-			ks->top++;
-			return 1;
+			get_field_value(ks, e, field, ra);
+			return;
 		}
 	}
 
-	setnilvalue(ks->top++);
-	return 1;
+	setnilvalue(ra);
+	return;
 }
-
-/* e.field(N) */
-static void event_field(ktap_state *ks, struct ktap_event *e, StkId ra)
-{
-	setfvalue(ra, event_fieldn);
-}
-
-static struct event_field_tbl {
-	char *name;
-	void (*func)(ktap_state *ks, struct ktap_event *e, StkId ra);	
-} event_ftbl[] = {
-	{"name", event_name},
-	{"tostring", event_tostring},
-	{"sc_nr", event_sc_nr},
-	{"sc_arg1", event_sc_arg1},
-	{"sc_arg2", event_sc_arg2},
-	{"sc_arg3", event_sc_arg3},
-	{"sc_arg4", event_sc_arg4},
-	{"sc_arg5", event_sc_arg5},
-	{"sc_arg6", event_sc_arg6},
-	{"regstr", event_regstr},
-	{"retval", event_retval},
-	{"set_retval", event_set_retval},
-	{"fieldnum", event_fieldnum},
-	{"field", event_field}
-};
-
-int kp_event_get_index(const char *field)
-{
-	int i;
-
-	for (i = 0; i < ARRAY_SIZE(event_ftbl); i++) {
-		if (!strcmp(event_ftbl[i].name, field)) {
-			return i;
-		}
-	}
-
-	return -1;
-}
-
-ktap_string *kp_event_get_ts(ktap_state *ks, int index)
-{
-	return kp_tstring_new(ks, event_ftbl[index].name);
-}
-
-void kp_event_handle(ktap_state *ks, void *e, int index, StkId ra)
-{
-	e = (struct ktap_event *)e;
-	event_ftbl[index].func(ks, e, ra);
-}
-
 
 /* Callback function for perf event subsystem
  * make ktap reentrant, don't disable irq in callback function,

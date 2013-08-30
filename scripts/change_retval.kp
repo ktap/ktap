@@ -1,8 +1,0 @@
-#!/usr/bin/env ktap
-
-trace "syscalls:sys_exit_open" function (e) {
-	if (execname() == "ls") {
-		e.set_retval(-1)
-	}
-}
-

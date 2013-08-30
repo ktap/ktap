@@ -1,9 +1,9 @@
 #!/usr/bin/env ktap
 
-trace "probe:/lib/libc.so.6:0x000773c0" function (e) {
-	print("entry:", execname(), e)
+trace "probe:/lib/libc.so.6:0x000773c0" function () {
+	print("entry:", execname(), argevent)
 }
 
-trace "probe:/lib/libc.so.6:0x000773c0%return" function (e) {
-	print("exit:", execname(), e)
+trace "probe:/lib/libc.so.6:0x000773c0%return" function () {
+	print("exit:", execname(), argevent)
 }

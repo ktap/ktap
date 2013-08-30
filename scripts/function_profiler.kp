@@ -6,8 +6,8 @@
 
 profile_hist = {}
 
-trace 'ftrace:function' function (e) {
-	table_count(profile_hist, e.field(1))
+trace 'ftrace:function' function () {
+	table_count(profile_hist, arg1)
 }
 
 trace_end function () {

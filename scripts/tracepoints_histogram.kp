@@ -4,8 +4,8 @@
 
 hist = {}
 
-trace "*:*" function (e) {
-	table_count(hist, e.name)
+trace "*:*" function () {
+	table_count(hist, argname)
 }
 
 trace_end function () {

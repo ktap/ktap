@@ -1,26 +1,6 @@
 #!/usr/bin/env ktap
 
-trace "probe:vfs_read%return " function (e) {
-	printf("%s (execname %s); retval:%d\n", e.name, execname(), e.retval);
+trace "probe:vfs_read%return fd=$retval" function () {
+	print(execname(), argevent);
 }
-
-#Result:
-#vfs_read! (execname sshd); retval:38
-#vfs_read! (execname sshd); retval:38
-#vfs_read! (execname sshd); retval:38
-#vfs_read! (execname sshd); retval:38
-#vfs_read! (execname sshd); retval:38
-#vfs_read! (execname sshd); retval:38
-#vfs_read! (execname sshd); retval:38
-#vfs_read! (execname sshd); retval:38
-#vfs_read! (execname sshd); retval:38
-#vfs_read! (execname sshd); retval:38
-#vfs_read! (execname sendmail); retval:26
-#vfs_read! (execname irqbalance); retval:1024
-#vfs_read! (execname irqbalance); retval:1024
-#vfs_read! (execname irqbalance); retval:951
-#vfs_read! (execname irqbalance); retval:1024
-#vfs_read! (execname irqbalance); retval:275
-#vfs_read! (execname sshd); retval:308
-#vfs_read! (execname sshd); retval:39
 

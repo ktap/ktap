@@ -136,10 +136,10 @@ errdesc = {
 
 }
 
-trace "syscalls:sys_exit_*" function (e) {
-	if (e.field(2) < 0) {
-		local errno = -e.field(2)
+trace "syscalls:sys_exit_*" function () {
+	if (arg2 < 0) {
+		local errno = -arg2
 		printf("%-15s%-20s\t%d\t%-30s\n",
-			execname(), e.name, errno, errdesc[errno])
+			execname(), argname, errno, errdesc[errno])
 	}
 }

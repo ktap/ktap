@@ -161,6 +161,11 @@ int kp_strfmt(ktap_state *ks, struct trace_seq *seq)
 					return 0;
 				}
 
+				if (ttisevent(v)) {
+					kp_event_tostring(ks, seq);
+					return 0;
+				}
+
 				s = svalue(v);
 				l = rawtsvalue(v)->tsv.len;
 				if (!strchr(form, '.') && l >= 100) {

@@ -53,23 +53,23 @@ Examples
 -------------------------------------
 1) simplest one-liner command to enable all tracepoints  
 
-	ktap -e 'trace "*:*" function (e) { print(e) }'
+	ktap -e 'trace "*:*" function () { print(argevent) }'
 
 2) syscall tracing on target process  
 
-	ktap -e 'trace "syscalls:*" function (e) { print(e) }' -- ls
+	ktap -e 'trace "syscalls:*" function () { print(argevent) }' -- ls
 
 3) function tracing  
 
-	ktap -e 'trace "ftrace:function" function (e) { print(e) }'  
+	ktap -e 'trace "ftrace:function" function () { print(argevent) }'  
 
-	ktap -e 'trace "ftrace:function /ip==mutex*/" function (e) { print(e) }'
+	ktap -e 'trace "ftrace:function /ip==mutex*/" function () { print(argevent) }'
 
 4) simple syscall tracing  
 
 	#scripts/syscalls.kp
-	trace "syscalls:*" function (e) {
-		print(cpu(), pid(), execname(), e)
+	trace "syscalls:*" function () {
+		print(cpu(), pid(), execname(), argevent)
 	}
 
 5) syscall tracing in histogram style  
@@ -77,8 +77,8 @@ Examples
 	#scripts/syscalls_histogram.kp
 	hist = {}
 
-	trace "syscalls:sys_enter_*" function (e) {
-		    table_count(hist, e.name)
+	trace "syscalls:sys_enter_*" function () {
+		    table_count(hist, argname)
 	}
 
 	trace_end function () {
@@ -88,12 +88,12 @@ Examples
 6) kprobe tracing  
 
 	#scripts/kprobes-do-sys-open.kp
-	trace "probe:do_sys_open dfd=%di filename=%dx flags=%cx mode=+4($stack)" function (e) {
-		print("entry:", execname(), e)
+	trace "probe:do_sys_open dfd=%di filename=%dx flags=%cx mode=+4($stack)" function () {
+		print("entry:", execname(), argevent)
 	}
 
-	trace "probe:do_sys_open%return fd=$retval" function (e) {
-		print("exit:", execname(), e)
+	trace "probe:do_sys_open%return fd=$retval" function () {
+		print("exit:", execname(), argevent)
 	}
 
 
@@ -104,12 +104,12 @@ Examples
 	#you need to calculate libc malloc symbol offset in your own system.
 	#symbol resolve will support in future
 
-	trace "probe:/lib/libc.so.6:0x000773c0" function (e) {
-		print("entry:", execname(), e)
+	trace "probe:/lib/libc.so.6:0x000773c0" function () {
+		print("entry:", execname(), argevent)
 	}
 
-	trace "probe:/lib/libc.so.6:0x000773c0%return" function (e) {
-		print("exit:", execname(), e)
+	trace "probe:/lib/libc.so.6:0x000773c0%return" function () {
+		print("exit:", execname(), argevent)
 	}
 
 Mailing list

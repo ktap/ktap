@@ -451,6 +451,15 @@ static void discharge2reg(ktap_funcstate *fs, ktap_expdesc *e, int reg)
 		codegen_codeABC(fs, OP_LOADBOOL, reg, e->k == VTRUE, 0);
  		break;
 	}
+	case VEVENT:
+		codegen_codeABC(fs, OP_EVENT, reg, 0, 0);
+		break;
+	case VEVENTNAME:
+		codegen_codeABC(fs, OP_EVENTNAME, reg, 0, 0);
+		break;
+	case VEVENTARG:
+		codegen_codeABC(fs, OP_EVENTARG, reg, e->u.info, 0);
+		break;
 	case VK: {
 		codegen_codek(fs, reg, e->u.info);
 		break;
@@ -557,7 +566,8 @@ int codegen_exp2RK(ktap_funcstate *fs, ktap_expdesc *e)
 	case VFALSE:
 	case VNIL: {
 		if (fs->nk <= MAXINDEXRK) {  /* constant fits in RK operand? */
-			e->u.info = (e->k == VNIL) ? nilK(fs) : boolK(fs, (e->k == VTRUE));
+			e->u.info = (e->k == VNIL) ? nilK(fs) :
+						     boolK(fs, (e->k == VTRUE));
 			e->k = VK;
 			return RKASK(e->u.info);
 		}

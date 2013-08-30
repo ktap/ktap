@@ -2,7 +2,7 @@
 
 kmalloc_stack = {}
 
-trace "kmem:kmalloc" function (e) {
+trace "kmem:kmalloc" function () {
 	table_count(kmalloc_stack, backtrace())
 }
 

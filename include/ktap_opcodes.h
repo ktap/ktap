@@ -67,9 +67,14 @@ OP_EXTRAARG,/*   Ax      extra (larger) argument for previous opcode     */
 
 OP_EVENT,/*  A B C   R(A) := R(B)[C]                             */
 
+OP_EVENTNAME, /* A	R(A) = event_name() */
+
+OP_EVENTARG,/* A B	R(A) := event_arg(B)*/
+
 OP_LOAD_GLOBAL,/*  A B C   R(A) := R(B)[C]                             */
 
 OP_EXIT,
+
 } OpCode;
 
 

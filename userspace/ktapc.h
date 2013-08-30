@@ -77,6 +77,9 @@ typedef int bool;
 enum RESERVED {
 	/* terminal symbols denoted by reserved words */
 	TK_TRACE = FIRST_RESERVED, TK_TRACE_END,
+	TK_ARGEVENT, TK_ARGNAME,
+	TK_ARG1, TK_ARG2, TK_ARG3, TK_ARG4, TK_ARG5, TK_ARG6, TK_ARG7, TK_ARG8,
+	TK_ARG9,
 	TK_AND, TK_BREAK,
 	TK_DO, TK_ELSE, TK_ELSEIF, TK_END, TK_FALSE, TK_FOR, TK_FUNCTION,
 	TK_GOTO, TK_IF, TK_IN, TK_LOCAL, TK_NIL, TK_NOT, TK_OR, TK_REPEAT,
@@ -159,7 +162,10 @@ typedef enum {
 	VJMP,         /* info = instruction pc */
 	VRELOCABLE,   /* info = instruction pc */
 	VCALL,        /* info = instruction pc */
-	VVARARG       /* info = instruction pc */
+	VVARARG,      /* info = instruction pc */
+	VEVENT,
+	VEVENTNAME,
+	VEVENTARG,
 } expkind;
 
 

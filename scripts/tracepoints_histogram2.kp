@@ -4,7 +4,7 @@
 
 hist = {}
 
-trace "*:*" function (e) {
+trace "*:*" function () {
 	table_count(hist, execname())
 }
 

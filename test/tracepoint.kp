@@ -9,7 +9,7 @@ function failed() {
 
 count = 0
 
-trace "sched:*" function (e) {
+trace "sched:*" function () {
 	count = count + 1
 }
 

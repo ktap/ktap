@@ -6,7 +6,7 @@ KTAP TRACING
 1. High Level Tracing Primitive
 -------------------------------
 
-1). trace EVENTDEF function (e) { action }
+1). trace EVENTDEF function () { action }
  This is the basic tracing block for ktap, you need to use a specific EVENTDEF
  string, and own event function.
 
@@ -21,7 +21,7 @@ KTAP TRACING
  All events is based on: /sys/kernel/debug/tracing/events/$SYS/$EVENT
 
  Note that you can use function name after EVENTDEF like below:
-	function event_func (e) { action }
+	function event_func () { action }
 	trace EVENTDEF event_func
  It's same as above one.
 
@@ -42,35 +42,21 @@ KTAP TRACING
 
  The second argument in above examples is a function:
 
- function eventfun (e) { action }
+ function eventfun () { action }
 
- the argument of eventfun is a event object, we can operate on this object via several ways:
- e.name
+ built-in event access keywords used in event tracing context:
+
+ argevent
+     event object, you can print it by: print(argevent), it will print events
+     into human readable string, the result is mostly same as each entry of
+     /sys/kernel/debug/tracing/trace
+
+ argname
      event name, each event have a name associated with it.
- e.tostring()
-     this method is suit for tracepoint events, it will parse tracepoint events raw data
-     into human readable string.
-     the result is mostly same as each entry of /sys/kernel/debug/tracing/trace
- e.sc_nr
-     get syscall number of event, only valid for syscall events.
- e.sc_arg1
-     get argument 1 of syscall enter event.
- e.sc_arg2
-     get argument 2 of syscall enter event.
- e.sc_arg3
-     get argument 3 of syscall enter event.
- e.sc_arg4
-     get argument 4 of syscall enter event.
- e.sc_arg5
-     get argument 5 of syscall enter event.
- e.sc_arg6
-     get argument 6 of syscall enter event.
- e.regstr
-     return registers string
- e.retval
-     [k/u]retprobe return value or syscall exit return value
- e.set_retval(N)
-     set return value of [k/u]retprobe or syscall exit
+
+ arg1..9
+     get argument 1..9 of event object.
+
 
 2). kdebug.probe_end (endfunc)
  This function is used for invoking a function when tracing end, it will wait unitl

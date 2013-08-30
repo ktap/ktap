@@ -1,6 +1,6 @@
 #!/usr/bin/env ktap
 
-trace "*:*" function (e) {
-	print(cpu(), pid(), execname(), e)
+trace "*:*" function () {
+	print(cpu(), pid(), execname(), argevent)
 }
 

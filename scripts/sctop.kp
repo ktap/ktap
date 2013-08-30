@@ -2,8 +2,8 @@
 
 s = {}
 
-trace "syscalls:sys_enter_*" function (e) {
-	table_count(s, e.name)
+trace "syscalls:sys_enter_*" function () {
+	table_count(s, argname)
 }
 
 timer.s(5, function () {

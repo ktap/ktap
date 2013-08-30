@@ -65,7 +65,9 @@ const char *const ktap_opnames[NUM_OPCODES + 1] = {
   "VARARG",
   "EXTRAARG",
 
-  "EVENT", /* used for e.field in tracing*/
+  "EVENT",
+  "EVENT_NAME",
+  "EVENT_ARG", /* arg1, arg2 .. arg9 */
   NULL
 };
 

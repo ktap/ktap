@@ -31,6 +31,7 @@ enum {
 	KTAP_PERCPU_DATA_STATE,
 	KTAP_PERCPU_DATA_STACK,
 	KTAP_PERCPU_DATA_BUFFER,
+	KTAP_PERCPU_DATA_BUFFER2,
 	KTAP_PERCPU_DATA_BTRACE,
 
 	KTAP_PERCPU_DATA_MAX
@@ -55,12 +56,11 @@ void kp_init_kdebuglib(ktap_state *ks);
 void kp_init_timerlib(ktap_state *ks);
 void kp_init_ansilib(ktap_state *ks);
 
-void kp_event_handle(ktap_state *ks, void *e, int field, StkId ra);
 int kp_probe_init(ktap_state *ks);
 void kp_probe_exit(ktap_state *ks);
 
-int kp_event_get_index(const char *field);
-ktap_string *kp_event_get_ts(ktap_state *ks, int index);
+void kp_event_getarg(ktap_state *ks, ktap_value *ra, int n);
+void kp_event_tostring(ktap_state *ks, struct trace_seq *seq);
 
 int kp_strfmt(ktap_state *ks, struct trace_seq *seq);
 

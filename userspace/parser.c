@@ -1002,6 +1002,24 @@ static void simpleexp(ktap_lexstate *ls, ktap_expdesc *v)
 		body(ls, v, 0, ls->linenumber);
 		return;
 	}
+	case TK_ARGEVENT:
+		init_exp(v, VEVENT, 0);
+		break;
+
+	case TK_ARGNAME:
+		init_exp(v, VEVENTNAME, 0);
+		break;
+	case TK_ARG1:
+	case TK_ARG2:
+	case TK_ARG3:
+	case TK_ARG4:
+	case TK_ARG5:
+	case TK_ARG6:
+	case TK_ARG7:
+	case TK_ARG8:
+	case TK_ARG9:
+		init_exp(v, VEVENTARG, ls->t.token - TK_ARG1 + 1);
+		break;
 	default: {
 		suffixedexp(ls, v);
 		return;

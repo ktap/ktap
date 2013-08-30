@@ -26,6 +26,7 @@
 #include <linux/fs.h>
 #include <linux/hardirq.h>
 #include <linux/perf_event.h>
+#include <linux/ftrace_event.h>
 #include <linux/signal.h>
 #include <linux/delay.h>
 #include <linux/sched.h>
@@ -794,25 +795,40 @@ static void ktap_execute(ktap_state *ks)
 		return;
 
 	case OP_EVENT: {
-		ktap_value *b = RB(instr);
-		if ((GETARG_B(instr) == 0) && ttisevent(b)) {
-			kp_event_handle(ks, evalue(b), GETARG_C(instr), ra);
-		} else {
-			/* normal OP_GETTABLE operation */
-			setsvalue(RKC(instr), kp_event_get_ts(ks,
-						GETARG_C(instr)));
+		struct ktap_event *e = ks->current_event;
 
-			gettable(ks, RB(instr), RKC(instr), ra);
-			base = ci->u.l.base;
+		if (unlikely(!e)) {
+			kp_error(ks, "invalid event context\n");
+			return;
 		}
+		setevalue(ra, e);
 		break;
 		}
 
+	case OP_EVENTNAME: {
+		struct ktap_event *e = ks->current_event;
+
+		if (unlikely(!e)) {
+			kp_error(ks, "invalid event context\n");
+			return;
+		}
+		setsvalue(ra, kp_tstring_new(ks, e->call->name));
+		break;
+		}
+	case OP_EVENTARG:
+		if (unlikely(!ks->current_event)) {
+			kp_error(ks, "invalid event context\n");
+			return;
+		}
+
+		kp_event_getarg(ks, ra, GETARG_B(instr));		
+		break;
 	case OP_LOAD_GLOBAL: {
 		ktap_value *cfunc = cfunction_cache_get(ks, GETARG_C(instr));
 		setobj(ra, cfunc);
 		}
 		break;
+
 	case OP_EXIT:
 		return;
 	}
@@ -829,8 +845,6 @@ void kp_call(ktap_state *ks, StkId func, int nresults)
 static int cfunction_cache_getindex(ktap_state *ks, ktap_value *fname);
 
 /*
- * making OP_EVENT for fast event field getting.
- *
  * This function must be called before all code loaded.
  */
 void kp_optimize_code(ktap_state *ks, int level, ktap_proto *f)
@@ -841,24 +855,7 @@ void kp_optimize_code(ktap_state *ks, int level, ktap_proto *f)
 		int instr = f->code[i];
 		ktap_value *k = f->k;
 
-		switch (GET_OPCODE(instr)) {
-		case OP_GETTABLE:
-			if ((GETARG_B(instr) == 0) && ISK(GETARG_C(instr))) {
-				ktap_value *field = k + INDEXK(GETARG_C(instr));
-				if (ttype(field) == KTAP_TSTRING) {
-					int index = kp_event_get_index(
-							svalue(field));
-					if (index == -1)
-						break;
-
-					SET_OPCODE(instr, OP_EVENT);
-					SETARG_C(instr, index);
-					f->code[i] = instr;
-					break;
-				}
-			}
-			break;
-		case OP_GETTABUP:
+		if (GET_OPCODE(instr) == OP_GETTABUP) {
 			if ((GETARG_B(instr) == 0) && ISK(GETARG_C(instr))) {
 				ktap_value *field = k + INDEXK(GETARG_C(instr));
 				if (ttype(field) == KTAP_TSTRING) {
@@ -873,7 +870,6 @@ void kp_optimize_code(ktap_state *ks, int level, ktap_proto *f)
 					break;
 				}
 			}
-			break;
 		}
 	}
 
@@ -1049,7 +1045,7 @@ static int alloc_kp_percpu_data(void)
 {
 	int data_size[KTAP_PERCPU_DATA_MAX] = {
 		sizeof(ktap_state), KTAP_STACK_SIZE, KTAP_PERCPU_BUFFER_SIZE,
-		sizeof(ktap_btrace)};
+		KTAP_PERCPU_BUFFER_SIZE, sizeof(ktap_btrace)};
 	int i, j;
 
 	for (i = 0; i < KTAP_PERCPU_DATA_MAX; i++) {

@@ -2,7 +2,7 @@
 
 hist = {}
 
-trace "syscalls:sys_enter_*" function (e) {
+trace "syscalls:sys_enter_*" function () {
 	table_count(hist, execname())
 }
 
