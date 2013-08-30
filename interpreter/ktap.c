@@ -89,7 +89,7 @@ static char **copy_argv_from_user(struct ktap_parm *parm)
 	}
 
 	for (i = 0; i < parm->argc; i++) {
-		char * __user ustr = argv[i];
+		char __user *ustr = argv[i];
 		char * kstr;
 		int len;
 
@@ -235,7 +235,7 @@ static long ktapvm_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		return err;
 	}
 
-	file->private_data = 0;
+	file->private_data = NULL;
 	fd_install(new_fd, new_file);
 	return new_fd;
 }
