@@ -12,7 +12,7 @@ It's similar with Linux Systemtap and Solaris Dtrace.
 KTAP have different design principles from Linux mainstream dynamic tracing
 language in that it's based on bytecode, so it doesn't depend upon GCC,
 doesn't require compiling kernel module for each script, safe to use in
-production environment, fulfilling the embedd ecosystem's tracing needs.
+production environment, fulfilling the embedded ecosystem's tracing needs.
 
 More information can be found at doc/ directory.
 
@@ -24,7 +24,7 @@ Highlights
 - register based interpreter(heavy optimized) in Linux kernel
 - small and lightweight(5KLOC of interpreter)
 - safty in sandbox
-- easy to use in embedd environment even without debugging info
+- easy to use in embedded environment even without debugging info
 - a pure scripting interface for Linux tracing subsystem
 - support static tracepoint, k(ret)probe, u(ret)probe, function trace, timer, backtrace and more
 
@@ -126,7 +126,7 @@ GPL v2
 
 Contribution
 ------------
-KTAP is still under active development, so contribution is welcome.
+KTAP is still under active development, so contributions are welcome.
 You are encouraged to report bugs, provide feedback, send feature request,
 or hack on it.
 
