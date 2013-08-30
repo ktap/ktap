@@ -6,13 +6,13 @@ reads = {}
 writes = {}
 total_io = {}
 
-trace "syscalls:sys_exit_read" function () {
+trace "syscalls:sys_exit_read" {
 	local ret = arg2
 	table_count(reads, execname(), ret)
 	table_count(total_io, execname(), ret)
 }
 
-trace "syscalls:sys_exit_write" function (e) {
+trace "syscalls:sys_exit_write" {
 	local ret = arg2
 	table_count(writes, execname(), ret)
 	table_count(total_io, execname(), ret)

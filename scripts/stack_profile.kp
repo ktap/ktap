@@ -16,7 +16,7 @@ timer.s(60, function () {
 	exit()
 })
 
-trace_end function () {
+trace_end {
 	for (k, v in pairs(s)) {
 		print(k)
 		printf("%d\n\n", v)

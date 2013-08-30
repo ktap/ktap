@@ -4,11 +4,11 @@
 
 hist = {}
 
-trace "*:*" function () {
+trace "*:*" {
 	table_count(hist, execname())
 }
 
-trace_end function () {
+trace_end {
 	histogram(hist)
 }
 

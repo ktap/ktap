@@ -136,7 +136,7 @@ errdesc = {
 
 }
 
-trace "syscalls:sys_exit_*" function () {
+trace "syscalls:sys_exit_*" {
 	if (arg2 < 0) {
 		local errno = -arg2
 		printf("%-15s%-20s\t%d\t%-30s\n",

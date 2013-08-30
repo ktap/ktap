@@ -2,11 +2,11 @@
 
 hist = {}
 
-trace "syscalls:sys_enter_*" function () {
+trace "syscalls:sys_enter_*" {
 	table_count(hist, argname)
 }
 
-trace_end function () {
+trace_end {
 	histogram(hist)
 }
 

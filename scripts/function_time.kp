@@ -10,7 +10,7 @@ total_time = 0
 
 printf("measure time of function vfs_read\n");
 
-trace "probe:vfs_read" function (e) {
+trace "probe:vfs_read" {
 	if (execname() == "ktap") {
 		return
 	}
@@ -18,7 +18,7 @@ trace "probe:vfs_read" function (e) {
 	self[tid()] = gettimeofday_us()
 }
 
-trace "probe:vfs_read%return" function (e) {
+trace "probe:vfs_read%return" {
 	if (execname() == "ktap") {
 		return
 	}
@@ -42,7 +42,7 @@ trace "probe:vfs_read%return" function (e) {
 	self[tid()] = 0
 }
 
-trace_end function () {
+trace_end {
 	printf("avg\tmax\tmin\n");
 	printf("-------------------\n")
 

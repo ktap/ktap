@@ -834,6 +834,25 @@ static void body (ktap_lexstate *ls, ktap_expdesc *e, int ismethod, int line)
 	close_func(ls);
 }
 
+static void func_body_no_args(ktap_lexstate *ls, ktap_expdesc *e, int line)
+{
+	/* body ->  `(' parlist `)' block END */
+	ktap_funcstate new_fs;
+	ktap_blockcnt bl;
+
+	new_fs.f = addprototype(ls);
+	new_fs.f->linedefined = line;
+	open_func(ls, &new_fs, &bl);
+	checknext(ls, '{');
+	statlist(ls);
+	new_fs.f->lastlinedefined = ls->linenumber;
+	checknext(ls, '}');
+	//check_match(ls, TK_END, TK_FUNCTION, line);
+	codeclosure(ls, e);
+	close_func(ls);
+}
+
+
 static int explist (ktap_lexstate *ls, ktap_expdesc *v)
 {
 	/* explist -> expr { `,' expr } */
@@ -1656,7 +1675,7 @@ static void tracestat(ktap_lexstate *ls)
 
 	/* argument: callback function */
 	enterlevel(ls);
-	simpleexp(ls, &args);
+	func_body_no_args(ls, &args, ls->linenumber);
 	leavelevel(ls);
 
 	codegen_setmultret(fs, &args);

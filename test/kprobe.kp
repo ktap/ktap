@@ -1,7 +1,7 @@
 #!/usr/bin/env ktap
 
 count = 0
-trace "probe:schedule" function () {
+trace "probe:schedule" {
 	count = count + 1
 }
 
