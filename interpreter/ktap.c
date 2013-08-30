@@ -75,6 +75,9 @@ static char **copy_argv_from_user(struct ktap_parm *parm)
 	int i, j;
 	int ret;
 
+	if (parm->argc > 1024)
+		return ERR_PTR(-EINVAL);
+
 	argv = kzalloc(parm->argc * sizeof(char *), GFP_KERNEL);
 	if (!argv) {
 		pr_err("out of memory");
@@ -94,6 +97,8 @@ static char **copy_argv_from_user(struct ktap_parm *parm)
 		int len;
 
 		len = strlen_user(ustr);
+		if (len > 0x1000)
+			goto error;
 		kstr = kmalloc(len + 1, GFP_KERNEL);
 		if (!kstr) {
 			pr_err("out of memory");
