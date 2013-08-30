@@ -1181,9 +1181,6 @@ static void kp_wait(ktap_state *ks)
 {
 	struct task_struct *task = G(ks)->trace_task;
 
-	if (ks != G(ks)->mainthread)
-		return;
-
 	if (G(ks)->exit)
 		return;
 
