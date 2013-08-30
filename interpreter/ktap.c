@@ -75,11 +75,12 @@ static char **copy_argv_from_user(struct ktap_parm *parm)
 	int i, j;
 	int ret;
 
+	if (parm->argc > 1024)
+		return ERR_PTR(-EINVAL);
+
 	argv = kzalloc(parm->argc * sizeof(char *), GFP_KERNEL);
-	if (!argv) {
-		pr_err("out of memory");
+	if (!argv)
 		return ERR_PTR(-ENOMEM);
-	}
 
 	ret = copy_from_user(argv, (void __user *)parm->argv,
 			     parm->argc * sizeof(char *));
@@ -89,16 +90,16 @@ static char **copy_argv_from_user(struct ktap_parm *parm)
 	}
 
 	for (i = 0; i < parm->argc; i++) {
-		char * __user ustr = argv[i];
+		char __user *ustr = argv[i];
 		char * kstr;
 		int len;
 
 		len = strlen_user(ustr);
-		kstr = kmalloc(len + 1, GFP_KERNEL);
-		if (!kstr) {
-			pr_err("out of memory");
+		if (len > 0x1000)
 			goto error;
-		}
+		kstr = kmalloc(len + 1, GFP_KERNEL);
+		if (!kstr)
+			goto error;
 
 		if (strncpy_from_user(kstr, ustr, len) < 0)
 			goto error;
@@ -235,7 +236,7 @@ static long ktapvm_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		return err;
 	}
 
-	file->private_data = 0;
+	file->private_data = NULL;
 	fd_install(new_fd, new_file);
 	return new_fd;
 }
