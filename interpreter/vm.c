@@ -1184,8 +1184,6 @@ static void kp_wait(ktap_state *ks)
 	if (G(ks)->exit)
 		return;
 
-	kp_puts(ks, "Press Control-C to stop.\n");
-
 	ks->stop = 0;
 
 	/* tell workload process to start executing */
@@ -1199,6 +1197,9 @@ static void kp_wait(ktap_state *ks)
 
 		if (signal_pending(current)) {
 			flush_signals(current);
+
+			/* newline for handle CTRL+C display as ^C */
+			kp_puts(ks, "\n");
 			break;
 		}
 
@@ -1207,8 +1208,6 @@ static void kp_wait(ktap_state *ks)
 				break;
 	}
 
-	/* newline for handle CTRL+C display as ^C */
-	kp_puts(ks, "\n");
 }
 
 void kp_exit(ktap_state *ks)
