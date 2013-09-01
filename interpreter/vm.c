@@ -45,9 +45,7 @@
 
 #define isktapfunc(ci)	((ci)->callstatus & CIST_KTAP)
 
-void kp_call(ktap_state *ks, StkId func, int nresults);
-
-void ktap_concat(ktap_state *ks, int start, int end)
+static void ktap_concat(ktap_state *ks, int start, int end)
 {
 	int i, len = 0;
 	StkId top = ks->ci->u.l.base;
@@ -1050,8 +1048,8 @@ static int alloc_kp_percpu_data(void)
 
 	for (i = 0; i < KTAP_PERCPU_DATA_MAX; i++) {
 		for (j = 0; j < PERF_NR_CONTEXTS; j++) {
-			void *data = __alloc_percpu(data_size[i],
-						    __alignof__(char));
+			void __percpu *data = __alloc_percpu(data_size[i],
+							     __alignof__(char));
 			if (!data)
 				goto fail;
 			kp_pcpu_data[i][j] = data;
@@ -1097,7 +1095,7 @@ static void ktap_init_state(ktap_state *ks)
 	ks->ci = ci;
 }
 
-void free_all_ci(ktap_state *ks)
+static void free_all_ci(ktap_state *ks)
 {
 	int cpu;
 

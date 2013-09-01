@@ -134,7 +134,7 @@ static int trace_print_timestamp(struct trace_iterator *iter)
 }
 
 /* todo: export kernel function ftrace_find_event in future, and make faster */
-struct trace_event *(*ftrace_find_event)(int type);
+static struct trace_event *(*ftrace_find_event)(int type);
 
 static enum print_line_t print_trace_fmt(struct trace_iterator *iter)
 {
@@ -600,8 +600,6 @@ void kp_transport_exit(ktap_state *ks)
 	ring_buffer_free(G(ks)->buffer);
 	debugfs_remove(G(ks)->trace_pipe_dentry);
 }
-
-extern struct dentry *ktap_dir;
 
 #define TRACE_BUF_SIZE_DEFAULT	1441792UL /* 16384 * 88 (sizeof(entry)) */
 

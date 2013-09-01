@@ -76,6 +76,7 @@ void kp_exit_timers(ktap_state *ks);
 DECLARE_PER_CPU(bool, kp_in_timer_closure);
 
 extern unsigned int kp_stub_exit_instr;
+extern struct dentry *ktap_dir;
 
 static inline void set_next_as_exit(ktap_state *ks)
 {
