@@ -128,7 +128,7 @@ static void free_argv(int argc, char **argv)
 }
 
 struct dentry *kp_dir_dentry;
-static atomic_t ktap_running = ATOMIC_INIT(0);
+static atomic_t kp_is_running = ATOMIC_INIT(0);
 
 /* Ktap Main Entry */
 static int ktap_main(struct file *file, struct ktap_parm *parm)
@@ -139,8 +139,8 @@ static int ktap_main(struct file *file, struct ktap_parm *parm)
 	char **argv;
 	int ret;
 
-	if (atomic_inc_return(&ktap_running) != 1) {
-		atomic_dec(&ktap_running);
+	if (atomic_inc_return(&kp_is_running) != 1) {
+		atomic_dec(&kp_is_running);
 		pr_info("only one ktap thread allow to run\n");
 		return -EBUSY;
 	}
@@ -184,7 +184,7 @@ static int ktap_main(struct file *file, struct ktap_parm *parm)
 	kp_final_exit(ks);
 
  out:
-	atomic_dec(&ktap_running);	
+	atomic_dec(&kp_is_running);	
 	return ret;
 }
 
