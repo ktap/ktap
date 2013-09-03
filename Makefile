@@ -5,25 +5,19 @@ ORIG_CFLAGS := $(KBUILD_CFLAGS)
 KBUILD_CFLAGS = $(subst -pg,,$(ORIG_CFLAGS))
 endif
 
-# If unlikely tracing is enabled, do not trace these files
-ifdef CONFIG_TRACING_BRANCHES
-KBUILD_CFLAGS += -DDISABLE_BRANCH_PROFILING
-endif
-
 all: mod ktap
 
 INTP = interpreter
 
 LIBDIR = $(INTP)/library
 
-LIB_OBJS = 
 LIB_OBJS += $(LIBDIR)/baselib.o $(LIBDIR)/kdebug.o $(LIBDIR)/timer.o \
 		$(LIBDIR)/ansilib.o
 
-INTP_OBJS = 
-INTP_OBJS += $(INTP)/ktap.o $(INTP)/loader.o $(INTP)/object.o $(INTP)/tstring.o \
-	    $(INTP)/table.o $(INTP)/vm.o $(INTP)/opcode.o $(INTP)/strfmt.o $(INTP)/transport.o \
-	    $(LIB_OBJS)
+INTP_OBJS += $(INTP)/ktap.o $(INTP)/loader.o $(INTP)/object.o \
+		$(INTP)/tstring.o $(INTP)/table.o $(INTP)/vm.o \
+		$(INTP)/opcode.o $(INTP)/strfmt.o $(INTP)/transport.o \
+		$(LIB_OBJS)
 
 obj-m		+= ktapvm.o
 ktapvm-y	:= $(INTP_OBJS)
