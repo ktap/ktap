@@ -39,7 +39,8 @@ enum {
 
 #define KTAP_PERCPU_BUFFER_SIZE	(3 * PAGE_SIZE)
 
-ktap_state *kp_newstate(struct ktap_parm *parm, char **argv);
+ktap_state *kp_newstate(struct ktap_parm *parm, struct dentry *dir,
+			char **argv);
 void kp_exit(ktap_state *ks);
 void kp_final_exit(ktap_state *ks);
 ktap_state *kp_newthread(ktap_state *mainthread);
@@ -69,14 +70,13 @@ void kp_transport_event_write(ktap_state *ks, struct ktap_event *e);
 void kp_transport_print_backtrace(ktap_state *ks);
 void *kp_transport_reserve(ktap_state *ks, size_t length);
 void kp_transport_exit(ktap_state *ks);
-int kp_transport_init(ktap_state *ks);
+int kp_transport_init(ktap_state *ks, struct dentry *dir);
 
 void kp_exit_timers(ktap_state *ks);
 
 DECLARE_PER_CPU(bool, kp_in_timer_closure);
 
 extern unsigned int kp_stub_exit_instr;
-extern struct dentry *ktap_dir;
 
 static inline void set_next_as_exit(ktap_state *ks)
 {

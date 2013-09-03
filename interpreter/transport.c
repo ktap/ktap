@@ -603,7 +603,7 @@ void kp_transport_exit(ktap_state *ks)
 
 #define TRACE_BUF_SIZE_DEFAULT	1441792UL /* 16384 * 88 (sizeof(entry)) */
 
-int kp_transport_init(ktap_state *ks)
+int kp_transport_init(ktap_state *ks, struct dentry *dir)
 {
 	struct ring_buffer *buffer;
 	struct dentry *dentry;
@@ -621,7 +621,7 @@ int kp_transport_init(ktap_state *ks)
 
 	sprintf(filename, "trace_pipe_%d", (int)task_tgid_vnr(current));
 
-	dentry = debugfs_create_file(filename, 0444, ktap_dir,
+	dentry = debugfs_create_file(filename, 0444, dir,
 				     ks, &tracing_pipe_fops);
 	if (!dentry) {
 		pr_err("ktapvm: cannot create trace_pipe file in debugfs\n");

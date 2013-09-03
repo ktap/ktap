@@ -127,6 +127,7 @@ static void free_argv(int argc, char **argv)
 	kfree(argv);
 }
 
+struct dentry *kp_dir_dentry;
 static atomic_t ktap_running = ATOMIC_INIT(0);
 
 /* Ktap Main Entry */
@@ -157,7 +158,7 @@ static int ktap_main(struct file *file, struct ktap_parm *parm)
 		goto out;
 	}
 
-	ks = kp_newstate(parm, argv);
+	ks = kp_newstate(parm, kp_dir_dentry, argv);
 
 	/* free argv memory after store into arg table */
 	free_argv(parm->argc, argv);
@@ -246,25 +247,24 @@ static const struct file_operations ktapvm_fops = {
 	.unlocked_ioctl         = ktapvm_ioctl,
 };
 
-struct dentry *ktap_dir;
 unsigned int kp_stub_exit_instr;
 
 static int __init init_ktap(void)
 {
 	struct dentry *ktapvm_dentry;
 
-	ktap_dir = debugfs_create_dir("ktap", NULL);
-	if (!ktap_dir) {
+	kp_dir_dentry = debugfs_create_dir("ktap", NULL);
+	if (!kp_dir_dentry) {
 		pr_err("ktap: debugfs_create_dir failed\n");
 		return -1;
 	}
 
-	ktapvm_dentry = debugfs_create_file("ktapvm", 0444, ktap_dir, NULL,
+	ktapvm_dentry = debugfs_create_file("ktapvm", 0444, kp_dir_dentry, NULL,
 					    &ktapvm_fops);
 
 	if (!ktapvm_dentry) {
 		pr_err("ktapvm: cannot create ktapvm file\n");
-		debugfs_remove_recursive(ktap_dir);
+		debugfs_remove_recursive(kp_dir_dentry);
 		return -1;
 	}
 
@@ -275,7 +275,7 @@ static int __init init_ktap(void)
 
 static void __exit exit_ktap(void)
 {
-	debugfs_remove_recursive(ktap_dir);
+	debugfs_remove_recursive(kp_dir_dentry);
 }
 
 module_init(init_ktap);

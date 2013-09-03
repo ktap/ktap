@@ -1247,7 +1247,7 @@ void kp_final_exit(ktap_state *ks)
 }
 
 /* ktap mainthread initization, main entry for ktap */
-ktap_state *kp_newstate(struct ktap_parm *parm, char **argv)
+ktap_state *kp_newstate(struct ktap_parm *parm, struct dentry *dir, char **argv)
 {
 	ktap_state *ks;
 	pid_t pid;
@@ -1269,7 +1269,7 @@ ktap_state *kp_newstate(struct ktap_parm *parm, char **argv)
 	INIT_LIST_HEAD(&(G(ks)->probe_events_head));
 	G(ks)->exit = 0;
 
-	if (kp_transport_init(ks))
+	if (kp_transport_init(ks, dir))
 		goto out;
 
 	pid = (pid_t)parm->trace_pid;
