@@ -216,6 +216,12 @@ void kp_showobj(ktap_state *ks, const ktap_value *v)
 	case KTAP_TBTRACE:
 		kp_btrace_dump(ks, btvalue(v));
 		break;
+	case KTAP_TAGGRTABLE:
+		kp_aggrtable_dump(ks, ahvalue(v));
+		break;
+	case KTAP_TAGGRACCVAL:
+		kp_aggraccval_dump(ks, aggraccvalue(v));
+		break;
 #endif
         default:
 		kp_error(ks, "print unknown value type: %d\n", ttype(v));
@@ -326,19 +332,20 @@ ktap_upval *kp_newupval(ktap_state *ks)
 	return uv;
 }
 
-ktap_btrace *kp_newbacktrace(ktap_state *ks)
+static ktap_btrace *kp_newbacktrace(ktap_state *ks, ktap_gcobject **list)
 {
 	ktap_btrace *bt;
 
-	bt = &kp_newobject(ks, KTAP_TBTRACE, sizeof(ktap_btrace), NULL)->bt;
+	bt = &kp_newobject(ks, KTAP_TBTRACE, sizeof(ktap_btrace), list)->bt;
 	return bt;
 }
 
-void kp_objclone(ktap_state *ks, const ktap_value *o, ktap_value *newo)
+void kp_objclone(ktap_state *ks, const ktap_value *o, ktap_value *newo,
+		 ktap_gcobject **list)
 {
 	if (ttisbtrace(o)) {
 		ktap_btrace *bt;
-		bt = kp_newbacktrace(ks);
+		bt = kp_newbacktrace(ks, list);
 		bt->nr_entries = btvalue(o)->nr_entries;
 		memcpy(&bt->entries[0], &btvalue(o)->entries[0],
 					sizeof(bt->entries));
@@ -416,13 +423,11 @@ void *kp_newuserdata(ktap_state *ks, size_t size)
 	return u + 1;
 }
 
-
-void kp_free_all_gcobject(ktap_state *ks)
+void kp_free_gclist(ktap_state *ks, ktap_gcobject *o)
 {
-	ktap_gcobject *o = G(ks)->allgc;
-	ktap_gcobject *next;
-
 	while (o) {
+		ktap_gcobject *next;
+
 		next = gch(o)->next;
 		switch (gch(o)->tt) {
 		case KTAP_TTABLE:
@@ -431,12 +436,21 @@ void kp_free_all_gcobject(ktap_state *ks)
 		case KTAP_TPROTO:
 			free_proto(ks, (ktap_proto *)o);
 			break;
+#ifdef __KERNEL__
+		case KTAP_TAGGRTABLE:
+			kp_aggrtable_free(ks, (ktap_aggrtable *)o);
+			break;
+#endif
 		default:
 			kp_free(ks, o);
 		}
 		o = next;
 	}
+}
 
+void kp_free_all_gcobject(ktap_state *ks)
+{
+	kp_free_gclist(ks, G(ks)->allgc);
 	G(ks)->allgc = NULL;
 }
 

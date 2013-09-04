@@ -178,20 +178,24 @@ static void pushclosure(ktap_state *ks, ktap_proto *p, ktap_upval **encup,
 static void gettable(ktap_state *ks, const ktap_value *t, ktap_value *key,
 		     StkId val)
 {
-	if (!isnil(t)) {
+	if (ttistable(t)) {
 		setobj(val, kp_table_get(hvalue(t), key));
+	} else if (ttisaggrtable(t)) {
+		kp_aggrtable_get(ks, ahvalue(t), key, val);
 	} else {
-		kp_error(ks, "attempt to access nil table\n");
+		kp_error(ks, "get key from non-table\n");
 	}
 }
 
 static void settable(ktap_state *ks, const ktap_value *t, ktap_value *key,
 		     StkId val)
 {
-	if (!isnil(t)) {
+	if (ttistable(t)) {
 		kp_table_setvalue(ks, hvalue(t), key, val);
+	} else if (ttisaggrtable(t)) {
+		kp_aggrtable_set(ks, ahvalue(t), key, val);
 	} else {
-		kp_error(ks, "error: attempt to access nil table\n");
+		kp_error(ks, "set key to non-table\n");
 	}
 }
 
@@ -965,7 +969,7 @@ static void ktap_init_registry(ktap_state *ks)
 	kp_table_resize(ks, registry, KTAP_RIDX_LAST, 0);
 	setthvalue(ks, &mt, ks);
 	kp_table_setint(ks, registry, KTAP_RIDX_MAINTHREAD, &mt);
-	setthvalue(ks, &mt, kp_table_new(ks));
+	sethvalue(&mt, kp_table_new(ks));
 	kp_table_setint(ks, registry, KTAP_RIDX_GLOBALS, &mt);
 }
 
