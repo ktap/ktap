@@ -1215,8 +1215,8 @@ void kp_aggrtable_get(ktap_state *ks, ktap_aggrtable *ah, ktap_value *key,
 	const ktap_value *v;
 	int cpu;
 
-	acc.val = 0;
-	acc.more = 0;
+	acc.val = -1;
+	acc.more = -1;
 
 	for_each_possible_cpu(cpu) {
 		ktap_table **t = per_cpu_ptr(ah->pcpu_tbl, cpu);
@@ -1225,10 +1225,19 @@ void kp_aggrtable_get(ktap_state *ks, ktap_aggrtable *ah, ktap_value *key,
 		if (isnil(v))
 			continue;
 
+		if (acc.more == -1) {
+			acc = *aggraccvalue(v);
+			continue;
+		}
+
 		synth_acc(aggraccvalue(v), &acc);
 	}
 
-	setnvalue(val, acc.val);
+	if (acc.more == -1) {
+		setnilvalue(val);
+	} else {
+		setnvalue(val, kp_aggracc_read(&acc));
+	}
 }
 
 void kp_aggrtable_histogram(ktap_state *ks, ktap_aggrtable *ah)
