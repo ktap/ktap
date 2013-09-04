@@ -1,12 +1,12 @@
 #!/usr/bin/env ktap
 
-count = 0
+n = 0
 trace "probe:__schedule%return" {
-	count = count + 1
+	n = n + 1
 }
 
 timer.s(1, function () {
-	if (count == 0) {
+	if (n == 0) {
 		printf("failed\n");
 	}
 	exit()

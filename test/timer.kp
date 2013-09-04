@@ -7,19 +7,19 @@ function failed() {
 
 #---------------------------------------#
 
-count1 = 0
-count2 = 0
+n1 = 0
+n2 = 0
 
 timer.s(1, function () {
-	count1 = count1 + 1
+	n1 = n1 + 1
 })
 
 timer.s(2, function () {
-	count2 = count2 + 1
+	n2 = n2 + 1
 })
 
 timer.s(4, function () {
-	if (count1 == 0 || count2 == 0) {
+	if (n1 == 0 || n2 == 0) {
 		failed()
 	}
 	exit()

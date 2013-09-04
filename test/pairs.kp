@@ -15,11 +15,10 @@ t["key_1"] = "value_1"
 t["key_2"] = "value_2"
 t["key_3"] = "value_3"
 
-#variable count is same as built-in function count, fix it.
-local count = 0
+local n = 0
 
 for (k, v in pairs(t)) {
-	count = count + 1
+	n = n + 1
 
 	if (k == 1 && v != 101) {
 		failed()
@@ -41,6 +40,6 @@ for (k, v in pairs(t)) {
 	}
 }
 
-if (count != len(t)) {
+if (n != len(t)) {
 	failed()
 }
