@@ -2,15 +2,17 @@
 
 # showing all tracepoints in histogram style
 
-hist = {}
+s = aggr_table()
 
 trace "*:*" {
-	table_count(hist, argname)
+	s[argname] = count()
 }
 
 trace_end {
-	histogram(hist)
+	histogram(s)
 }
+
+print("Press Control-C to stop.")
 
 #Results:
 #^C
