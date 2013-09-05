@@ -86,6 +86,9 @@ install: mod ktap
 load:
 	insmod ktapvm.ko
 
+unload:
+	rmmod ktapvm
+
 test: FORCE
 	cd test; ./run_test.sh; cd -
 
