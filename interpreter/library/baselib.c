@@ -310,7 +310,6 @@ static int ktap_lib_aggr_count(ktap_state *ks)
 	return 1;
 }
 
-
 static int ktap_lib_aggr_max(ktap_state *ks)
 {
 	kp_arg_check(ks, 1, KTAP_TNUMBER);
@@ -327,6 +326,16 @@ static int ktap_lib_aggr_min(ktap_state *ks)
 
 	ks->aggr_accval = nvalue(kp_arg(ks, 1));
 	setaggrvalue(ks->top, AGGREGATION_TYPE_MIN);
+	incr_top(ks);
+	return 1;
+}
+
+static int ktap_lib_aggr_sum(ktap_state *ks)
+{
+	kp_arg_check(ks, 1, KTAP_TNUMBER);
+
+	ks->aggr_accval = nvalue(kp_arg(ks, 1));
+	setaggrvalue(ks->top, AGGREGATION_TYPE_SUM);
 	incr_top(ks);
 	return 1;
 }
@@ -435,6 +444,7 @@ static const ktap_Reg base_funcs[] = {
 	{"count", ktap_lib_aggr_count},
 	{"max", ktap_lib_aggr_max},
 	{"min", ktap_lib_aggr_min},
+	{"sum", ktap_lib_aggr_sum},
 	{"avg", ktap_lib_aggr_avg},
 
 	{"delete", ktap_lib_delete},

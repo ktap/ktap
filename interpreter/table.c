@@ -981,6 +981,7 @@ static int kp_aggracc_read(ktap_aggraccval *acc)
 	case AGGREGATION_TYPE_COUNT:
 	case AGGREGATION_TYPE_MAX:
 	case AGGREGATION_TYPE_MIN:
+	case AGGREGATION_TYPE_SUM:
 		return acc->val;
 	case AGGREGATION_TYPE_AVG:
 		return acc->val / acc->more;
@@ -996,6 +997,7 @@ void kp_aggraccval_dump(ktap_state *ks, ktap_aggraccval *acc)
 	case AGGREGATION_TYPE_COUNT:
 	case AGGREGATION_TYPE_MAX:
 	case AGGREGATION_TYPE_MIN:
+	case AGGREGATION_TYPE_SUM:
 		kp_printf(ks, "%d", acc->val);
 		break;
 	case AGGREGATION_TYPE_AVG:
@@ -1017,6 +1019,9 @@ static void synth_acc(ktap_aggraccval *acc1, ktap_aggraccval *acc2)
 		break;
 	case AGGREGATION_TYPE_MIN:
 		acc2->val = min(acc1->val, acc2->val);
+		break;
+	case AGGREGATION_TYPE_SUM:
+		acc2->val += acc1->val;
 		break;
 	case AGGREGATION_TYPE_AVG:
 		acc2->val += acc1->val;
@@ -1163,7 +1168,7 @@ void handle_aggr_max(ktap_state *ks, ktap_aggrtable *ah, ktap_value *key)
 	}
 
 	acc = aggraccvalue(v);
-	acc->val  = max(acc->val, ks->aggr_accval);
+	acc->val = max(acc->val, ks->aggr_accval);
 }
 
 static 
@@ -1181,7 +1186,25 @@ void handle_aggr_min(ktap_state *ks, ktap_aggrtable *ah, ktap_value *key)
 	}
 
 	acc = aggraccvalue(v);
-	acc->val  = min(acc->val, ks->aggr_accval);
+	acc->val = min(acc->val, ks->aggr_accval);
+}
+
+static 
+void handle_aggr_sum(ktap_state *ks, ktap_aggrtable *ah, ktap_value *key)
+{
+	ktap_table *t = *__this_cpu_ptr(ah->pcpu_tbl);
+	ktap_value *v = table_set(ks, t, key);
+	ktap_aggraccval *acc;
+
+	if (isnil(v)) {
+		acc = get_accval(ks, AGGREGATION_TYPE_SUM, &t->gclist);
+		acc->val = ks->aggr_accval;
+		setaggraccvalue(v, acc);
+		return;
+	}
+
+	acc = aggraccvalue(v);
+	acc->val += ks->aggr_accval;
 }
 
 static 
@@ -1209,6 +1232,7 @@ static aggr_func_t kp_aggregation_handler[] = {
 	handle_aggr_count,
 	handle_aggr_max,
 	handle_aggr_min,
+	handle_aggr_sum,
 	handle_aggr_avg
 };
 

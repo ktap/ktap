@@ -21,10 +21,13 @@ s["min"] = min(50)
 s["min"] = min(2)
 s["min"] = min(100)
 
+s["sum"] = sum(10)
+s["sum"] = sum(20)
+s["sum"] = sum(30)
+
 s["avg"] = avg(10)
 s["avg"] = avg(20)
 s["avg"] = avg(30)
-
 
 if (s["count"] != 3) {
 	failed()
@@ -35,6 +38,10 @@ if (s["max"] != 100) {
 }
 
 if (s["min"] != 2) {
+	failed()
+}
+
+if (s["sum"] != 60) {
 	failed()
 }
 
