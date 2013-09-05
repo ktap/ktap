@@ -492,51 +492,52 @@ typedef int ktap_number;
 #define ttisclone(o)		ttisbtrace(o)
 
 
-#define setnilvalue(obj) {ktap_value *io = (obj); settype(io, KTAP_TNIL);}
+#define setnilvalue(obj) \
+	{ ktap_value *io = (obj); io->val.n = 0; settype(io, KTAP_TNIL); }
 
 #define setbvalue(obj, x) \
-  {ktap_value *io = (obj); io->val.b = (x); settype(io, KTAP_TBOOLEAN); }
+	{ ktap_value *io = (obj); io->val.b = (x); settype(io, KTAP_TBOOLEAN); }
 
 #define setnvalue(obj, x) \
-  { ktap_value *io = (obj); io->val.n = (x); settype(io, KTAP_TNUMBER); }
+	{ ktap_value *io = (obj); io->val.n = (x); settype(io, KTAP_TNUMBER); }
 
 #define setaggrvalue(obj, x) \
-  { ktap_value *io = (obj); io->val.n = (x); settype(io, KTAP_TAGGRVAL); }
+	{ ktap_value *io = (obj); io->val.n = (x); settype(io, KTAP_TAGGRVAL); }
 
 #define setaggraccvalue(obj,x) \
-  { ktap_value *io=(obj); \
-    val_(io).gc = (ktap_gcobject *)(x); settype(io, KTAP_TAGGRACCVAL); }
+	{ ktap_value *io=(obj); \
+	  val_(io).gc = (ktap_gcobject *)(x); settype(io, KTAP_TAGGRACCVAL); }
 
 #define setsvalue(obj, x) \
-  { ktap_value *io = (obj); \
-    ktap_string *x_ = (x); \
-    io->val.gc = (ktap_gcobject *)x_; settype(io, x_->tsv.tt); }
+	{ ktap_value *io = (obj); \
+	  ktap_string *x_ = (x); \
+	  io->val.gc = (ktap_gcobject *)x_; settype(io, x_->tsv.tt); }
 
 #define setcllvalue(obj, x) \
-  { ktap_value *io = (obj); \
-    io->val.gc = (ktap_gcobject *)x; settype(io, KTAP_TLCL); }
+	{ ktap_value *io = (obj); \
+	  io->val.gc = (ktap_gcobject *)x; settype(io, KTAP_TLCL); }
 
 #define sethvalue(obj,x) \
-  { ktap_value *io=(obj); \
-    val_(io).gc = (ktap_gcobject *)(x); settype(io, KTAP_TTABLE); }
+	{ ktap_value *io=(obj); \
+	  val_(io).gc = (ktap_gcobject *)(x); settype(io, KTAP_TTABLE); }
 
 #define setahvalue(obj,x) \
-  { ktap_value *io=(obj); \
-    val_(io).gc = (ktap_gcobject *)(x); settype(io, KTAP_TAGGRTABLE); }
+	{ ktap_value *io=(obj); \
+	  val_(io).gc = (ktap_gcobject *)(x); settype(io, KTAP_TAGGRTABLE); }
 
 #define setfvalue(obj,x) \
-  { ktap_value *io=(obj); val_(io).f=(x); settype(io, KTAP_TLCF); }
+	{ ktap_value *io=(obj); val_(io).f=(x); settype(io, KTAP_TLCF); }
 
 #define setthvalue(L,obj,x) \
-  { ktap_value *io=(obj); \
-    val_(io).gc = (ktap_gcobject *)(x); settype(io, KTAP_TTHREAD); }
+	{ ktap_value *io=(obj); \
+	  val_(io).gc = (ktap_gcobject *)(x); settype(io, KTAP_TTHREAD); }
 
 #define setevalue(obj, x) \
-  { ktap_value *io=(obj); val_(io).p = (x); settype(io, KTAP_TEVENT); }
+	{ ktap_value *io=(obj); val_(io).p = (x); settype(io, KTAP_TEVENT); }
 
 #define setbtvalue(obj,x) \
-  { ktap_value *io=(obj); \
-    val_(io).gc = (ktap_gcobject *)(x); settype(io, KTAP_TBTRACE); }
+	{ ktap_value *io=(obj); \
+	  val_(io).gc = (ktap_gcobject *)(x); settype(io, KTAP_TBTRACE); }
 
 #define setobj(obj1,obj2) \
         { const ktap_value *io2=(obj2); ktap_value *io1=(obj1); \
