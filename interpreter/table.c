@@ -827,18 +827,21 @@ static int hist_record_cmp(const void *r1, const void *r2)
 		return -1;
 }
 
+#if LINUX_VERSION_CODE > KERNEL_VERSION(3, 5, 0)
+#define SPRINT_SYMBOL	sprint_symbol_no_offset
+#else
+#define SPRINT_SYMBOL	sprint_symbol
+#endif
+
 static int kp_aggracc_read(ktap_aggraccval *acc);
 
-#define HISTOGRAM_DEFAULT_TOP_NUM	20
-
-#define DISTRIBUTION_STR "------------- Distribution -------------"
 /* histogram: key should be number or string, value must be number */
-void kp_table_histogram(ktap_state *ks, ktap_table *t)
+static void table_histdump(ktap_state *ks, ktap_table *t, int shownums)
 {
 	struct table_hist_record *thr;
 	unsigned long __maybe_unused flags;
 	char dist_str[40];
-	int i, ratio, total = 0, count = 0, top_num;
+	int i, ratio, total = 0, count = 0, top_num, is_kernel_address = 0;
 	int size;
 
 	size = sizeof(*thr) * (t->sizearray + sizenode(t));
@@ -889,10 +892,18 @@ void kp_table_histogram(ktap_state *ks, ktap_table *t)
 	sort(thr, count, sizeof(struct table_hist_record),
 	     hist_record_cmp, NULL);
 
-	kp_printf(ks, "%32s%s%s\n", "value ", DISTRIBUTION_STR, " count");
 	dist_str[sizeof(dist_str) - 1] = '\0';
 
-	top_num = min(HISTOGRAM_DEFAULT_TOP_NUM, count);
+	/* check the first key is a kernel text symbol or not */
+	if (ttisnumber(&thr[0].key)) {
+		char str[KSYM_SYMBOL_LEN];
+
+		SPRINT_SYMBOL(str, nvalue(&thr[0].key));
+		if (str[0] != '0' || str[1] != 'x')
+			is_kernel_address = 1;
+	}
+
+	top_num = min(shownums, count);
 	for (i = 0; i < top_num; i++) {
 		ktap_value *key = &thr[i].key;
 		ktap_value *val = &thr[i].val;
@@ -907,23 +918,24 @@ void kp_table_histogram(ktap_state *ks, ktap_table *t)
 			string_convert(buf, svalue(key));
 			kp_printf(ks, "%32s |%s%-7d\n", buf, dist_str,
 				      nvalue(val));
-		} else {
+		} else if (ttisnumber(key)) {
 			char str[KSYM_SYMBOL_LEN];
 			char buf[32 + 1] = {0};
 
-			/* suppose it's a symbol, fix it in future */
-#if LINUX_VERSION_CODE > KERNEL_VERSION(3, 5, 0)
-			sprint_symbol_no_offset(str, nvalue(key));
-#else
-			sprint_symbol(str, nvalue(key));
-#endif
-			string_convert(buf, str);
-			kp_printf(ks, "%32s | %s%-7d\n", buf, dist_str,
-				      nvalue(val));
+			if (is_kernel_address) {
+				/* suppose it's a symbol, fix it in future */
+				SPRINT_SYMBOL(str, nvalue(key));
+				string_convert(buf, str);
+				kp_printf(ks, "%32s |%s%-7d\n", buf, dist_str,
+						nvalue(val));
+			} else {
+				kp_printf(ks, "%32d |%s%-7d\n", nvalue(key),
+						dist_str, nvalue(val));
+			}
 		}
 	}
 
-	if (count > HISTOGRAM_DEFAULT_TOP_NUM)
+	if (count > shownums)
 		kp_printf(ks, "%32s |\n", "...");
 
 	goto out;
@@ -935,6 +947,14 @@ void kp_table_histogram(ktap_state *ks, ktap_table *t)
 	kp_free(ks, thr);
 }
 
+#define HISTOGRAM_DEFAULT_TOP_NUM	20
+
+#define DISTRIBUTION_STR "------------- Distribution -------------"
+void kp_table_histogram(ktap_state *ks, ktap_table *t)
+{
+	kp_printf(ks, "%32s%s%s\n", "value ", DISTRIBUTION_STR, " count");
+	table_histdump(ks, t, HISTOGRAM_DEFAULT_TOP_NUM);
+}
 
 /*
  * Aggregation Table
