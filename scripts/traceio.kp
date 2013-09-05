@@ -2,20 +2,18 @@
 
 # Based on systemtap traceio.stp
 
-reads = {}
-writes = {}
-total_io = {}
+reads = aggr_table()
+writes = aggr_table()
+total_io = aggr_table()
 
 trace "syscalls:sys_exit_read" {
-	local ret = arg2
-	table_count(reads, execname(), ret)
-	table_count(total_io, execname(), ret)
+	reads[execname()] = sum(arg2)
+	total_io[execname()] = sum(arg2)
 }
 
 trace "syscalls:sys_exit_write" {
-	local ret = arg2
-	table_count(writes, execname(), ret)
-	table_count(total_io, execname(), ret)
+	writes[execname()] = sum(arg2)
+	total_io[execname()] = sum(arg2)
 }
 
 function humanread_digit(bytes) {
