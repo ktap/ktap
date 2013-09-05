@@ -10,7 +10,7 @@ trace 'ftrace:function' {
 	table_count(profile_hist, arg1)
 }
 
-trace_end function () {
+trace_end {
 	histogram(profile_hist)
 }
 
