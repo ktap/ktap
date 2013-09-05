@@ -994,16 +994,12 @@ void kp_aggraccval_dump(ktap_state *ks, ktap_aggraccval *acc)
 {
 	switch (acc->type) {
 	case AGGREGATION_TYPE_COUNT:
-		kp_printf(ks, "count: %d", acc->val);
-		break;
 	case AGGREGATION_TYPE_MAX:
-		kp_printf(ks, "max: %d", acc->val);
-		break;
 	case AGGREGATION_TYPE_MIN:
-		kp_printf(ks, "min: %d", acc->val);
+		kp_printf(ks, "%d", acc->val);
 		break;
 	case AGGREGATION_TYPE_AVG:
-		kp_printf(ks, "avg: %d", acc->val / acc->more);
+		kp_printf(ks, "%d", acc->val / acc->more);
 		break;
 	default:
 		break;
@@ -1089,7 +1085,7 @@ static void move_table(ktap_state *ks, ktap_table *t1, ktap_table *t2)
 	}
 }
 
-static ktap_table *kp_aggrtable_synthesis(ktap_state *ks, ktap_aggrtable *ah)
+ktap_table *kp_aggrtable_synthesis(ktap_state *ks, ktap_aggrtable *ah)
 {
 	ktap_table *synth_tbl;
 	int cpu;

@@ -591,6 +591,7 @@ int kp_table_next(ktap_state *ks, ktap_table *t, StkId key);
 void kp_table_atomic_inc(ktap_state *ks, ktap_table *t, ktap_value *key, int n);
 void kp_aggraccval_dump(ktap_state *ks, ktap_aggraccval *acc);
 ktap_aggrtable *kp_aggrtable_new(ktap_state *ks);
+ktap_table *kp_aggrtable_synthesis(ktap_state *ks, ktap_aggrtable *ah);
 void kp_aggrtable_dump(ktap_state *ks, ktap_aggrtable *ah);
 void kp_aggrtable_free(ktap_state *ks, ktap_aggrtable *ah);
 void kp_aggrtable_set(ktap_state *ks, ktap_aggrtable *ah,

@@ -6,10 +6,10 @@
 # Flame Graphs:
 # http://dtrace.org/blogs/brendan/2012/03/17/linux-kernel-performance-flame-graphs/
 
-s= {}
+s = aggr_table()
 
 timer.us(10, function () {
-	table_count(s, backtrace())
+	s[backtrace()] = count()
 })
 
 timer.s(60, function () {
@@ -19,9 +19,8 @@ timer.s(60, function () {
 trace_end {
 	for (k, v in pairs(s)) {
 		print(k)
-		printf("%d\n\n", v)
+		print(v)
+		print()
 	}
 }
-	
-
 

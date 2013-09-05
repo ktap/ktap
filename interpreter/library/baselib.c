@@ -45,14 +45,18 @@ static int ktap_lib_next(ktap_state *ks)
 
 static int ktap_lib_pairs(ktap_state *ks)
 {
+	ktap_value *v = kp_arg(ks, 1);
 	ktap_table *t;
 
-	kp_arg_check(ks, 1, KTAP_TTABLE);
-
-	t = hvalue(kp_arg(ks, 1));
-
-	if (isnil(kp_arg(ks, 1))) {
+	if (ttistable(v)) {
+		t = hvalue(v);
+	} else if (ttisaggrtable(v)) {
+		t = kp_aggrtable_synthesis(ks, ahvalue(v));
+	} else if (isnil(v)) {
 		kp_error(ks, "table is nil in pairs\n");
+		return 0;
+	} else {
+		kp_error(ks, "wrong argument for pairs\n");
 		return 0;
 	}
 
