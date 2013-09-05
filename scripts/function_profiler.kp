@@ -4,14 +4,14 @@
 #You can use this script to know what function is called frequently,
 #without enable CONFIG_FUNCTION_PROFILER in kernel.
 
-profile_hist = {}
+s = aggr_table()
 
 trace 'ftrace:function' {
-	table_count(profile_hist, arg1)
+	s[arg1] = count()
 }
 
 trace_end {
-	histogram(profile_hist)
+	histogram(s)
 }
 
 #sample output
