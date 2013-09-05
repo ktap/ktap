@@ -286,7 +286,7 @@ static int computesizes (int nums[], int *narray)
 			if (a > twotoi/2) {
 				/* optimal size (till now) */
 				n = twotoi;
-				/* 
+				/*
 				 * all elements smaller than n will go to
 				 * array part
 				 */
@@ -710,7 +710,7 @@ int kp_table_length(ktap_state *ks, ktap_table *t)
 
 		len++;
 	}
-	
+
 	kp_table_unlock(t);
 	return len;
 }
@@ -1123,7 +1123,7 @@ ktap_aggrtable *kp_aggrtable_new(ktap_state *ks)
 	for_each_possible_cpu(cpu) {
 		ktap_table **t = per_cpu_ptr(ah->pcpu_tbl, cpu);
 		*t = table_new2(ks, &ah->gclist);
-	}	
+	}
 
 	return ah;
 }
@@ -1133,6 +1133,21 @@ void kp_aggrtable_free(ktap_state *ks, ktap_aggrtable *ah)
 	free_percpu(ah->pcpu_tbl);
 	kp_free_gclist(ks, ah->gclist);
 	kp_free(ks, ah);
+}
+
+/*
+ * same as table-clear
+ * aggrtable-clear only set nil of all elements, not free t->array and nodes.
+ */
+void kp_aggrtable_clear(ktap_state *ks, ktap_aggrtable *ah)
+{
+	int cpu;
+	ktap_table *t = NULL;
+
+	for_each_possible_cpu(cpu) {
+		t = *per_cpu_ptr(ah->pcpu_tbl, cpu);
+		kp_table_clear(ks, t);
+	}
 }
 
 static
@@ -1153,7 +1168,7 @@ void handle_aggr_count(ktap_state *ks, ktap_aggrtable *ah, ktap_value *key)
 	acc->val += 1;
 }
 
-static 
+static
 void handle_aggr_max(ktap_state *ks, ktap_aggrtable *ah, ktap_value *key)
 {
 	ktap_table *t = *__this_cpu_ptr(ah->pcpu_tbl);
@@ -1171,7 +1186,7 @@ void handle_aggr_max(ktap_state *ks, ktap_aggrtable *ah, ktap_value *key)
 	acc->val = max(acc->val, ks->aggr_accval);
 }
 
-static 
+static
 void handle_aggr_min(ktap_state *ks, ktap_aggrtable *ah, ktap_value *key)
 {
 	ktap_table *t = *__this_cpu_ptr(ah->pcpu_tbl);
@@ -1189,7 +1204,7 @@ void handle_aggr_min(ktap_state *ks, ktap_aggrtable *ah, ktap_value *key)
 	acc->val = min(acc->val, ks->aggr_accval);
 }
 
-static 
+static
 void handle_aggr_sum(ktap_state *ks, ktap_aggrtable *ah, ktap_value *key)
 {
 	ktap_table *t = *__this_cpu_ptr(ah->pcpu_tbl);
@@ -1207,7 +1222,7 @@ void handle_aggr_sum(ktap_state *ks, ktap_aggrtable *ah, ktap_value *key)
 	acc->val += ks->aggr_accval;
 }
 
-static 
+static
 void handle_aggr_avg(ktap_state *ks, ktap_aggrtable *ah, ktap_value *key)
 {
 	ktap_table *t = *__this_cpu_ptr(ah->pcpu_tbl);

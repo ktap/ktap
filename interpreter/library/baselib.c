@@ -352,9 +352,16 @@ static int ktap_lib_aggr_avg(ktap_state *ks)
 
 static int ktap_lib_delete(ktap_state *ks)
 {
-	kp_arg_check(ks, 1, KTAP_TTABLE);
+	ktap_value *arg = kp_arg(ks, 1);
+	int arg_type = ttypenv(arg);
 
-	kp_table_clear(ks, hvalue(kp_arg(ks, 1)));
+	if (likely(arg_type == KTAP_TTABLE)) {
+		kp_table_clear(ks, hvalue(arg));
+	} else if (likely(arg_type == KTAP_TAGGRTABLE)) {
+		kp_aggrtable_clear(ks, ahvalue(arg));
+	} else {
+		kp_arg_error(ks, 1);
+	}
 	return 0;
 }
 
@@ -384,7 +391,7 @@ static int ktap_lib_curr_task_info(ktap_state *ks)
 	kp_arg_check(ks, 1, KTAP_TNUMBER);
 
 	offset = nvalue(kp_arg(ks, 1));
-	
+
 	if (kp_arg_nr(ks) == 1)
 		fetch_bytes = 4; /* default fetch 4 bytes*/
 	else {
@@ -455,5 +462,5 @@ static const ktap_Reg base_funcs[] = {
 
 void kp_init_baselib(ktap_state *ks)
 {
-	kp_register_lib(ks, NULL, base_funcs); 
+	kp_register_lib(ks, NULL, base_funcs);
 }
