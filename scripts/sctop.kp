@@ -1,9 +1,9 @@
 #! /usr/bin/env ktap
 
-s = {}
+s = aggr_table()
 
 trace "syscalls:sys_enter_*" {
-	table_count(s, argname)
+	s[argname] = count()
 }
 
 timer.s(5, function () {

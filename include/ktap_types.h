@@ -596,6 +596,7 @@ ktap_aggrtable *kp_aggrtable_new(ktap_state *ks);
 ktap_table *kp_aggrtable_synthesis(ktap_state *ks, ktap_aggrtable *ah);
 void kp_aggrtable_dump(ktap_state *ks, ktap_aggrtable *ah);
 void kp_aggrtable_free(ktap_state *ks, ktap_aggrtable *ah);
+void kp_aggrtable_clear(ktap_state *ks, ktap_aggrtable *ah);
 void kp_aggrtable_set(ktap_state *ks, ktap_aggrtable *ah,
 			ktap_value *key, ktap_value *val);
 void kp_aggrtable_get(ktap_state *ks, ktap_aggrtable *ah,
