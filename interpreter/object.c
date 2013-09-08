@@ -310,7 +310,7 @@ ktap_gcobject *kp_newobject(ktap_state *ks, int type, size_t size,
 {
 	ktap_gcobject *o;
 
-	o = kp_malloc(ks, sizeof(ktap_gcobject) + size);
+	o = kp_malloc(ks, size);
 	if (list == NULL)
 		list = &G(ks)->allgc;
 
