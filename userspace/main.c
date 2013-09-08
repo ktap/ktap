@@ -544,7 +544,7 @@ int main(int argc, char **argv)
 	compile(script_file);
 
 	ktapvm_argv = (char **)malloc(sizeof(char *)*(script_args_end -
-					script_args_start));
+					script_args_start + 1));
 	if (!ktapvm_argv) {
 		fprintf(stderr, "canno allocate ktapvm_argv\n");
 		return -1;
