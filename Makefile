@@ -92,9 +92,19 @@ unload:
 test: FORCE
 	cd test; ./run_test.sh; cd -
 
+tags:
+	$(RM) tags
+	find . -name '*.[hcS]' ! -path './.*' -print | xargs ctags -a
+
+cscope:
+	find . -name '*.[hcS]' ! -path './.*' -print >cscope.files
+	cscope -bkqu -i cscope.files
+
 clean:
 	$(MAKE) -C $(KERNEL_SRC) M=$(PWD) clean
 	$(RM) ktap
+	$(RM) tags
+	$(RM) cscope*
 
 PHONY += FORCE
 FORCE:
