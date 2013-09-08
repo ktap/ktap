@@ -48,6 +48,11 @@ static int ktap_lib_pairs(ktap_state *ks)
 	ktap_value *v = kp_arg(ks, 1);
 	ktap_table *t;
 
+	if (G(ks)->mainthread != ks) {
+		kp_error(ks, "only mainthread can call table pairs\n");
+		return -1;
+	}
+
 	if (ttistable(v)) {
 		t = hvalue(v);
 	} else if (ttisaggrtable(v)) {
@@ -282,8 +287,12 @@ static int ktap_lib_table_count(ktap_state *ks)
 
 static int ktap_lib_histogram(ktap_state *ks)
 {
-	//kp_arg_check(ks, 1, KTAP_TTABLE);
 	ktap_value *v = kp_arg(ks, 1);
+
+	if (G(ks)->mainthread != ks) {
+		kp_error(ks, "only mainthread can call table historgram\n");
+		return -1;
+	}
 
 	if (ttistable(v))
 		kp_table_histogram(ks, hvalue(v));
