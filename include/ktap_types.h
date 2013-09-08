@@ -61,7 +61,7 @@ typedef int ktap_instruction;
 
 typedef union ktap_gcobject ktap_gcobject;
 
-#define CommonHeader ktap_gcobject *next; u8 tt; u8 marked;
+#define CommonHeader ktap_gcobject *next; u8 tt;
 
 struct ktap_state;
 typedef int (*ktap_cfunction) (struct ktap_state *ks);

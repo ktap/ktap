@@ -315,7 +315,6 @@ ktap_gcobject *kp_newobject(ktap_state *ks, int type, size_t size,
 		list = &G(ks)->allgc;
 
 	gch(o)->tt = type;
-	gch(o)->marked = 0;
 	gch(o)->next = *list;
 	*list = o;
 
