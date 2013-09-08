@@ -633,7 +633,7 @@ void codegen_self(ktap_funcstate *fs, ktap_expdesc *e, ktap_expdesc *key)
 	freeexp(fs, key);
 }
 
-static void invertjump (ktap_funcstate *fs, ktap_expdesc *e)
+static void invertjump(ktap_funcstate *fs, ktap_expdesc *e)
 {
 	ktap_instruction *pc = getjumpcontrol(fs, e->u.info);
 	ktap_assert(testTMode(GET_OPCODE(*pc)) && GET_OPCODE(*pc) != OP_TESTSET &&

@@ -281,8 +281,10 @@ static void read_long_string(ktap_lexstate *ls, ktap_seminfo *seminfo, int sep)
 		case '\r': {
 			save(ls, '\n');
 			inclinenumber(ls);
-			if (!seminfo) mbuff_reset(ls->buff);  /* avoid wasting space */
-				break;
+			/* avoid wasting space */
+			if (!seminfo)
+				mbuff_reset(ls->buff);
+			break;
 		}
 		default: {
 			if (seminfo)
@@ -539,15 +541,18 @@ static int llex(ktap_lexstate *ls, ktap_seminfo *seminfo)
 			}
 		} 
 		default: {
-			if (islalpha(ls->current)) {  /* identifier or reserved word? */
+			if (islalpha(ls->current)) {
+				/* identifier or reserved word? */
 				ktap_string *ts;
 				do {
 					save_and_next(ls);
 				} while (islalnum(ls->current));
-				ts = lex_newstring(ls, mbuff(ls->buff), mbuff_len(ls->buff));
+				ts = lex_newstring(ls, mbuff(ls->buff),
+							mbuff_len(ls->buff));
 				seminfo->ts = ts;
 				if (isreserved(ts))  /* reserved word? */
-					return ts->tsv.extra - 1 + FIRST_RESERVED;
+					return ts->tsv.extra - 1 +
+						FIRST_RESERVED;
 				else {
 					return TK_NAME;
 				}
