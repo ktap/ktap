@@ -284,6 +284,7 @@ static void usage(const char *msg)
 "  -T             : show timestamp for event\n"
 "  -V             : show version\n"
 "  -v             : enable verbose mode\n"
+"  -s             : simple event tracing\n"
 "  -b             : list byte codes\n"
 "  file           : program read from script file\n"
 "  -- cmd [args]  : workload to tracing\n");
@@ -395,6 +396,9 @@ static int trace_pid = -1;
 static int trace_cpu = -1;
 static int print_timestamp;
 
+#define SIMPLE_ONE_LINER_FMT	\
+	"trace \"%s\" { print(cpu(), tid(), execname(), argevent) }"
+
 static const char *script_file;
 static int script_args_start;
 static int script_args_end;
@@ -458,6 +462,10 @@ static void parse_option(int argc, char **argv)
 			break;
 		case 'v':
 			verbose = 1;
+			break;
+		case 's':
+			sprintf(oneline_src, SIMPLE_ONE_LINER_FMT, next_arg);
+			i++;
 			break;
 		case 'b':
 			dump_bytecode = 1;
