@@ -20,3 +20,6 @@ ktap: A New Scripting Dynamic Tracing Tool For Linux
 By: zhangwei(Jovi)
 http://events.linuxfoundation.org/sites/events/files/lcjpcojp13_zhangwei.pdf
 
+Dtrace User Guide
+By: Sun Microsystems
+http://docs.huihoo.com/opensolaris/dtrace-user-guide/html/index.html
