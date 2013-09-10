@@ -5,10 +5,10 @@ trace probe:__schedule%return {
 	n = n + 1
 }
 
-timer.s(1, function () {
+tick-1s {
 	if (n == 0) {
 		printf("failed\n");
 	}
 	exit()
-})
+}
 

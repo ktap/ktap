@@ -7,8 +7,8 @@ trace syscalls:sys_enter_* {
 	table_count(s, argname)
 }
 
-timer.s(5, function () {
+tick-5s {
 	ansi.clear_screen()
 	histogram(s)
 	delete(s)
-})
+}

@@ -1697,6 +1697,69 @@ static void tracestat(ktap_lexstate *ls)
 	SETARG_C(getcode(fs, v), 1);  /* call statement uses no results */
 }
 
+static void timerstat(ktap_lexstate *ls)
+{
+	ktap_expdesc v0, key, args;
+	ktap_expdesc *v = &v0;
+	ktap_funcstate *fs = ls->fs;
+	ktap_string *token_str = ls->t.seminfo.ts;
+	ktap_string *interval_str;
+	int line = ls->linenumber;
+	int base, nparams;
+
+	lex_next(ls);  /* skip profile/tick keyword */
+	check(ls, '-');
+
+	lex_read_string_until(ls, '{');
+	interval_str = ls->t.seminfo.ts;
+
+	//printf("timerstat str: %s\n", getstr(interval_str));
+	//exit(0);
+
+	/* timer */
+	singlevaraux(fs, ls->envn, v, 1);  /* get environment variable */
+	codestring(ls, &key, ktapc_ts_new("timer"));  /* key is variable name */
+	codegen_indexed(fs, v, &key);  /* env[varname] */
+
+	/* fieldsel: timer.profile, timer.tick */
+	codegen_exp2anyregup(fs, v);
+	codestring(ls, &key, token_str);
+	codegen_indexed(fs, v, &key);
+
+	/* funcargs*/
+	codegen_exp2nextreg(fs, v);
+
+	/* argument: interval string */
+	check(ls, TK_STRING);
+	enterlevel(ls);
+	codestring(ls, &args, interval_str);
+	lex_next(ls);  /* skip interval string */
+	leavelevel(ls);
+
+	codegen_exp2nextreg(fs, &args); /* for next argument */
+
+	/* argument: callback function */
+	enterlevel(ls);
+	func_body_no_args(ls, &args, ls->linenumber);
+	leavelevel(ls);
+
+	codegen_setmultret(fs, &args);
+
+	base = v->u.info;  /* base register for call */
+	if (hasmultret(args.k))
+		nparams = KTAP_MULTRET;  /* open call */
+	else {
+		codegen_exp2nextreg(fs, &args);  /* close last argument */
+		nparams = fs->freereg - (base+1);
+	}
+	init_exp(v, VCALL, codegen_codeABC(fs, OP_CALL, base, nparams+1, 2));
+	codegen_fixline(fs, line);
+	fs->freereg = base+1;
+
+	check_condition(ls, v->k == VCALL, "syntax error");
+	SETARG_C(getcode(fs, v), 1);  /* call statement uses no results */
+}
+
 static void statement(ktap_lexstate *ls)
 {
 	int line = ls->linenumber;  /* may be needed for error messages */
@@ -1760,6 +1823,10 @@ static void statement(ktap_lexstate *ls)
 	case TK_TRACE:
 	case TK_TRACE_END:
 		tracestat(ls);
+		break;
+	case TK_PROFILE:
+	case TK_TICK:
+		timerstat(ls);
 		break;
 	default: {  /* stat -> func | assignment */
 		exprstat(ls);

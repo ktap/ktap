@@ -78,12 +78,20 @@ KTAP Standard Libraries
 
 6. timer Functions
 ------------------
-  timer.s   (N, func)
-  timer.sec (N, func)
-  timer.ms  (N, func)
-  timer.msec(N, func)
-  timer.us  (N, func)
-  timer.usec(N, func)
+  tick-Ns	{ statements }
+  tick-Nsec	{ statements }
+  tick-Nms	{ statements }
+  tick-Nmsec	{ statements }
+  tick-Nus	{ statements }
+  tick-Nusec	{ statements }
+
+  profile-Ns	{ statements }
+  profile-Nsec	{ statements }
+  profile-Nms	{ statements }
+  profile-Nmsec	{ statements }
+  profile-Nus	{ statements }
+  profile-Nusec	{ statements }
+
 
 7. Kdebug Library
 -----------------

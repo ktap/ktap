@@ -18,6 +18,7 @@
  * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include <linux/ctype.h>
 #include <linux/slab.h>
 #include <linux/delay.h>
 #include <linux/sched.h>
@@ -70,21 +71,11 @@ static enum hrtimer_restart hrtimer_ktap_fn(struct hrtimer *timer)
 	return HRTIMER_RESTART;
 }
 
-static int set_timer(ktap_state *ks, int factor)
+static void set_timer(ktap_state *ks, int factor, int n, ktap_closure *cl)
 {
 	struct hrtimer_ktap *t;
-	ktap_closure *cl;
-	u64 period;
-	int n;
+	u64 period = (u64)factor * n;
 
-	kp_arg_check(ks, 1, KTAP_TNUMBER);
-	kp_arg_check(ks, 2, KTAP_TFUNCTION);
-
-	n = nvalue(kp_arg(ks, 1));
-	cl = clvalue(kp_arg(ks, 2));
-
-	period = (u64)factor * n;
-	
 	t = kp_malloc(ks, sizeof(*t));
 	t->ks = ks;
 	t->cl = cl;
@@ -96,30 +87,63 @@ static int set_timer(ktap_state *ks, int factor)
 	hrtimer_init(&t->timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 	t->timer.function = hrtimer_ktap_fn;
 	hrtimer_start(&t->timer, ns_to_ktime(period), HRTIMER_MODE_REL);
-
-	return 0;
 }
 
-static int ktap_lib_second(ktap_state *ks)
+static int do_tick_profile(ktap_state *ks, int tick)
 {
-	set_timer(ks, NSEC_PER_SEC);
+	const char *str, *tmp;
+	char interval_str[32] = {0};
+	char suffix[10] = {0};
+	int n, i = 0;
+	int factor;
+
+	kp_arg_check(ks, 1, KTAP_TSTRING);
+	kp_arg_check(ks, 2, KTAP_TFUNCTION);
+
+	str = svalue(kp_arg(ks, 1));
+	tmp = str;
+	while (isdigit(*tmp))
+		tmp++;
+
+	strncpy(interval_str, str, tmp - str);
+	if (kstrtoint(interval_str, 10, &n))
+		goto error;
+
+	strncpy(suffix, tmp, 9);
+	while (suffix[i] != ' ' && suffix[i] != '\0')
+		i++;
+
+	suffix[i] = '\0';
+
+	if (!strcmp(suffix, "s") || !strcmp(suffix, "sec"))
+		factor = NSEC_PER_SEC;
+	else if (!strcmp(suffix, "ms") || !strcmp(suffix, "msec"))
+		factor = NSEC_PER_MSEC;
+	else if (!strcmp(suffix, "us") || !strcmp(suffix, "usec"))
+		factor = NSEC_PER_USEC;
+	else
+		goto error;
+
+	set_timer(ks, factor, n, clvalue(kp_arg(ks, 2)));
 	return 0;
+
+ error:
+	kp_error(ks, "cannot parse timer interval: %s\n", str);
+	return -1;
 }
 
-static int ktap_lib_msecond(ktap_state *ks)
+/*
+ * tick: timer timeout in one cpu
+ * Ns, Nsec, Nms, Nmsec, Nus, Nusec
+ */
+static int ktap_lib_tick(ktap_state *ks)
 {
-	set_timer(ks, NSEC_PER_MSEC);
-	return 0;
-}
-
-static int ktap_lib_usecond(ktap_state *ks)
-{
-	set_timer(ks, NSEC_PER_USEC);
-	return 0;
+	return do_tick_profile(ks, 1);
 }
 
 static int ktap_lib_profile(ktap_state *ks)
 {
+	kp_printf(ks, "timer profile not supported\n");
 	return 0;
 }
 
@@ -141,13 +165,8 @@ void kp_exit_timers(ktap_state *ks)
 }
 
 static const ktap_Reg timerlib_funcs[] = {
-	{"s",		ktap_lib_second},
-	{"sec", 	ktap_lib_second},
-	{"ms",		ktap_lib_msecond},
-	{"msec",	ktap_lib_msecond},
-	{"us",		ktap_lib_usecond},
-	{"usec",	ktap_lib_usecond},
 	{"profile",	ktap_lib_profile},
+	{"tick",	ktap_lib_tick},
 	{NULL}
 };
 

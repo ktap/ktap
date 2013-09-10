@@ -10,19 +10,19 @@ function failed() {
 n1 = 0
 n2 = 0
 
-timer.s(1, function () {
+tick-1s {
 	n1 = n1 + 1
-})
+}
 
-timer.s(2, function () {
+tick-1s {
 	n2 = n2 + 1
-})
+}
 
-timer.s(4, function () {
+tick-4s {
 	if (n1 == 0 || n2 == 0) {
 		failed()
 	}
 	exit()
-})
+}
 
 

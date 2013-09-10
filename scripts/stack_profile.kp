@@ -8,13 +8,13 @@
 
 s = aggr_table()
 
-timer.us(10, function () {
+tick-10us {
 	s[backtrace()] = count()
-})
+}
 
-timer.s(60, function () {
+tick-60s {
 	exit()
-})
+}
 
 trace_end {
 	for (k, v in pairs(s)) {

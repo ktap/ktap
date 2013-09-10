@@ -42,7 +42,7 @@ function humanread_x(bytes) {
 	}
 }
 
-timer.s(1, function () {
+tick-1s {
 	ansi.clear_screen()
 	for (exec, count in pairs(total_io)) {
 		local readnum = reads[exec]
@@ -52,5 +52,5 @@ timer.s(1, function () {
 			humanread_digit(writenum), humanread_x(writenum))
 	}
 	printf("\n")
-})
+}
 

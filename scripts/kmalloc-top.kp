@@ -6,12 +6,12 @@ trace kmem:kmalloc {
 	table_count(kmalloc_stack, backtrace())
 }
 
-timer.s(60, function () {
+tick-60s {
 	for (k, v in pairs(kmalloc_stack)) {
 		print(k)
 		printf("%d\n\n", v)
 	}
 
 	exit()
-})
+}
 
