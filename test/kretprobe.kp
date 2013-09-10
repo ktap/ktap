@@ -1,7 +1,7 @@
 #!/usr/bin/env ktap
 
 n = 0
-trace "probe:__schedule%return" {
+trace probe:__schedule%return {
 	n = n + 1
 }
 

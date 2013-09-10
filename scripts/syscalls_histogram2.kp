@@ -2,7 +2,7 @@
 
 s = aggr_table()
 
-trace "syscalls:sys_enter_*" {
+trace syscalls:sys_enter_* {
 	s[execname()] = count()
 }
 

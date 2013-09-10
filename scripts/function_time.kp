@@ -10,7 +10,7 @@ total_time = 0
 
 printf("measure time of function vfs_read\n");
 
-trace "probe:vfs_read" {
+trace probe:vfs_read {
 	if (execname() == "ktap") {
 		return
 	}
@@ -18,7 +18,7 @@ trace "probe:vfs_read" {
 	self[tid()] = gettimeofday_us()
 }
 
-trace "probe:vfs_read%return" {
+trace probe:vfs_read%return {
 	if (execname() == "ktap") {
 		return
 	}

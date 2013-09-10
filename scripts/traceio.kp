@@ -2,16 +2,18 @@
 
 # Based on systemtap traceio.stp
 
+#this script is broken, fix it soon.
+
 reads = aggr_table()
 writes = aggr_table()
 total_io = aggr_table()
 
-trace "syscalls:sys_exit_read" {
+trace syscalls:sys_exit_read {
 	reads[execname()] = sum(arg2)
 	total_io[execname()] = sum(arg2)
 }
 
-trace "syscalls:sys_exit_write" {
+trace syscalls:sys_exit_write {
 	writes[execname()] = sum(arg2)
 	total_io[execname()] = sum(arg2)
 }

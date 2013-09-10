@@ -12,11 +12,11 @@ KTAP TRACING
 
  EVENTDEF is compatiable with perf(see perf-list), with glob match, for example:
 
-	"syscalls:*": trace all syscalls events
-	"syscalls:sys_enter_*" : trace all syscalls entry events
-	"kmem:*": trace all kmem related events
-	"sched:*": trace all sched related events
-	"*:*": trace all tracepoints in system.
+	syscalls:*			trace all syscalls events
+	syscalls:sys_enter_*		trace all syscalls entry events
+	kmem:*				trace all kmem related events
+	sched:*				trace all sched related events
+	*:*				trace all tracepoints in system.
 
  All events is based on: /sys/kernel/debug/tracing/events/$SYS/$EVENT
 

@@ -9,7 +9,7 @@ function failed() {
 
 n = 0
 
-trace "sched:*" {
+trace sched:* {
 	n = n + 1
 }
 

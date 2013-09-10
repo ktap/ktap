@@ -296,6 +296,7 @@ void lex_syntaxerror(ktap_lexstate *ls, const char *msg);
 void lex_setinput(ktap_lexstate *ls, char *ptr, ktap_string *source, int firstchar);
 void lex_next(ktap_lexstate *ls);
 int lex_lookahead(ktap_lexstate *ls);
+void lex_read_string_until(ktap_lexstate *ls, int c);
 ktap_closure *ktapc_parser(char *pos, const char *name);
 ktap_string *ktapc_ts_new(const char *str);
 int ktapc_ts_eqstr(ktap_string *a, ktap_string *b);

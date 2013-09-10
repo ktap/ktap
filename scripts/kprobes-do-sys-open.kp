@@ -1,9 +1,9 @@
 #!/usr/bin/env ktap
 
-trace "probe:do_sys_open dfd=%di filename=%dx flags=%cx mode=+4($stack)" {
+trace probe:do_sys_open dfd=%di filename=%dx flags=%cx mode=+4($stack) {
 	print("entry:", execname(), argevent)
 }
 
-trace "probe:do_sys_open%return fd=$retval" {
+trace probe:do_sys_open%return fd=$retval {
 	print("exit:", execname(), argevent)
 }

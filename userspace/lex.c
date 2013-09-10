@@ -566,6 +566,30 @@ static int llex(ktap_lexstate *ls, ktap_seminfo *seminfo)
 	}
 }
 
+void lex_read_string_until(ktap_lexstate *ls, int c)
+{
+	ktap_string *ts;
+	char errmsg[32];
+
+	mbuff_reset(ls->buff);
+
+	while (ls->current == ' ')
+		next(ls);
+
+	do {
+		save_and_next(ls);
+	} while (ls->current != c && ls->current != EOZ);
+
+	if (ls->current != c) {
+		sprintf(errmsg, "expect %c", c);
+		lexerror(ls, errmsg, 0);
+	}
+
+	ts = lex_newstring(ls, mbuff(ls->buff), mbuff_len(ls->buff));
+	ls->t.seminfo.ts = ts;
+	ls->t.token = TK_STRING;
+}
+
 void lex_next(ktap_lexstate *ls)
 {
 	ls->lastline = ls->linenumber;

@@ -6,7 +6,7 @@
 
 s = aggr_table()
 
-trace 'ftrace:function' {
+trace ftrace:function {
 	s[arg1] = count()
 }
 

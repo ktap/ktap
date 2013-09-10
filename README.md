@@ -53,22 +53,22 @@ Examples
 -------------------------------------
 1) simplest one-liner command to enable all tracepoints  
 
-	ktap -e 'trace "*:*" { print(argevent) }'
+	ktap -e "trace *:* { print(argevent) }"
 
 2) syscall tracing on target process  
 
-	ktap -e 'trace "syscalls:*" { print(argevent) }' -- ls
+	ktap -e "trace syscalls:* { print(argevent) }" -- ls
 
 3) function tracing  
 
-	ktap -e 'trace "ftrace:function" { print(argevent) }'  
+	ktap -e "trace ftrace:function { print(argevent) }"
 
-	ktap -e 'trace "ftrace:function /ip==mutex*/" { print(argevent) }'
+	ktap -e "trace ftrace:function /ip==mutex*/ { print(argevent) }"
 
 4) simple syscall tracing  
 
 	#scripts/syscalls.kp
-	trace "syscalls:*" {
+	trace syscalls:* {
 		print(cpu(), pid(), execname(), argevent)
 	}
 
@@ -77,7 +77,7 @@ Examples
 	#scripts/syscalls_histogram.kp
 	hist = {}
 
-	trace "syscalls:sys_enter_*" {
+	trace syscalls:sys_enter_* {
 		    table_count(hist, argname)
 	}
 
@@ -88,11 +88,11 @@ Examples
 6) kprobe tracing  
 
 	#scripts/kprobes-do-sys-open.kp
-	trace "probe:do_sys_open dfd=%di fname=%dx flags=%cx mode=+4($stack)" {
+	trace probe:do_sys_open dfd=%di fname=%dx flags=%cx mode=+4($stack) {
 		print("entry:", execname(), argevent)
 	}
 
-	trace "probe:do_sys_open%return fd=$retval" {
+	trace probe:do_sys_open%return fd=$retval {
 		print("exit:", execname(), argevent)
 	}
 
@@ -104,11 +104,11 @@ Examples
 	#you need to calculate libc malloc symbol offset in your own system.
 	#symbol resolve will support in future
 
-	trace "probe:/lib/libc.so.6:0x000773c0" {
+	trace probe:/lib/libc.so.6:0x000773c0 {
 		print("entry:", execname(), argevent)
 	}
 
-	trace "probe:/lib/libc.so.6:0x000773c0%return" {
+	trace probe:/lib/libc.so.6:0x000773c0%return {
 		print("exit:", execname(), argevent)
 	}
 

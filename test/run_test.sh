@@ -20,10 +20,10 @@ function ktaprun {
 $KTAP arg.kp 1 testing "2 3 4"
 $KTAP -e 'print("one-liner testing")'
 $KTAP -e 'exit()'
-$KTAP -o /dev/null -e 'trace "syscalls:*" { print(argevent) }' \
+$KTAP -o /dev/null -e 'trace syscalls:* { print(argevent) }' \
 		-- ls > /devnull
 
-$KTAP -o /dev/null -e 'trace "syscalls:*" { print(argevent) }' \
+$KTAP -o /dev/null -e 'trace syscalls:* { print(argevent) }' \
 		-- $KTAP -e 'while (1) {}'
 
 ktaprun arith.kp

@@ -727,7 +727,7 @@ static void listfield(ktap_lexstate *ls, struct ConsControl *cc)
 	cc->tostore++;
 }
 
-static void field (ktap_lexstate *ls, struct ConsControl *cc)
+static void field(ktap_lexstate *ls, struct ConsControl *cc)
 {
 	/* field -> listfield | recfield */
 	switch(ls->t.token) {
@@ -1641,7 +1641,10 @@ static void tracestat(ktap_lexstate *ls)
 	int line = ls->linenumber;
 	int base, nparams;
 
-	lex_next(ls);  /* skip "trace/trace_begin/trace_end" keyword */
+	if (token == TK_TRACE)
+		lex_read_string_until(ls, '{');
+	else
+		lex_next(ls);  /* skip "trace_end" keyword */
 
 	/* kdebug */
 	singlevaraux(fs, ls->envn, v, 1);  /* get environment variable */
