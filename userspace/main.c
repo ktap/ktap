@@ -397,7 +397,7 @@ static int trace_cpu = -1;
 static int print_timestamp;
 
 #define SIMPLE_ONE_LINER_FMT	\
-	"trace \"%s\" { print(cpu(), tid(), execname(), argevent) }"
+	"trace %s { print(cpu(), tid(), execname(), argevent) }"
 
 static const char *script_file;
 static int script_args_start;
