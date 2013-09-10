@@ -151,17 +151,11 @@ void kp_exit_timers(ktap_state *ks)
 {
 	struct hrtimer_ktap *t, *tmp;
 	struct list_head *timers_list = &(G(ks)->timers);
-	unsigned long flags;
-
-	/* we need disable irq when cleanup timers, for safety */
-	local_irq_save(flags);
 
 	list_for_each_entry_safe(t, tmp, timers_list, list) {
 		hrtimer_cancel(&t->timer);
 		kp_free(ks, t);
 	}
-
-	local_irq_restore(flags);
 }
 
 static const ktap_Reg timerlib_funcs[] = {
