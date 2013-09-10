@@ -13,7 +13,7 @@ $COMMAND
 
 echo ""
 
-KTAP_ONE_LINER='trace "syscalls:sys_*_futex" function (e) {}'
+KTAP_ONE_LINER="trace syscalls:sys_*_futex {}"
 
 echo -e "\n\t\tPass 1 with tracing"
 ../../ktap -e "$KTAP_ONE_LINER" -- $COMMAND
