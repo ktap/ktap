@@ -1229,8 +1229,8 @@ void kp_final_exit(ktap_state *ks)
 	if (G(ks)->trace_task)
 		put_task_struct(G(ks)->trace_task);
 
-	kp_probe_exit(ks);
 	kp_exit_timers(ks);
+	kp_probe_exit(ks);
 
 	/* free all resources got by ktap */
 	kp_tstring_freeall(ks);
