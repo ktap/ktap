@@ -24,7 +24,6 @@
 #include <linux/slab.h>
 #include <linux/file.h>
 #include <linux/fs.h>
-#include <linux/hardirq.h>
 #include <linux/perf_event.h>
 #include <linux/ftrace_event.h>
 #include <linux/signal.h>
@@ -1005,23 +1004,7 @@ static void ktap_init_arguments(ktap_state *ks, int argc, char **argv)
 	}
 }
 
-/* get from kernel/trace/trace.h */
-static __always_inline int trace_get_context_bit(void)
-{
-	int bit;
-
-	if (in_interrupt()) {
-		if (in_nmi())
-			bit = 0;
-		else if (in_irq())
-			bit = 1;
-		else
-			bit = 2;
-	} else
-		bit = 3;
-
-	return bit;
-}
+DEFINE_PER_CPU(int, kp_recursion_context[PERF_NR_CONTEXTS]);
 
 /* todo: make this per-session aware */
 static void __percpu *kp_pcpu_data[KTAP_PERCPU_DATA_MAX][PERF_NR_CONTEXTS];

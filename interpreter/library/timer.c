@@ -39,20 +39,19 @@ struct hrtimer_ktap {
  * We can use a different percpu ktap_state and stack for timer purpuse,
  * but that's don't bring any big value with cost on memory consuming.
  *
- * So just simply disable tracing in timer closure
+ * So just simply disable tracing in timer closure,
+ * get_recursion_context()/put_recursion_context() is used for this purpose.
  *
- * todo: export perf_swevent_put_recursion_context to slove this issue.
+ * option: export perf_swevent_put_recursion_context to slove this issue.
  */
-DEFINE_PER_CPU(bool, kp_in_timer_closure);
-
 static enum hrtimer_restart hrtimer_ktap_fn(struct hrtimer *timer)
 {
-	ktap_state *ks;
 	struct hrtimer_ktap *t;
+	ktap_state *ks;
+	int rctx;
 
 	rcu_read_lock_sched_notrace();
-
-	__this_cpu_write(kp_in_timer_closure, true);
+	rctx = get_recursion_context();
 
 	t = container_of(timer, struct hrtimer_ktap, timer);
 
@@ -64,17 +63,15 @@ static enum hrtimer_restart hrtimer_ktap_fn(struct hrtimer *timer)
 
 	hrtimer_add_expires_ns(timer, t->ns);
 
-	__this_cpu_write(kp_in_timer_closure, false);
-
+	put_recursion_context(rctx);
 	rcu_read_unlock_sched_notrace();
 
 	return HRTIMER_RESTART;
 }
 
-static void set_timer(ktap_state *ks, int factor, int n, ktap_closure *cl)
+static void set_tick_timer(ktap_state *ks, u64 period, ktap_closure *cl)
 {
 	struct hrtimer_ktap *t;
-	u64 period = (u64)factor * n;
 
 	t = kp_malloc(ks, sizeof(*t));
 	t->ks = ks;
@@ -89,7 +86,23 @@ static void set_timer(ktap_state *ks, int factor, int n, ktap_closure *cl)
 	hrtimer_start(&t->timer, ns_to_ktime(period), HRTIMER_MODE_REL);
 }
 
-static int do_tick_profile(ktap_state *ks, int tick)
+static void set_profile_timer(ktap_state *ks, u64 period, ktap_closure *cl)
+{
+	struct perf_event_attr attr;
+
+	memset(&attr, 0, sizeof(attr));
+	attr.type = PERF_TYPE_SOFTWARE;
+	attr.config = PERF_COUNT_SW_CPU_CLOCK;
+	attr.sample_type = PERF_SAMPLE_RAW | PERF_SAMPLE_TIME |
+			   PERF_SAMPLE_CPU | PERF_SAMPLE_PERIOD;
+	attr.sample_period = period;
+	attr.size = sizeof(attr);
+	attr.disabled = 0;
+
+	kp_perf_event_register(ks, &attr, NULL, NULL, cl);
+}
+
+static int do_tick_profile(ktap_state *ks, int is_tick)
 {
 	const char *str, *tmp;
 	char interval_str[32] = {0};
@@ -124,7 +137,11 @@ static int do_tick_profile(ktap_state *ks, int tick)
 	else
 		goto error;
 
-	set_timer(ks, factor, n, clvalue(kp_arg(ks, 2)));
+	if (is_tick)
+		set_tick_timer(ks, (u64)factor * n, clvalue(kp_arg(ks, 2)));
+	else
+		set_profile_timer(ks, (u64)factor * n, clvalue(kp_arg(ks, 2)));
+
 	return 0;
 
  error:
@@ -133,18 +150,21 @@ static int do_tick_profile(ktap_state *ks, int tick)
 }
 
 /*
- * tick: timer timeout in one cpu
- * Ns, Nsec, Nms, Nmsec, Nus, Nusec
+ * tick-n probes fire on only one CPU per interval.
+ * valid time suffixes: sec/s, msec/ms, usec/us
  */
 static int ktap_lib_tick(ktap_state *ks)
 {
 	return do_tick_profile(ks, 1);
 }
 
+/*
+ * A profile-n probe fires every fixed interval on every CPU
+ * valid time suffixes: sec/s, msec/ms, usec/us
+ */
 static int ktap_lib_profile(ktap_state *ks)
 {
-	kp_printf(ks, "timer profile not supported\n");
-	return 0;
+	return do_tick_profile(ks, 0);
 }
 
 void kp_exit_timers(ktap_state *ks)

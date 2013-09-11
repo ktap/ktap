@@ -21,7 +21,6 @@
 #include <linux/module.h>
 #include <linux/ctype.h>
 #include <linux/version.h>
-#include <linux/perf_event.h>
 #include <linux/ftrace_event.h>
 #include <asm/syscall.h> //syscall_set_return_value defined here
 #include "../../include/ktap.h"
@@ -183,11 +182,9 @@ static void ktap_overflow_callback(struct perf_event *event,
 				   struct pt_regs *regs)
 {
 	struct ktap_probe_event *ktap_pevent;
-	ktap_state  *ks;
 	struct ktap_event e;
-
-	if (unlikely(__this_cpu_read(kp_in_timer_closure)))
-		return;
+	ktap_state  *ks;
+	int rctx;
 
 	ktap_pevent = event->overflow_handler_context;
 	ks = ktap_pevent->ks;
@@ -195,13 +192,22 @@ static void ktap_overflow_callback(struct perf_event *event,
 	if (unlikely(ks->stop))
 		return;
 
+	rctx = get_recursion_context();
+	if (rctx < 0)
+		return;
+
+	/* profile perf event don't have valid associated tp_event */
+	if (event->tp_event) {
+		e.call = event->tp_event;
+		e.entry = data->raw->data;
+		e.entry_size = data->raw->size;
+	}
 	e.pevent = ktap_pevent;
-	e.call = event->tp_event;
-	e.entry = data->raw->data;
-	e.entry_size = data->raw->size;
 	e.regs = regs;
 
 	ktap_call_probe_closure(ks, ktap_pevent->cl, &e);
+
+	put_recursion_context(rctx);
 }
 
 static void perf_destructor(struct ktap_probe_event *ktap_pevent)
@@ -212,31 +218,27 @@ static void perf_destructor(struct ktap_probe_event *ktap_pevent)
 static int (*kp_ftrace_profile_set_filter)(struct perf_event *event,
 					   int event_id, char *filter_str);
 
-static void start_probe_by_id(ktap_state *ks, struct task_struct *task,
-			      int id, char *filter, ktap_closure *cl)
+/*
+ * Generic perf event register function
+ * used by tracepoints/kprobe/uprobe/profile-timer/hw_breakpoint.
+ */
+void kp_perf_event_register(ktap_state *ks, struct perf_event_attr *attr,
+			    struct task_struct *task, char *filter,
+			    ktap_closure *cl)
 {
 	struct ktap_probe_event *ktap_pevent;
-	struct perf_event_attr attr;
 	struct perf_event *event;
 	int cpu, ret;
 
-	kp_verbose_printf(ks, "enable tracepoint event id: %d, filter: %s "
-			      "pid: %d\n", id, filter,
+	kp_verbose_printf(ks, "enable perf event id: %d, filter: %s "
+			      "pid: %d\n", attr->config, filter,
 			      task ? task_tgid_vnr(task) : -1);
-
-	memset(&attr, 0, sizeof(attr));
-	attr.type = PERF_TYPE_TRACEPOINT;	
-	attr.config = id;
-	attr.sample_type = PERF_SAMPLE_RAW | PERF_SAMPLE_TIME |
-			   PERF_SAMPLE_CPU | PERF_SAMPLE_PERIOD;
-	attr.sample_period = 1;
-	attr.size = sizeof(attr);
-	attr.disabled = 0;
 
 	/*
 	 * don't tracing until ktap_wait, the reason is:
 	 * 1). some event may hit before apply filter
 	 * 2). more simple to manage tracing thread
+	 * 3). avoid race with mainthread.
 	 *
 	 * Another way to do this is make attr.disabled as 1, then use
 	 * perf_event_enable after filter apply, however, perf_event_enable
@@ -248,13 +250,13 @@ static void start_probe_by_id(ktap_state *ks, struct task_struct *task,
 		ktap_pevent = kp_zalloc(ks, sizeof(*ktap_pevent));
 		ktap_pevent->ks = ks;
 		ktap_pevent->cl = cl;
-		event = perf_event_create_kernel_counter(&attr, cpu, task,
+		event = perf_event_create_kernel_counter(attr, cpu, task,
 							 ktap_overflow_callback,
 							 ktap_pevent);
 		if (IS_ERR(event)) {
 			int err = PTR_ERR(event);
-			kp_error(ks, "unable create tracepoint event %d "
-				     "on cpu %d, err: %d\n", id, cpu, err);
+			kp_error(ks, "unable register perf event %d on cpu %d, "
+				     "err: %d\n", attr->config, cpu, err);
 			kp_free(ks, ktap_pevent);
 			return;
 		}
@@ -266,10 +268,10 @@ static void start_probe_by_id(ktap_state *ks, struct task_struct *task,
 		if (!filter)
 			continue;
 
-		ret = kp_ftrace_profile_set_filter(event, id, filter);
+		ret = kp_ftrace_profile_set_filter(event, attr->config, filter);
 		if (ret) {
 			kp_error(ks, "unable set filter %s for event id %d, "
-				     "ret: %d\n", filter, id, ret);
+				     "ret: %d\n", filter, attr->config, ret);
 			perf_destructor(ktap_pevent);
 			list_del(&ktap_pevent->list);
 			kp_free(ks, ktap_pevent);
@@ -354,8 +356,20 @@ static int ktap_lib_probe_by_id(ktap_state *ks)
 			token[i++] = *ptr++;
 		}
 
-		if (!kstrtoint(token, 10, &id))
-			start_probe_by_id(ks, task, id, filter, cl);
+		if (!kstrtoint(token, 10, &id)) {
+			struct perf_event_attr attr;
+
+			memset(&attr, 0, sizeof(attr));
+			attr.type = PERF_TYPE_TRACEPOINT;	
+			attr.config = id;
+			attr.sample_type = PERF_SAMPLE_RAW | PERF_SAMPLE_TIME |
+					   PERF_SAMPLE_CPU | PERF_SAMPLE_PERIOD;
+			attr.sample_period = 1;
+			attr.size = sizeof(attr);
+			attr.disabled = 0;
+
+			kp_perf_event_register(ks, &attr, task, filter, cl);
+		}
 	}
 
 	if (sep && (*(sep + 1) != '\0')) {

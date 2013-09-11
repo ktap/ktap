@@ -8,7 +8,7 @@
 
 s = aggr_table()
 
-tick-10us {
+profile-10us {
 	s[backtrace()] = count()
 }
 

@@ -4,6 +4,8 @@
 #include "ktap_types.h"
 #include "ktap_opcodes.h"
 
+#include <linux/hardirq.h>
+#include <linux/perf_event.h>
 #include <linux/trace_seq.h>
 
 typedef struct ktap_Reg {
@@ -60,6 +62,10 @@ void kp_init_ansilib(ktap_state *ks);
 int kp_probe_init(ktap_state *ks);
 void kp_probe_exit(ktap_state *ks);
 
+void kp_perf_event_register(ktap_state *ks, struct perf_event_attr *attr,
+			    struct task_struct *task, char *filter,
+			    ktap_closure *cl);
+
 void kp_event_getarg(ktap_state *ks, ktap_value *ra, int n);
 void kp_event_tostring(ktap_state *ks, struct trace_seq *seq);
 
@@ -74,7 +80,46 @@ int kp_transport_init(ktap_state *ks, struct dentry *dir);
 
 void kp_exit_timers(ktap_state *ks);
 
-DECLARE_PER_CPU(bool, kp_in_timer_closure);
+/* get from kernel/trace/trace.h */
+static __always_inline int trace_get_context_bit(void)
+{
+	int bit;
+
+	if (in_interrupt()) {
+		if (in_nmi())
+			bit = 0;
+		else if (in_irq())
+			bit = 1;
+		else
+			bit = 2;
+	} else
+		bit = 3;
+
+	return bit;
+}
+
+/* use a special timer context kp_state instead use this recursion approach? */
+DECLARE_PER_CPU(int, kp_recursion_context[PERF_NR_CONTEXTS]);
+
+static __always_inline int get_recursion_context(void)
+{
+	int rctx = trace_get_context_bit();
+
+	if (__this_cpu_read(kp_recursion_context[rctx]))
+		return -1;
+
+	__this_cpu_write(kp_recursion_context[rctx], true);
+	barrier();
+
+	return rctx;
+}
+
+static inline void put_recursion_context(int rctx)
+{
+	barrier();
+	__this_cpu_write(kp_recursion_context[rctx], false);
+}
+
 
 extern unsigned int kp_stub_exit_instr;
 
