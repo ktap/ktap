@@ -1055,17 +1055,6 @@ static void ktap_init_state(ktap_state *ks)
 	ktap_callinfo *ci;
 	int i;
 
-	if (ks == G(ks)->mainthread) {
-		ks->stack = kp_malloc(ks, KTAP_STACK_SIZE);
-		if (!ks->stack) {
-			kp_error(ks, "unable alloc stack %d\n",
-					KTAP_STACK_SIZE);
-			return;
-		}
-	} else {
-		ks->stack = kp_percpu_data(KTAP_PERCPU_DATA_STACK);
-	}
-
 	ks->stacksize = BASIC_STACK_SIZE;
 
 	for (i = 0; i < BASIC_STACK_SIZE; i++)
@@ -1107,18 +1096,8 @@ static void free_all_ci(ktap_state *ks)
 
 void kp_exitthread(ktap_state *ks)
 {
-	ktap_gcobject *o = ks->localgc;
-	ktap_gcobject *next;
-
 	/* free local allocation objects, like annotate strings */
-	while (o) {
-		next = gch(o)->next;
-		kp_free(ks, o);
-		o = next;
-	}
-
-	if (unlikely(ks == G(ks)->mainthread))
-		kp_free(ks, ks->stack);
+	kp_free_gclist(ks, ks->gclist);
 }
 
 ktap_state *kp_newthread(ktap_state *mainthread)
@@ -1126,8 +1105,9 @@ ktap_state *kp_newthread(ktap_state *mainthread)
 	ktap_state *ks;
 
 	ks = kp_percpu_data(KTAP_PERCPU_DATA_STATE);
+	ks->stack = kp_percpu_data(KTAP_PERCPU_DATA_STACK);
 	G(ks) = G(mainthread);
-	ks->localgc = NULL;
+	ks->gclist = NULL;
 	ktap_init_state(ks);
 	return ks;
 }
@@ -1225,6 +1205,7 @@ void kp_final_exit(ktap_state *ks)
 	kp_transport_exit(ks);
 
 	kp_exitthread(ks);
+	kp_free(ks, ks->stack);
 	free_all_ci(ks);
 
 	free_kp_percpu_data();
@@ -1245,6 +1226,7 @@ ktap_state *kp_newstate(struct ktap_parm *parm, struct dentry *dir, char **argv)
 	if (!ks)
 		return NULL;
 
+	ks->stack = kp_malloc(ks, KTAP_STACK_SIZE);
 	G(ks) = (ktap_global_state *)(ks + 1);
 	G(ks)->mainthread = ks;
 	G(ks)->seed = 201236; /* todo: make more random in future */

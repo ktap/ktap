@@ -326,10 +326,7 @@ typedef struct ktap_state {
 	StkId stack_last;
 	StkId stack;
 	int stacksize;
-
 	ktap_gcobject *openupval;
-	ktap_gcobject *gclist;
-
 	ktap_callinfo baseci;
 
 	int debug;
@@ -337,7 +334,7 @@ typedef struct ktap_state {
 	int gcrunning;
 
 	/* list of temp collectable objects, free when thread exit */
-	ktap_gcobject *localgc;
+	ktap_gcobject *gclist;
 
 #ifdef __KERNEL__
 	struct ktap_event *current_event;

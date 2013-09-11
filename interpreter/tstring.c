@@ -229,7 +229,7 @@ ktap_string *kp_tstring_newlstr(ktap_state *ks, const char *str, size_t l)
 ktap_string *kp_tstring_newlstr_local(ktap_state *ks, const char *str, size_t l)
 {
 	return createstrobj(ks, str, l, KTAP_TLNGSTR, G(ks)->seed,
-			    &ks->localgc);
+			    &ks->gclist);
 }
 
 /*
@@ -243,7 +243,7 @@ ktap_string *kp_tstring_new(ktap_state *ks, const char *str)
 ktap_string *kp_tstring_new_local(ktap_state *ks, const char *str)
 {
 	return createstrobj(ks, str, strlen(str), KTAP_TLNGSTR, G(ks)->seed,
-			    &ks->localgc);
+			    &ks->gclist);
 }
 
 void kp_tstring_freeall(ktap_state *ks)
