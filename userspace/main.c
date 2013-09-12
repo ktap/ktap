@@ -237,7 +237,7 @@ static void dump_function(int level, ktap_proto *f)
 			break;
 		case KTAP_TSTRING:
 			printf("\tTSTRING: ");
-			printf("%s\n", getstr(f->k[i].val.gc));
+			printf("%s\n", svalue(&(f->k[i])));
 
 			break;
 		default:
@@ -592,4 +592,5 @@ int main(int argc, char **argv)
 	cleanup_event_resources();
 	return ret;
 }
+
 
