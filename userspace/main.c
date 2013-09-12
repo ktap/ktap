@@ -267,7 +267,7 @@ static void dump_function(int level, ktap_proto *f)
 	printf("sizep: %d\n", f->sizep);
 	for (i = 0; i < f->sizep; i++)
 		dump_function(level + 1, f->p[i]);
-	
+
 }
 
 static void usage(const char *msg)
