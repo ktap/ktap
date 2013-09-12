@@ -112,6 +112,17 @@ Examples
 		print("exit:", execname(), argevent)
 	}
 
+8) timer  
+
+	tick-1s {
+		printf("time fired on one cpu\n");
+	}
+
+	profile-5s {
+		printf("time fired on every cpu\n");
+	}
+
+
 Mailing list
 ------------
 ktap@freelists.org  
