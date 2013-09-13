@@ -842,7 +842,7 @@ static void table_histdump(ktap_state *ks, ktap_table *t, int shownums)
 	unsigned long __maybe_unused flags;
 	char dist_str[40];
 	int i, ratio, total = 0, count = 0, top_num, is_kernel_address = 0;
-	int size;
+	int size, num;
 
 	size = sizeof(*thr) * (t->sizearray + sizenode(t));
 	thr = kp_malloc(ks, size);
@@ -859,17 +859,24 @@ static void table_histdump(ktap_state *ks, ktap_table *t, int shownums)
 		if (isnil(v))
 			continue;
 
-		if (!ttisnumber(v) && !ttisaggracc(v))
+		if (ttisnumber(v))
+			num = nvalue(v);
+		else if (ttisaggracc(v))
+			num = kp_aggracc_read(aggraccvalue(v));
+		else {
+			kp_table_unlock(t);
 			goto error;
+		}
 
-		setnvalue(&thr[count++].key, i + 1);
-		total += nvalue(v);
+		setnvalue(&thr[count].key, i + 1);
+		setnvalue(&thr[count].val, num);
+		count++;
+		total += num;
 	}
 
 	for (i = 0; i < sizenode(t); i++) {
 		ktap_tnode *n = &t->node[i];
 		ktap_value *v = gval(n);
-		int num;
 
 		if (isnil(gkey(n)))
 			continue;
@@ -878,8 +885,10 @@ static void table_histdump(ktap_state *ks, ktap_table *t, int shownums)
 			num = nvalue(v);
 		else if (ttisaggracc(v))
 			num = kp_aggracc_read(aggraccvalue(v));
-		else
+		else {
+			kp_table_unlock(t);
 			goto error;
+		}
 
 		setobj(&thr[count].key, gkey(n));
 		setnvalue(&thr[count].val, num);
