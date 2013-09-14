@@ -1,6 +1,10 @@
 #!/usr/bin/env ktap
 
 #Demo for thread-local variable
+#
+#Note this kind of function time tracing already handled concurrent issue,
+#but not aware on the recursion problem, user need to aware this limitation,
+#so don't use this script to trace function which could be called recursive.
 
 self = {}
 count_max = 0
