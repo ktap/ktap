@@ -325,7 +325,7 @@ static int ktap_lib_probe_by_id(ktap_state *ks)
  again:
 	filter = NULL;
 
-	sep = strchr(start, ';');
+	sep = strchr(start, ',');
 	if (!sep)
 		ptr1 = strchr(start, '/');
 	else
@@ -344,7 +344,7 @@ static int ktap_lib_probe_by_id(ktap_state *ks)
 		}
 	}
 
-	for (ptr = start; *ptr != ';' && *ptr != '\0' && *ptr != '/'; ptr++) {
+	for (ptr = start; *ptr != ',' && *ptr != '\0' && *ptr != '/'; ptr++) {
 		char token[32] = {0};
 		int id;
 		int i = 0;

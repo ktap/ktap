@@ -479,7 +479,7 @@ static char *get_next_eventdef(char *str)
 {
 	char *separator;
 
-	separator = strchr(str, ';');
+	separator = strchr(str, ',');
 	if (!separator)
 		return str + strlen(str);
 
@@ -539,7 +539,7 @@ ktap_string *ktapc_parse_eventdef(ktap_string *eventdef)
 	str = next;
 
 	g_idstr = strcat(g_idstr, idstr);
-	g_idstr = strcat(g_idstr, ";");
+	g_idstr = strcat(g_idstr, ",");
 
 	if (*next != '\0')
 		goto parse_next_eventdef;
