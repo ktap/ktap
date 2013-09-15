@@ -127,6 +127,14 @@ static void free_argv(int argc, char **argv)
 	kfree(argv);
 }
 
+int gettimeofday_us(void)
+{
+	struct timeval tv;
+
+	do_gettimeofday(&tv);
+	return tv.tv_sec * USEC_PER_SEC + tv.tv_usec;
+}
+
 struct dentry *kp_dir_dentry;
 static atomic_t kp_is_running = ATOMIC_INIT(0);
 
@@ -137,6 +145,7 @@ static int ktap_main(struct file *file, struct ktap_parm *parm)
 	ktap_state *ks;
 	ktap_closure *cl;
 	char **argv;
+	int start_time, delta_time;
 	int ret;
 
 	if (atomic_inc_return(&kp_is_running) != 1) {
@@ -144,6 +153,8 @@ static int ktap_main(struct file *file, struct ktap_parm *parm)
 		pr_info("only one ktap thread allow to run\n");
 		return -EBUSY;
 	}
+
+	start_time = gettimeofday_us();
 
 	ret = load_trunk(parm, &buff);
 	if (ret) {
@@ -178,6 +189,9 @@ static int ktap_main(struct file *file, struct ktap_parm *parm)
 	if (cl) {
 		/* optimize bytecode before excuting */
 		kp_optimize_code(ks, 0, cl->l.p);
+
+		delta_time = gettimeofday_us() - start_time;
+		kp_verbose_printf(ks, "booting time: %d (us)\n", delta_time);
 		kp_call(ks, ks->top - 1, 0);
 	}
 

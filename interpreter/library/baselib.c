@@ -369,11 +369,7 @@ static int ktap_lib_delete(ktap_state *ks)
 
 static int ktap_lib_gettimeofday_us(ktap_state *ks)
 {
-	struct timeval tv;
-
-	do_gettimeofday(&tv);
-
-	setnvalue(ks->top, tv.tv_sec * USEC_PER_SEC + tv.tv_usec);
+	setnvalue(ks->top, gettimeofday_us());
 	incr_top(ks);
 
 	return 1;

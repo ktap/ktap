@@ -41,6 +41,7 @@ enum {
 
 #define KTAP_PERCPU_BUFFER_SIZE	(3 * PAGE_SIZE)
 
+int gettimeofday_us(void);
 ktap_state *kp_newstate(struct ktap_parm *parm, struct dentry *dir,
 			char **argv);
 void kp_exit(ktap_state *ks);
