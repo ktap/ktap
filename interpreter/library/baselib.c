@@ -424,6 +424,17 @@ static int ktap_lib_curr_task_info(ktap_state *ks)
 	return 1;
 }
 
+/*
+ * This built-in function mainly purpose scripts/schedule/schedtimes.kp
+ */
+static int ktap_lib_in_iowait(ktap_state *ks)
+{
+	setnvalue(ks->top, current->in_iowait);
+	incr_top(ks);
+
+	return 1;
+}
+
 static const ktap_Reg base_funcs[] = {
 	{"pairs", ktap_lib_pairs},
 //	{"type", ktap_type},
@@ -455,6 +466,7 @@ static const ktap_Reg base_funcs[] = {
 	{"delete", ktap_lib_delete},
 	{"gettimeofday_us", ktap_lib_gettimeofday_us},
 	{"curr_taskinfo", ktap_lib_curr_task_info},
+	{"in_iowait", ktap_lib_in_iowait},
 	{NULL}
 };
 

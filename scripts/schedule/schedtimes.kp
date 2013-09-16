@@ -16,10 +16,12 @@ DEAD = 64
 run_time = {}
 queued_time = {}
 sleep_time = {}
+io_wait_time = {}
 
 pid_state = {}
 pid_names = {}
 prev_timestamp = {}
+io_wait = {}
 
 trace sched:sched_switch {
 	local prev_comm = arg1
@@ -46,6 +48,9 @@ trace sched:sched_switch {
 	if (prev_state == DEAD) {
 		pid_state[prev_pid] = DEAD
 	} elseif (prev_state > 0) {
+		if (in_iowait() == 1) {
+			io_wait[prev_pid] = 1
+		}
 		pid_state[prev_pid] = SLEEPING
 	} elseif (prev_state == 0) {
 		pid_state[prev_pid] = QUEUED
@@ -72,7 +77,12 @@ trace sched:sched_wakeup, sched:sched_wakeup_new {
 		#do nothing
 	} elseif (pid_state[wakeup_pid] == SLEEPING) {
 		local durtion = t - prev_timestamp[wakeup_pid]
+
 		table_count(sleep_time, wakeup_pid, durtion)
+		if (io_wait[wakeup_pid] == 1) {
+			table_count(io_wait_time, wakeup_pid, durtion)
+			io_wait[wakeup_pid] = 0
+		}
 	} elseif (pid_state[wakeup_pid] == RUNNING) {
 		return
 	}
@@ -96,8 +106,8 @@ trace_end {
 		}
 	}
 
-	printf ("%16s: %6s %10s %10s %10s %10s\n\n",
-		"execname", "pid", "run(us)", "sleep(us)",
+	printf ("%16s: %6s %10s %10s %10s %10s %10s\n\n",
+		"execname", "pid", "run(us)", "sleep(us)", "io_wait(us)",
 		"queued(us)", "total(us)")
 
 	for (pid, time in pairs(run_time)) {
@@ -107,9 +117,9 @@ trace_end {
 		if (queued_time[pid] == nil) {
 			queue_time[pid] = 0
 		}
-		printf("%16s: %6d %10d %10d %10d %10d\n",
+		printf("%16s: %6d %10d %10d %10d %10d %10d\n",
 			pid_names[pid], pid, run_time[pid], sleep_time[pid],
-			queued_time[pid],
+			io_wait_time[pid], queued_time[pid],
 			run_time[pid] + sleep_time[pid] + queued_time[pid]);
 	}
 }
