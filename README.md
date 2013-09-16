@@ -6,10 +6,10 @@ A New Scripting Dynamic Tracing Tool For Linux
 KTAP is a new scripting dynamic tracing tool for Linux,
 it uses a scripting language and lets users trace the Linux kernel dynamically.
 KTAP is designed to give operational insights with interoperability
-that allow users to tune, troubleshoot and extend kernel and application.
+that allows users to tune, troubleshoot and extend kernel and application.
 It's similar with Linux Systemtap and Solaris Dtrace.
 
-KTAP have different design principles from Linux mainstream dynamic tracing
+KTAP has different design principles from Linux mainstream dynamic tracing
 language in that it's based on bytecode, so it doesn't depend upon GCC,
 doesn't require compiling kernel module for each script, safe to use in
 production environment, fulfilling the embedded ecosystem's tracing needs.
@@ -19,12 +19,12 @@ More information can be found at doc/ directory.
 
 Highlights
 ----------
-- simple but powerful script language
-- register based interpreter(heavy optimized) in Linux kernel
-- small and lightweight(6KLOC of interpreter)
+- simple but powerful scripting language
+- register based interpreter (heavily optimized) in Linux kernel
+- small and lightweight (6KLOC of interpreter)
 - not depend on gcc for each script running
 - easy to use in embedded environment without debugging info
-- support static tracepoint, k(ret)probe, u(ret)probe, function trace, timer, backtrace and more
+- support for static tracepoint, k(ret)probe, u(ret)probe, function trace, timer, backtrace and more
 - supported in x86, arm, ppc, mips
 - safety in sandbox
 
@@ -125,13 +125,13 @@ Examples
 Mailing list
 ------------
 ktap@freelists.org  
-You can subscribe KTAP mailing list at link(subscribe before posting):
+You can subscribe to KTAP mailing list at link (subscribe before posting):
 http://www.freelists.org/list/ktap
 
 
 Copyright and License
 ---------------------
-ktap is licensed under GPL v2
+KTAP is licensed under GPL v2
 
 Copyright (C) 2012-2013 The ktap Project Developers.
 All rights reserved.
@@ -146,7 +146,7 @@ You are encouraged to report bugs, provide feedback, send feature request,
 or hack on it.
 
 
-links
+Links
 -----
-Some presentations of ktap is available in doc/references.txt
+Some presentations of KTAP is available in doc/references.txt
 
