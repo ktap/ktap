@@ -19,18 +19,17 @@ More information can be found at doc/ directory.
 
 Highlights
 ----------
-
-- simple but powerful script language(forked by lua, proven to be fast)
+- simple but powerful script language
 - register based interpreter(heavy optimized) in Linux kernel
-- small and lightweight(5KLOC of interpreter)
-- safty in sandbox
-- easy to use in embedded environment even without debugging info
-- a pure scripting interface for Linux tracing subsystem
+- small and lightweight(6KLOC of interpreter)
+- not depend on gcc for each script running
+- easy to use in embedded environment without debugging info
 - support static tracepoint, k(ret)probe, u(ret)probe, function trace, timer, backtrace and more
+- supported in x86, arm, ppc, mips
+- safety in sandbox
 
 Building & Running
 ------------------
-
 1) Clone ktap from github  
 
 	[root@jovi]# git clone http://github.com/ktap/ktap.git
@@ -46,11 +45,11 @@ Building & Running
 
 4) Running ktap  
 
-	[root@jovi]# ./ktap scripts/syscalls.kp
+	[root@jovi]# ./ktap scripts/helloworld.kp
 
 
 Examples
--------------------------------------
+--------
 1) simplest one-liner command to enable all tracepoints  
 
 	ktap -e "trace *:* { print(argevent) }"
@@ -114,11 +113,11 @@ Examples
 
 8) timer  
 
-	tick-1s {
+	tick-1ms {
 		printf("time fired on one cpu\n");
 	}
 
-	profile-5s {
+	profile-2s {
 		printf("time fired on every cpu\n");
 	}
 
@@ -130,9 +129,14 @@ You can subscribe KTAP mailing list at link(subscribe before posting):
 http://www.freelists.org/list/ktap
 
 
-License
--------
-GPL v2
+Copyright and License
+---------------------
+ktap is licensed under GPL v2
+
+Copyright (C) 2012-2013 The ktap Project Developers.
+All rights reserved.
+
+Author: zhangwei(Jovi) <jovi.zhangwei@gmail.com>
 
 
 Contribution
@@ -140,11 +144,6 @@ Contribution
 KTAP is still under active development, so contributions are welcome.
 You are encouraged to report bugs, provide feedback, send feature request,
 or hack on it.
-
-
-Contacts
---------
-zhangwei(Jovi) <jovi.zhangwei@gmail.com>
 
 
 links
