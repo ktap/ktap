@@ -10,7 +10,7 @@ KTAP TRACING
  This is the basic tracing block for ktap, you need to use a specific EVENTDEF
  string, and own event function.
 
- EVENTDEF is compatiable with perf(see perf-list), with glob match, for example:
+ EVENTDEF is compatible with perf(see perf-list), with glob match, for example:
 
 	syscalls:*			trace all syscalls events
 	syscalls:sys_enter_*		trace all syscalls entry events
@@ -18,7 +18,7 @@ KTAP TRACING
 	sched:*				trace all sched related events
 	*:*				trace all tracepoints in system.
 
- All events is based on: /sys/kernel/debug/tracing/events/$SYS/$EVENT
+ All events are based on: /sys/kernel/debug/tracing/events/$SYS/$EVENT
 
 2). trace_end { action }
  This is based on kdebug.probe_end function.
@@ -32,7 +32,7 @@ KTAP TRACING
  event_ids is the id of all events, it's read from
 	/sys/kernel/debug/tracing/events/$SYS/$EVENT/id
 
- for multi-events tracing, the event_ids is concatation of all id, for example:
+ for multi-events tracing, the event_ids is concatenation of all id, for example:
  "2 3 4", seperated by blank space.
 
  The second argument in above examples is a function:
@@ -54,7 +54,7 @@ KTAP TRACING
 
 
 2). kdebug.probe_end (endfunc)
- This function is used for invoking a function when tracing end, it will wait unitl
+ This function is used for invoking a function when tracing end, it will wait until
  user press CTRL+C to stop tracing, then ktap will call endfunc function, user could
  show tracing results in that function, or do other things.
 

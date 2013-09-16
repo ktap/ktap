@@ -47,7 +47,7 @@ KTAP Standard Libraries
  return Linux kernel version string, like 3.9, etc.
 
 12) user_string (addr)
- Receive userspace address, read string from usersapce, return string.
+ Receive userspace address, read string from userspace, return string.
 
 13) histogram (t)
  Receive table, output table histogram to user.
