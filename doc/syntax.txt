@@ -26,10 +26,10 @@ Below is some differences between ktap and C.
  t[1] = "xxx"
  t["key"] = 10
  t["key"] = "value"
- for (k, v in pairs(t)) { body }   # loopping all emelents of table
+ for (k, v in pairs(t)) { body }   # looping all elements of table
 
 6) Pointer and Array
- ktap don't have array structure, also don't have any pointer opertation.
+ ktap don't have array structure, also don't have any pointer operation.
 
 7) Comments
   the comments of ktap is starting from '#', long comments doesn't support now.
@@ -43,7 +43,7 @@ Below is some differences between ktap and C.
  this is same as below in C:
  for (i = init; i < limit; i += step) { body }
 
- for (k, v in pairs(t)) { body }   # loopping all emelents of table
+ for (k, v in pairs(t)) { body }   # looping all elements of table
 
 Here is the complete syntax of ktap in extended BNF.
 (based on lua syntax: http://www.lua.org/manual/5.1/manual.html#5.1)
