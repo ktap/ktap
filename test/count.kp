@@ -9,14 +9,12 @@ function failed() {
 
 t = {}
 
-table_count(t, "key")
-
+t["key"] += 1
 if (t["key"] != 1) {
 	failed()
 }
 
-table_count(t, "key")
-
+t["key"] += 1
 if (t["key"] != 2) {
 	failed()
 }

@@ -619,6 +619,37 @@ void codegen_storevar(ktap_funcstate *fs, ktap_expdesc *var, ktap_expdesc *ex)
 	freeexp(fs, ex);
 }
 
+void codegen_storeincr(ktap_funcstate *fs, ktap_expdesc *var, ktap_expdesc *ex)
+{
+	switch (var->k) {
+#if 0 /*current not supported */
+	case VLOCAL: {
+		freeexp(fs, ex);
+		exp2reg(fs, ex, var->u.info);
+		return;
+	}
+	case VUPVAL: {
+		int e = codegen_exp2anyreg(fs, ex);
+		codegen_codeABC(fs, OP_SETUPVAL, e, var->u.info, 0);
+		break;
+	}
+#endif
+	case VINDEXED: {
+		OpCode op = (var->u.ind.vt == VLOCAL) ? OP_SETTABLE_INCR :
+				OP_SETTABUP_INCR;
+		int e = codegen_exp2RK(fs, ex);
+		codegen_codeABC(fs, op, var->u.ind.t, var->u.ind.idx, e);
+		break;
+	}
+	default:
+		ktap_assert(0);  /* invalid var kind to store */
+		break;
+	}
+
+	freeexp(fs, ex);
+}
+
+
 void codegen_self(ktap_funcstate *fs, ktap_expdesc *e, ktap_expdesc *key)
 {
 	int ereg;

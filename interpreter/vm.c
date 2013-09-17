@@ -198,6 +198,23 @@ static void settable(ktap_state *ks, const ktap_value *t, ktap_value *key,
 	}
 }
 
+static void settable_incr(ktap_state *ks, const ktap_value *t, ktap_value *key,
+			  StkId val)
+{
+	if (unlikely(!ttistable(t))) {
+		kp_error(ks, "use += operator for non-table\n");
+		return;
+	}
+
+	if (unlikely(!ttisnumber(val))) {
+		kp_error(ks, "use non-number to += operator\n");
+		return;
+	}
+
+	kp_table_atomic_inc(ks, hvalue(t), key, nvalue(val));
+}
+
+
 static void growstack(ktap_state *ks, int n)
 {
 	ktap_value *oldstack;
@@ -487,6 +504,12 @@ static void ktap_execute(ktap_state *ks)
 		base = ci->u.l.base;
 		break;
 		}
+	case OP_SETTABUP_INCR: {
+		int a = GETARG_A(instr);
+		settable_incr(ks, cl->upvals[a]->v, RKB(instr), RKC(instr));
+		base = ci->u.l.base;
+		break;
+		}
 	case OP_SETUPVAL: {
 		ktap_upval *uv = cl->upvals[GETARG_B(instr)];
 		setobj(uv->v, ra);
@@ -494,6 +517,10 @@ static void ktap_execute(ktap_state *ks)
 		}
 	case OP_SETTABLE:
 		settable(ks, ra, RKB(instr), RKC(instr));
+		base = ci->u.l.base;
+		break;
+	case OP_SETTABLE_INCR:
+		settable_incr(ks, ra, RKB(instr), RKC(instr));
 		base = ci->u.l.base;
 		break;
 	case OP_NEWTABLE: {

@@ -3,7 +3,7 @@
 kmalloc_stack = {}
 
 trace kmem:kmalloc {
-	table_count(kmalloc_stack, backtrace())
+	kmalloc_stack[backtrace()] += 1
 }
 
 tick-60s {

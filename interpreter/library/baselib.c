@@ -265,26 +265,6 @@ static int ktap_lib_user_string(ktap_state *ks)
 	return 1;
 }
 
-static int ktap_lib_table_count(ktap_state *ks)
-{
-	ktap_table *tbl;
-	ktap_value *k = kp_arg(ks, 2);
-	int n;
-
-	kp_arg_check(ks, 1, KTAP_TTABLE);
-
-	tbl = hvalue(kp_arg(ks, 1));
-
-	if (kp_arg_nr(ks) > 2)
-		n = nvalue(kp_arg(ks, 3));
-	else
-		n = 1;
-
-	kp_table_atomic_inc(ks, tbl, k, n);
-
-	return 0;
-}
-
 static int ktap_lib_histogram(ktap_state *ks)
 {
 	ktap_value *v = kp_arg(ks, 1);
@@ -454,7 +434,6 @@ static const ktap_Reg base_funcs[] = {
 	{"arch", ktap_lib_arch},
 	{"kernel_v", ktap_lib_kernel_v},
 	{"user_string", ktap_lib_user_string},
-	{"table_count", ktap_lib_table_count},
 	{"histogram", ktap_lib_histogram},
 	{"aggr_table", ktap_lib_aggr_table},
 	{"count", ktap_lib_aggr_count},

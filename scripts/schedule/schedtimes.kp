@@ -34,12 +34,12 @@ trace sched:sched_switch {
 	if (pid_state[prev_pid] == nil) {
 		#do nothing
 	} elseif (pid_state[prev_pid] == RUNNING) {
-		table_count(run_time, prev_pid, t - prev_timestamp[prev_pid])
+		run_time[prev_pid] += t - prev_timestamp[prev_pid]
 	} elseif (pid_state[prev_pid] == QUEUED) {
 		#found this:
 		#sched_wakeup comm=foo
 		#sched_switch prev_comm=foo
-		table_count(run_time, prev_pid, t - prev_timestamp[prev_pid])
+		run_time[prev_pid] += t - prev_timestamp[prev_pid]
 	}
 
 	pid_names[prev_pid] = prev_comm
@@ -59,7 +59,7 @@ trace sched:sched_switch {
 	if (pid_state[next_pid] == nil) {
 		pid_state[next_pid] = RUNNING
 	} elseif (pid_state[next_pid] == QUEUED) {
-		table_count(queued_time, next_pid, t - prev_timestamp[next_pid])
+		queued_time[next_pid] += t - prev_timestamp[next_pid]
 		pid_state[next_pid] = RUNNING
 	}
 
@@ -78,9 +78,9 @@ trace sched:sched_wakeup, sched:sched_wakeup_new {
 	} elseif (pid_state[wakeup_pid] == SLEEPING) {
 		local durtion = t - prev_timestamp[wakeup_pid]
 
-		table_count(sleep_time, wakeup_pid, durtion)
+		sleep_time[wakeup_pid] += durtion
 		if (io_wait[wakeup_pid] == 1) {
-			table_count(io_wait_time, wakeup_pid, durtion)
+			io_wait_time[wakeup_pid] += durtion
 			io_wait[wakeup_pid] = 0
 		}
 	} elseif (pid_state[wakeup_pid] == RUNNING) {
@@ -98,11 +98,11 @@ trace_end {
 	for (pid, state in pairs(pid_state)) {
 		local durtion = t - prev_timestamp[pid]
 		if (state == SLEEPING) {
-			table_count(sleep_time, pid, durtion)
+			sleep_time[pid] += durtion
 		} elseif (state == QUEUED) {
-			table_count(queued_time, pid, durtion)
+			queued_time[pid] += durtion
 		} elseif (state == RUNNING) {
-			table_count(run_time, pid, durtion)
+			run_time[pid] += durtion
 		}
 	}
 

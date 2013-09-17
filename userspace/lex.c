@@ -42,7 +42,7 @@ static const char *const ktap_tokens [] = {
 	"end", "false", "for", "function", "goto", "if",
 	"in", "local", "nil", "not", "or", "repeat",
 	"return", "then", "true", "until", "while",
-	"..", "...", "==", ">=", "<=", "!=", "::", "<eof>",
+	"..", "...", "==", ">=", "<=", "!=", "+=", "::", "<eof>",
 	"<number>", "<name>", "<string>"
 };
 
@@ -453,6 +453,15 @@ static int llex(ktap_lexstate *ls, ktap_seminfo *seminfo)
 				return '[';
 			else
 				lexerror(ls, "invalid long string delimiter", TK_STRING);
+		}
+		case '+': {
+			next(ls);
+			if (ls->current != '=')
+				return '+';
+			else {
+				next(ls);
+				return TK_INCR;
+			}
 		}
 		case '=': {
 			next(ls);

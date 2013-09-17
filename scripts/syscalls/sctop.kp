@@ -4,7 +4,7 @@
 s = {}
 
 trace syscalls:sys_enter_* {
-	table_count(s, argname)
+	s[argname] += 1
 }
 
 tick-5s {

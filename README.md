@@ -77,11 +77,11 @@ Examples
 	hist = {}
 
 	trace syscalls:sys_enter_* {
-		    table_count(hist, argname)
+		hist[argname] += 1
 	}
 
 	trace_end {
-		    histogram(hist)
+		histogram(hist)
 	}
 
 6) kprobe tracing  

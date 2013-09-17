@@ -49,13 +49,10 @@ KTAP Standard Libraries
 12) user_string (addr)
  Receive userspace address, read string from usersapce, return string.
 
-13) table_count (t, key)
- Receive table and key, atomic add into table value map with key.
-
-14) histogram (t)
+13) histogram (t)
  Receive table, output table histogram to user.
 
-15) curr_task_info (offset, fetch_bytes)
+14) curr_task_info (offset, fetch_bytes)
  fetch value in field offset of task_struct structure, argument fetch_bytes
  could be 4 or 8, if fetch_bytes is not given, default is 4.
 

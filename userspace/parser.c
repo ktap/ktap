@@ -104,13 +104,13 @@ static int testnext(ktap_lexstate *ls, int c)
 		return 0;
 }
 
-static void check (ktap_lexstate *ls, int c)
+static void check(ktap_lexstate *ls, int c)
 {
 	if (ls->t.token != c)
 		error_expected(ls, c);
 }
 
-static void checknext (ktap_lexstate *ls, int c)
+static void checknext(ktap_lexstate *ls, int c)
 {
 	check(ls, c);
 	lex_next(ls);
@@ -1213,21 +1213,35 @@ static void assignment(ktap_lexstate *ls, struct LHS_assign *lh, int nvars)
 		checklimit(ls->fs, nvars + ls->nCcalls, KTAP_MAXCCALLS,
 				"C levels");
 		assignment(ls, &nv, nvars+1);
-	} else {  /* assignment -> `=' explist */
+	} else if (testnext(ls, '=')) {  /* assignment -> '=' explist */
 		int nexps;
 
-		checknext(ls, '=');
 		nexps = explist(ls, &e);
 		if (nexps != nvars) {
 			adjust_assign(ls, nvars, nexps, &e);
+			/* remove extra values */
 			if (nexps > nvars)
-				ls->fs->freereg -= nexps - nvars;  /* remove extra values */
+				ls->fs->freereg -= nexps - nvars;
 		} else {
-			codegen_setoneret(ls->fs, &e);  /* close last expression */
+			/* close last expression */
+			codegen_setoneret(ls->fs, &e);
 			codegen_storevar(ls->fs, &lh->v, &e);
 			return;  /* avoid default */
 		}
+	} else if (testnext(ls, TK_INCR)) { /* assignment -> '+=' explist */
+		int nexps;
+
+		nexps = explist(ls, &e);
+		if (nexps != nvars) {
+			lex_syntaxerror(ls, "don't allow multi-assign for +=");
+		} else {
+			/* close last expression */
+			codegen_setoneret(ls->fs, &e);
+			codegen_storeincr(ls->fs, &lh->v, &e);
+			return;  /* avoid default */
+		}
 	}
+
 	init_exp(&e, VNONRELOC, ls->fs->freereg-1);  /* default assignment */
 	codegen_storevar(ls->fs, &lh->v, &e);
 }
@@ -1587,7 +1601,9 @@ static void exprstat(ktap_lexstate *ls)
 	struct LHS_assign v;
 
 	suffixedexp(ls, &v.v);
-	if (ls->t.token == '=' || ls->t.token == ',') { /* stat -> assignment ? */
+	/* stat -> assignment ? */
+	if (ls->t.token == '=' || ls->t.token == ',' ||
+	    ls->t.token == TK_INCR) {
 		v.prev = NULL;
 		assignment(ls, &v, 1);
 	} else {  /* stat -> func */

@@ -85,8 +85,8 @@ enum RESERVED {
 	TK_GOTO, TK_IF, TK_IN, TK_LOCAL, TK_NIL, TK_NOT, TK_OR, TK_REPEAT,
 	TK_RETURN, TK_THEN, TK_TRUE, TK_UNTIL, TK_WHILE,
 	/* other terminal symbols */
-	TK_CONCAT, TK_DOTS, TK_EQ, TK_GE, TK_LE, TK_NE, TK_DBCOLON, TK_EOS,
-	TK_NUMBER, TK_NAME, TK_STRING
+	TK_CONCAT, TK_DOTS, TK_EQ, TK_GE, TK_LE, TK_NE, TK_INCR, TK_DBCOLON,
+	TK_EOS, TK_NUMBER, TK_NAME, TK_STRING
 };
 
 /* number of reserved words */
@@ -353,6 +353,7 @@ void codegen_infix(ktap_funcstate *fs, BinOpr op, ktap_expdesc *v);
 void codegen_posfix(ktap_funcstate *fs, BinOpr op, ktap_expdesc *e1, ktap_expdesc *e2, int line);
 void codegen_setoneret(ktap_funcstate *fs, ktap_expdesc *e);
 void codegen_storevar(ktap_funcstate *fs, ktap_expdesc *var, ktap_expdesc *ex);
+void codegen_storeincr(ktap_funcstate *fs, ktap_expdesc *var, ktap_expdesc *ex);
 void codegen_goiftrue(ktap_funcstate *fs, ktap_expdesc *e);
 int codegen_getlabel(ktap_funcstate *fs);
 int codegen_codek(ktap_funcstate *fs, int reg, int k);
