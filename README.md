@@ -66,14 +66,14 @@ Examples
 
 4) simple syscall tracing  
 
-	#scripts/syscalls.kp
+	#scripts/syscalls/syscalls.kp
 	trace syscalls:* {
 		print(cpu(), pid(), execname(), argevent)
 	}
 
 5) syscall tracing in histogram style  
 
-	#scripts/syscalls_histogram.kp
+	#scripts/syscalls/syscalls_count.kp
 	hist = {}
 
 	trace syscalls:sys_enter_* {
@@ -86,7 +86,7 @@ Examples
 
 6) kprobe tracing  
 
-	#scripts/kprobes-do-sys-open.kp
+	#scripts/io/kprobes-do-sys-open.kp
 	trace probe:do_sys_open dfd=%di fname=%dx flags=%cx mode=+4($stack) {
 		print("entry:", execname(), argevent)
 	}
@@ -98,7 +98,7 @@ Examples
 
 7) uprobe tracing  
 
-	#scripts/uprobes-malloc.kp
+	#scripts/userspace/uprobes-malloc.kp
 	#do not use 0x000773c0 in your system,
 	#you need to calculate libc malloc symbol offset in your own system.
 	#symbol resolve will support in future
