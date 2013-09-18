@@ -133,10 +133,8 @@ Copyright and License
 ---------------------
 KTAP is licensed under GPL v2
 
-Copyright (C) 2012-2013 The ktap Project Developers.
-All rights reserved.
-
-Author: zhangwei(Jovi) <jovi.zhangwei@gmail.com>
+Copyright (C) zhangwei(Jovi) <jovi.zhangwei@gmail.com>. All rights reserved.  
+Copyright (C) 2013 The ktap Project Developers.
 
 
 Contribution

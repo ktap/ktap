@@ -1,7 +1,8 @@
 /*
  * object.c - ktap object generic operation
  *
- * Copyright 2013 The ktap Project Developers.
+ * Copyright (C) 2012-2013 zhangwei(Jovi) <jovi.zhangwei@gmail.com>
+ * Copyright (C) 2013 The ktap Project Developers
  * See the COPYRIGHT file at the top-level directory of this distribution.
  *
  * The part of code is copied from lua initially in this file.

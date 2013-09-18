@@ -1,9 +1,8 @@
 /*
  * transport.c - ktap transport functionality
  *
- * Code is based on ftrace's code mostly.
- *
- * Copyright 2013 The ktap Project Developers.
+ * Copyright (C) 2012-2013 zhangwei(Jovi) <jovi.zhangwei@gmail.com>
+ * Copyright (C) 2013 The ktap Project Developers
  * See the COPYRIGHT file at the top-level directory of this distribution.
  *
  * This program is free software; you can redistribute it and/or modify it

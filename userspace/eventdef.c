@@ -1,7 +1,8 @@
 /*
  * eventdef.c - ktap eventdef parser
  *
- * Copyright 2013 The ktap Project Developers.
+ * Copyright (C) 2012-2013 zhangwei(Jovi) <jovi.zhangwei@gmail.com>
+ * Copyright (C) 2013 The ktap Project Developers
  * See the COPYRIGHT file at the top-level directory of this distribution.
  *
  * tracepoint parse code is based on perf(linux/tools/perf/util/parse-events.c)
