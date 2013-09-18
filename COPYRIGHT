@@ -1,11 +1,11 @@
 
-The KTAP Project is copyright 2013, The KTAP Project
-Developers (given in the file AUTHORS.txt).
+Copyright (C) 2012-2013, zhangwei(Jovi) <jovi.zhangwei@gmail.com>.
+All rights reserved.
 
 Licensed under the GPL License, Version 2.0
 
 
-* Some KTAP code is based on lua programming language initially,
+* Some ktap code is based on lua programming language initially,
   so carry lua own copyright notices and license terms:
   (lua's MIT license is compatible with GPL)
 

@@ -1,16 +1,18 @@
 /*
  * strfmt.c - printf implementation
  *
- * Copyright 2013 The ktap Project Developers.
+ * This file is part of ktap by zhangwei(Jovi).
+ *
+ * Copyright (C) 2012-2013 zhangwei(Jovi) <jovi.zhangwei@gmail.com>.
  * See the COPYRIGHT file at the top-level directory of this distribution.
  *
  * The part of code is copied from lua initially in this file.
  *
- * This program is free software; you can redistribute it and/or modify it
+ * ktap is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
  * version 2, as published by the Free Software Foundation.
  *
- * This program is distributed in the hope it will be useful, but WITHOUT
+ * ktap is distributed in the hope it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
  * more details.
