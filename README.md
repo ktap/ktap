@@ -1,150 +1,143 @@
-ktap
-====
+# ktap
 
-A New Scripting Dynamic Tracing Tool For Linux
+A New Scripting Dynamic Tracing Tool For Linux  
+[www.ktap.org][homepage]
 
-KTAP is a new scripting dynamic tracing tool for Linux,
+ktap is a new scripting dynamic tracing tool for Linux,
 it uses a scripting language and lets users trace the Linux kernel dynamically.
-KTAP is designed to give operational insights with interoperability
+ktap is designed to give operational insights with interoperability
 that allows users to tune, troubleshoot and extend kernel and application.
 It's similar with Linux Systemtap and Solaris Dtrace.
 
-KTAP has different design principles from Linux mainstream dynamic tracing
+ktap have different design principles from Linux mainstream dynamic tracing
 language in that it's based on bytecode, so it doesn't depend upon GCC,
 doesn't require compiling kernel module for each script, safe to use in
 production environment, fulfilling the embedded ecosystem's tracing needs.
 
-More information can be found at doc/ directory.
+More information can be found at [ktap homepage][homepage].
+
+[homepage]: http://www.ktap.org
+
+## Highlights
+
+  * simple but powerful scripting language
+  * register based interpreter (heavily optimized) in Linux kernel
+  * small and lightweight (6KLOC of interpreter)
+  * not depend on gcc for each script running
+  * easy to use in embedded environment without debugging info
+  * support for tracepoint, kprobe, uprobe, function trace, timer, and more
+  * supported in x86, arm, ppc, mips
+  * safety in sandbox
+
+## Building & Running
+
+1. Clone ktap from github
+
+        $ git clone http://github.com/ktap/ktap.git
+
+2. Compiling ktap
+
+        $ cd ktap
+        $ make       #generate ktapvm kernel module and ktap binary
+
+3. Load ktapvm kernel module(make sure debugfs mounted)
+
+        $ make load  #need to be root or have sudo access
+
+4. Running ktap
+
+        $ ./ktap scripts/helloworld.kp
 
 
-Highlights
-----------
-- simple but powerful scripting language
-- register based interpreter (heavily optimized) in Linux kernel
-- small and lightweight (6KLOC of interpreter)
-- not depend on gcc for each script running
-- easy to use in embedded environment without debugging info
-- support for static tracepoint, k(ret)probe, u(ret)probe, function trace, timer, backtrace and more
-- supported in x86, arm, ppc, mips
-- safety in sandbox
+## Examples
 
-Building & Running
-------------------
-1) Clone ktap from github  
+1. simplest one-liner command to enable all tracepoints
 
-	[root@jovi]# git clone http://github.com/ktap/ktap.git
+        ktap -e "trace *:* { print(argevent) }"
 
-2) Compiling ktap  
+2. syscall tracing on target process
 
-	[root@jovi]# cd ktap
-	[root@jovi]# make       #generate ktapvm kernel module and ktap binary
+        ktap -e "trace syscalls:* { print(argevent) }" -- ls
 
-3) Load ktapvm kernel module(make sure debugfs mounted)  
+3. function tracing
 
-	[root@jovi]# make load  #need to be root or have sudo access
+        ktap -e "trace ftrace:function { print(argevent) }"
 
-4) Running ktap  
+        ktap -e "trace ftrace:function /ip==mutex*/ { print(argevent) }"
 
-	[root@jovi]# ./ktap scripts/helloworld.kp
+4. simple syscall tracing
 
+        trace syscalls:* {
+                print(cpu(), pid(), execname(), argevent)
+        }
 
-Examples
---------
-1) simplest one-liner command to enable all tracepoints  
+5. syscall tracing in histogram style
 
-	ktap -e "trace *:* { print(argevent) }"
+        s = {}
 
-2) syscall tracing on target process  
+        trace syscalls:sys_enter_* {
+                s[argname] += 1
+        }
 
-	ktap -e "trace syscalls:* { print(argevent) }" -- ls
+        trace_end {
+                histogram(s)
+        }
 
-3) function tracing  
+6. kprobe tracing
 
-	ktap -e "trace ftrace:function { print(argevent) }"
+        trace probe:do_sys_open dfd=%di fname=%dx flags=%cx mode=+4($stack) {
+                print("entry:", execname(), argevent)
+        }
 
-	ktap -e "trace ftrace:function /ip==mutex*/ { print(argevent) }"
+        trace probe:do_sys_open%return fd=$retval {
+                print("exit:", execname(), argevent)
+        }
 
-4) simple syscall tracing  
+7. uprobe tracing
 
-	#scripts/syscalls/syscalls.kp
-	trace syscalls:* {
-		print(cpu(), pid(), execname(), argevent)
-	}
+        trace probe:/lib/libc.so.6:0x000773c0 {
+                print("entry:", execname(), argevent)
+        }
 
-5) syscall tracing in histogram style  
+        trace probe:/lib/libc.so.6:0x000773c0%return {
+                print("exit:", execname(), argevent)
+        }
 
-	#scripts/syscalls/syscalls_count.kp
-	hist = {}
+8. timer
 
-	trace syscalls:sys_enter_* {
-		hist[argname] += 1
-	}
+        tick-1ms {
+                printf("time fired on one cpu\n");
+        }
 
-	trace_end {
-		histogram(hist)
-	}
+        profile-2s {
+                printf("time fired on every cpu\n");
+        }
 
-6) kprobe tracing  
+More sample scripts can be found at scripts/ directory.
 
-	#scripts/io/kprobes-do-sys-open.kp
-	trace probe:do_sys_open dfd=%di fname=%dx flags=%cx mode=+4($stack) {
-		print("entry:", execname(), argevent)
-	}
+## Mailing list
 
-	trace probe:do_sys_open%return fd=$retval {
-		print("exit:", execname(), argevent)
-	}
-
-
-7) uprobe tracing  
-
-	#scripts/userspace/uprobes-malloc.kp
-	#do not use 0x000773c0 in your system,
-	#you need to calculate libc malloc symbol offset in your own system.
-	#symbol resolve will support in future
-
-	trace probe:/lib/libc.so.6:0x000773c0 {
-		print("entry:", execname(), argevent)
-	}
-
-	trace probe:/lib/libc.so.6:0x000773c0%return {
-		print("exit:", execname(), argevent)
-	}
-
-8) timer  
-
-	tick-1ms {
-		printf("time fired on one cpu\n");
-	}
-
-	profile-2s {
-		printf("time fired on every cpu\n");
-	}
-
-
-Mailing list
-------------
 ktap@freelists.org  
-You can subscribe to KTAP mailing list at link (subscribe before posting):
+You can subscribe to ktap mailing list at link (subscribe before posting):
 http://www.freelists.org/list/ktap
 
 
-Copyright and License
----------------------
-KTAP is licensed under GPL v2
+## Copyright and License
+
+ktap is licensed under GPL v2
 
 Copyright (C) 2012-2013, zhangwei(Jovi) <jovi.zhangwei@gmail.com>.
 All rights reserved.  
 
 
-Contribution
-------------
-KTAP is still under active development, so contributions are welcome.
+## Contribution
+
+ktap is still under active development, so contributions are welcome.
 You are encouraged to report bugs, provide feedback, send feature request,
 or hack on it.
 
 
-Links
------
-Some presentations of KTAP is available in doc/references.txt
+## Links
+
+Some presentations of ktap is available in doc/references.txt
 
