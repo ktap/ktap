@@ -98,9 +98,8 @@ clean:
 
 
 docs:
-	cd doc
 	pandoc --standalone --toc --section-divs --number-sections \
-		--from=markdown --to=html -css=ktap-doc.css \
+		--from=markdown --to=html --css=doc.css \
 		--include-before-body=doc/version_info.html \
 		--output=doc/tutorial.html doc/tutorial.md
 
