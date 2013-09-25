@@ -137,7 +137,7 @@ You are encouraged to report bugs, provide feedback, send feature request,
 or hack on it.
 
 
-## Links
+## More info
 
-Some presentations of ktap is available in doc/references.txt
+More info can be found at doc/tutorial.md
 

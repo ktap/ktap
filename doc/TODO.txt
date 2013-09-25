@@ -1,9 +1,6 @@
-                        Todo list of ktap project
+# Todo list of ktap project
 
-
-
-Planed
-------
+## Planed
 
 - ktap Aggregations(based on associative array)
 - rewrite timer interface
@@ -42,8 +39,8 @@ boost performance
 - ubacktrace()
 
 
-Completed
----------
+## Completed
+
 - backtrace() and print_stack()
 - flame graph (stack profiling)
 - support redirect output to file, ktap -o file
