@@ -141,8 +141,7 @@ int kp_strfmt(ktap_state *ks, struct trace_seq *seq)
 			}
 			case 'p': {
 				char str[KSYM_SYMBOL_LEN];
-				sprint_symbol_no_offset(str,
-						nvalue(kp_arg(ks, arg)));
+				SPRINT_SYMBOL(str, nvalue(kp_arg(ks, arg)));
 				trace_seq_puts(seq, str);
 				break;
 			}
