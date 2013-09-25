@@ -96,6 +96,14 @@ clean:
 	$(MAKE) -C $(KERNEL_SRC) M=$(PWD) clean
 	$(RM) ktap
 
+
+docs:
+	cd doc
+	pandoc --standalone --toc --section-divs --number-sections \
+		--from=markdown --to=html -css=ktap-doc.css \
+		--include-before-body=doc/version_info.html \
+		--output=doc/tutorial.html doc/tutorial.md
+
 PHONY += FORCE
 FORCE:
 
