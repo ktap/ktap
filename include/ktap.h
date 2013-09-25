@@ -4,6 +4,7 @@
 #include "ktap_types.h"
 #include "ktap_opcodes.h"
 
+#include <linux/version.h>
 #include <linux/hardirq.h>
 #include <linux/perf_event.h>
 #include <linux/trace_seq.h>
@@ -156,5 +157,12 @@ static inline void set_next_as_exit(ktap_state *ks)
 			return -1;				\
 		}						\
 	} while (0)
+
+
+#if LINUX_VERSION_CODE > KERNEL_VERSION(3, 5, 0)
+#define SPRINT_SYMBOL	sprint_symbol_no_offset
+#else
+#define SPRINT_SYMBOL	sprint_symbol
+#endif
 
 #endif /* __KTAP_H__ */

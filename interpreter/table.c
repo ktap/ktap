@@ -27,7 +27,6 @@
 #include <linux/spinlock.h>
 #include <linux/kallsyms.h>
 #include <linux/sort.h>
-#include <linux/version.h>
 #else
 #include "../include/ktap_types.h"
 
@@ -828,12 +827,6 @@ static int hist_record_cmp(const void *r1, const void *r2)
 	} else
 		return -1;
 }
-
-#if LINUX_VERSION_CODE > KERNEL_VERSION(3, 5, 0)
-#define SPRINT_SYMBOL	sprint_symbol_no_offset
-#else
-#define SPRINT_SYMBOL	sprint_symbol
-#endif
 
 static int kp_aggracc_read(ktap_aggraccval *acc);
 

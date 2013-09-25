@@ -162,7 +162,7 @@ static void kp_btrace_dump(ktap_state *ks, ktap_btrace *bt)
 		if (p == ULONG_MAX)
 			break;
 
-		sprint_symbol_no_offset(str, p);
+		SPRINT_SYMBOL(str, p);
 		kp_printf(ks, "%s\n", str);
 	}
 }
