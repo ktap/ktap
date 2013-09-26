@@ -117,6 +117,7 @@ static int add_event(char *evtid_path)
 		 * some tracepoint doesn't have id file, like ftrace,
 		 * return success in here, and don't print error.
 		 */
+		verbose_printf("warning: cannot open file %s\n", evtid_path);
 		return 0;
 	}
 
