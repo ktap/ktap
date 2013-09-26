@@ -45,7 +45,7 @@ Version 0.2 (July 31 2013)
    * big code cleanups
    * fixed a lot of bugs, more stable than v0.1
 
-Version 0.1 (May 2013)
+Version 0.1 (May 21 2013)
 ----------------------
 
     https://lwn.net/Articles/551253/
