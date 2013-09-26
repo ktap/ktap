@@ -30,11 +30,11 @@ Highlights features:
 # Getting started
 
 Requirements
-- Linux 3.1 or later(Need some kernel patches for kernel earlier than 3.1)
-- CONFIG_EVENT_TRACING enabled
-- CONFIG_PERF_EVENTS enabled
-- CONFIG_DEBUG_FS enabled
-  (make sure debugfs mounted before insmod ktapvm
+* Linux 3.1 or later(Need some kernel patches for kernel earlier than 3.1)
+* CONFIG_EVENT_TRACING enabled
+* CONFIG_PERF_EVENTS enabled
+* CONFIG_DEBUG_FS enabled  
+  (make sure debugfs mounted before insmod ktapvm  
    mount debugfs: mount -t debugfs none /sys/kernel/debug/)
 
 Note that those configuration is always enabled in Linux distribution,
@@ -69,7 +69,7 @@ like REHL, Fedora, Ubuntu, etc.
 
    Associative array
 
-## Built-in functions
+## Built in functions
 
 ## Librarys
 
@@ -77,21 +77,21 @@ like REHL, Fedora, Ubuntu, etc.
 
 # Linux tracing basics
 
-   tracepoints, probe, timer
-   filters
-   above explaintion
+   tracepoints, probe, timer  
+   filters  
+   above explaintion  
    Ring buffer
 
 # Tracing semantics in ktap
 
-   architecture overview picture reference(pnp format)
-   Built-in trace variables
-   one-liners
+   architecture overview picture reference(pnp format)  
+   Built-in trace variables  
+   one-liners  
    simple event tracing
 
 # Advanced tracing pattern
-   Aggregation/Histogram
-   thread local
+   Aggregation/Histogram  
+   thread local  
    flame graph
 
 # Compare with Systemtap
@@ -103,24 +103,24 @@ like REHL, Fedora, Ubuntu, etc.
 This file includes some references of Linux tracing(not only for ktap),
 you will get to know helpful knowledge about tracing after read these links.
 
-Linux Performance Analysis and Tools
-By: Brendan Gregg
+Linux Performance Analysis and Tools  
+By: Brendan Gregg  
 http://www.brendangregg.com/Slides/SCaLE_Linux_Performance2013.pdf
 
-Good blog about system performance and tracing tool
-By: Brendan Gregg
+Good blog about system performance and tracing tool  
+By: Brendan Gregg  
 http://dtrace.org/blogs/
 
-Ktap -- yet another kernel tracer
-By: Jonathan Corbet
+Ktap -- yet another kernel tracer  
+By: Jonathan Corbet  
 http://lwn.net/Articles/551314/
 
-ktap: A New Scripting Dynamic Tracing Tool For Linux
-By: zhangwei(Jovi)
+ktap: A New Scripting Dynamic Tracing Tool For Linux  
+By: zhangwei(Jovi)  
 http://events.linuxfoundation.org/sites/events/files/lcjpcojp13_zhangwei.pdf
 
-Dtrace User Guide
-By: Sun Microsystems
+Dtrace User Guide  
+By: Sun Microsystems  
 http://docs.huihoo.com/opensolaris/dtrace-user-guide/html/index.html
 
 # History
