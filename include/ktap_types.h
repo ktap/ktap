@@ -15,17 +15,17 @@ typedef char u8;
 #include <string.h>
 #endif
 
-struct ktap_parm {
-	char *trunk;
+typedef struct ktap_parm {
+	char *trunk; /* __user */
 	int trunk_len;
 	int argc;
-	char **argv;
+	char **argv; /* __user */
 	int verbose;
 	int trace_pid;
 	int workload;
 	int trace_cpu;
 	int print_timestamp;
-};
+} ktap_parm;
 
 /*
  * Ioctls that can be done on a ktap fd:
@@ -54,8 +54,8 @@ struct ktap_parm {
 #define KTAPC_TAIL      "\x19\x93\r\n\x1a\n"
 
 /* size in bytes of header of binary files */
-#define KTAPC_HEADERSIZE	(sizeof(KTAP_SIGNATURE) - sizeof(char) + 2 + 6 + \
-				 sizeof(KTAPC_TAIL) - sizeof(char))
+#define KTAPC_HEADERSIZE	(sizeof(KTAP_SIGNATURE) - sizeof(char) + 2 + \
+				 6 + sizeof(KTAPC_TAIL) - sizeof(char))
 
 typedef int ktap_instruction;
 
@@ -294,14 +294,12 @@ typedef struct ktap_global_state {
 
 	struct ktap_state *mainthread;
 #ifdef __KERNEL__
+	ktap_parm *parm;
 	pid_t trace_pid;
 	struct task_struct *trace_task;
-	int workload;
 	cpumask_var_t cpumask;
-	int print_timestamp;
 	struct ring_buffer *buffer;
 	struct dentry *trace_pipe_dentry;
-	int verbose;
 	int nr_builtin_cfunction;
 	ktap_value *cfunction_tbl;
 	struct task_struct *task;

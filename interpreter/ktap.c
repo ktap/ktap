@@ -71,64 +71,6 @@ static int load_trunk(struct ktap_parm *parm, unsigned long **buff)
 	return 0;
 }
 
-static char **copy_argv_from_user(struct ktap_parm *parm)
-{
-	char **argv;
-	int i, j;
-	int ret;
-
-	if (parm->argc > 1024)
-		return ERR_PTR(-EINVAL);
-
-	argv = kzalloc(parm->argc * sizeof(char *), GFP_KERNEL);
-	if (!argv)
-		return ERR_PTR(-ENOMEM);
-
-	ret = copy_from_user(argv, (void __user *)parm->argv,
-			     parm->argc * sizeof(char *));
-	if (ret < 0) {
-		kfree(argv);
-		return ERR_PTR(-EFAULT);
-	}
-
-	for (i = 0; i < parm->argc; i++) {
-		char __user *ustr = argv[i];
-		char * kstr;
-		int len;
-
-		len = strlen_user(ustr);
-		if (len > 0x1000)
-			goto error;
-		kstr = kmalloc(len + 1, GFP_KERNEL);
-		if (!kstr)
-			goto error;
-
-		if (strncpy_from_user(kstr, ustr, len) < 0)
-			goto error;
-
-		kstr[len] = '\0';
-		argv[i] = kstr;
-	}
-
-	return argv;
- error:
-	for (j = 0; j <= i; j++)
-		kfree(argv[j]);
-
-	kfree(argv);
-	return ERR_PTR(-ENOMEM);
-}
-
-static void free_argv(int argc, char **argv)
-{
-	int i;
-
-	for (i = 0; i < argc; i++)
-		kfree(argv[i]);
-
-	kfree(argv);
-}
-
 int gettimeofday_us(void)
 {
 	struct timeval tv;
@@ -141,12 +83,11 @@ struct dentry *kp_dir_dentry;
 static atomic_t kp_is_running = ATOMIC_INIT(0);
 
 /* Ktap Main Entry */
-static int ktap_main(struct file *file, struct ktap_parm *parm)
+static int ktap_main(struct file *file, ktap_parm *parm)
 {
 	unsigned long *buff = NULL;
 	ktap_state *ks;
 	ktap_closure *cl;
-	char **argv;
 	int start_time, delta_time;
 	int ret;
 
@@ -158,31 +99,19 @@ static int ktap_main(struct file *file, struct ktap_parm *parm)
 
 	start_time = gettimeofday_us();
 
-	ret = load_trunk(parm, &buff);
-	if (ret) {
-		pr_err("cannot load file\n");
-		goto out;
-	}
-
-	argv = copy_argv_from_user(parm);
-	if (IS_ERR(argv)) {
-		vfree(buff);
-		ret = PTR_ERR(argv);
-		goto out;
-	}
-
-	ks = kp_newstate(parm, kp_dir_dentry, argv);
-
-	/* free argv memory after store into arg table */
-	free_argv(parm->argc, argv);
-
+	ks = kp_newstate(parm, kp_dir_dentry);
 	if (unlikely(!ks)) {
-		vfree(buff);
 		ret = -ENOEXEC;
 		goto out;
 	}
 
 	file->private_data = ks;
+
+	ret = load_trunk(parm, &buff);
+	if (ret) {
+		pr_err("cannot load file\n");
+		goto out;
+	}
 
 	cl = kp_load(ks, (unsigned char *)buff);
 
@@ -211,7 +140,7 @@ static void print_version(void)
 
 static long ktap_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
-	struct ktap_parm parm;
+	ktap_parm parm;
 	int ret;
 
 	switch (cmd) {
@@ -220,7 +149,7 @@ static long ktap_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		return 0;
 	case KTAP_CMD_IOC_RUN:
 		ret = copy_from_user(&parm, (void __user *)arg,
-				     sizeof(struct ktap_parm));
+				     sizeof(ktap_parm));
 		if (ret < 0)
 			return -EFAULT;
 

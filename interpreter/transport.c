@@ -445,7 +445,7 @@ static int tracing_open_pipe(struct inode *inode, struct file *filp)
 
 	ktap_iter->private = ks;
 	ktap_iter->buffer = G(ks)->buffer;
-	ktap_iter->print_timestamp = G(ks)->print_timestamp;
+	ktap_iter->print_timestamp = G(ks)->parm->print_timestamp;
 	mutex_init(&ktap_iter->iter.mutex);
 	filp->private_data = &ktap_iter->iter;
 

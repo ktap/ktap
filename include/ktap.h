@@ -43,8 +43,7 @@ enum {
 #define KTAP_PERCPU_BUFFER_SIZE	(3 * PAGE_SIZE)
 
 int gettimeofday_us(void);
-ktap_state *kp_newstate(struct ktap_parm *parm, struct dentry *dir,
-			char **argv);
+ktap_state *kp_newstate(struct ktap_parm *parm, struct dentry *dir);
 void kp_exit(ktap_state *ks);
 void kp_final_exit(ktap_state *ks);
 ktap_state *kp_newthread(ktap_state *mainthread);
@@ -143,7 +142,7 @@ static inline void set_next_as_exit(ktap_state *ks)
 }
 
 #define kp_verbose_printf(ks, ...) \
-	if (G(ks)->verbose)	\
+	if (G(ks)->parm->verbose)	\
 		kp_printf(ks, "[verbose] "__VA_ARGS__);
 
 /* get argument operation macro */

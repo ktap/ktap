@@ -982,7 +982,7 @@ void kp_register_lib(ktap_state *ks, const char *libname, const ktap_Reg *funcs)
 
 #define BASIC_STACK_SIZE        (2 * KTAP_MINSTACK)
 
-static void ktap_init_registry(ktap_state *ks)
+static void kp_init_registry(ktap_state *ks)
 {
 	ktap_value mt;
 	ktap_table *registry = kp_table_new(ks);
@@ -995,7 +995,7 @@ static void ktap_init_registry(ktap_state *ks)
 	kp_table_setint(ks, registry, KTAP_RIDX_GLOBALS, &mt);
 }
 
-static void ktap_init_arguments(ktap_state *ks, int argc, char **argv)
+static int kp_init_arguments(ktap_state *ks, int argc, char __user **user_argv)
 {
 	const ktap_value *gt = kp_table_getint(hvalue(&G(ks)->registry),
 			   KTAP_RIDX_GLOBALS);
@@ -1003,28 +1003,70 @@ static void ktap_init_arguments(ktap_state *ks, int argc, char **argv)
 	ktap_table *arg_tbl = kp_table_new(ks);
 	ktap_value arg_tblval;
 	ktap_value arg_tsval;
-	int i;
+	char **argv;
+	int i, ret;
 	
 	setsvalue(&arg_tsval, kp_tstring_new(ks, "arg"));
 	sethvalue(&arg_tblval, arg_tbl);
 	kp_table_setvalue(ks, global_tbl, &arg_tsval, &arg_tblval);
 
 	if (!argc)
-		return;
+		return 0;
 
-	kp_table_resize(ks, arg_tbl, 100, 100);
+	if (argc > 1024)
+		return -EINVAL;
 
+	argv = kzalloc(argc * sizeof(char *), GFP_KERNEL);
+	if (!argv)
+		return -ENOMEM;
+
+	ret = copy_from_user(argv, user_argv, argc * sizeof(char *));
+	if (ret < 0) {
+		kfree(argv);
+		return -EFAULT;
+	}
+
+	kp_table_resize(ks, arg_tbl, argc, 1);
+
+	ret = 0;
 	for (i = 0; i < argc; i++) {
-		int res;
 		ktap_value val;
+		char __user *ustr = argv[i];
+		char * kstr;
+		int len;
+		int res;
 
-		if (!kstrtoint(argv[i], 10, &res)) {
+		len = strlen_user(ustr);
+		if (len > 0x1000) {
+			ret = -EINVAL;
+			break;
+		}
+
+		kstr = kmalloc(len + 1, GFP_KERNEL);
+		if (!kstr) {
+			ret = -ENOMEM;
+			break;
+		}
+
+		if (strncpy_from_user(kstr, ustr, len) < 0) {
+			ret = -EFAULT;
+			break;
+		}
+
+		kstr[len] = '\0';
+
+		if (!kstrtoint(kstr, 10, &res)) {
 			setnvalue(&val, res);
 		} else
-			setsvalue(&val, kp_tstring_new(ks, argv[i]));
+			setsvalue(&val, kp_tstring_new(ks, kstr));
 
 		kp_table_setint(ks, arg_tbl, i, &val);
+
+		kfree(kstr);
 	}
+
+	kfree(argv);
+	return ret;
 }
 
 DEFINE_PER_CPU(int, kp_recursion_context[PERF_NR_CONTEXTS]);
@@ -1073,7 +1115,7 @@ static int alloc_kp_percpu_data(void)
 	return -ENOMEM;
 }
 
-static void ktap_init_state(ktap_state *ks)
+static void kp_init_state(ktap_state *ks)
 {
 	ktap_callinfo *ci;
 	int i;
@@ -1131,7 +1173,7 @@ ktap_state *kp_newthread(ktap_state *mainthread)
 	ks->stack = kp_percpu_data(KTAP_PERCPU_DATA_STACK);
 	G(ks) = G(mainthread);
 	ks->gclist = NULL;
-	ktap_init_state(ks);
+	kp_init_state(ks);
 	return ks;
 }
 
@@ -1175,7 +1217,7 @@ static void kp_wait(ktap_state *ks)
 	ks->stop = 0;
 
 	/* tell workload process to start executing */
-	if (G(ks)->workload)
+	if (G(ks)->parm->workload)
 		send_sig(SIGINT, G(ks)->trace_task, 0);
 
 	while (!ks->stop) {
@@ -1238,7 +1280,7 @@ void kp_final_exit(ktap_state *ks)
 }
 
 /* ktap mainthread initization, main entry for ktap */
-ktap_state *kp_newstate(struct ktap_parm *parm, struct dentry *dir, char **argv)
+ktap_state *kp_newstate(ktap_parm *parm, struct dentry *dir)
 {
 	ktap_state *ks;
 	pid_t pid;
@@ -1254,9 +1296,7 @@ ktap_state *kp_newstate(struct ktap_parm *parm, struct dentry *dir, char **argv)
 	G(ks)->mainthread = ks;
 	G(ks)->seed = 201236; /* todo: make more random in future */
 	G(ks)->task = current;
-	G(ks)->verbose = parm->verbose; /* for debug use */
-	G(ks)->print_timestamp = parm->print_timestamp;
-	G(ks)->workload = parm->workload;
+	G(ks)->parm = parm;
 	INIT_LIST_HEAD(&(G(ks)->timers));
 	INIT_LIST_HEAD(&(G(ks)->probe_events_head));
 	G(ks)->exit = 0;
@@ -1301,9 +1341,9 @@ ktap_state *kp_newstate(struct ktap_parm *parm, struct dentry *dir, char **argv)
 
 	kp_tstring_resize(ks, 512); /* set inital string hashtable size */
 
-	ktap_init_state(ks);
-	ktap_init_registry(ks);
-	ktap_init_arguments(ks, parm->argc, argv);
+	kp_init_state(ks);
+	kp_init_registry(ks);
+	kp_init_arguments(ks, parm->argc, parm->argv);
 
 	/* init library */
 	kp_init_baselib(ks);

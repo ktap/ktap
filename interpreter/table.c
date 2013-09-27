@@ -499,8 +499,8 @@ static ktap_tnode *getfreepos(ktap_table *t)
 {
 	while (t->lastfree > t->node) {
 		t->lastfree--;
-	if (isnil(gkey(t->lastfree)))
-		return t->lastfree;
+		if (isnil(gkey(t->lastfree)))
+			return t->lastfree;
 	}
 	return NULL;  /* could not find a free place */
 }
