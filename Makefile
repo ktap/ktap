@@ -102,6 +102,8 @@ docs:
 		--from=markdown --to=html --css=doc.css \
 		--include-before-body=doc/version_info.html \
 		--output=doc/tutorial.html doc/tutorial.md
+	pandoc --standalone --toc --section-divs --number-sections \
+		--output=doc/tutorial.pdf doc/tutorial.md
 
 PHONY += FORCE
 FORCE:

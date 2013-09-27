@@ -30,6 +30,7 @@ Highlights features:
 # Getting started
 
 Requirements
+
 * Linux 3.1 or later(Need some kernel patches for kernel earlier than 3.1)
 * CONFIG_EVENT_TRACING enabled
 * CONFIG_PERF_EVENTS enabled
@@ -405,7 +406,7 @@ A: the current plan is deliver stable ktapvm kernel modules, more ktap script,
 
 [LPAT]: http://www.brendangregg.com/Slides/SCaLE_Linux_Performance2013.pdf
 [dtraceblog]: http://dtrace.org/blogs/
-[duj]: http://docs.huihoo.com/opensolaris/dtrace-user-guide/html/index.html
+[dug]: http://docs.huihoo.com/opensolaris/dtrace-user-guide/html/index.html
 [lwn]: http://lwn.net/Articles/551314/
 [lcj]: http://events.linuxfoundation.org/sites/events/files/lcjpcojp13_zhangwei.pdf
 
