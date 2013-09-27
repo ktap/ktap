@@ -22,16 +22,10 @@
  * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include <linux/module.h>
 #include <linux/slab.h>
-#include <linux/file.h>
-#include <linux/fs.h>
-#include <linux/perf_event.h>
 #include <linux/ftrace_event.h>
 #include <linux/signal.h>
-#include <linux/delay.h>
 #include <linux/sched.h>
-#include <linux/semaphore.h>
 #include "../include/ktap.h"
 
 #define KTAP_MINSTACK 20
