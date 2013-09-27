@@ -137,7 +137,8 @@ You are encouraged to report bugs, provide feedback, send feature request,
 or hack on it.
 
 
-## More info
+## See More
 
-More info can be found at doc/tutorial.md
+More info can be found at [documentation][tutorial]
+[tutorial]: http://www.ktap.org/doc/tutorial.html
 
