@@ -301,3 +301,7 @@ MODULE_AUTHOR("zhangwei(Jovi) <jovi.zhangwei@gmail.com>");
 MODULE_DESCRIPTION("ktap");
 MODULE_LICENSE("GPL");
 
+int kp_exec_count_max = 10000;
+module_param_named(exec_count_max, kp_exec_count_max, int, S_IRUGO | S_IWUSR);
+MODULE_PARM_DESC(exec_count_max, "mainthread execution limit count");
+

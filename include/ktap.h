@@ -82,6 +82,8 @@ int kp_transport_init(ktap_state *ks, struct dentry *dir);
 
 void kp_exit_timers(ktap_state *ks);
 
+extern int kp_exec_count_max;
+
 /* get from kernel/trace/trace.h */
 static __always_inline int trace_get_context_bit(void)
 {
