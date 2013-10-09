@@ -64,7 +64,32 @@ color_table_text[47] = "White"
 function get_color_text(num) {
 	return color_table_text[num]
 }
- 
+
+function update_display() {
+	for (i = 0, 239, 1) {
+		if ((i % 12 - 11) != 0) {
+			tmp = ""
+		} else {
+			tmp = "\n"
+		}
+
+		if (display_buffer[240 + i] == back_text) {
+			printf("%s%s", back_text, tmp)
+		} else {
+			ctext = display_buffer[240 + i]
+			ansi.set_color2(get_color_number(ctext), 
+					get_color_number(ctext))
+			printf("  %s", tmp)
+			ansi.reset_color()
+		}
+
+		# clear the display buffer
+		display_buffer[240 + i] = display_buffer[i]
+	}
+
+	printf("%d\n",point)
+}
+
  
 #
 # global value
@@ -137,10 +162,10 @@ for (i = 0, 240, 1) {
 	display_buffer[i - 1] = tmp
 	display_buffer[240 + i - 1] = tmp
 }
-	
-block_color = "Red"
-block_number = 1
-	
+
+block_number = rand(len(color_table) - 1)
+block_color = get_color_text(block_number + 40)
+
 ansi.clear_screen()
  
  
@@ -162,12 +187,10 @@ trace probe:kbd_event handle=%di event_type=%si event_code=%dx value=%cx {
  
 	local event_code = arg4
 	local value = arg5
-	local k
  
-	k = event_code
 	if (value != 0) {
-		if ((k - 4) != 0) {
-			key_code = k
+		if ((event_code - 4) != 0) {
+			key_code = event_code
 		}
 	}
 }
@@ -249,6 +272,11 @@ tick-200ms {
 		# copy the moving block to display buffer
 		display_buffer[240 + p] = block_color
 	}
+
+	if ((f == 1) && (height == 17)) {
+		update_display()
+		exit() # exit if there are block at initial position
+	}
  
 	height_update = !height_update
 	if (height_update != 0) {
@@ -293,30 +321,5 @@ tick-200ms {
 		}
 	}
  
-	for (i = 0, 239, 1) {
-		if ((i % 12 - 11) != 0) {
-			tmp = ""
-		} else {
-			tmp = "\n"
-		}
- 
-		if (display_buffer[240 + i] == back_text) {
-			printf("%s%s", back_text, tmp)
-		} else {
-			ctext = display_buffer[240 + i]
-			ansi.set_color2(get_color_number(ctext), 
-					get_color_number(ctext))
-			printf("  %s", tmp)
-			ansi.reset_color()
-		}
- 
-		# clear the display buffer
-		display_buffer[240 + i] = display_buffer[i]
-	}
- 
-	printf("%d\n",point)
- 
-	if (display_buffer[5] != back_text) {
-		exit() # exit if there are block at initial position
-	}
+	update_display()
 }
