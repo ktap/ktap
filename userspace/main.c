@@ -88,10 +88,16 @@ int ktapc_ts_eqstr(ktap_string *a, ktap_string *b)
 	return kp_tstring_eqstr(a, b);
 }
 
-static void ktapc_runerror(const char *err_msg, const char *what, int limit)
+static void ktapc_runerror(const char *err_msg_fmt, ...)
 {
+	va_list ap;
+
 	fprintf(stderr, "ktapc_runerror\n");
-	fprintf(stderr, err_msg);
+
+	va_start(ap, err_msg_fmt);
+	vfprintf(stderr, err_msg_fmt, ap);
+	va_end(ap);
+
 	exit(EXIT_FAILURE);
 }
 
@@ -120,7 +126,8 @@ void *ktapc_growaux(void *block, int *size, size_t size_elems, int limit,
 
 	if (*size >= limit/2) {  /* cannot double it? */
 		if (*size >= limit)  /* cannot grow even a little? */
-			ktapc_runerror("too many %s (limit is %d)", what, limit);
+			ktapc_runerror("too many %s (limit is %d)\n",
+					what, limit);
 		newsize = limit;  /* still have at least one free place */
 	} else {
 		newsize = (*size) * 2;
@@ -274,9 +281,14 @@ static void dump_function(int level, ktap_proto *f)
 
 }
 
-static void usage(const char *msg)
+static void usage(const char *msg_fmt, ...)
 {
-	fprintf(stderr, msg);
+	va_list ap;
+
+	va_start(ap, msg_fmt);
+	fprintf(stderr, msg_fmt, ap);
+	va_end(ap);
+
 	fprintf(stderr,
 "Usage: ktap [options] file [script args] -- cmd [args]\n"
 "   or: ktap [options] -e one-liner  -- cmd [args]\n"
