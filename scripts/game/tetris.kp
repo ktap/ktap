@@ -5,8 +5,11 @@
 #
 # Copyright (C) 2013/OCT/05 Tadaki SAKAI
 #
+# based on stapgames (Systemtap Game Collection)
+#   https://github.com/mhiramat/stapgames/blob/master/games/tetris.stp
+#
 #   - Requirements
-#     Kernel Configration : CONFIG_KPROBE_EVENT=y
+#     Kernel Configuration: CONFIG_KPROBE_EVENT=y
 #                           CONFIG_EVENT_TRACING=y
 #                           CONFIG_PERF_EVENTS=y
 #                           CONFIG_DEBUG_FS=y
@@ -19,10 +22,10 @@
 #     $ cd ktap
 #     $ make 2>&1 | tee ../make.log
 #     $ sudo make load
-#     $ sudo echo 50000 > /sys/module/ktapvm/parameters/max_exec_count
+#     $ sudo sh -c 'echo 50000 > /sys/module/ktapvm/parameters/max_exec_count'
 #
 #   - Run Tetris
-#     $ sudo ktap tetris.kp
+#     $ sudo ./ktap scripts/game/tetris.kp
 #
  
  
@@ -179,7 +182,6 @@ trace probe:kbd_event handle=%di event_type=%si event_code=%dx value=%cx {
 	#
 	# Register follow x86_64 call conversion:
 	#
-	# q
 	# x86_64:
 	#	%rcx	4 argument
 	#	%rdx	3 argument
