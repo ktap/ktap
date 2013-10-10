@@ -436,7 +436,7 @@ static void ktap_execute(ktap_state *ks)
 	/* main loop of interpreter */
 
 	/* dead loop detaction */
-	if (exec_count++ == 10000) {
+	if (exec_count++ == kp_exec_count_max) {
 		if (G(ks)->mainthread != ks) {
 			kp_error(ks, "non-mainthread executing too much, "
 				     "please try to enlarge execution limit\n");
