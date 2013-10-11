@@ -19,6 +19,7 @@
 #     $ cd ktap
 #     $ make 2>&1 | tee ../make.log
 #     $ sudo make load
+#     $ sudo echo 50000 > /sys/module/ktapvm/parameters/max_exec_count
 #
 #   - Run Tetris
 #     $ sudo ktap tetris.kp
