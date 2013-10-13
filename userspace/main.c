@@ -202,6 +202,12 @@ static void decode_instruction(ktap_proto *f, int instr)
 	case OP_JMP:
 		printf("\t%d", GETARG_sBx(instr));
 		break;
+	case OP_CLOSURE:
+		printf("\t");
+		print_base(GETARG_A(instr));
+		printf(" <- closure(func starts from line %d)",
+			f->p[GETARG_Bx(instr)]->lineinfo[0]);
+		break;
 	default:
 		break;
 	}
@@ -243,13 +249,15 @@ static void dump_function(int level, ktap_proto *f)
 			printf("\tTNUMBER: ");
 			printf("%ld\n", f->k[i].val.n);
 			break;
-		case KTAP_TSTRING:
+		case KTAP_TSHRSTR:
+		case KTAP_TLNGSTR:
 			printf("\tTSTRING: ");
 			printf("%s\n", svalue(&(f->k[i])));
-
 			break;
 		default:
-			printf("\terror: unknow constant type\n");
+			printf("\tUnknow constant type %d: ", f->k[i].type);
+			kp_showobj(NULL, &(f->k[i]));
+			printf("\n");
 		}
 	}
 
