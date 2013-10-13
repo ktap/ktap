@@ -142,9 +142,6 @@ enum OpMode {iABC, iABx, iAsBx, iAx};  /* basic instruction format */
 #define GETARG_A(i)     getarg(i, POS_A, SIZE_A)
 #define SETARG_A(i,v)   setarg(i, v, POS_A, SIZE_A)
 
-#define GETARG_A(i)     getarg(i, POS_A, SIZE_A)
-#define SETARG_A(i,v)   setarg(i, v, POS_A, SIZE_A)
-
 #define GETARG_B(i)     getarg(i, POS_B, SIZE_B)
 #define SETARG_B(i,v)   setarg(i, v, POS_B, SIZE_B)
 
