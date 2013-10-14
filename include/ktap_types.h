@@ -74,6 +74,7 @@ typedef union ktap_string {
 		unsigned int hash;
 		size_t len;  /* number of characters in string */
 	} tsv;
+        /* short string is stored here, just after tsv */
 } ktap_string;
 
 #define getstr(ts)	(const char *)((ts) + 1)
@@ -431,6 +432,10 @@ typedef int ktap_number;
 #define KTAP_TAGGRTABLE		15
 #define KTAP_TAGGRACCVAL	16
 #define KTAP_TAGGRVAL		17
+/*
+ * TODO: type number is ok so far, but it may collide later between
+ * 17+ and | (1 << 4). And ttypenv cannot be used on KTAP_TAGGRVAL now.
+ */
 
 #define ttype(o)	((o->type) & 0x3F)
 #define settype(obj, t)	((obj)->type = (t))
