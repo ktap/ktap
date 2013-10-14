@@ -147,12 +147,24 @@ void *ktapc_growaux(void *block, int *size, size_t size_elems, int limit,
 			printf("base + %d", i);	\
 	} while (0)
 
-#define print_RKC(instr)	\
+#define print_RK(instr, _field)  \
 	do {	\
-		if (ISK(GETARG_C(instr))) \
-			kp_showobj(NULL, k + INDEXK(GETARG_C(instr))); \
+		if (ISK(GETARG_##_field(instr))) \
+			kp_showobj(NULL, k + INDEXK(GETARG_##_field(instr))); \
 		else \
-			print_base(GETARG_C(instr)); \
+			print_base(GETARG_##_field(instr)); \
+	} while (0)
+
+#define print_RKA(instr) print_RK(instr, A)
+#define print_RKB(instr) print_RK(instr, B)
+#define print_RKC(instr) print_RK(instr, C)
+
+#define print_upvalue(idx) \
+	do {	\
+		if ((idx) == 0) \
+			printf("global"); \
+		else \
+			printf("upvalues[%d]", (idx)); \
 	} while (0)
 
 static void decode_instruction(ktap_proto *f, int instr)
@@ -166,15 +178,16 @@ static void decode_instruction(ktap_proto *f, int instr)
 	printf("%s\t", ktap_opnames[opcode]);
 
 	switch (opcode) {
+	case OP_MOVE:
+		printf("\t");
+		print_base(GETARG_A(instr));
+		printf(" <- ");
+		print_base(GETARG_B(instr));
+		break;
 	case OP_GETTABUP:
 		print_base(GETARG_A(instr));
 		printf(" <- ");
-
-		if (GETARG_B(instr) == 0)
-			printf("global");
-		else
-			printf("upvalues[%d]", GETARG_B(instr));
-
+		print_upvalue(GETARG_B(instr));
 		printf("{"); print_RKC(instr); printf("}");
 
 		break;
@@ -208,6 +221,23 @@ static void decode_instruction(ktap_proto *f, int instr)
 		printf(" <- closure(func starts from line %d)",
 			f->p[GETARG_Bx(instr)]->lineinfo[0]);
 		break;
+	case OP_SETTABUP:
+		print_upvalue(GETARG_A(instr));
+		printf("{");
+		print_RKB(instr);
+		printf("} <- ");
+
+		print_base(GETARG_C(instr));
+		break;
+	case OP_GETUPVAL:
+		print_base(GETARG_A(instr));
+		printf(" <- ");
+
+		print_upvalue(GETARG_B(instr));
+		break;
+	case OP_NEWTABLE:
+		print_base(GETARG_A(instr));
+		printf(" <- {}");
 	default:
 		break;
 	}
