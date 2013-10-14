@@ -38,11 +38,11 @@ typedef struct ktap_parm {
 #define KTAP_ENV	"_ENV"
 
 #define KTAP_VERSION_MAJOR       "0"
-#define KTAP_VERSION_MINOR       "1"
+#define KTAP_VERSION_MINOR       "2"
 
 #define KTAP_VERSION    "ktap " KTAP_VERSION_MAJOR "." KTAP_VERSION_MINOR
-#define KTAP_COPYRIGHT  KTAP_VERSION "  Copyright (C) 2012-2013, zhangwei(Jovi)"
-#define KTAP_AUTHORS    "zhangwei(Jovi) <jovi.zhangwei@gmail.com>"
+#define KTAP_AUTHOR    "Jovi Zhangwei <jovi.zhangwei@gmail.com>"
+#define KTAP_COPYRIGHT  KTAP_VERSION "  Copyright (C) 2012-2013, " KTAP_AUTHOR
 
 #define MYINT(s)        (s[0] - '0')
 #define VERSION         (MYINT(KTAP_VERSION_MAJOR) * 16 + MYINT(KTAP_VERSION_MINOR))

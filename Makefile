@@ -90,20 +90,11 @@ unload:
 	rmmod ktapvm
 
 test: FORCE
-	cd test; ./run_test.sh; cd -
+	cd test; sh ./run_test.sh; cd -
 
 clean:
 	$(MAKE) -C $(KERNEL_SRC) M=$(PWD) clean
 	$(RM) ktap
-
-
-docs:
-	pandoc --standalone --toc --section-divs --number-sections \
-		--from=markdown --to=html --css=doc.css \
-		--include-before-body=doc/version_info.html \
-		--output=doc/tutorial.html doc/tutorial.md
-	pandoc --standalone --toc --section-divs --number-sections \
-		--output=doc/tutorial.pdf doc/tutorial.md
 
 PHONY += FORCE
 FORCE:

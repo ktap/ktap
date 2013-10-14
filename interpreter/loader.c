@@ -1,12 +1,13 @@
 /*
  * loader.c - loader for ktap bytecode chunk file
  *
- * This file is part of ktap by zhangwei(Jovi).
+ * This file is part of ktap by Jovi Zhangwei.
  *
- * Copyright (C) 2012-2013 zhangwei(Jovi) <jovi.zhangwei@gmail.com>.
- * See the COPYRIGHT file at the top-level directory of this distribution.
+ * Copyright (C) 2012-2013 Jovi Zhangwei <jovi.zhangwei@gmail.com>.
  *
- * The part of code is copied from lua initially in this file.
+ * Copyright (C) 1994-2013 Lua.org, PUC-Rio.
+ *  - The part of code in this file is copied from lua initially.
+ *  - lua's MIT license is compatible with GPL.
  *
  * ktap is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,

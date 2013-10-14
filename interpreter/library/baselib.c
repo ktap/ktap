@@ -1,10 +1,9 @@
 /*
  * baselib.c - ktapvm kernel module base library
  *
- * This file is part of ktap by zhangwei(Jovi).
+ * This file is part of ktap by Jovi Zhangwei.
  *
- * Copyright (C) 2012-2013 zhangwei(Jovi) <jovi.zhangwei@gmail.com>.
- * See the COPYRIGHT file at the top-level directory of this distribution.
+ * Copyright (C) 2012-2013 Jovi Zhangwei <jovi.zhangwei@gmail.com>.
  *
  * ktap is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -419,7 +418,6 @@ static int ktap_lib_in_iowait(ktap_state *ks)
 
 static const ktap_Reg base_funcs[] = {
 	{"pairs", ktap_lib_pairs},
-//	{"type", ktap_type},
 	{"len", ktap_lib_len},
 	{"print", ktap_lib_print},
 	{"printf", ktap_lib_printf},
