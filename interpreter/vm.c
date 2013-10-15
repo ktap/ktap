@@ -349,10 +349,6 @@ static int precall(ktap_state *ks, StkId func, int nresults)
 	switch (ttype(func)) {
 	case KTAP_TLCF: /* light C function */
 		f = fvalue(func);
-		goto CFUNC;
-	case KTAP_TCCL: /* C closure */
-		f = clcvalue(func)->f;
- CFUNC:
 		checkstack(ks, KTAP_MINSTACK);
 		ci = next_ci(ks);
 		ci->nresults = nresults;

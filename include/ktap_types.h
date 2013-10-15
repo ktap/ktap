@@ -416,7 +416,6 @@ typedef int ktap_number;
 #define KTAP_TFUNCTION		6
 #define KTAP_TLCL		(KTAP_TFUNCTION | (0 << 4))  /* closure */
 #define KTAP_TLCF		(KTAP_TFUNCTION | (1 << 4))  /* light C function */
-#define KTAP_TCCL		(KTAP_TFUNCTION | (2 << 4))  /* C closure */
 #define KTAP_TUSERDATA		7
 #define KTAP_TTHREAD		8
 
