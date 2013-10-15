@@ -141,12 +141,12 @@ typedef struct ktap_upval {
 } ktap_upval;
 
 
-#define KTAP_STACK_MAX_ENTRIES 10
+#define KTAP_MAX_STACK_ENTRIES 100
 
 typedef struct ktap_btrace {
 	CommonHeader;
 	unsigned int nr_entries;
-	unsigned long entries[KTAP_STACK_MAX_ENTRIES];
+	/* entries stored in here, after nr_entries */
 } ktap_btrace;
 
 #define ktap_closure_header \

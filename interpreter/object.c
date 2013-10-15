@@ -155,10 +155,11 @@ void kp_obj_dump(ktap_state *ks, const ktap_value *v)
 static void kp_btrace_dump(ktap_state *ks, ktap_btrace *bt)
 {
 	char str[KSYM_SYMBOL_LEN];
+	unsigned long *entries = (unsigned long *)(bt + 1);
 	int i;
 
 	for (i = 0; i < bt->nr_entries; i++) {
-		unsigned long p = bt->entries[i];
+		unsigned long p = entries[i];
 
 		if (p == ULONG_MAX)
 			break;
@@ -170,13 +171,15 @@ static void kp_btrace_dump(ktap_state *ks, ktap_btrace *bt)
 
 static int kp_btrace_equal(ktap_btrace *bt1, ktap_btrace *bt2)
 {
+	unsigned long *entries1 = (unsigned long *)(bt1 + 1);
+	unsigned long *entries2 = (unsigned long *)(bt2 + 1);
 	int i;
 
 	if (bt1->nr_entries != bt2->nr_entries)
 		return 0;
 
 	for (i = 0; i < bt1->nr_entries; i++) {
-		if (bt1->entries[i] != bt2->entries[i])
+		if (entries1[i] != entries2[i])
 			return 0;
 	}
 
@@ -334,11 +337,14 @@ ktap_upval *kp_newupval(ktap_state *ks)
 	return uv;
 }
 
-static ktap_btrace *kp_newbacktrace(ktap_state *ks, ktap_gcobject **list)
+static ktap_btrace *kp_newbacktrace(ktap_state *ks, int nr_entries,
+				    ktap_gcobject **list)
 {
 	ktap_btrace *bt;
+	int size = sizeof(ktap_btrace) + nr_entries * sizeof(unsigned long);
 
-	bt = &kp_newobject(ks, KTAP_TBTRACE, sizeof(ktap_btrace), list)->bt;
+	bt = &kp_newobject(ks, KTAP_TBTRACE, size, list)->bt;
+	bt->nr_entries = nr_entries;
 	return bt;
 }
 
@@ -346,11 +352,12 @@ void kp_objclone(ktap_state *ks, const ktap_value *o, ktap_value *newo,
 		 ktap_gcobject **list)
 {
 	if (ttisbtrace(o)) {
+		int nr_entries = btvalue(o)->nr_entries;
 		ktap_btrace *bt;
-		bt = kp_newbacktrace(ks, list);
-		bt->nr_entries = btvalue(o)->nr_entries;
-		memcpy(&bt->entries[0], &btvalue(o)->entries[0],
-					sizeof(bt->entries));
+
+		bt = kp_newbacktrace(ks, nr_entries, list);
+		memcpy((unsigned long *)(bt + 1), btvalue(o) + 1,
+			nr_entries * sizeof(unsigned long));
 		setbtvalue(newo, bt);
 	} else {
 		kp_error(ks, "cannot clone ktap value type %d\n", ttype(o));

@@ -472,21 +472,18 @@ static const struct file_operations tracing_pipe_fops = {
 };
 
 /*
- * print_backtrace maybe called from ktap mainthread, so be
- * care on race with event closure thread.
- *
  * preempt disabled in ring_buffer_lock_reserve
  *
  * The implementation is similar with funtion __ftrace_trace_stack.
  */
-void kp_transport_print_backtrace(ktap_state *ks)
+void kp_transport_print_backtrace(ktap_state *ks, int skip, int max_entries)
 {
 	struct ring_buffer *buffer = G(ks)->buffer;
 	struct ring_buffer_event *event;
 	struct trace_entry *entry;
 	int size;
 
-	size = KTAP_STACK_MAX_ENTRIES * sizeof(unsigned long);
+	size = max_entries * sizeof(unsigned long);
 	event = ring_buffer_lock_reserve(buffer, sizeof(*entry) + size);
 	if (!event) {
 		return;
@@ -498,15 +495,13 @@ void kp_transport_print_backtrace(ktap_state *ks)
 		entry->type = TRACE_STACK;
 
 		trace.nr_entries = 0;
-		trace.skip = 10;
-		trace.max_entries = KTAP_STACK_MAX_ENTRIES;
+		trace.skip = skip;
+		trace.max_entries = max_entries;
 		trace.entries = (unsigned long *)(entry + 1);
 		save_stack_trace(&trace);
 
 		ring_buffer_unlock_commit(buffer, event);
 	}
-
-	return;
 }
 
 void kp_transport_event_write(ktap_state *ks, struct ktap_event *e)

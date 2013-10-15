@@ -119,7 +119,20 @@ static int ktap_lib_printf(ktap_state *ks)
 #ifdef CONFIG_STACKTRACE
 static int ktap_lib_print_backtrace(ktap_state *ks)
 {
-	kp_transport_print_backtrace(ks);
+	int skip = 10, max_entries = 10;
+	int n = kp_arg_nr(ks);
+
+	if (n >= 1) {
+		kp_arg_check(ks, 1, KTAP_TNUMBER);
+		skip = nvalue(kp_arg(ks, 1));
+	}
+	if (n >= 2) {
+		kp_arg_check(ks, 2, KTAP_TNUMBER);
+		max_entries = nvalue(kp_arg(ks, 2));
+		max_entries = min(max_entries, KTAP_MAX_STACK_ENTRIES);
+	}
+
+	kp_transport_print_backtrace(ks, skip, max_entries);
 	return 0;
 }
 #else
@@ -134,14 +147,26 @@ static int ktap_lib_print_backtrace(ktap_state *ks)
 static int ktap_lib_backtrace(ktap_state *ks)
 {
 	struct stack_trace trace;
+	int skip = 10, max_entries = 10;
+	int n = kp_arg_nr(ks);
 	ktap_btrace *bt;
+
+	if (n >= 1) {
+		kp_arg_check(ks, 1, KTAP_TNUMBER);
+		skip = nvalue(kp_arg(ks, 1));
+	}
+	if (n >= 2) {
+		kp_arg_check(ks, 2, KTAP_TNUMBER);
+		max_entries = nvalue(kp_arg(ks, 2));
+		max_entries = min(max_entries, KTAP_MAX_STACK_ENTRIES);
+	}
 
 	bt = kp_percpu_data(KTAP_PERCPU_DATA_BTRACE);
 
 	trace.nr_entries = 0;
-	trace.skip = 10;
-	trace.max_entries = KTAP_STACK_MAX_ENTRIES;
-	trace.entries = &bt->entries[0];
+	trace.skip = skip;
+	trace.max_entries = max_entries;
+	trace.entries = (unsigned long *)(bt + 1);
 	save_stack_trace(&trace);
 
 	bt->nr_entries = trace.nr_entries;

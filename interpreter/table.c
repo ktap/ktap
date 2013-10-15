@@ -186,9 +186,11 @@ static ktap_tnode *mainposition (const ktap_table *t, const ktap_value *key)
 		return hashpointer(t, pvalue(key));
 	case KTAP_TLCF:
 		return hashpointer(t, fvalue(key));
-	case KTAP_TBTRACE:
+	case KTAP_TBTRACE: {
 		/* use first entry as hash key, cannot use gcvalue as key */
-		return hashpointer(t, btvalue(key)->entries[0]);
+		unsigned long *entries = (unsigned long *)(btvalue(key) + 1);
+		return hashpointer(t, entries[0]);
+		}
 	default:
 		return hashpointer(t, gcvalue(key));
 	}
