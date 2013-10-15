@@ -172,8 +172,9 @@ void kp_event_getarg(ktap_state *ks, ktap_value *ra, int n)
  * same as perf and ftrace. to make reentrant, we need some
  * percpu data to be context isolation(irq/sirq/nmi/process)
  *
- * perf callback already consider on the recursion issue,
- * so ktap don't need to check again in here.
+ * The recursion checking in here is mainly purpose for avoiding
+ * corrupt ktap_state with timer closure callback. For tracepoint
+ * recusion, perf core already handle it.
  *
  * Note tracepoint handler is calling with rcu_read_lock.
  */

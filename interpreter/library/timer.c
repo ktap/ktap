@@ -42,8 +42,6 @@ struct hrtimer_ktap {
  *
  * So just simply disable tracing in timer closure,
  * get_recursion_context()/put_recursion_context() is used for this purpose.
- *
- * option: export perf_swevent_put_recursion_context to slove this issue.
  */
 static enum hrtimer_restart hrtimer_ktap_fn(struct hrtimer *timer)
 {
