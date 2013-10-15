@@ -9,7 +9,8 @@
 s = aggr_table()
 
 profile-10us {
-	s[backtrace()] = count()
+	#skip 12 stack entries, and dump all remain entries.
+	s[backtrace(12, -1)] = count()
 }
 
 tick-60s {
