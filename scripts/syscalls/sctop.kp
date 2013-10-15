@@ -1,6 +1,5 @@
 #! /usr/bin/env ktap
 
-#this script is broken, fix it soon.
 s = {}
 
 trace syscalls:sys_enter_* {

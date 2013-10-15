@@ -2,8 +2,6 @@
 
 # Based on systemtap traceio.stp
 
-#this script is broken, fix it soon.
-
 reads = aggr_table()
 writes = aggr_table()
 total_io = aggr_table()
