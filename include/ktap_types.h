@@ -324,7 +324,6 @@ typedef struct ktap_state {
 	const unsigned long *oldpc;
 	StkId stack_last;
 	StkId stack;
-	int stacksize;
 	ktap_gcobject *openupval;
 	ktap_callinfo baseci;
 

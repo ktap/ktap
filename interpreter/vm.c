@@ -29,12 +29,9 @@
 #include <linux/sched.h>
 #include "../include/ktap.h"
 
-#define KTAP_MINSTACK 20
-
-/* todo: enlarge maxstack for big system like 64-bit */
-#define KTAP_MAXSTACK           15000
-
-#define KTAP_STACK_SIZE (BASIC_STACK_SIZE * sizeof(ktap_value))
+#define KTAP_MIN_RESERVED_STACK_SIZE 20
+#define KTAP_STACK_SIZE		120 /* enlarge this value for big stack */
+#define KTAP_STACK_SIZE_BYTES	(KTAP_STACK_SIZE * sizeof(ktap_value))
 
 #define CIST_KTAP	(1 << 0) /* call is running a ktap function */
 #define CIST_REENTRY	(1 << 2)
@@ -211,55 +208,14 @@ static void settable_incr(ktap_state *ks, const ktap_value *t, ktap_value *key,
 	kp_table_atomic_inc(ks, hvalue(t), key, nvalue(val));
 }
 
-
-static void growstack(ktap_state *ks, int n)
+static inline int checkstack(ktap_state *ks, int n)
 {
-	ktap_value *oldstack;
-	int lim;
-	ktap_callinfo *ci;
-	ktap_gcobject *up;
-	int size = ks->stacksize;
-	int needed = (int)(ks->top - ks->stack) + n;
-	int newsize = 2 * size;
-
-	if (newsize > KTAP_MAXSTACK)
-		newsize = KTAP_MAXSTACK;
-
-	if (newsize < needed)
-		newsize = needed;
-
-	if (newsize > KTAP_MAXSTACK) {  /* stack overflow? */
-		kp_error(ks, "stack overflow\n");
-		return;
+	if (unlikely(ks->stack_last - ks->top <= n)) {
+		kp_error(ks, "stack overflow, please enlarge stack size\n");
+		return -1;
 	}
 
-	/* realloc stack */
-	oldstack = ks->stack;
-	lim = ks->stacksize;
-	kp_realloc(ks, ks->stack, ks->stacksize, newsize, ktap_value);
-
-	for (; lim < newsize; lim++)
-		setnilvalue(ks->stack + lim);
-	ks->stacksize = newsize;
-	ks->stack_last = ks->stack + newsize;
-
-	/* correct stack */
-	ks->top = (ks->top - oldstack) + ks->stack;
-	for (up = ks->openupval; up != NULL; up = up->gch.next)
-		gco2uv(up)->v = (gco2uv(up)->v - oldstack) + ks->stack;
-
-	for (ci = ks->ci; ci != NULL; ci = ci->prev) {
-		ci->top = (ci->top - oldstack) + ks->stack;
-		ci->func = (ci->func - oldstack) + ks->stack;
-		if (isktapfunc(ci))
-			ci->u.l.base = (ci->u.l.base - oldstack) + ks->stack;
-	}
-}
-
-static inline void checkstack(ktap_state *ks, int n)
-{
-	if (ks->stack_last - ks->top <= n)
-		growstack(ks, n);
+	return 0;
 }
 
 static StkId adjust_varargs(ktap_state *ks, ktap_proto *p, int actual)
@@ -348,18 +304,24 @@ static int precall(ktap_state *ks, StkId func, int nresults)
 	switch (ttype(func)) {
 	case KTAP_TLCF: /* light C function */
 		f = fvalue(func);
-		checkstack(ks, KTAP_MINSTACK);
+
+		if (checkstack(ks, KTAP_MIN_RESERVED_STACK_SIZE))
+			return 1;
+
 		ci = next_ci(ks);
 		ci->nresults = nresults;
 		ci->func = restorestack(ks, funcr);
-		ci->top = ks->top + KTAP_MINSTACK;
+		ci->top = ks->top + KTAP_MIN_RESERVED_STACK_SIZE;
 		ci->callstatus = 0;
 		n = (*f)(ks);
 		poscall(ks, ks->top - n);
 		return 1;
 	case KTAP_TLCL:	
 		p = CLVALUE(func)->p;
-		checkstack(ks, p->maxstacksize);
+
+		if (checkstack(ks, p->maxstacksize))
+			return 1;
+
 		func = restorestack(ks, funcr);
 		n = (int)(ks->top - func) - 1; /* number of real arguments */
 
@@ -799,7 +761,8 @@ static void ktap_execute(ktap_state *ks)
 		int n = (int)(base - ci->func) - cl->p->numparams - 1;
 		if (b < 0) {  /* B == 0? */
 			b = n;  /* get all var. arguments */
-			checkstack(ks, n);
+			if(checkstack(ks, n))
+				return;
 			/* previous call may change the stack */
 			ra = RA(instr);
 			ks->top = ra + n;
@@ -977,8 +940,6 @@ void kp_register_lib(ktap_state *ks, const char *libname, const ktap_Reg *funcs)
 	}
 }
 
-#define BASIC_STACK_SIZE        (2 * KTAP_MINSTACK)
-
 static void kp_init_registry(ktap_state *ks)
 {
 	ktap_value mt;
@@ -1091,8 +1052,8 @@ static void free_kp_percpu_data(void)
 static int alloc_kp_percpu_data(void)
 {
 	int data_size[KTAP_PERCPU_DATA_MAX] = {
-		sizeof(ktap_state), KTAP_STACK_SIZE, KTAP_PERCPU_BUFFER_SIZE,
-		KTAP_PERCPU_BUFFER_SIZE,
+		sizeof(ktap_state), KTAP_STACK_SIZE_BYTES,
+		KTAP_PERCPU_BUFFER_SIZE, KTAP_PERCPU_BUFFER_SIZE,
 		sizeof(ktap_btrace) + (KTAP_MAX_STACK_ENTRIES *
 			sizeof(unsigned long))};
 	int i, j;
@@ -1118,18 +1079,16 @@ static void kp_init_state(ktap_state *ks)
 {
 	ktap_callinfo *ci;
 
-	ks->stacksize = BASIC_STACK_SIZE;
-
 	/* init all stack vaule to nil */
-	memset(ks->stack, 0, KTAP_STACK_SIZE);
+	memset(ks->stack, 0, KTAP_STACK_SIZE_BYTES);
 
 	ks->top = ks->stack;
-	ks->stack_last = ks->stack + ks->stacksize;
+	ks->stack_last = ks->stack + KTAP_STACK_SIZE;
 
 	ci = &ks->baseci;
 	ci->callstatus = 0;
 	ci->func = ks->top;
-	ci->top = ks->top + KTAP_MINSTACK;
+	ci->top = ks->top + KTAP_MIN_RESERVED_STACK_SIZE;
 	ks->ci = ci;
 }
 
@@ -1288,7 +1247,7 @@ ktap_state *kp_newstate(ktap_parm *parm, struct dentry *dir)
 	if (!ks)
 		return NULL;
 
-	ks->stack = kp_malloc(ks, KTAP_STACK_SIZE);
+	ks->stack = kp_malloc(ks, KTAP_STACK_SIZE_BYTES);
 	G(ks) = (ktap_global_state *)(ks + 1);
 	G(ks)->mainthread = ks;
 	G(ks)->seed = 201236; /* todo: make more random in future */
