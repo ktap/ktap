@@ -1,0 +1,9 @@
+#!/usr/bin/env ktap
+
+#this script check overflow in ktap
+
+function f(a) {
+	return 1 + f(a+1)
+}
+
+print(f(0))

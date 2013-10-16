@@ -27,6 +27,7 @@ $KTAP -o /dev/null -e 'trace syscalls:* { print(argevent) }' \
 		-- $KTAP -e 'while (1) {}'
 
 ktaprun arith.kp
+ktaprun -o /dev/null stack_overflow.kp
 ktaprun concat.kp
 ktaprun count.kp
 ktaprun fibonacci.kp
