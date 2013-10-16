@@ -254,7 +254,6 @@ static void growstack(ktap_state *ks, int n)
 		if (isktapfunc(ci))
 			ci->u.l.base = (ci->u.l.base - oldstack) + ks->stack;
 	}
-	
 }
 
 static inline void checkstack(ktap_state *ks, int n)
@@ -1118,12 +1117,11 @@ static int alloc_kp_percpu_data(void)
 static void kp_init_state(ktap_state *ks)
 {
 	ktap_callinfo *ci;
-	int i;
 
 	ks->stacksize = BASIC_STACK_SIZE;
 
-	for (i = 0; i < BASIC_STACK_SIZE; i++)
-		setnilvalue(ks->stack + i);
+	/* init all stack vaule to nil */
+	memset(ks->stack, 0, KTAP_STACK_SIZE);
 
 	ks->top = ks->stack;
 	ks->stack_last = ks->stack + ks->stacksize;
@@ -1131,7 +1129,6 @@ static void kp_init_state(ktap_state *ks)
 	ci = &ks->baseci;
 	ci->callstatus = 0;
 	ci->func = ks->top;
-	setnilvalue(ks->top++);
 	ci->top = ks->top + KTAP_MINSTACK;
 	ks->ci = ci;
 }
