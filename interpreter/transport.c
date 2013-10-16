@@ -486,6 +486,7 @@ void kp_transport_print_backtrace(ktap_state *ks, int skip, int max_entries)
 	size = max_entries * sizeof(unsigned long);
 	event = ring_buffer_lock_reserve(buffer, sizeof(*entry) + size);
 	if (!event) {
+		KTAP_STATS(ks)->events_missed += 1;
 		return;
 	} else {
 		struct stack_trace trace;
@@ -513,6 +514,7 @@ void kp_transport_event_write(ktap_state *ks, struct ktap_event *e)
 	event = ring_buffer_lock_reserve(buffer, e->entry_size +
 					 sizeof(struct ftrace_event_call *));
 	if (!event) {
+		KTAP_STATS(ks)->events_missed += 1;
 		return;
 	} else {
 		entry = ring_buffer_event_data(event);
@@ -534,6 +536,7 @@ void kp_transport_write(ktap_state *ks, const void *data, size_t length)
 
 	event = ring_buffer_lock_reserve(buffer, size);
 	if (!event) {
+		KTAP_STATS(ks)->events_missed += 1;
 		return;
 	} else {
 		entry = ring_buffer_event_data(event);
@@ -577,6 +580,7 @@ void __kp_bputs(ktap_state *ks, const char *str)
 
 	event = ring_buffer_lock_reserve(buffer, size);
 	if (!event) {
+		KTAP_STATS(ks)->events_missed += 1;
 		return;
 	} else {
 		entry = ring_buffer_event_data(event);

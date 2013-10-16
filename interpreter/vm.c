@@ -1204,14 +1204,52 @@ void kp_exit(ktap_state *ks)
 	G(ks)->exit = 1;
 }
 
+/*
+ * Be careful in stats_cleanup, only can use kp_printf, since almost
+ * all ktap resources already freed now.
+ */
+static void kp_stats_cleanup(ktap_state *ks)
+{
+	ktap_stats __percpu *stats = G(ks)->stats;
+	int mem_allocated = 0, nr_mem_allocate = 0, nr_mem_free = 0;
+	int events_hits = 0, events_missed = 0;
+	int cpu;
+
+	for_each_possible_cpu(cpu) {
+		ktap_stats *per_stats = per_cpu_ptr(stats, cpu);
+		mem_allocated += per_stats->mem_allocated;
+		nr_mem_allocate += per_stats->nr_mem_allocate;
+		nr_mem_free += per_stats->nr_mem_free;
+		events_hits += per_stats->events_hits;
+		events_missed += per_stats->events_missed;
+	}
+
+	kp_verbose_printf(ks, "ktap stats:\n");
+	kp_verbose_printf(ks, "memory allocated size: %d\n", mem_allocated);
+	kp_verbose_printf(ks, "memory allocate num: %d\n", nr_mem_allocate);
+	kp_verbose_printf(ks, "memory free num: %d\n", nr_mem_free);
+	kp_verbose_printf(ks, "events_hits: %d\n", events_hits);
+	kp_verbose_printf(ks, "events_missed: %d\n", events_missed);
+
+	if (stats)
+		free_percpu(stats);
+}
+
+static int kp_stats_init(ktap_state *ks)
+{
+	ktap_stats __percpu *stats = alloc_percpu(ktap_stats);
+	if (!stats)
+		return -ENOMEM;
+
+	G(ks)->stats = stats;
+	return 0;
+}
+
 void kp_final_exit(ktap_state *ks)
 {
 	if (!list_empty(&G(ks)->probe_events_head) ||
 	    !list_empty(&G(ks)->timers))
 		kp_wait(ks);
-
-	if (G(ks)->trace_task)
-		put_task_struct(G(ks)->trace_task);
 
 	kp_exit_timers(ks);
 	kp_probe_exit(ks);
@@ -1221,17 +1259,21 @@ void kp_final_exit(ktap_state *ks)
 	kp_free_all_gcobject(ks);
 	cfunction_cache_exit(ks);
 
-	wait_user_completion(ks);
-
-	kp_transport_exit(ks);
-
 	kp_exitthread(ks);
 	kp_free(ks, ks->stack);
 	free_all_ci(ks);
 
 	free_kp_percpu_data();
-
 	free_cpumask_var(G(ks)->cpumask);
+
+	kp_stats_cleanup(ks);
+	wait_user_completion(ks);
+
+	/* should invoke after wait_user_completion */
+	if (G(ks)->trace_task)
+		put_task_struct(G(ks)->trace_task);
+
+	kp_transport_exit(ks);
 	kp_free(ks, ks);
 }
 
@@ -1247,7 +1289,6 @@ ktap_state *kp_newstate(ktap_parm *parm, struct dentry *dir)
 	if (!ks)
 		return NULL;
 
-	ks->stack = kp_malloc(ks, KTAP_STACK_SIZE_BYTES);
 	G(ks) = (ktap_global_state *)(ks + 1);
 	G(ks)->mainthread = ks;
 	G(ks)->seed = 201236; /* todo: make more random in future */
@@ -1257,8 +1298,13 @@ ktap_state *kp_newstate(ktap_parm *parm, struct dentry *dir)
 	INIT_LIST_HEAD(&(G(ks)->probe_events_head));
 	G(ks)->exit = 0;
 
+	if (kp_stats_init(ks))
+		goto out;
+
 	if (kp_transport_init(ks, dir))
 		goto out;
+
+	ks->stack = kp_malloc(ks, KTAP_STACK_SIZE_BYTES);
 
 	pid = (pid_t)parm->trace_pid;
 	if (pid != -1) {

@@ -281,6 +281,16 @@ typedef struct ktap_stringtable {
 	int size;
 } ktap_stringtable;
 
+typedef struct ktap_stats {
+	int mem_allocated;
+	int nr_mem_allocate;
+	int nr_mem_free;
+	int events_hits;
+	int events_missed;
+} ktap_stats;
+
+#define KTAP_STATS(ks)	this_cpu_ptr(G(ks)->stats)
+
 typedef struct ktap_global_state {
 	ktap_stringtable strt;  /* hash table for strings */
 	ktap_value registry;
@@ -310,6 +320,7 @@ typedef struct ktap_global_state {
 	int exit;
 	int wait_user;
 	ktap_closure *trace_end_closure;
+	struct ktap_stats __percpu *stats;
 #endif
 	int error;
 } ktap_global_state;

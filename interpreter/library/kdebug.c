@@ -164,6 +164,8 @@ static void ktap_overflow_callback(struct perf_event *event,
 	if (rctx < 0)
 		return;
 
+	KTAP_STATS(ks)->events_hits += 1;
+
 	/* profile perf event don't have valid associated tp_event */
 	if (event->tp_event) {
 		e.call = event->tp_event;
