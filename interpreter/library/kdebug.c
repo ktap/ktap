@@ -407,8 +407,8 @@ void kp_init_kdebuglib(ktap_state *ks)
 	kp_ftrace_profile_set_filter =
 		(void *)kallsyms_lookup_name("ftrace_profile_set_filter");
 	if (!kp_ftrace_profile_set_filter) {
-		printk("ktap: cannot lookup ftrace_profile_set_filter "
-		       "in kallsyms\n");
+		kp_error(ks, "ktap: cannot lookup ftrace_profile_set_filter "
+				"in kallsyms\n");
 		return;
 	}
 
