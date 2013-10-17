@@ -147,9 +147,6 @@ void kp_obj_dump(ktap_state *ks, const ktap_value *v)
 	case KTAP_TLNGSTR:
 		kp_printf(ks, "SHRSTR #%s", svalue(v));
 		break;
-	case KTAP_TUSERDATA:
-		kp_printf(ks, "USERDATA 0x%lx", (unsigned long)uvalue(v));
-		break;
 	case KTAP_TTABLE:
 		kp_printf(ks, "TABLE 0x%lx", (unsigned long)hvalue(v));
 		break;
@@ -220,9 +217,6 @@ void kp_showobj(ktap_state *ks, const ktap_value *v)
 	case KTAP_TLNGSTR:
 		kp_puts(ks, svalue(v));
 		break;
-	case KTAP_TUSERDATA:
-		kp_printf(ks, "0x%lx", (unsigned long)uvalue(v));
-		break;
 	case KTAP_TTABLE:
 		kp_table_dump(ks, hvalue(v));
 		break;
@@ -267,11 +261,6 @@ int kp_equalobjv(ktap_state *ks, const ktap_value *t1, const ktap_value *t2)
 		return eqshrstr(rawtsvalue(t1), rawtsvalue(t2));
 	case KTAP_TLNGSTR:
 		return kp_tstring_eqlngstr(rawtsvalue(t1), rawtsvalue(t2));
-	case KTAP_TUSERDATA:
-		if (uvalue(t1) == uvalue(t2))
-			return 1;
-		else if (ks == NULL)
-			return 0;
 	case KTAP_TTABLE:
 		if (hvalue(t1) == hvalue(t2))
 			return 1;
@@ -424,23 +413,6 @@ ktap_proto *kp_newproto(ktap_state *ks)
 	f->lastlinedefined = 0;
 	f->source = NULL;
 	return f;
-}
-
-static ktap_udata *newudata(ktap_state *ks, size_t s)
-{
-	ktap_udata *u;
-
-	u = &kp_newobject(ks, KTAP_TUSERDATA, sizeof(ktap_udata) + s, NULL)->u;
-	u->uv.len = s;
-	return u;
-}
-
-void *kp_newuserdata(ktap_state *ks, size_t size)
-{
-	ktap_udata *u;
-
-	u = newudata(ks, size);
-	return u + 1;
 }
 
 void kp_free_gclist(ktap_state *ks, ktap_gcobject *o)

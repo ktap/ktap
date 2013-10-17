@@ -100,14 +100,6 @@ typedef struct ktap_value {
 typedef ktap_value * StkId;
 
 
-
-typedef union ktap_udata {
-	struct {
-		CommonHeader;
-		size_t len;  /* number of bytes */
-	} uv;
-} ktap_udata;
-
 /*
  * Description of an upvalue for function prototypes
  */
@@ -362,7 +354,6 @@ typedef struct gcheader {
 union ktap_gcobject {
 	gcheader gch;  /* common header */
 	union ktap_string ts;
-	union ktap_udata u;
 	struct ktap_closure cl;
 	struct ktap_table h;
 	struct ktap_aggrtable ah;
@@ -426,7 +417,6 @@ typedef int ktap_number;
 #define KTAP_TFUNCTION		6
 #define KTAP_TLCL		(KTAP_TFUNCTION | (0 << 4))  /* closure */
 #define KTAP_TLCF		(KTAP_TFUNCTION | (1 << 4))  /* light C function */
-#define KTAP_TUSERDATA		7
 #define KTAP_TTHREAD		8
 
 #define KTAP_NUMTAGS		9
@@ -473,8 +463,6 @@ typedef int ktap_number;
 #define rawtsvalue(o)	(&val_(o).gc->ts)
 #define pvalue(o)	(&val_(o).p)
 #define fvalue(o)	(val_(o).f)
-#define rawuvalue(o)	(&val_(o).gc->u)
-#define uvalue(o)	(&rawuvalue(o)->uv)
 #define evalue(o)	(val_(o).p)
 #define btvalue(o)	(&val_(o).gc->bt)
 
