@@ -280,21 +280,6 @@ int kp_equalobjv(ktap_state *ks, const ktap_value *t1, const ktap_value *t2)
 /*
  * ktap will not use lua's length operator on table meaning,
  * also # is not for length operator any more in ktap.
- *
- * Quote from lua mannal:
- * 2.5.5 - The Length Operator
- *
- * The length operator is denoted by the unary operator #.
- * The length of a string is its number of bytes(that is,
- * the usual meaning of string length when each character is one byte).
- *
- * The length of a table t is defined to be any integer index n
- * such that t[n] is not nil and t[n+1] is nil; moreover, if t[1] is nil,
- * n can be zero. For a regular array, with non-nil values from 1 to a given n,
- * its length is exactly that n, the index of its last value. If the array has
- * "holes" (that is, nil values between other non-nil values), then #t can be
- * any of the indices that directly precedes a nil value
- * (that is, it may consider any such nil value as the end of the array).
  */
 int kp_objlen(ktap_state *ks, const ktap_value *v)
 {

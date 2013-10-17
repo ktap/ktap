@@ -199,7 +199,7 @@ typedef struct ktap_callinfo {
 	u8 callstatus;
 	int extra;
 	union {
-		struct {  /* only for Lua functions */
+		struct {  /* only for ktap functions */
 			StkId base;  /* base for this function */
 			const unsigned int *savedpc;
 		} l;
