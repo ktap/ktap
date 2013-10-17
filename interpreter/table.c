@@ -1097,60 +1097,60 @@ static void move_table(ktap_state *ks, ktap_table *t1, ktap_table *t2)
 	}
 }
 
-ktap_table *kp_aggrtable_synthesis(ktap_state *ks, ktap_aggrtable *ah)
+ktap_table *kp_ptable_synthesis(ktap_state *ks, ktap_ptable *ph)
 {
-	ktap_table *synth_tbl;
+	ktap_table *agg;
 	int cpu;
 
-	synth_tbl = ah->synth_tbl;
+	agg = ph->agg;
 
 	/* clear the table content before store new elements */
-	kp_table_clear(ks, synth_tbl);
+	kp_table_clear(ks, agg);
 
 	for_each_possible_cpu(cpu) {
-		ktap_table **t = per_cpu_ptr(ah->pcpu_tbl, cpu);
-		move_table(ks, *t, synth_tbl);
+		ktap_table **t = per_cpu_ptr(ph->tbl, cpu);
+		move_table(ks, *t, agg);
 	}
 
-	return synth_tbl;
+	return agg;
 }
 
-void kp_aggrtable_dump(ktap_state *ks, ktap_aggrtable *ah)
+void kp_ptable_dump(ktap_state *ks, ktap_ptable *ph)
 {
-	kp_table_dump(ks, kp_aggrtable_synthesis(ks, ah));
+	kp_table_dump(ks, kp_ptable_synthesis(ks, ph));
 }
 
-ktap_aggrtable *kp_aggrtable_new(ktap_state *ks)
+ktap_ptable *kp_ptable_new(ktap_state *ks)
 {
-	ktap_aggrtable *ah;
+	ktap_ptable *ph;
 	int cpu;
 
-	ah = &kp_newobject(ks, KTAP_TAGGRTABLE, sizeof(ktap_aggrtable),
-			NULL)->ah;
-	ah->pcpu_tbl = alloc_percpu(ktap_table *);
-	ah->gclist = NULL;
+	ph = &kp_newobject(ks, KTAP_TPTABLE, sizeof(ktap_ptable),
+			NULL)->ph;
+	ph->tbl = alloc_percpu(ktap_table *);
+	ph->gclist = NULL;
 
 	for_each_possible_cpu(cpu) {
-		ktap_table **t = per_cpu_ptr(ah->pcpu_tbl, cpu);
-		*t = table_new2(ks, &ah->gclist);
+		ktap_table **t = per_cpu_ptr(ph->tbl, cpu);
+		*t = table_new2(ks, &ph->gclist);
 	}
 
-	ah->synth_tbl = table_new2(ks, &ah->gclist);
+	ph->agg = table_new2(ks, &ph->gclist);
 
-	return ah;
+	return ph;
 }
 
-void kp_aggrtable_free(ktap_state *ks, ktap_aggrtable *ah)
+void kp_ptable_free(ktap_state *ks, ktap_ptable *ph)
 {
-	free_percpu(ah->pcpu_tbl);
-	kp_free_gclist(ks, ah->gclist);
-	kp_free(ks, ah);
+	free_percpu(ph->tbl);
+	kp_free_gclist(ks, ph->gclist);
+	kp_free(ks, ph);
 }
 
 static
-void handle_aggr_count(ktap_state *ks, ktap_aggrtable *ah, ktap_value *key)
+void handle_aggr_count(ktap_state *ks, ktap_ptable *ph, ktap_value *key)
 {
-	ktap_table *t = *__this_cpu_ptr(ah->pcpu_tbl);
+	ktap_table *t = *__this_cpu_ptr(ph->tbl);
 	ktap_value *v = table_set(ks, t, key);
 	ktap_aggraccval *acc;
 
@@ -1166,9 +1166,9 @@ void handle_aggr_count(ktap_state *ks, ktap_aggrtable *ah, ktap_value *key)
 }
 
 static 
-void handle_aggr_max(ktap_state *ks, ktap_aggrtable *ah, ktap_value *key)
+void handle_aggr_max(ktap_state *ks, ktap_ptable *ph, ktap_value *key)
 {
-	ktap_table *t = *__this_cpu_ptr(ah->pcpu_tbl);
+	ktap_table *t = *__this_cpu_ptr(ph->tbl);
 	ktap_value *v = table_set(ks, t, key);
 	ktap_aggraccval *acc;
 
@@ -1184,9 +1184,9 @@ void handle_aggr_max(ktap_state *ks, ktap_aggrtable *ah, ktap_value *key)
 }
 
 static 
-void handle_aggr_min(ktap_state *ks, ktap_aggrtable *ah, ktap_value *key)
+void handle_aggr_min(ktap_state *ks, ktap_ptable *ph, ktap_value *key)
 {
-	ktap_table *t = *__this_cpu_ptr(ah->pcpu_tbl);
+	ktap_table *t = *__this_cpu_ptr(ph->tbl);
 	ktap_value *v = table_set(ks, t, key);
 	ktap_aggraccval *acc;
 
@@ -1202,9 +1202,9 @@ void handle_aggr_min(ktap_state *ks, ktap_aggrtable *ah, ktap_value *key)
 }
 
 static 
-void handle_aggr_sum(ktap_state *ks, ktap_aggrtable *ah, ktap_value *key)
+void handle_aggr_sum(ktap_state *ks, ktap_ptable *ph, ktap_value *key)
 {
-	ktap_table *t = *__this_cpu_ptr(ah->pcpu_tbl);
+	ktap_table *t = *__this_cpu_ptr(ph->tbl);
 	ktap_value *v = table_set(ks, t, key);
 	ktap_aggraccval *acc;
 
@@ -1220,9 +1220,9 @@ void handle_aggr_sum(ktap_state *ks, ktap_aggrtable *ah, ktap_value *key)
 }
 
 static 
-void handle_aggr_avg(ktap_state *ks, ktap_aggrtable *ah, ktap_value *key)
+void handle_aggr_avg(ktap_state *ks, ktap_ptable *ph, ktap_value *key)
 {
-	ktap_table *t = *__this_cpu_ptr(ah->pcpu_tbl);
+	ktap_table *t = *__this_cpu_ptr(ph->tbl);
 	ktap_value *v = table_set(ks, t, key);
 	ktap_aggraccval *acc;
 
@@ -1239,7 +1239,7 @@ void handle_aggr_avg(ktap_state *ks, ktap_aggrtable *ah, ktap_value *key)
 	acc->more++;
 }
 
-typedef void (*aggr_func_t)(ktap_state *ks, ktap_aggrtable *ah, ktap_value *k);
+typedef void (*aggr_func_t)(ktap_state *ks, ktap_ptable *ph, ktap_value *k);
 static aggr_func_t kp_aggregation_handler[] = {
 	handle_aggr_count,
 	handle_aggr_max,
@@ -1248,7 +1248,7 @@ static aggr_func_t kp_aggregation_handler[] = {
 	handle_aggr_avg
 };
 
-void kp_aggrtable_set(ktap_state *ks, ktap_aggrtable *ah,
+void kp_ptable_set(ktap_state *ks, ktap_ptable *ph,
 			ktap_value *key, ktap_value *val)
 {
 	if (unlikely(!ttisaggrval(val))) {
@@ -1256,11 +1256,11 @@ void kp_aggrtable_set(ktap_state *ks, ktap_aggrtable *ah,
 		return;
 	}
 
-	kp_aggregation_handler[nvalue(val)](ks, ah, key);
+	kp_aggregation_handler[nvalue(val)](ks, ph, key);
 }
 
 
-void kp_aggrtable_get(ktap_state *ks, ktap_aggrtable *ah, ktap_value *key,
+void kp_ptable_get(ktap_state *ks, ktap_ptable *ph, ktap_value *key,
 		      ktap_value *val)
 {
 	ktap_aggraccval acc; /* in stack */
@@ -1271,7 +1271,7 @@ void kp_aggrtable_get(ktap_state *ks, ktap_aggrtable *ah, ktap_value *key,
 	acc.more = -1;
 
 	for_each_possible_cpu(cpu) {
-		ktap_table **t = per_cpu_ptr(ah->pcpu_tbl, cpu);
+		ktap_table **t = per_cpu_ptr(ph->tbl, cpu);
 
 		v = table_get(*t, key);
 		if (isnil(v))
@@ -1292,8 +1292,8 @@ void kp_aggrtable_get(ktap_state *ks, ktap_aggrtable *ah, ktap_value *key,
 	}
 }
 
-void kp_aggrtable_histogram(ktap_state *ks, ktap_aggrtable *ah)
+void kp_ptable_histogram(ktap_state *ks, ktap_ptable *ph)
 {
-	kp_table_histogram(ks, kp_aggrtable_synthesis(ks, ah));
+	kp_table_histogram(ks, kp_ptable_synthesis(ks, ph));
 }
 #endif

@@ -51,8 +51,8 @@ static int ktap_lib_pairs(ktap_state *ks)
 
 	if (ttistable(v)) {
 		t = hvalue(v);
-	} else if (ttisaggrtable(v)) {
-		t = kp_aggrtable_synthesis(ks, ahvalue(v));
+	} else if (ttisptable(v)) {
+		t = kp_ptable_synthesis(ks, phvalue(v));
 	} else if (isnil(v)) {
 		kp_error(ks, "table is nil in pairs\n");
 		return 0;
@@ -293,18 +293,18 @@ static int ktap_lib_histogram(ktap_state *ks)
 
 	if (ttistable(v))
 		kp_table_histogram(ks, hvalue(v));
-	else if (ttisaggrtable(v))
-		kp_aggrtable_histogram(ks, ahvalue(v));
+	else if (ttisptable(v))
+		kp_ptable_histogram(ks, phvalue(v));
 
 	return 0;
 }
 
 static int ktap_lib_aggr_table(ktap_state *ks)
 {
-	ktap_aggrtable *ah;
+	ktap_ptable *ph;
 
-	ah = kp_aggrtable_new(ks);
-	setahvalue(ks->top, ah);
+	ph = kp_ptable_new(ks);
+	setphvalue(ks->top, ph);
 	incr_top(ks);
 	return 1;
 }

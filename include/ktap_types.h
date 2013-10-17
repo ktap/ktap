@@ -254,12 +254,12 @@ enum AGGREGATION_TYPE {
 	AGGREGATION_TYPE_AVG
 };
 
-typedef struct ktap_aggrtable {
+typedef struct ktap_ptable {
 	CommonHeader;
-	ktap_table **pcpu_tbl;
-	ktap_table *synth_tbl;
+	ktap_table **tbl; /* percpu table */
+	ktap_table *agg;
 	ktap_gcobject *gclist;
-} ktap_aggrtable;
+} ktap_ptable;
 
 typedef struct ktap_aggraccval {
 	CommonHeader;
@@ -357,7 +357,7 @@ union ktap_gcobject {
 	union ktap_string ts;
 	struct ktap_closure cl;
 	struct ktap_table h;
-	struct ktap_aggrtable ah;
+	struct ktap_ptable ph;
 	struct ktap_aggraccval acc;
 	struct ktap_proto p;
 	struct ktap_upval uv;
@@ -429,7 +429,7 @@ typedef int ktap_number;
 
 #define KTAP_TBTRACE		14
 
-#define KTAP_TAGGRTABLE		15
+#define KTAP_TPTABLE		15
 #define KTAP_TAGGRACCVAL	16
 #define KTAP_TAGGRVAL		17
 /*
@@ -456,7 +456,7 @@ typedef int ktap_number;
 #define bvalue(o)	(val_(o).b)
 #define nvalue(o)	(val_(o).n)
 #define hvalue(o)	(&val_(o).gc->h)
-#define ahvalue(o)	(&val_(o).gc->ah)
+#define phvalue(o)	(&val_(o).gc->ph)
 #define aggraccvalue(o)	(&val_(o).gc->acc)
 #define CLVALUE(o)	(&val_(o).gc->cl.l)
 #define clcvalue(o)	(&val_(o).gc->cl.c)
@@ -478,7 +478,7 @@ typedef int ktap_number;
 #define ttisnumber(o)		((o)->type == KTAP_TNUMBER)
 #define ttisfunc(o)		((o)->type == KTAP_TFUNCTION)
 #define ttistable(o)		((o)->type == KTAP_TTABLE)
-#define ttisaggrtable(o)	((o)->type == KTAP_TAGGRTABLE)
+#define ttisptable(o)		((o)->type == KTAP_TPTABLE)
 #define ttisaggrval(o)		((o)->type == KTAP_TAGGRVAL)
 #define ttisaggracc(o)		((o)->type == KTAP_TAGGRACCVAL)
 #define ttisnil(o)		((o)->type == KTAP_TNIL)
@@ -519,9 +519,9 @@ typedef int ktap_number;
 	{ ktap_value *io=(obj); \
 	  val_(io).gc = (ktap_gcobject *)(x); settype(io, KTAP_TTABLE); }
 
-#define setahvalue(obj,x) \
+#define setphvalue(obj,x) \
 	{ ktap_value *io=(obj); \
-	  val_(io).gc = (ktap_gcobject *)(x); settype(io, KTAP_TAGGRTABLE); }
+	  val_(io).gc = (ktap_gcobject *)(x); settype(io, KTAP_TPTABLE); }
 
 #define setfvalue(obj,x) \
 	{ ktap_value *io=(obj); val_(io).f=(x); settype(io, KTAP_TLCF); }
@@ -590,15 +590,15 @@ void kp_table_histogram(ktap_state *ks, ktap_table *t);
 int kp_table_next(ktap_state *ks, ktap_table *t, StkId key);
 void kp_table_atomic_inc(ktap_state *ks, ktap_table *t, ktap_value *key, int n);
 void kp_aggraccval_dump(ktap_state *ks, ktap_aggraccval *acc);
-ktap_aggrtable *kp_aggrtable_new(ktap_state *ks);
-ktap_table *kp_aggrtable_synthesis(ktap_state *ks, ktap_aggrtable *ah);
-void kp_aggrtable_dump(ktap_state *ks, ktap_aggrtable *ah);
-void kp_aggrtable_free(ktap_state *ks, ktap_aggrtable *ah);
-void kp_aggrtable_set(ktap_state *ks, ktap_aggrtable *ah,
+ktap_ptable *kp_ptable_new(ktap_state *ks);
+ktap_table *kp_ptable_synthesis(ktap_state *ks, ktap_ptable *ph);
+void kp_ptable_dump(ktap_state *ks, ktap_ptable *ph);
+void kp_ptable_free(ktap_state *ks, ktap_ptable *ph);
+void kp_ptable_set(ktap_state *ks, ktap_ptable *ph,
 			ktap_value *key, ktap_value *val);
-void kp_aggrtable_get(ktap_state *ks, ktap_aggrtable *ah,
+void kp_ptable_get(ktap_state *ks, ktap_ptable *ph,
 			ktap_value *key, ktap_value *val);
-void kp_aggrtable_histogram(ktap_state *ks, ktap_aggrtable *ah);
+void kp_ptable_histogram(ktap_state *ks, ktap_ptable *ph);
 void kp_obj_dump(ktap_state *ks, const ktap_value *v);
 void kp_showobj(ktap_state *ks, const ktap_value *v);
 int kp_objlen(ktap_state *ks, const ktap_value *rb);

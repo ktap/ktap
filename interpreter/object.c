@@ -227,8 +227,8 @@ void kp_showobj(ktap_state *ks, const ktap_value *v)
 	case KTAP_TBTRACE:
 		kp_btrace_dump(ks, btvalue(v));
 		break;
-	case KTAP_TAGGRTABLE:
-		kp_aggrtable_dump(ks, ahvalue(v));
+	case KTAP_TPTABLE:
+		kp_ptable_dump(ks, phvalue(v));
 		break;
 	case KTAP_TAGGRACCVAL:
 		kp_aggraccval_dump(ks, aggraccvalue(v));
@@ -414,8 +414,8 @@ void kp_free_gclist(ktap_state *ks, ktap_gcobject *o)
 			free_proto(ks, (ktap_proto *)o);
 			break;
 #ifdef __KERNEL__
-		case KTAP_TAGGRTABLE:
-			kp_aggrtable_free(ks, (ktap_aggrtable *)o);
+		case KTAP_TPTABLE:
+			kp_ptable_free(ks, (ktap_ptable *)o);
 			break;
 #endif
 		default:

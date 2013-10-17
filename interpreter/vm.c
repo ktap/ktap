@@ -173,8 +173,8 @@ static void gettable(ktap_state *ks, const ktap_value *t, ktap_value *key,
 {
 	if (ttistable(t)) {
 		setobj(val, kp_table_get(hvalue(t), key));
-	} else if (ttisaggrtable(t)) {
-		kp_aggrtable_get(ks, ahvalue(t), key, val);
+	} else if (ttisptable(t)) {
+		kp_ptable_get(ks, phvalue(t), key, val);
 	} else {
 		kp_error(ks, "get key from non-table\n");
 	}
@@ -185,8 +185,8 @@ static void settable(ktap_state *ks, const ktap_value *t, ktap_value *key,
 {
 	if (ttistable(t)) {
 		kp_table_setvalue(ks, hvalue(t), key, val);
-	} else if (ttisaggrtable(t)) {
-		kp_aggrtable_set(ks, ahvalue(t), key, val);
+	} else if (ttisptable(t)) {
+		kp_ptable_set(ks, phvalue(t), key, val);
 	} else {
 		kp_error(ks, "set key to non-table\n");
 	}
