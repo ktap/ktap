@@ -257,6 +257,7 @@ enum AGGREGATION_TYPE {
 typedef struct ktap_aggrtable {
 	CommonHeader;
 	ktap_table **pcpu_tbl;
+	ktap_table *synth_tbl;
 	ktap_gcobject *gclist;
 } ktap_aggrtable;
 

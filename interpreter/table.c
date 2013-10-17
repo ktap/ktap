@@ -1102,7 +1102,10 @@ ktap_table *kp_aggrtable_synthesis(ktap_state *ks, ktap_aggrtable *ah)
 	ktap_table *synth_tbl;
 	int cpu;
 
-	synth_tbl = table_new2(ks, &ah->gclist);
+	synth_tbl = ah->synth_tbl;
+
+	/* clear the table content before store new elements */
+	kp_table_clear(ks, synth_tbl);
 
 	for_each_possible_cpu(cpu) {
 		ktap_table **t = per_cpu_ptr(ah->pcpu_tbl, cpu);
@@ -1130,7 +1133,9 @@ ktap_aggrtable *kp_aggrtable_new(ktap_state *ks)
 	for_each_possible_cpu(cpu) {
 		ktap_table **t = per_cpu_ptr(ah->pcpu_tbl, cpu);
 		*t = table_new2(ks, &ah->gclist);
-	}	
+	}
+
+	ah->synth_tbl = table_new2(ks, &ah->gclist);
 
 	return ah;
 }
