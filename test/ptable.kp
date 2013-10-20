@@ -1,0 +1,46 @@
+#!/usr/bin/env ktap
+
+function failed() {
+	printf("failed\n");
+	exit(-1);
+}
+
+#---------------------------------#
+
+s = ptable()
+
+for (i = 1, 100, 1) {
+	s["k"] <<< i
+}
+
+if (count(s["k"]) != 100) {
+	failed()
+}
+if (sum(s["k"]) != 5050) {
+	failed()
+}
+if (max(s["k"]) != 100) {
+	failed()
+}
+if (min(s["k"]) != 1) {
+	failed()
+}
+
+for (i = 1, 10000, 1) {
+	s[i] <<< i
+}
+
+if (min(s[1]) != 1) {
+	failed()
+}
+
+if (sum(s[10]) != 10) {
+	failed()
+}
+
+if (max(s[100]) != 100) {
+	failed()
+}
+
+
+

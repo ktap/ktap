@@ -1243,6 +1243,18 @@ static void assignment(ktap_lexstate *ls, struct LHS_assign *lh, int nvars)
 			codegen_storeincr(ls->fs, &lh->v, &e);
 			return;  /* avoid default */
 		}
+	} else if (testnext(ls, TK_AGGR_ASSIGN)) { /* assignment -> '<<<' explist */
+		int nexps;
+
+		nexps = explist(ls, &e);
+		if (nexps != nvars) {
+			lex_syntaxerror(ls, "don't allow multi-assign for <<<");
+		} else {
+			/* close last expression */
+			codegen_setoneret(ls->fs, &e);
+			codegen_store_aggr(ls->fs, &lh->v, &e);
+			return;  /* avoid default */
+		}
 	}
 
 	init_exp(&e, VNONRELOC, ls->fs->freereg-1);  /* default assignment */
@@ -1606,7 +1618,7 @@ static void exprstat(ktap_lexstate *ls)
 	suffixedexp(ls, &v.v);
 	/* stat -> assignment ? */
 	if (ls->t.token == '=' || ls->t.token == ',' ||
-	    ls->t.token == TK_INCR) {
+	    ls->t.token == TK_INCR || ls->t.token == TK_AGGR_ASSIGN) {
 		v.prev = NULL;
 		assignment(ls, &v, 1);
 	} else {  /* stat -> func */

@@ -212,7 +212,7 @@ typedef struct ktap_callinfo {
 
 
 /*
- * ktap_tables
+ * ktap_table
  */
 typedef union ktap_tkey {
 	struct {
@@ -230,6 +230,13 @@ typedef struct ktap_tnode {
 } ktap_tnode;
 
 
+typedef struct ktap_stat_data {
+	int count;
+	int sum;
+	int min, max;
+} ktap_stat_data;
+
+
 typedef struct ktap_table {
 	CommonHeader;
 #ifdef __KERNEL__
@@ -241,32 +248,22 @@ typedef struct ktap_table {
 	ktap_value *array;  /* array part */
 	ktap_tnode *node;
 	ktap_tnode *lastfree;  /* any free position is before this position */
+
+	int with_stats;
+	ktap_stat_data *sd_arr;
+	ktap_stat_data *sd_rec;
+
 	ktap_gcobject *gclist;
 } ktap_table;
 
 #define lmod(s,size)	((int)((s) & ((size)-1)))
 
-enum AGGREGATION_TYPE {
-	AGGREGATION_TYPE_COUNT,
-	AGGREGATION_TYPE_MAX,
-	AGGREGATION_TYPE_MIN,
-	AGGREGATION_TYPE_SUM,
-	AGGREGATION_TYPE_AVG
-};
-
+/* parallel table */
 typedef struct ktap_ptable {
 	CommonHeader;
 	ktap_table **tbl; /* percpu table */
 	ktap_table *agg;
-	ktap_gcobject *gclist;
 } ktap_ptable;
-
-typedef struct ktap_aggraccval {
-	CommonHeader;
-	int type;
-	int val;
-	int more;
-} ktap_aggraccval;
 
 typedef struct ktap_stringtable {
 	ktap_gcobject **hash;
@@ -340,7 +337,7 @@ typedef struct ktap_state {
 
 #ifdef __KERNEL__
 	struct ktap_event *current_event;
-	int aggr_accval; /* for temp value storage */
+	ktap_stat_data temp_sd;
 #endif
 } ktap_state;
 
@@ -358,7 +355,6 @@ union ktap_gcobject {
 	struct ktap_closure cl;
 	struct ktap_table h;
 	struct ktap_ptable ph;
-	struct ktap_aggraccval acc;
 	struct ktap_proto p;
 	struct ktap_upval uv;
 	struct ktap_state th;  /* thread */
@@ -418,23 +414,22 @@ typedef int ktap_number;
 #define KTAP_TFUNCTION		6
 #define KTAP_TLCL		(KTAP_TFUNCTION | (0 << 4))  /* closure */
 #define KTAP_TLCF		(KTAP_TFUNCTION | (1 << 4))  /* light C function */
-#define KTAP_TTHREAD		8
+#define KTAP_TTHREAD		7
 
-#define KTAP_NUMTAGS		9
+#define KTAP_NUMTAGS		8
 
-#define KTAP_TPROTO		11
-#define KTAP_TUPVAL		12
+#define KTAP_TPROTO		9
+#define KTAP_TUPVAL		10
 
-#define KTAP_TEVENT		13
+#define KTAP_TEVENT		11
 
-#define KTAP_TBTRACE		14
+#define KTAP_TBTRACE		12
 
-#define KTAP_TPTABLE		15
-#define KTAP_TAGGRACCVAL	16
-#define KTAP_TAGGRVAL		17
+#define KTAP_TPTABLE		13
+#define KTAP_TSTATDATA		14
 /*
  * TODO: type number is ok so far, but it may collide later between
- * 17+ and | (1 << 4). And ttypenv cannot be used on KTAP_TAGGRVAL now.
+ * 16+ and | (1 << 4), so be careful on this.
  */
 
 #define ttype(o)	((o->type) & 0x3F)
@@ -457,12 +452,12 @@ typedef int ktap_number;
 #define nvalue(o)	(val_(o).n)
 #define hvalue(o)	(&val_(o).gc->h)
 #define phvalue(o)	(&val_(o).gc->ph)
-#define aggraccvalue(o)	(&val_(o).gc->acc)
 #define CLVALUE(o)	(&val_(o).gc->cl.l)
 #define clcvalue(o)	(&val_(o).gc->cl.c)
 #define clvalue(o)	(&val_(o).gc->cl)
 #define rawtsvalue(o)	(&val_(o).gc->ts)
 #define pvalue(o)	(&val_(o).p)
+#define sdvalue(o)	((ktap_stat_data *)val_(o).p)
 #define fvalue(o)	(val_(o).f)
 #define evalue(o)	(val_(o).p)
 #define btvalue(o)	(&val_(o).gc->bt)
@@ -479,8 +474,7 @@ typedef int ktap_number;
 #define ttisfunc(o)		((o)->type == KTAP_TFUNCTION)
 #define ttistable(o)		((o)->type == KTAP_TTABLE)
 #define ttisptable(o)		((o)->type == KTAP_TPTABLE)
-#define ttisaggrval(o)		((o)->type == KTAP_TAGGRVAL)
-#define ttisaggracc(o)		((o)->type == KTAP_TAGGRACCVAL)
+#define ttisstatdata(o)		((o)->type == KTAP_TSTATDATA)
 #define ttisnil(o)		((o)->type == KTAP_TNIL)
 #define ttisboolean(o)		((o)->type == KTAP_TBOOLEAN)
 #define ttisequal(o1,o2)        ((o1)->type == (o2)->type)
@@ -499,12 +493,9 @@ typedef int ktap_number;
 #define setnvalue(obj, x) \
 	{ ktap_value *io = (obj); io->val.n = (x); settype(io, KTAP_TNUMBER); }
 
-#define setaggrvalue(obj, x) \
-	{ ktap_value *io = (obj); io->val.n = (x); settype(io, KTAP_TAGGRVAL); }
-
-#define setaggraccvalue(obj,x) \
-	{ ktap_value *io=(obj); \
-	  val_(io).gc = (ktap_gcobject *)(x); settype(io, KTAP_TAGGRACCVAL); }
+#define setsdvalue(obj, x) \
+	{ ktap_value *io = (obj); io->val.p = (x); \
+			settype(io, KTAP_TSTATDATA); }
 
 #define setsvalue(obj, x) \
 	{ ktap_value *io = (obj); \
@@ -589,7 +580,7 @@ void kp_table_clear(ktap_state *ks, ktap_table *t);
 void kp_table_histogram(ktap_state *ks, ktap_table *t);
 int kp_table_next(ktap_state *ks, ktap_table *t, StkId key);
 void kp_table_atomic_inc(ktap_state *ks, ktap_table *t, ktap_value *key, int n);
-void kp_aggraccval_dump(ktap_state *ks, ktap_aggraccval *acc);
+void kp_statdata_dump(ktap_state *ks, ktap_stat_data *sd);
 ktap_ptable *kp_ptable_new(ktap_state *ks);
 ktap_table *kp_ptable_synthesis(ktap_state *ks, ktap_ptable *ph);
 void kp_ptable_dump(ktap_state *ks, ktap_ptable *ph);

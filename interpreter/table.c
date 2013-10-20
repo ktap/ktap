@@ -118,6 +118,35 @@ static int ceillog2(unsigned int x)
 	return l + log_2[x];
 }
 
+#ifdef __KERNEL__
+static inline ktap_stat_data *_read_sd(const ktap_value *v,
+				    ktap_tnode *hnode, ktap_stat_data *hsd)
+{
+	ktap_tnode *node = container_of(v, ktap_tnode, i_val);
+	return hsd + (node - hnode);
+}
+
+static inline ktap_stat_data *read_sd(ktap_table *t, const ktap_value *v)
+{
+	if (v >= &t->array[0] && v < &t->array[t->sizearray])
+		return &t->sd_arr[v - &t->array[0]];
+	else
+		return _read_sd(v, t->node, t->sd_rec);
+}
+
+#else
+static inline ktap_stat_data *_read_sd(const ktap_value *v,
+				    ktap_tnode *hnode, ktap_stat_data *hsd)
+{
+	return NULL;
+}
+
+static inline ktap_stat_data *read_sd(ktap_table *t, const ktap_value *v)
+{
+	return NULL;
+}
+#endif
+
 
 ktap_table *kp_table_new(ktap_state *ks)
 {
@@ -128,6 +157,9 @@ ktap_table *kp_table_new(ktap_state *ks)
 	t->sizearray = 0;
 	t->node = (ktap_tnode *)dummynode;
 	t->gclist = NULL;
+	t->with_stats = 0;
+	t->sd_arr = NULL;
+	t->sd_rec = NULL;
 	setnodevector(ks, t, 0);
 
 	kp_table_lock_init(t);
@@ -365,12 +397,31 @@ static int numusehash(const ktap_table *t, int *nums, int *pnasize)
 	return totaluse;
 }
 
+static void update_array_sd(ktap_table *t)
+{
+	int i;
+
+	for (i = 0; i < t->sizearray; i++) {
+		ktap_value *v = &t->array[i];
+
+		if (!ttisstatdata(v))
+			continue;
+
+		setsdvalue(v, &t->sd_arr[i]);
+	}
+}
 
 static void setarrayvector(ktap_state *ks, ktap_table *t, int size)
 {
 	int i;
 
 	kp_realloc(ks, t->array, t->sizearray, size, ktap_value);
+	if (t->with_stats) {
+		kp_realloc(ks, t->sd_arr, t->sizearray, size,
+				ktap_stat_data);
+		update_array_sd(t);
+	}
+
 	for (i = t->sizearray; i < size; i++)
 		setnilvalue(&t->array[i]);
 
@@ -394,6 +445,9 @@ static void setnodevector(ktap_state *ks, ktap_table *t, int size)
 
 		size = twoto(lsize);
 		t->node = kp_malloc(ks, size * sizeof(ktap_tnode));
+		if (t->with_stats)
+			t->sd_rec = kp_malloc(ks, size *
+						sizeof(ktap_stat_data));
 		for (i = 0; i < size; i++) {
 			ktap_tnode *n = gnode(t, i);
 			gnext(n) = NULL;
@@ -408,10 +462,11 @@ static void setnodevector(ktap_state *ks, ktap_table *t, int size)
 
 static void table_resize(ktap_state *ks, ktap_table *t, int nasize, int nhsize)
 {
-	int i;
 	int oldasize = t->sizearray;
 	int oldhsize = t->lsizenode;
-	ktap_tnode *nold = t->node;  /* save old hash ... */
+	ktap_tnode *nold = t->node;  /* save old hash */
+	ktap_stat_data *sd_rec_old = t->sd_rec;  /* save stat_data */
+	int i;
 
 #ifdef __KERNEL__
 	kp_verbose_printf(ks, "table resize, nasize: %d, nhsize: %d\n",
@@ -427,29 +482,53 @@ static void table_resize(ktap_state *ks, ktap_table *t, int nasize, int nhsize)
 	if (nasize < oldasize) {  /* array part must shrink? */
 		t->sizearray = nasize;
 		/* re-insert elements from vanishing slice */
-		for (i=nasize; i<oldasize; i++) {
-			if (!ttisnil(&t->array[i]))
-				table_setint(ks, t, i + 1, &t->array[i]);
+		for (i = nasize; i < oldasize; i++) {
+			if (!ttisnil(&t->array[i])) {
+				ktap_value *v;
+				v = (ktap_value *)table_getint(t, i + 1);
+				setobj(v, &t->array[i]);
+
+				if (t->with_stats) {
+					*read_sd(t, v) = t->sd_arr[i];
+					setsdvalue(v, read_sd(t, v));
+				}
+			}
 		}
 
 		/* shrink array */
 		kp_realloc(ks, t->array, oldasize, nasize, ktap_value);
+		if (t->with_stats) {
+			kp_realloc(ks, t->sd_arr, oldasize, nasize,
+					ktap_stat_data);
+			update_array_sd(t);
+		}
 	}
 
 	/* re-insert elements from hash part */
 	for (i = twoto(oldhsize) - 1; i >= 0; i--) {
-		ktap_tnode *old = nold+i;
+		ktap_tnode *old = nold + i;
 		if (!ttisnil(gval(old))) {
+			ktap_value *v = table_set(ks, t, gkey(old));
 			/*
 			 * doesn't need barrier/invalidate cache, as entry was
 			 * already present in the table
 			 */
-			setobj(table_set(ks, t, gkey(old)), gval(old));
+			setobj(v, gval(old));
+			
+			if (t->with_stats) {
+				ktap_stat_data *sd;
+
+				sd = read_sd(t, v);
+				*sd = *_read_sd(gval(old), nold, sd_rec_old);
+				setsdvalue(v, sd);
+			}
 		}
 	}
 
-	if (!isdummy(nold))
+	if (!isdummy(nold)) {
 		kp_free(ks, nold); /* free old array */
+		kp_free(ks, sd_rec_old);
+	}
 }
 
 void kp_table_resize(ktap_state *ks, ktap_table *t, int nasize, int nhsize)
@@ -521,20 +600,35 @@ static ktap_value *table_newkey(ktap_state *ks, ktap_table *t,
 		ktap_tnode *n = getfreepos(t);  /* get a free place */
 		if (n == NULL) {  /* cannot find a free place? */
 			rehash(ks, t, key);  /* grow table */
-			/* whatever called 'newkey' take care of TM cache and GC barrier */
-			return table_set(ks, t, key);  /* insert key into grown table */
+			/* insert key into grown table */
+			return table_set(ks, t, key);
 		}
 
 		othern = mainposition(t, gkey(mp));
-		if (othern != mp) {  /* is colliding node out of its main position? */
-			/* yes; move colliding node into free position */
+		if (othern != mp) {
+			/* is colliding node out of its main position? */
+
+			/* move colliding node into free position */
 			while (gnext(othern) != mp)
 				othern = gnext(othern);  /* find previous */
-			gnext(othern) = n;  /* redo the chain with `n' in place of `mp' */
-			*n = *mp;  /* copy colliding node into free pos. (mp->next also goes) */
+
+			/* redo the chain with `n' in place of `mp' */
+			gnext(othern) = n;
+
+			/* copy colliding node into free pos */
+			*n = *mp;
+
+			if (t->with_stats) {
+				ktap_stat_data *sd = read_sd(t, gval(n));
+				*sd = *read_sd(t, gval(mp));
+				setsdvalue(gval(n), sd);
+			}
+
 			gnext(mp) = NULL;  /* now `mp' is free */
 			setnilvalue(gval(mp));
-		} else {  /* colliding node is in its own main position */
+		} else {
+			/* colliding node is in its own main position */
+
 			/* new node will go into free position */
 			gnext(n) = gnext(mp);  /* chain new position */
 			gnext(mp) = n;
@@ -721,10 +815,15 @@ int kp_table_length(ktap_state *ks, ktap_table *t)
 
 void kp_table_free(ktap_state *ks, ktap_table *t)
 {
-	if (t->sizearray > 0)
+	if (t->sizearray > 0) {
 		kp_free(ks, t->array);
-	if (!isdummy(t->node))
+		kp_free(ks, t->sd_arr);
+	}
+
+	if (!isdummy(t->node)) {
 		kp_free(ks, t->node);
+		kp_free(ks, t->sd_rec);
+	}
 
 	kp_free_gclist(ks, t->gclist);
 	kp_free(ks, t);
@@ -732,22 +831,17 @@ void kp_table_free(ktap_state *ks, ktap_table *t)
 
 void kp_table_dump(ktap_state *ks, ktap_table *t)
 {
-	int i, count = 0;
+	int i;
 
-	kp_puts(ks, "{");
 	for (i = 0; i < t->sizearray; i++) {
 		ktap_value *v = &t->array[i];
 
 		if (isnil(v))
 			continue;
 
-		if (count)
-			kp_puts(ks, ", ");
-
-		kp_printf(ks, "(%d: ", i + 1);
+		kp_printf(ks, "%d:\t", i + 1);
 		kp_showobj(ks, v);
-		kp_puts(ks, ")");
-		count++;
+		kp_puts(ks, "\n");
 	}
 
 	for (i = 0; i < sizenode(t); i++) {
@@ -756,17 +850,11 @@ void kp_table_dump(ktap_state *ks, ktap_table *t)
 		if (isnil(gkey(n)))
 			continue;
 
-		if (count)
-			kp_puts(ks, ", ");
-
-		kp_puts(ks, "(");
 		kp_showobj(ks, gkey(n));
-		kp_puts(ks, ": ");
+		kp_puts(ks, ":\t");
 		kp_showobj(ks, gval(n));
-		kp_puts(ks, ")");
-		count++;
+		kp_puts(ks, "\n");
 	}
-	kp_puts(ks, "}");
 }
 
 /*
@@ -777,28 +865,11 @@ void kp_table_dump(ktap_state *ks, ktap_table *t)
 void kp_table_clear(ktap_state *ks, ktap_table *t)
 {
 	unsigned long __maybe_unused flags;
-	int i;
 
 	kp_table_lock(t);
 
-	for (i = 0; i < t->sizearray; i++) {
-		ktap_value *v = &t->array[i];
-
-		if (isnil(v))
-			continue;
-
-		setnilvalue(v);
-	}
-
-	for (i = 0; i < sizenode(t); i++) {
-		ktap_tnode *n = &t->node[i];
-
-		if (isnil(gkey(n)))
-			continue;
-
-		setnilvalue(gkey(n));
-		setnilvalue(gval(n));
-	}
+	memset(t->array, 0, t->sizearray * sizeof(ktap_value));
+	memset(t->node, 0, sizenode(t) * sizeof(ktap_tnode));
 
 	kp_table_unlock(t);
 }
@@ -831,7 +902,7 @@ static int hist_record_cmp(const void *r1, const void *r2)
 		return -1;
 }
 
-static int kp_aggracc_read(ktap_aggraccval *acc);
+/* todo: make histdump to be faster */
 
 /* histogram: key should be number or string, value must be number */
 static void table_histdump(ktap_state *ks, ktap_table *t, int shownums)
@@ -859,8 +930,8 @@ static void table_histdump(ktap_state *ks, ktap_table *t, int shownums)
 
 		if (ttisnumber(v))
 			num = nvalue(v);
-		else if (ttisaggracc(v))
-			num = kp_aggracc_read(aggraccvalue(v));
+		else if (ttisstatdata(v))
+			num = sdvalue(v)->count;
 		else {
 			kp_table_unlock(t);
 			goto error;
@@ -881,8 +952,8 @@ static void table_histdump(ktap_state *ks, ktap_table *t, int shownums)
 
 		if (ttisnumber(v))
 			num = nvalue(v);
-		else if (ttisaggracc(v))
-			num = kp_aggracc_read(aggraccvalue(v));
+		else if (ttisstatdata(v))
+			num = sdvalue(v)->count;
 		else {
 			kp_table_unlock(t);
 			goto error;
@@ -964,111 +1035,26 @@ void kp_table_histogram(ktap_state *ks, ktap_table *t)
 }
 
 /*
- * Aggregation Table
+ * Parallel Table
  */
 
-static ktap_table *table_new2(ktap_state *ks, ktap_gcobject **list)
+void kp_statdata_dump(ktap_state *ks, ktap_stat_data *sd)
 {
-	ktap_table *t = &kp_newobject(ks, KTAP_TTABLE, sizeof(ktap_table),
-				      list)->h;
-	t->flags = (u8)(~0);
-	t->array = NULL;
-	t->sizearray = 0;
-	t->node = (ktap_tnode *)dummynode;
-	t->gclist = NULL;
-	setnodevector(ks, t, 0);
-
-	kp_table_lock_init(t);
-	return t;
+	kp_printf(ks, "[count: %6d\tsum: %6d\tmax: %6d\tmin: %6d\tavg: %6d]",
+		sd->count, sd->sum, sd->max, sd->min, sd->sum/sd->count);
 }
 
-static int kp_aggracc_read(ktap_aggraccval *acc)
+static void statdata_add(ktap_stat_data *sd1, ktap_stat_data *sd2)
 {
-	switch (acc->type) {
-	case AGGREGATION_TYPE_COUNT:
-	case AGGREGATION_TYPE_MAX:
-	case AGGREGATION_TYPE_MIN:
-	case AGGREGATION_TYPE_SUM:
-		return acc->val;
-	case AGGREGATION_TYPE_AVG:
-		return acc->val / acc->more;
-	default:
-		return 0;
-	}
-
+	sd2->count += sd1->count;
+	sd2->sum += sd1->sum;
+	if (sd1->max > sd2->max)
+		sd2->max = sd1->max;
+	if (sd1->min < sd2->min)
+		sd2->min = sd1->min;
 }
 
-void kp_aggraccval_dump(ktap_state *ks, ktap_aggraccval *acc)
-{
-	switch (acc->type) {
-	case AGGREGATION_TYPE_COUNT:
-	case AGGREGATION_TYPE_MAX:
-	case AGGREGATION_TYPE_MIN:
-	case AGGREGATION_TYPE_SUM:
-		kp_printf(ks, "%d", acc->val);
-		break;
-	case AGGREGATION_TYPE_AVG:
-		kp_printf(ks, "%d", acc->val / acc->more);
-		break;
-	default:
-		break;
-	}
-}
-
-static void synth_acc(ktap_aggraccval *acc1, ktap_aggraccval *acc2)
-{
-	switch (acc1->type) {
-	case AGGREGATION_TYPE_COUNT:
-		acc2->val += acc1->val;
-		break;
-	case AGGREGATION_TYPE_MAX:
-		acc2->val = max(acc1->val, acc2->val);
-		break;
-	case AGGREGATION_TYPE_MIN:
-		acc2->val = min(acc1->val, acc2->val);
-		break;
-	case AGGREGATION_TYPE_SUM:
-		acc2->val += acc1->val;
-		break;
-	case AGGREGATION_TYPE_AVG:
-		acc2->val += acc1->val;
-		acc2->more += acc1->more;
-		break;
-	default:
-		break;
-	}
-}
-
-static ktap_aggraccval *get_accval(ktap_state *ks, int type,
-				   ktap_gcobject **list)
-{
-	ktap_aggraccval *acc;
-
-	acc = &kp_newobject(ks, KTAP_TAGGRACCVAL, sizeof(ktap_aggraccval),
-				list)->acc;
-	acc->type = type;
-	acc->val = 0;
-	acc->more = 0;
-	return acc;
-}
-
-static void synth_accval(ktap_state *ks, ktap_value *o1, ktap_value *o2,
-			 ktap_gcobject **list)
-{
-	ktap_aggraccval *acc;
-
-	if (isnil(o2)) {
-		acc = get_accval(ks, aggraccvalue(o1)->type, list);
-		acc->val = aggraccvalue(o1)->val;
-		acc->more = aggraccvalue(o1)->more;
-		setaggraccvalue(o2, acc);
-		return;
-	}
-
-	synth_acc(aggraccvalue(o1), aggraccvalue(o2));
-}
-
-static void move_table(ktap_state *ks, ktap_table *t1, ktap_table *t2)
+static void merge_table(ktap_state *ks, ktap_table *t1, ktap_table *t2)
 {
 	ktap_value *newv;
 	ktap_value n;
@@ -1076,6 +1062,7 @@ static void move_table(ktap_state *ks, ktap_table *t1, ktap_table *t2)
 
 	for (i = 0; i < t1->sizearray; i++) {
 		ktap_value *v = &t1->array[i];
+		ktap_stat_data *sd;
 
 		if (isnil(v))
 			continue;
@@ -1083,7 +1070,12 @@ static void move_table(ktap_state *ks, ktap_table *t1, ktap_table *t2)
 		setnvalue(&n, i);
 
 		newv = table_set(ks, t2, &n);
-		synth_accval(ks, v, newv, &t2->gclist);
+		sd = read_sd(t2, newv);
+		if (isnil(newv)) {
+			*sd = *read_sd(t1, v);
+			setsdvalue(newv, sd);
+		} else
+			statdata_add(read_sd(t1, v), sd);
 	}
 
 	for (i = 0; i < sizenode(t1); i++) {
@@ -1093,7 +1085,12 @@ static void move_table(ktap_state *ks, ktap_table *t1, ktap_table *t2)
 			continue;
 
 		newv = table_set(ks, t2, gkey(node));
-		synth_accval(ks, gval(node), newv, &t2->gclist);
+		if (isnil(newv)) {
+			*read_sd(t2, newv) = *read_sd(t1, gval(node));
+			setsdvalue(newv, read_sd(t2, newv));
+		} else
+			statdata_add(read_sd(t1, gval(node)),
+				     read_sd(t2, newv));
 	}
 }
 
@@ -1109,7 +1106,7 @@ ktap_table *kp_ptable_synthesis(ktap_state *ks, ktap_ptable *ph)
 
 	for_each_possible_cpu(cpu) {
 		ktap_table **t = per_cpu_ptr(ph->tbl, cpu);
-		move_table(ks, *t, agg);
+		merge_table(ks, *t, agg);
 	}
 
 	return agg;
@@ -1128,14 +1125,20 @@ ktap_ptable *kp_ptable_new(ktap_state *ks)
 	ph = &kp_newobject(ks, KTAP_TPTABLE, sizeof(ktap_ptable),
 			NULL)->ph;
 	ph->tbl = alloc_percpu(ktap_table *);
-	ph->gclist = NULL;
 
 	for_each_possible_cpu(cpu) {
 		ktap_table **t = per_cpu_ptr(ph->tbl, cpu);
-		*t = table_new2(ks, &ph->gclist);
+		*t = kp_table_new(ks);
+
+		(*t)->with_stats = 1;
+
+		/* todo: make this value to be configuable, MAXENTRIES? */
+		table_resize(ks, *t, 0, 2000);
 	}
 
-	ph->agg = table_new2(ks, &ph->gclist);
+	ph->agg = kp_table_new(ks);
+	ph->agg->with_stats = 1;
+	table_resize(ks, ph->agg, 0, 2000);
 
 	return ph;
 }
@@ -1143,132 +1146,50 @@ ktap_ptable *kp_ptable_new(ktap_state *ks)
 void kp_ptable_free(ktap_state *ks, ktap_ptable *ph)
 {
 	free_percpu(ph->tbl);
-	kp_free_gclist(ks, ph->gclist);
 	kp_free(ks, ph);
 }
 
-static
-void handle_aggr_count(ktap_state *ks, ktap_ptable *ph, ktap_value *key)
-{
-	ktap_table *t = *__this_cpu_ptr(ph->tbl);
-	ktap_value *v = table_set(ks, t, key);
-	ktap_aggraccval *acc;
-
-	if (isnil(v)) {
-		acc = get_accval(ks, AGGREGATION_TYPE_COUNT, &t->gclist);
-		acc->val = 1;
-		setaggraccvalue(v, acc);
-		return;
-	}
-
-	acc = aggraccvalue(v);
-	acc->val += 1;
-}
-
-static 
-void handle_aggr_max(ktap_state *ks, ktap_ptable *ph, ktap_value *key)
-{
-	ktap_table *t = *__this_cpu_ptr(ph->tbl);
-	ktap_value *v = table_set(ks, t, key);
-	ktap_aggraccval *acc;
-
-	if (isnil(v)) {
-		acc = get_accval(ks, AGGREGATION_TYPE_MAX, &t->gclist);
-		acc->val = ks->aggr_accval;
-		setaggraccvalue(v, acc);
-		return;
-	}
-
-	acc = aggraccvalue(v);
-	acc->val = max(acc->val, ks->aggr_accval);
-}
-
-static 
-void handle_aggr_min(ktap_state *ks, ktap_ptable *ph, ktap_value *key)
-{
-	ktap_table *t = *__this_cpu_ptr(ph->tbl);
-	ktap_value *v = table_set(ks, t, key);
-	ktap_aggraccval *acc;
-
-	if (isnil(v)) {
-		acc = get_accval(ks, AGGREGATION_TYPE_MIN, &t->gclist);
-		acc->val = ks->aggr_accval;
-		setaggraccvalue(v, acc);
-		return;
-	}
-
-	acc = aggraccvalue(v);
-	acc->val = min(acc->val, ks->aggr_accval);
-}
-
-static 
-void handle_aggr_sum(ktap_state *ks, ktap_ptable *ph, ktap_value *key)
-{
-	ktap_table *t = *__this_cpu_ptr(ph->tbl);
-	ktap_value *v = table_set(ks, t, key);
-	ktap_aggraccval *acc;
-
-	if (isnil(v)) {
-		acc = get_accval(ks, AGGREGATION_TYPE_SUM, &t->gclist);
-		acc->val = ks->aggr_accval;
-		setaggraccvalue(v, acc);
-		return;
-	}
-
-	acc = aggraccvalue(v);
-	acc->val += ks->aggr_accval;
-}
-
-static 
-void handle_aggr_avg(ktap_state *ks, ktap_ptable *ph, ktap_value *key)
-{
-	ktap_table *t = *__this_cpu_ptr(ph->tbl);
-	ktap_value *v = table_set(ks, t, key);
-	ktap_aggraccval *acc;
-
-	if (isnil(v)) {
-		acc = get_accval(ks, AGGREGATION_TYPE_AVG, &t->gclist);
-		acc->val = ks->aggr_accval;
-		acc->more = 1;
-		setaggraccvalue(v, acc);
-		return;
-	}
-
-	acc = aggraccvalue(v);
-	acc->val += ks->aggr_accval;
-	acc->more++;
-}
-
-typedef void (*aggr_func_t)(ktap_state *ks, ktap_ptable *ph, ktap_value *k);
-static aggr_func_t kp_aggregation_handler[] = {
-	handle_aggr_count,
-	handle_aggr_max,
-	handle_aggr_min,
-	handle_aggr_sum,
-	handle_aggr_avg
-};
-
 void kp_ptable_set(ktap_state *ks, ktap_ptable *ph,
-			ktap_value *key, ktap_value *val)
+				   ktap_value *key, ktap_value *val)
 {
-	if (unlikely(!ttisaggrval(val))) {
-		kp_error(ks, "set invalid value to aggregation table\n");
+	ktap_table *t = *__this_cpu_ptr(ph->tbl);
+	ktap_value *v = table_set(ks, t, key);
+	ktap_stat_data *sd = read_sd(t, v);
+	int aggval;;
+
+	if (unlikely(!ttisnumber(val))) {
+		kp_error(ks, "add non number value to aggregation table\n");
 		return;
 	}
 
-	kp_aggregation_handler[nvalue(val)](ks, ph, key);
+	aggval = nvalue(val);
+
+	if (isnil(v)) {
+		sd->count = 1;
+		sd->sum = sd->min = sd->max = aggval;
+		setsdvalue(v, sd);
+		return;
+	}
+
+	sd->count++;
+	sd->sum += aggval;
+	if (aggval > sd->max)
+		sd->max = aggval;
+	if (aggval < sd->min)
+		sd->min = aggval;
 }
 
 
-void kp_ptable_get(ktap_state *ks, ktap_ptable *ph, ktap_value *key,
-		      ktap_value *val)
+void kp_ptable_get(ktap_state *ks, ktap_ptable *ph,
+				   ktap_value *key, ktap_value *val)
 {
-	ktap_aggraccval acc; /* in stack */
+	ktap_stat_data sd, *aggsd;
 	const ktap_value *v;
+	ktap_value *aggval;
 	int cpu;
 
-	acc.val = -1;
-	acc.more = -1;
+	sd.count = -1;
+	sd.sum = -1;
 
 	for_each_possible_cpu(cpu) {
 		ktap_table **t = per_cpu_ptr(ph->tbl, cpu);
@@ -1277,19 +1198,24 @@ void kp_ptable_get(ktap_state *ks, ktap_ptable *ph, ktap_value *key,
 		if (isnil(v))
 			continue;
 
-		if (acc.more == -1) {
-			acc = *aggraccvalue(v);
+		if (sd.count == -1) {
+			sd = *read_sd(*t, v);
 			continue;
 		}
 
-		synth_acc(aggraccvalue(v), &acc);
+		statdata_add(read_sd(*t, v), &sd);
 	}
 
-	if (acc.more == -1) {
+	if (sd.count == -1) {
 		setnilvalue(val);
-	} else {
-		setnvalue(val, kp_aggracc_read(&acc));
+		return;
 	}
+
+	aggval = table_set(ks, ph->agg, key);
+	aggsd = read_sd(ph->agg, aggval);
+	*aggsd = sd;
+	setsdvalue(aggval, aggsd);
+	setsdvalue(val, aggsd);
 }
 
 void kp_ptable_histogram(ktap_state *ks, ktap_ptable *ph)

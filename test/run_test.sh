@@ -39,7 +39,7 @@ ktaprun len.kp
 ktaprun looping.kp
 ktaprun pairs.kp
 ktaprun table.kp
-ktaprun aggr_table.kp
+ktaprun ptable.kp
 ktaprun timer.kp
 ktaprun tracepoint.kp
 ktaprun -o /dev/null zerodivide.kp

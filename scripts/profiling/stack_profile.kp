@@ -6,11 +6,11 @@
 # Flame Graphs:
 # http://dtrace.org/blogs/brendan/2012/03/17/linux-kernel-performance-flame-graphs/
 
-s = aggr_table()
+s = ptable()
 
 profile-10us {
 	#skip 12 stack entries, and dump all remain entries.
-	s[backtrace(12, -1)] = count()
+	s[backtrace(12, -1)] <<< 1
 }
 
 tick-60s {
@@ -20,7 +20,7 @@ tick-60s {
 trace_end {
 	for (k, v in pairs(s)) {
 		print(k)
-		print(v)
+		print(count(v))
 		print()
 	}
 }

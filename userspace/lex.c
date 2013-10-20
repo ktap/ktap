@@ -40,7 +40,7 @@
 static const char *const ktap_tokens [] = {
 	"trace", "trace_end", "argevent", "argname",
 	"arg1", "arg2", "arg3", "arg4", "arg5", "arg6", "arg7", "arg9", "arg9",
-	"profile", "tick",
+	"profile", "tick", "<<<",
 	"and", "break", "do", "else", "elseif",
 	"end", "false", "for", "function", "goto", "if",
 	"in", "local", "nil", "not", "or", "repeat",
@@ -477,11 +477,16 @@ static int llex(ktap_lexstate *ls, ktap_seminfo *seminfo)
 		}
 		case '<': {
 			next(ls);
-			if (ls->current != '=')
-				return '<';
-			else {
-				next(ls);
+			if (ls->current == '=')
 				return TK_LE;
+			else if (ls->current == '<') {
+				next(ls);
+				if (ls->current == '<') {
+					next(ls);
+					return TK_AGGR_ASSIGN;
+				}
+			} else {
+				return '<';
 			}
 		}
 		case '>': {

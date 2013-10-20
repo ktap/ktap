@@ -299,7 +299,7 @@ static int ktap_lib_histogram(ktap_state *ks)
 	return 0;
 }
 
-static int ktap_lib_aggr_table(ktap_state *ks)
+static int ktap_lib_ptable(ktap_state *ks)
 {
 	ktap_ptable *ph;
 
@@ -309,49 +309,97 @@ static int ktap_lib_aggr_table(ktap_state *ks)
 	return 1;
 }
 
-static int ktap_lib_aggr_count(ktap_state *ks)
+static int ktap_lib_count(ktap_state *ks)
 {
-	setaggrvalue(ks->top, AGGREGATION_TYPE_COUNT);
+	ktap_value *v = kp_arg(ks, 1);
+	ktap_stat_data *sd;
+
+	if (isnil(v)) {
+		setnvalue(ks->top, 0);
+		incr_top(ks);
+		return 1;	
+	}
+
+	kp_arg_check(ks, 1, KTAP_TSTATDATA);
+	sd = sdvalue(v);
+
+	setnvalue(ks->top, sd->count);
 	incr_top(ks);
 	return 1;
 }
 
-static int ktap_lib_aggr_max(ktap_state *ks)
+static int ktap_lib_max(ktap_state *ks)
 {
-	kp_arg_check(ks, 1, KTAP_TNUMBER);
+	ktap_value *v = kp_arg(ks, 1);
+	ktap_stat_data *sd;
 
-	ks->aggr_accval = nvalue(kp_arg(ks, 1));
-	setaggrvalue(ks->top, AGGREGATION_TYPE_MAX);
+	if (isnil(v)) {
+		setnvalue(ks->top, 0);
+		incr_top(ks);
+		return 1;	
+	}
+
+	kp_arg_check(ks, 1, KTAP_TSTATDATA);
+	sd = sdvalue(v);
+
+	setnvalue(ks->top, sd->max);
 	incr_top(ks);
 	return 1;
 }
 
-static int ktap_lib_aggr_min(ktap_state *ks)
+static int ktap_lib_min(ktap_state *ks)
 {
-	kp_arg_check(ks, 1, KTAP_TNUMBER);
+	ktap_value *v = kp_arg(ks, 1);
+	ktap_stat_data *sd;
 
-	ks->aggr_accval = nvalue(kp_arg(ks, 1));
-	setaggrvalue(ks->top, AGGREGATION_TYPE_MIN);
+	if (isnil(v)) {
+		setnvalue(ks->top, 0);
+		incr_top(ks);
+		return 1;	
+	}
+
+	kp_arg_check(ks, 1, KTAP_TSTATDATA);
+	sd = sdvalue(v);
+
+	setnvalue(ks->top, sd->min);
 	incr_top(ks);
 	return 1;
 }
 
-static int ktap_lib_aggr_sum(ktap_state *ks)
+static int ktap_lib_sum(ktap_state *ks)
 {
-	kp_arg_check(ks, 1, KTAP_TNUMBER);
+	ktap_value *v = kp_arg(ks, 1);
+	ktap_stat_data *sd;
 
-	ks->aggr_accval = nvalue(kp_arg(ks, 1));
-	setaggrvalue(ks->top, AGGREGATION_TYPE_SUM);
+	if (isnil(v)) {
+		setnvalue(ks->top, 0);
+		incr_top(ks);
+		return 1;	
+	}
+
+	kp_arg_check(ks, 1, KTAP_TSTATDATA);
+	sd = sdvalue(v);
+
+	setnvalue(ks->top, sd->sum);
 	incr_top(ks);
 	return 1;
 }
 
-static int ktap_lib_aggr_avg(ktap_state *ks)
+static int ktap_lib_avg(ktap_state *ks)
 {
-	kp_arg_check(ks, 1, KTAP_TNUMBER);
+	ktap_value *v = kp_arg(ks, 1);
+	ktap_stat_data *sd;
 
-	ks->aggr_accval = nvalue(kp_arg(ks, 1));
-	setaggrvalue(ks->top, AGGREGATION_TYPE_AVG);
+	if (isnil(v)) {
+		setnvalue(ks->top, 0);
+		incr_top(ks);
+		return 1;	
+	}
+
+	kp_arg_check(ks, 1, KTAP_TSTATDATA);
+	sd = sdvalue(v);
+
+	setnvalue(ks->top, sd->sum / sd->count);
 	incr_top(ks);
 	return 1;
 }
@@ -451,12 +499,12 @@ static const ktap_Reg base_funcs[] = {
 	{"kernel_v", ktap_lib_kernel_v},
 	{"user_string", ktap_lib_user_string},
 	{"histogram", ktap_lib_histogram},
-	{"aggr_table", ktap_lib_aggr_table},
-	{"count", ktap_lib_aggr_count},
-	{"max", ktap_lib_aggr_max},
-	{"min", ktap_lib_aggr_min},
-	{"sum", ktap_lib_aggr_sum},
-	{"avg", ktap_lib_aggr_avg},
+	{"ptable", ktap_lib_ptable},
+	{"count", ktap_lib_count},
+	{"max", ktap_lib_max},
+	{"min", ktap_lib_min},
+	{"sum", ktap_lib_sum},
+	{"avg", ktap_lib_avg},
 
 	{"delete", ktap_lib_delete},
 	{"gettimeofday_us", ktap_lib_gettimeofday_us},

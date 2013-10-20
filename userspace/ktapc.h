@@ -79,7 +79,7 @@ enum RESERVED {
 	TK_TRACE = FIRST_RESERVED, TK_TRACE_END,
 	TK_ARGEVENT, TK_ARGNAME,
 	TK_ARG1, TK_ARG2, TK_ARG3, TK_ARG4, TK_ARG5, TK_ARG6, TK_ARG7, TK_ARG8,
-	TK_ARG9, TK_PROFILE, TK_TICK,
+	TK_ARG9, TK_PROFILE, TK_TICK, TK_AGGR_ASSIGN,
 	TK_AND, TK_BREAK,
 	TK_DO, TK_ELSE, TK_ELSEIF, TK_END, TK_FALSE, TK_FOR, TK_FUNCTION,
 	TK_GOTO, TK_IF, TK_IN, TK_LOCAL, TK_NIL, TK_NOT, TK_OR, TK_REPEAT,
@@ -354,6 +354,8 @@ void codegen_posfix(ktap_funcstate *fs, BinOpr op, ktap_expdesc *e1, ktap_expdes
 void codegen_setoneret(ktap_funcstate *fs, ktap_expdesc *e);
 void codegen_storevar(ktap_funcstate *fs, ktap_expdesc *var, ktap_expdesc *ex);
 void codegen_storeincr(ktap_funcstate *fs, ktap_expdesc *var, ktap_expdesc *ex);
+void codegen_store_aggr(ktap_funcstate *fs, ktap_expdesc *var,
+					    ktap_expdesc *ex);
 void codegen_goiftrue(ktap_funcstate *fs, ktap_expdesc *e);
 int codegen_getlabel(ktap_funcstate *fs);
 int codegen_codek(ktap_funcstate *fs, int reg, int k);

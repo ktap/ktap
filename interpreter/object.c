@@ -230,8 +230,8 @@ void kp_showobj(ktap_state *ks, const ktap_value *v)
 	case KTAP_TPTABLE:
 		kp_ptable_dump(ks, phvalue(v));
 		break;
-	case KTAP_TAGGRACCVAL:
-		kp_aggraccval_dump(ks, aggraccvalue(v));
+	case KTAP_TSTATDATA:
+		kp_statdata_dump(ks, sdvalue(v));
 		break;
 #endif
         default:

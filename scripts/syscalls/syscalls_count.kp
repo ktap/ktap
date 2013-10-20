@@ -1,9 +1,9 @@
 #!/usr/bin/env ktap
 
-s = aggr_table()
+s = ptable()
 
 trace syscalls:sys_enter_* {
-	s[argname] = count()
+	s[argname] <<< 1
 }
 
 trace_end {

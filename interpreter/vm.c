@@ -465,6 +465,18 @@ static void ktap_execute(ktap_state *ks)
 		base = ci->u.l.base;
 		break;
 		}
+	case OP_SETTABUP_AGGR: {
+		int a = GETARG_A(instr);
+		ktap_value *v = cl->upvals[a]->v;
+		if (!ttisptable(v)) {
+			kp_error(ks, "<<< must be operate on ptable\n");
+			return;
+		}
+
+		kp_ptable_set(ks, phvalue(v), RKB(instr), RKC(instr));
+		base = ci->u.l.base;
+		break;
+		}
 	case OP_SETUPVAL: {
 		ktap_upval *uv = cl->upvals[GETARG_B(instr)];
 		setobj(uv->v, ra);
@@ -476,6 +488,15 @@ static void ktap_execute(ktap_state *ks)
 		break;
 	case OP_SETTABLE_INCR:
 		settable_incr(ks, ra, RKB(instr), RKC(instr));
+		base = ci->u.l.base;
+		break;
+	case OP_SETTABLE_AGGR:
+		if (!ttisptable(ra)) {
+			kp_error(ks, "<<< must be operate on ptable\n");
+			return;
+		}
+
+		kp_ptable_set(ks, phvalue(ra), RKB(instr), RKC(instr));
 		base = ci->u.l.base;
 		break;
 	case OP_NEWTABLE: {
@@ -561,13 +582,14 @@ static void ktap_execute(ktap_state *ks)
 		base = ci->u.l.base;
 		break;
 		}
-	case OP_LT:
-		if (lessthan(ks, RKB(instr), RKC(instr)) != GETARG_A(instr))
+	case OP_LT: {
+		if (lessthan(ks, RKB(instr), RKC(instr)) != GETARG_A(instr)) {
 			ci->u.l.savedpc++;
-		else
+		} else
 			donextjump(ci);
 		base = ci->u.l.base;
 		break;
+		}
 	case OP_LE:
 		if (lessequal(ks, RKB(instr), RKC(instr)) != GETARG_A(instr))
 			ci->u.l.savedpc++;

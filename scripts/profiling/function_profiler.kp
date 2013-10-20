@@ -4,10 +4,10 @@
 #You can use this script to know what function is called frequently,
 #without enable CONFIG_FUNCTION_PROFILER in kernel.
 
-s = aggr_table()
+s = ptable()
 
 trace ftrace:function {
-	s[arg1] = count()
+	s[arg1] <<< 1
 }
 
 trace_end {

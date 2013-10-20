@@ -2,10 +2,10 @@
 
 # showing all tracepoints in histogram style
 
-s = aggr_table()
+s = ptable()
 
 trace *:* {
-	s[execname()] = count()
+	s[execname()] <<< 1
 }
 
 trace_end {
