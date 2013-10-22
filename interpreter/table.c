@@ -1040,7 +1040,7 @@ void kp_table_histogram(ktap_state *ks, ktap_table *t)
 
 void kp_statdata_dump(ktap_state *ks, ktap_stat_data *sd)
 {
-	kp_printf(ks, "[count: %6d\tsum: %6d\tmax: %6d\tmin: %6d\tavg: %6d]",
+	kp_printf(ks, "[count: %6d sum: %6d max: %6d min: %6d avg: %6d]",
 		sd->count, sd->sum, sd->max, sd->min, sd->sum/sd->count);
 }
 

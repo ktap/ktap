@@ -65,14 +65,20 @@ void *kp_malloc(ktap_state *ks, int size)
 		kp_printf(ks, "kmalloc retry success after failed, exit\n");
 	}
 
+	preempt_disable();
 	KTAP_STATS(ks)->nr_mem_allocate += 1;
 	KTAP_STATS(ks)->mem_allocated += size;
+	preempt_enable();
+
 	return addr;
 }
 
 void kp_free(ktap_state *ks, void *addr)
 {
+	preempt_disable();
 	KTAP_STATS(ks)->nr_mem_free += 1;
+	preempt_enable();
+
 	kfree(addr);
 }
 
@@ -93,11 +99,12 @@ void *kp_reallocv(ktap_state *ks, void *addr, int oldsize, int newsize)
 		kp_printf(ks, "krealloc retry success after failed, exit\n");
 	}
 
+	preempt_disable();
 	if (oldsize == 0) {
 		KTAP_STATS(ks)->nr_mem_allocate += 1;
 	}
-
 	KTAP_STATS(ks)->mem_allocated += newsize - oldsize;
+	preempt_enable();
 
 	return new_addr;
 }
@@ -119,8 +126,11 @@ void *kp_zalloc(ktap_state *ks, int size)
 		kp_printf(ks, "kzalloc retry success after failed, exit\n");
 	}
 
+	preempt_disable();
 	KTAP_STATS(ks)->nr_mem_allocate += 1;
 	KTAP_STATS(ks)->mem_allocated += size;
+	preempt_enable();
+
 	return addr;
 }
 #endif
