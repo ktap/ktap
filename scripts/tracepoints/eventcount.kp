@@ -2,10 +2,10 @@
 
 # showing all tracepoints in histogram style
 
-s = {}
+s = ptable()
 
 trace *:* {
-	s[argname] += 1
+	s[argname] <<< 1
 }
 
 trace_end {
