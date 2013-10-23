@@ -201,6 +201,14 @@ static void decode_instruction(ktap_proto *f, int instr)
 		print_RKC(instr);
 		printf("}");
 		break;
+	case OP_SETTABLE:
+		print_base(GETARG_A(instr));
+		printf("{");
+		print_RKB(instr);
+		printf("}");
+		printf(" <- ");
+		print_RKC(instr);
+		break;
 	case OP_LOADK:
 		printf("\t");
 		print_base(GETARG_A(instr));
