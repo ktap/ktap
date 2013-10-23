@@ -43,7 +43,6 @@ ktaprun ptable.kp
 ktaprun timer.kp
 ktaprun tracepoint.kp
 ktaprun -o /dev/null zerodivide.kp
-ktaprun ansi.kp
 
 echo "testing kill deadloop ktap script"
 $KTAP -e 'while (1) {}' &

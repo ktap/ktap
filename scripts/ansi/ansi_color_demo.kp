@@ -1,5 +1,7 @@
 #!/usr/bin/env ktap
 
+#this script demonstrate how to use ktap to output color text.
+
 ansi.clear_screen()
 
 ansi.set_color(32)
