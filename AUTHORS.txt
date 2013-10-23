@@ -1,5 +1,5 @@
 Initial author, project lead, target of blame:
 
-zhangwei(Jovi) <jovi.zhangwei@gmail.com>
+Jovi Zhangwei <jovi.zhangwei@gmail.com>
 
 
