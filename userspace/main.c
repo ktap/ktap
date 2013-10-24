@@ -227,7 +227,7 @@ static void decode_instruction(ktap_proto *f, int instr)
 		print_RKB(instr);
 		printf("} <- ");
 
-		print_base(GETARG_C(instr));
+		print_RKC(instr);
 		break;
 	case OP_GETUPVAL:
 		print_base(GETARG_A(instr));
