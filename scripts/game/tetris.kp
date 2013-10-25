@@ -40,34 +40,6 @@ function rand(max) {
 	}
 	return r % max
 }
- 
-color_table = {}
-color_table["Black"]	= 40
-color_table["Red"]	= 41
-color_table["Green"]	= 42
-color_table["Yellow"]	= 43
-color_table["Blue"]	= 44
-color_table["Purple"]	= 45
-color_table["Cyan"]	= 46
-color_table["White"]	= 47
- 
-function get_color_number(txt) {
-	return color_table[txt]
-}
- 
-color_table_text = {}
-color_table_text[40] = "Black"
-color_table_text[41] = "Red"
-color_table_text[42] = "Green"
-color_table_text[43] = "Yellow"
-color_table_text[44] = "Blue"
-color_table_text[45] = "Purple"
-color_table_text[46] = "Cyan"
-color_table_text[47] = "White"
- 
-function get_color_text(num) {
-	return color_table_text[num]
-}
 
 function update_display() {
 	for (i = 0, 239, 1) {
@@ -77,12 +49,11 @@ function update_display() {
 			tmp = "\n"
 		}
 
-		if (display_buffer[240 + i] == back_text) {
-			printf("%s%s", back_text, tmp)
+		if (display_buffer[240 + i] == empty) {
+			printf("  %s", tmp)
 		} else {
-			ctext = display_buffer[240 + i]
-			ansi.set_color2(get_color_number(ctext), 
-					get_color_number(ctext))
+			color = display_buffer[240 + i] + 40
+			ansi.set_color2(color, color)
 			printf("  %s", tmp)
 			ansi.reset_color()
 		}
@@ -98,7 +69,9 @@ function update_display() {
 #
 # global value
 #
- 
+
+empty = -1
+
 key_code = 0
 point = 0
 block_number = 0
@@ -106,8 +79,6 @@ height = 0
 height_update = 0
  
 destination_position = {}
-back_text = {}
-block_color = {}
 display_buffer = {}
  
 block_data0 = {}
@@ -157,18 +128,15 @@ height = 17 # First block position (center)
 for (i = 0, 240, 1) {
 	# Wall and Floor (sentinel)
 	if (((i % 12) < 2) || (i > 228)) {
-		block_color = "White"
-		tmp = block_color
+		tmp = 7 # White
 	} else {
-		back_text = "  "
-		tmp = back_text
+		tmp = empty
 	}
 	display_buffer[i - 1] = tmp
 	display_buffer[240 + i - 1] = tmp
 }
 
-block_number = rand(len(color_table) - 1)
-block_color = get_color_text(block_number + 40)
+block_number = rand(7)
 
 ansi.clear_screen()
  
@@ -225,7 +193,7 @@ tick-200ms {
 				# destination is free
 				if (display_buffer[height +
 					block_table[block_number][i] + d] 
-				    != back_text) {
+				    != empty) {
 					f = 1
 				}
 			}
@@ -247,7 +215,7 @@ tick-200ms {
  
 				# check if desetination is free
 				if (display_buffer[height +
-				    destination_position[i]] != back_text) {
+				    destination_position[i]] != empty) {
 					f = 1
 				}
 			}
@@ -268,12 +236,12 @@ tick-200ms {
 	for (i = 0, 3, 1) { # drop 1 row
 		# check if destination is free
 		p = height + block_table[block_number][i]
-		if (display_buffer[12 + p] != back_text) {
+		if (display_buffer[12 + p] != empty) {
 			f = 1
 		}
  
 		# copy the moving block to display buffer
-		display_buffer[240 + p] = block_color
+		display_buffer[240 + p] = block_number
 	}
 
 	if ((f == 1) && (height == 17)) {
@@ -287,13 +255,10 @@ tick-200ms {
 			for (i = 0, 3, 1) {
 				# fix the block
 				display_buffer[height + 
-				  block_table[block_number][i]] = block_color 
+				  block_table[block_number][i]] = block_number
 			}
 			# determin the next block
-			block_number = rand(len(color_table) - 1)
- 
-			block_color = get_color_text(block_number + 40)
- 
+			block_number = rand(7)
 			height = 17 # make the block to initial position
 		} else {
 			height = height + 12 # drop the block 1 row
@@ -305,7 +270,7 @@ tick-200ms {
 		# search for filled line
 		j = 10
 		while ((j > 0) && 
-		       (display_buffer[i * 12 + j] != back_text)) {
+		       (display_buffer[i * 12 + j] != empty)) {
 			j = j - 1
 		}
  
