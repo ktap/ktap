@@ -57,6 +57,7 @@ typedef struct ktap_parm {
 #define KTAPC_HEADERSIZE	(sizeof(KTAP_SIGNATURE) - sizeof(char) + 2 + \
 				 6 + sizeof(KTAPC_TAIL) - sizeof(char))
 
+typedef long ktap_number;
 typedef int ktap_instruction;
 
 typedef union ktap_gcobject ktap_gcobject;
@@ -88,7 +89,7 @@ union _ktap_value {
 	void *p;         /* light userdata */
 	int b;           /* booleans */
 	ktap_cfunction f; /* light C functions */
-	long n;         /* numbers */
+	ktap_number n;         /* numbers */
 };
 
 
@@ -387,9 +388,6 @@ union ktap_gcobject {
 #endif
 
 #define check_exp(c,e)                (e)
-
-
-typedef long ktap_number;
 
 
 #define ktap_number2int(i,n)   ((i)=(int)(n))
