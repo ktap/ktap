@@ -7,6 +7,7 @@ endif
 
 all: mod ktap
 
+INC = include
 INTP = interpreter
 
 LIBDIR = $(INTP)/library
@@ -34,29 +35,29 @@ KTAPC_CFLAGS = -Wall -O2
 
 UDIR = userspace
 
-$(UDIR)/lex.o: $(UDIR)/lex.c
+$(UDIR)/lex.o: $(UDIR)/lex.c $(INC)/*
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
-$(UDIR)/parser.o: $(UDIR)/parser.c
+$(UDIR)/parser.o: $(UDIR)/parser.c $(INC)/*
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
-$(UDIR)/code.o: $(UDIR)/code.c
+$(UDIR)/code.o: $(UDIR)/code.c $(INC)/*
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
-$(UDIR)/dump.o: $(UDIR)/dump.c
+$(UDIR)/dump.o: $(UDIR)/dump.c $(INC)/*
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
-$(UDIR)/main.o: $(UDIR)/main.c
+$(UDIR)/main.o: $(UDIR)/main.c $(INC)/*
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
-$(UDIR)/util.o: $(UDIR)/util.c
+$(UDIR)/util.o: $(UDIR)/util.c $(INC)/*
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
-$(UDIR)/ktapio.o: $(UDIR)/ktapio.c
+$(UDIR)/ktapio.o: $(UDIR)/ktapio.c $(INC)/*
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
-$(UDIR)/eventdef.o: $(UDIR)/eventdef.c
+$(UDIR)/eventdef.o: $(UDIR)/eventdef.c $(INC)/*
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
-$(UDIR)/opcode.o: $(INTP)/opcode.c
+$(UDIR)/opcode.o: $(INTP)/opcode.c $(INC)/*
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
-$(UDIR)/table.o: $(INTP)/table.c
+$(UDIR)/table.o: $(INTP)/table.c $(INC)/*
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
-$(UDIR)/tstring.o: $(INTP)/tstring.c
+$(UDIR)/tstring.o: $(INTP)/tstring.c $(INC)/*
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
-$(UDIR)/object.o: $(INTP)/object.c
+$(UDIR)/object.o: $(INTP)/object.c $(INC)/*
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
 
 KTAPOBJS =
