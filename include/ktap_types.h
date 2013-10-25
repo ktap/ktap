@@ -286,9 +286,6 @@ typedef struct ktap_global_state {
 	ktap_stringtable strt;  /* hash table for strings */
 	ktap_value registry;
 	unsigned int seed; /* randonized seed for hashes */
-	u8 gcstate; /* state of garbage collector */
-	u8 gckind; /* kind of GC running */
-	u8 gcrunning; /* true if GC is running */
 
 	ktap_gcobject *allgc; /* list of all collectable objects */
 
@@ -318,7 +315,6 @@ typedef struct ktap_global_state {
 
 typedef struct ktap_state {
 	CommonHeader;
-	u8 status;
 	ktap_global_state *g;
 	int stop;
 	StkId top;
@@ -329,16 +325,13 @@ typedef struct ktap_state {
 	ktap_gcobject *openupval;
 	ktap_callinfo baseci;
 
-	int debug;
 	int version;
-	int gcrunning;
 
 	/* list of temp collectable objects, free when thread exit */
 	ktap_gcobject *gclist;
 
 #ifdef __KERNEL__
 	struct ktap_event *current_event;
-	ktap_stat_data temp_sd;
 #endif
 } ktap_state;
 
@@ -359,7 +352,7 @@ union ktap_gcobject {
 	struct ktap_proto p;
 	struct ktap_upval uv;
 	struct ktap_state th;  /* thread */
- 	struct ktap_btrace bt;  /* thread */
+ 	struct ktap_btrace bt;  /* backtrace object */
 };
 
 #define gch(o)	(&(o)->gch)
@@ -376,19 +369,9 @@ union ktap_gcobject {
 #define ktap_assert(s)
 #else
 #define ktap_assert(s)
-#if 0
-#define ktap_assert(s)	\
-	do {	\
-		if (!s) {	\
-			printf("assert failed %s, %d\n", __func__, __LINE__);\
-			exit(0);	\
-		}	\
-	} while(0)
-#endif
 #endif
 
 #define check_exp(c,e)                (e)
-
 
 #define ktap_number2int(i,n)   ((i)=(int)(n))
 
