@@ -266,6 +266,26 @@ static int ktap_lib_kernel_v(ktap_state *ks)
 	return 1;
 }
 
+static int ktap_lib_kernel_string(ktap_state *ks)
+{
+	unsigned long addr;
+	char str[256] = {0};
+	char *ret;
+
+	kp_arg_check(ks, 1, KTAP_TNUMBER);
+
+	addr = nvalue(kp_arg(ks, 1));
+
+	ret = strncpy((void *)str, (const void *)addr, 256);
+	(void) &ret;  /* Silence compiler warning. */
+
+	str[255] = '\0';
+	setsvalue(ks->top, kp_tstring_new_local(ks, str));
+
+	incr_top(ks);
+	return 1;
+}
+
 static int ktap_lib_user_string(ktap_state *ks)
 {
 	unsigned long addr;
@@ -497,6 +517,7 @@ static const ktap_Reg base_funcs[] = {
 	{"num_cpus", ktap_lib_num_cpus},
 	{"arch", ktap_lib_arch},
 	{"kernel_v", ktap_lib_kernel_v},
+	{"kernel_string", ktap_lib_kernel_string},
 	{"user_string", ktap_lib_user_string},
 	{"histogram", ktap_lib_histogram},
 	{"ptable", ktap_lib_ptable},
