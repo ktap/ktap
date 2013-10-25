@@ -134,7 +134,7 @@ ktap_string *lex_newstring(ktap_lexstate *ls, const char *str, size_t l)
 	ktap_string *ts = ktapc_ts_newlstr(str, l);  /* create new string */
 	setsvalue(&tsv, ts); 
 	o = ktapc_table_get(ls->fs->h, &tsv);
-	if (ttisnil(o)) {  /* not in use yet? (see 'addK') */
+	if (isnil(o)) {  /* not in use yet? (see 'addK') */
 		/* boolean value does not need GC barrier;
 		table has no metatable, so it does not need to invalidate cache */
 		setbvalue(&val, 1);  /* t[string] = true */

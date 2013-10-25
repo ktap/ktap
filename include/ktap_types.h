@@ -445,7 +445,7 @@ union ktap_gcobject {
 
 #define gcvalue(o)	(val_(o).gc)
 
-#define isnil(o)	(o->type == KTAP_TNIL)
+#define isnil(o)	((o)->type == KTAP_TNIL)
 #define isboolean(o)	(o->type == KTAP_TBOOLEAN)
 #define isfalse(o)	(isnil(o) || (isboolean(o) && bvalue(o) == 0))
 
@@ -456,7 +456,6 @@ union ktap_gcobject {
 #define ttistable(o)		((o)->type == KTAP_TTABLE)
 #define ttisptable(o)		((o)->type == KTAP_TPTABLE)
 #define ttisstatdata(o)		((o)->type == KTAP_TSTATDATA)
-#define ttisnil(o)		((o)->type == KTAP_TNIL)
 #define ttisboolean(o)		((o)->type == KTAP_TBOOLEAN)
 #define ttisequal(o1,o2)        ((o1)->type == (o2)->type)
 #define ttisevent(o)		((o)->type == KTAP_TEVENT)

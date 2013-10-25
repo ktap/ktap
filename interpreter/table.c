@@ -250,7 +250,7 @@ static int findindex(ktap_state *ks, ktap_table *t, StkId key)
 {
 	int i;
 
-	if (ttisnil(key))
+	if (isnil(key))
 		return -1;  /* first iteration */
 
 	i = arrayindex(key);
@@ -284,7 +284,7 @@ int kp_table_next(ktap_state *ks, ktap_table *t, StkId key)
 	i = findindex(ks, t, key);  /* find original element */
 
 	for (i++; i < t->sizearray; i++) {  /* try first array part */
-	        if (!ttisnil(&t->array[i])) {  /* a non-nil value? */
+	        if (!isnil(&t->array[i])) {  /* a non-nil value? */
 			setnvalue(key, i+1);
 			setobj(key+1, &t->array[i]);
 			kp_table_unlock(t);
@@ -293,7 +293,7 @@ int kp_table_next(ktap_state *ks, ktap_table *t, StkId key)
 	}
 
 	for (i -= t->sizearray; i < sizenode(t); i++) {  /* then hash part */
-		if (!ttisnil(gval(gnode(t, i)))) {  /* a non-nil value? */
+		if (!isnil(gval(gnode(t, i)))) {  /* a non-nil value? */
 			setobj(key, gkey(gnode(t, i)));
 			setobj(key+1, gval(gnode(t, i)));
 			kp_table_unlock(t);
@@ -370,7 +370,7 @@ static int numusearray(const ktap_table *t, int *nums)
 
 		/* count elements in range (2^(lg-1), 2^lg] */
 		for (; i <= lim; i++) {
-			if (!ttisnil(&t->array[i-1]))
+			if (!isnil(&t->array[i-1]))
 				lc++;
 		}
 		nums[lg] += lc;
@@ -483,7 +483,7 @@ static void table_resize(ktap_state *ks, ktap_table *t, int nasize, int nhsize)
 		t->sizearray = nasize;
 		/* re-insert elements from vanishing slice */
 		for (i = nasize; i < oldasize; i++) {
-			if (!ttisnil(&t->array[i])) {
+			if (!isnil(&t->array[i])) {
 				ktap_value *v;
 				v = (ktap_value *)table_getint(t, i + 1);
 				setobj(v, &t->array[i]);
@@ -507,7 +507,7 @@ static void table_resize(ktap_state *ks, ktap_table *t, int nasize, int nhsize)
 	/* re-insert elements from hash part */
 	for (i = twoto(oldhsize) - 1; i >= 0; i--) {
 		ktap_tnode *old = nold + i;
-		if (!ttisnil(gval(old))) {
+		if (!isnil(gval(old))) {
 			ktap_value *v = table_set(ks, t, gkey(old));
 			/*
 			 * doesn't need barrier/invalidate cache, as entry was

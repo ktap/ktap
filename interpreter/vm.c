@@ -742,7 +742,7 @@ static void ktap_execute(ktap_state *ks)
 		}
 		/*go through */
 	case OP_TFORLOOP:
-		if (!ttisnil(ra + 1)) {  /* continue loop? */
+		if (!isnil(ra + 1)) {  /* continue loop? */
 			setobj(ra, ra + 1);  /* save control variable */
 			ci->u.l.savedpc += GETARG_sBx(instr);  /* jump back */
 		}
