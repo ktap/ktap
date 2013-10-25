@@ -389,7 +389,7 @@ union ktap_gcobject {
 #define check_exp(c,e)                (e)
 
 
-typedef int ktap_number;
+typedef long ktap_number;
 
 
 #define ktap_number2int(i,n)   ((i)=(int)(n))

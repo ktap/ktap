@@ -104,89 +104,14 @@ int ktapc_hexavalue(int c)
 		return tolower(c) - 'a' + 10;
 }
 
-static int isneg(const char **s)
-{
-	if (**s == '-') {
-		(*s)++;
-		return 1;
-	} else if (**s == '+')
-		(*s)++;
-
-	return 0;
-}
-
-static ktap_number readhexa(const char **s, ktap_number r, int *count)
-{
-	for (; isxdigit((unsigned char)(**s)); (*s)++) {  /* read integer part */
-		r = (r * 16.0) + (ktap_number)(ktapc_hexavalue((unsigned char)(**s)));
-		(*count)++;
-	}
-
-	return r;
-}
-
-/*
- * convert an hexadecimal numeric string to a number, following
- * C99 specification for 'strtod'
- */
-static ktap_number strx2number(const char *s, char **endptr)
-{
-	ktap_number r = 0.0;
-	int e = 0, i = 0;
-	int neg = 0;  /* 1 if number is negative */
-
-	*endptr = (char *)s;  /* nothing is valid yet */
-	while (isspace((unsigned char)(*s)))
-		s++;  /* skip initial spaces */
-
-	neg = isneg(&s);  /* check signal */
-	if (!(*s == '0' && (*(s + 1) == 'x' || *(s + 1) == 'X')))  /* check '0x' */
-		return 0.0;  /* invalid format (no '0x') */
-
-	s += 2;  /* skip '0x' */
-	r = readhexa(&s, r, &i);  /* read integer part */
-	if (*s == '.') {
-		s++;  /* skip dot */
-		r = readhexa(&s, r, &e);  /* read fractional part */
-	}
-
-	if (i == 0 && e == 0)
-		return 0.0;  /* invalid format (no digit) */
-	e *= -4;  /* each fractional digit divides value by 2^-4 */
-	*endptr = (char *)s;  /* valid up to here */
-
-	if (*s == 'p' || *s == 'P') {  /* exponent part? */
-		int exp1 = 0;
-		int neg1;
-
-		s++;  /* skip 'p' */
-		neg1 = isneg(&s);  /* signal */
-		if (!isdigit((unsigned char)(*s)))
-			goto ret;  /* must have at least one digit */
-		while (isdigit((unsigned char)(*s)))  /* read exponent */
-			exp1 = exp1 * 10 + *(s++) - '0';
-		if (neg1) exp1 = -exp1;
-			e += exp1;
-	}
-
-	*endptr = (char *)s;  /* valid up to here */
- ret:
-	if (neg)
-		r = -r;
-
-	return ldexp(r, e);
-}
-
 int ktapc_str2d(const char *s, size_t len, ktap_number *result)
 {
 	char *endptr;
 
 	if (strpbrk(s, "nN"))  /* reject 'inf' and 'nan' */
 		return 0;
-	else if (strpbrk(s, "xX"))  /* hexa? */
-		*result = strx2number(s, &endptr);
 	else
-		*result = strtod(s, &endptr);
+		*result = strtol(s, &endptr, 0);
 
 	if (endptr == s)
 		return 0;  /* nothing recognized */

@@ -61,9 +61,9 @@ static int load_int(struct load_state *S)
 	return x;
 }
 
-static int load_number(struct load_state *S)
+static long load_number(struct load_state *S)
 {
-	int x;
+	long x;
 
 	READ_VECTOR(S, &x, sizeof(ktap_number));
 	return x;
