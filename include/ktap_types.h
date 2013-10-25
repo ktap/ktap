@@ -365,11 +365,7 @@ union ktap_gcobject {
 #define obj2gco(v)	((ktap_gcobject *)(v))
 
 
-#ifdef __KERNEL__
 #define ktap_assert(s)
-#else
-#define ktap_assert(s)
-#endif
 
 #define check_exp(c,e)                (e)
 
