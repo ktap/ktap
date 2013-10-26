@@ -70,13 +70,13 @@ const struct ktap_value ktap_nilobjectv = {NILCONSTANT};
 
 static const ktap_tnode dummynode_ = {
 	{NILCONSTANT}, /* value */
-	{{NILCONSTANT, NULL}}, /* key */
+	{NULL, {NILCONSTANT}}, /* key */
 };
 
 #define gnode(t,i)      (&(t)->node[i])
 #define gkey(n)         (&(n)->i_key.tvk)
 #define gval(n)         (&(n)->i_val)
-#define gnext(n)        ((n)->i_key.nk.next)
+#define gnext(n)        ((n)->i_key.next)
 
 #define twoto(x)        (1<<(x))
 #define sizenode(t)	(twoto((t)->lsizenode))

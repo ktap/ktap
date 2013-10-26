@@ -58,14 +58,13 @@ typedef struct ktap_parm {
 				 6 + sizeof(KTAPC_TAIL) - sizeof(char))
 
 typedef long ktap_number;
+#define kp_number2int(i, n)	((i) = (int)(n))
+
 typedef int ktap_instruction;
 
 typedef union ktap_gcobject ktap_gcobject;
 
 #define CommonHeader ktap_gcobject *next; u8 tt;
-
-struct ktap_state;
-typedef int (*ktap_cfunction) (struct ktap_state *ks);
 
 typedef union ktap_string {
 	int dummy;  /* ensures maximum alignment for strings */
@@ -78,23 +77,18 @@ typedef union ktap_string {
         /* short string is stored here, just after tsv */
 } ktap_string;
 
-#define getstr(ts)	(const char *)((ts) + 1)
-#define eqshrstr(a,b)	((a) == (b))
 
-#define svalue(o)       getstr(rawtsvalue(o))
-
-
-union _ktap_value {
-	ktap_gcobject *gc;    /* collectable objects */
-	void *p;         /* light userdata */
-	int b;           /* booleans */
-	ktap_cfunction f; /* light C functions */
-	ktap_number n;         /* numbers */
-};
-
+struct ktap_state;
+typedef int (*ktap_cfunction) (struct ktap_state *ks);
 
 typedef struct ktap_value {
-	union _ktap_value val;
+	union {
+		ktap_gcobject *gc;    /* collectable objects */
+		void *p;         /* light userdata */
+		int b;           /* booleans */
+		ktap_cfunction f; /* light C functions */
+		ktap_number n;         /* numbers */
+	} val;
 	int type;
 } ktap_value;
 
@@ -215,12 +209,8 @@ typedef struct ktap_callinfo {
 /*
  * ktap_table
  */
-typedef union ktap_tkey {
-	struct {
-		union _ktap_value value_;
-		int tt_;
-		struct ktap_tnode *next;  /* for chaining */
-	} nk;
+typedef struct ktap_tkey {
+	struct ktap_tnode *next;  /* for chaining */
 	ktap_value tvk;
 } ktap_tkey;
 
@@ -364,12 +354,9 @@ union ktap_gcobject {
 
 #define obj2gco(v)	((ktap_gcobject *)(v))
 
-
 #define ktap_assert(s)
 
 #define check_exp(c,e)                (e)
-
-#define ktap_number2int(i,n)   ((i)=(int)(n))
 
 
 /* predefined values in the registry */
@@ -432,7 +419,12 @@ union ktap_gcobject {
 #define CLVALUE(o)	(&val_(o).gc->cl.l)
 #define clcvalue(o)	(&val_(o).gc->cl.c)
 #define clvalue(o)	(&val_(o).gc->cl)
+
+#define getstr(ts)	(const char *)((ts) + 1)
+#define eqshrstr(a, b)	((a) == (b))
 #define rawtsvalue(o)	(&val_(o).gc->ts)
+#define svalue(o)       getstr(rawtsvalue(o))
+
 #define pvalue(o)	(&val_(o).p)
 #define sdvalue(o)	((ktap_stat_data *)val_(o).p)
 #define fvalue(o)	(val_(o).f)

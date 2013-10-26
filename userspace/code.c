@@ -317,7 +317,7 @@ static int addk(ktap_funcstate *fs, ktap_value *key, ktap_value *v)
 
 	if (ttisnumber(idx)) {
 		ktap_number n = nvalue(idx);
-		ktap_number2int(k, n);
+		kp_number2int(k, n);
 		if (ktapc_equalobj(&f->k[k], v))
 			return k;
 		/* else may be a collision (e.g., between 0.0 and "\0\0\0\0\0\0\0\0");
