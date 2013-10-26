@@ -34,11 +34,17 @@ if ((a / b) != 0) {
 	failed()
 }
 
+
+#below checking only valid for 64-bit system
+
 c = 0x1234567812345678
 d = 0x2
 
 if (c + d != 0x123456781234567a) {
-	printf("Ignore this failure if running on 32-bit system\n");
+	failed()
+}
+
+if (-1 != 0xffffffffffffffff) {
 	failed()
 }
 

@@ -111,7 +111,7 @@ int ktapc_str2d(const char *s, size_t len, ktap_number *result)
 	if (strpbrk(s, "nN"))  /* reject 'inf' and 'nan' */
 		return 0;
 	else
-		*result = strtol(s, &endptr, 0);
+		*result = (long)strtoul(s, &endptr, 0);
 
 	if (endptr == s)
 		return 0;  /* nothing recognized */
