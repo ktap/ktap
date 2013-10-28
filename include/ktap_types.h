@@ -74,7 +74,7 @@ typedef union ktap_string {
 		unsigned int hash;
 		size_t len;  /* number of characters in string */
 	} tsv;
-        /* short string is stored here, just after tsv */
+	/* short string is stored here, just after tsv */
 } ktap_string;
 
 
