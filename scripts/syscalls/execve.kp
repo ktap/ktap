@@ -1,0 +1,8 @@
+#!/usr/bin/env ktap
+
+#This script trace filename of process execution
+#only tested in x86-64
+
+trace probe:do_execve filename=%di {
+	printf("[do_execve entry]: (%s) name=%s\n", execname(), kernel_string(arg2))
+}
