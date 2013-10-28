@@ -1205,8 +1205,7 @@ void kp_ptable_get(ktap_state *ks, ktap_ptable *ph,
 	ktap_value *aggval;
 	int cpu;
 
-	sd.count = -1;
-	sd.sum = -1;
+	sd.count = sd.sum = sd.max = sd.min = -1;
 
 	for_each_possible_cpu(cpu) {
 		ktap_table **t = per_cpu_ptr(ph->tbl, cpu);
