@@ -46,7 +46,7 @@ static const char *const ktap_tokens [] = {
 	"in", "local", "nil", "not", "or", "repeat",
 	"return", "then", "true", "until", "while",
 	"..", "...", "==", ">=", "<=", "!=", "+=", "::", "<eof>",
-	"<number>", "<name>", "<string>"
+	"<number>", "<name>", "<string>", "<symbol>"
 };
 
 #define save_and_next(ls) (save(ls, ls->current), next(ls))
@@ -519,6 +519,10 @@ static int llex(ktap_lexstate *ls, ktap_seminfo *seminfo)
 		case '"': case '\'': {  /* short literal strings */
 			read_string(ls, ls->current, seminfo);
 			return TK_STRING;
+		}
+		case '`': {  /* short literal kernel symbol */
+			read_string(ls, ls->current, seminfo);
+			return TK_KSYM;
 		}
 		case '.': {  /* '.', '..', '...', or number */
 			save_and_next(ls);

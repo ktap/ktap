@@ -86,7 +86,7 @@ enum RESERVED {
 	TK_RETURN, TK_THEN, TK_TRUE, TK_UNTIL, TK_WHILE,
 	/* other terminal symbols */
 	TK_CONCAT, TK_DOTS, TK_EQ, TK_GE, TK_LE, TK_NE, TK_INCR, TK_DBCOLON,
-	TK_EOS, TK_NUMBER, TK_NAME, TK_STRING
+	TK_EOS, TK_NUMBER, TK_NAME, TK_STRING, TK_KSYM
 };
 
 /* number of reserved words */
@@ -373,6 +373,5 @@ int ktapc_str2d(const char *s, size_t len, ktap_number *result);
 int ktapc_hexavalue(int c);
 ktap_number ktapc_arith(int op, ktap_number v1, ktap_number v2);
 int ktapc_int2fb(unsigned int x);
-
 bool strglobmatch(const char *str, const char *pat);
-
+unsigned long ktapc_read_ksym(ktap_string *ts);

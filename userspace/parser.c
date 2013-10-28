@@ -37,7 +37,6 @@
 
 #define hasmultret(k)		((k) == VCALL || (k) == VVARARG)
 
-
 /*
  * nodes for block list (list of active blocks)
  */
@@ -601,6 +600,7 @@ static void close_func(ktap_lexstate *ls)
 	anchor_token(ls);
 }
 
+
 /*============================================================*/
 /* GRAMMAR RULES */
 /*============================================================*/
@@ -993,6 +993,11 @@ static void simpleexp(ktap_lexstate *ls, ktap_expdesc *v)
 	}
 	case TK_STRING: {
 		codestring(ls, v, ls->t.seminfo.ts);
+		break;
+	}
+	case TK_KSYM: {
+		init_exp(v, VKNUM, 0);
+		v->u.nval = (ktap_number)ktapc_read_ksym(ls->t.seminfo.ts);
 		break;
 	}
 	case TK_NIL: {

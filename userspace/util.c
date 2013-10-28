@@ -269,3 +269,49 @@ bool strglobmatch(const char *str, const char *pat)
 	return __match_glob(str, pat, false);
 }
 
+#define handle_error(str) do { perror(str); exit(-1); } while(0)
+
+#define KALLSYMS_PATH "/proc/kallsyms"
+/*
+ * read kernel symbol from /proc/kallsyms
+ */
+unsigned long ktapc_read_ksym(ktap_string *ts)
+{
+	const char *symbol = getstr(ts);
+	size_t ts_len = ts->tsv.len;
+	unsigned long ret = 0;
+	ssize_t size;
+	FILE *file;
+	char *line = NULL;
+	size_t n;
+
+	file = fopen(KALLSYMS_PATH, "r");
+	if (file == NULL)
+		handle_error("open " KALLSYMS_PATH " failed");
+
+	while ((size = getline(&line, &n, file)) != -1) {
+		char *sym_addr, *sym_name;
+
+		sym_addr = strtok(line, " ");
+		strtok(NULL, " ");
+		sym_name = strtok(NULL, " ");
+		if (strncmp(symbol, sym_name, ts_len) == 0) {
+			ret = strtoul(sym_addr, NULL, 16);
+			break;
+		}
+	}
+	if (size < 0) {
+		fprintf(stderr, "cannot read kernel symbol \"%s\" in %s\n",
+			symbol, KALLSYMS_PATH);
+		exit(EXIT_FAILURE);
+	}
+
+	fclose(file);
+	free(line);
+
+	if (ret == 0)
+		handle_error("cannot find kernel symbol");
+
+	return ret;
+}
+
