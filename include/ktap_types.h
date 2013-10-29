@@ -240,9 +240,12 @@ typedef struct ktap_table {
 	ktap_tnode *node;
 	ktap_tnode *lastfree;  /* any free position is before this position */
 
-	int with_stats;
+	int with_stats;  /* for aggregation tble: ptable */
 	ktap_stat_data *sd_arr;
 	ktap_stat_data *sd_rec;
+
+	ktap_tnode *sorted;  /* sorted table, with linked node list */
+	ktap_tnode *sort_head;
 
 	ktap_gcobject *gclist;
 } ktap_table;
@@ -434,7 +437,7 @@ union ktap_gcobject {
 #define gcvalue(o)	(val_(o).gc)
 
 #define isnil(o)	((o)->type == KTAP_TNIL)
-#define isboolean(o)	(o->type == KTAP_TBOOLEAN)
+#define isboolean(o)	((o)->type == KTAP_TBOOLEAN)
 #define isfalse(o)	(isnil(o) || (isboolean(o) && bvalue(o) == 0))
 
 #define ttisshrstring(o)	((o)->type == KTAP_TSHRSTR)
@@ -547,6 +550,8 @@ void kp_table_dump(ktap_state *ks, ktap_table *t);
 void kp_table_clear(ktap_state *ks, ktap_table *t);
 void kp_table_histogram(ktap_state *ks, ktap_table *t);
 int kp_table_next(ktap_state *ks, ktap_table *t, StkId key);
+int kp_table_sort_next(ktap_state *ks, ktap_table *t, StkId key);
+void kp_table_sort(ktap_state *ks, ktap_table *t, ktap_closure *cmp_func);
 void kp_table_atomic_inc(ktap_state *ks, ktap_table *t, ktap_value *key, int n);
 void kp_statdata_dump(ktap_state *ks, ktap_stat_data *sd);
 ktap_ptable *kp_ptable_new(ktap_state *ks);

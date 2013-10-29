@@ -67,6 +67,50 @@ static int ktap_lib_pairs(ktap_state *ks)
 	return 3;
 }
 
+static int ktap_lib_sort_next(ktap_state *ks)
+{
+	ktap_table *t = hvalue(ks->top - 2);
+
+	if (kp_table_sort_next(ks, t, ks->top-1)) {
+		ks->top += 1;
+		return 2;
+	} else {
+		ks->top -= 1;
+		setnilvalue(ks->top++);
+		return 1;
+	}
+}
+
+static int ktap_lib_sort_pairs(ktap_state *ks)
+{
+	ktap_value *v = kp_arg(ks, 1);
+	ktap_closure *cmp_func = NULL;
+	ktap_table *t;
+
+	if (ttistable(v)) {
+		t = hvalue(v);
+	} else if (ttisptable(v)) {
+		t = kp_ptable_synthesis(ks, phvalue(v));
+	} else if (isnil(v)) {
+		kp_error(ks, "table is nil in pairs\n");
+		return 0;
+	} else {
+		kp_error(ks, "wrong argument for pairs\n");
+		return 0;
+	}
+
+	if (kp_arg_nr(ks) > 1) {
+		kp_arg_check(ks, 2, KTAP_TFUNCTION);
+		cmp_func = clvalue(kp_arg(ks, 2));
+	}
+
+	kp_table_sort(ks, t, cmp_func); 
+	setfvalue(ks->top++, ktap_lib_sort_next);
+	sethvalue(ks->top++, t);
+	setnilvalue(ks->top++);
+	return 3;
+}
+
 static int ktap_lib_len(ktap_state *ks)
 {
 	int len = kp_objlen(ks, kp_arg(ks, 1));
@@ -502,6 +546,7 @@ static int ktap_lib_in_iowait(ktap_state *ks)
 
 static const ktap_Reg base_funcs[] = {
 	{"pairs", ktap_lib_pairs},
+	{"sort_pairs", ktap_lib_sort_pairs},
 	{"len", ktap_lib_len},
 	{"print", ktap_lib_print},
 	{"printf", ktap_lib_printf},

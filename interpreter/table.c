@@ -162,6 +162,9 @@ ktap_table *kp_table_new(ktap_state *ks)
 	t->sd_rec = NULL;
 	setnodevector(ks, t, 0);
 
+	t->sorted = NULL;
+	t->sort_head = NULL;
+
 	kp_table_lock_init(t);
 	return t;
 }
@@ -305,7 +308,148 @@ int kp_table_next(ktap_state *ks, ktap_table *t, StkId key)
 	return 0;  /* no more elements */
 }
 
+#ifdef __KERNEL__
+int kp_table_sort_next(ktap_state *ks, ktap_table *t, StkId key)
+{
+	unsigned long __maybe_unused flags;
+	ktap_tnode *node = t->sort_head;
 
+	kp_table_lock(t);
+
+	if (isnil(key)) {
+		/* first iteration */
+		setobj(key, gkey(node));
+		setobj(key + 1, gval(node));
+		kp_table_unlock(t);
+		return 1;
+	}
+
+	while (node && !isnil(gval(node))) {
+		if (kp_equalobjv(ks, gkey(node), key)) {
+			node = gnext(node);
+			if (!node)
+				goto out;
+
+			setobj(key, gkey(node));
+			setobj(key + 1, gval(node));
+			kp_table_unlock(t);
+			return 1;
+		}
+		node = gnext(node);
+	}
+
+ out:
+	kp_table_unlock(t);
+	return 0;  /* no more elements */
+}
+
+
+static int default_compare(ktap_state *ks, ktap_closure *cmp_func,
+				ktap_value *v1, ktap_value *v2)
+{
+	return nvalue(v1) < nvalue(v2);
+}
+
+static int closure_compare(ktap_state *ks, ktap_closure *cmp_func,
+				ktap_value *v1, ktap_value *v2)
+{
+	ktap_value *func;
+	int res;
+
+	func = ks->top;
+	setcllvalue(ks->top++, cmp_func);
+	setobj(ks->top++, v1);
+	setobj(ks->top++, v2);
+
+	kp_call(ks, func, 1);
+
+	res = !isfalse(ks->top - 1);
+
+	ks->top = func; /* restore ks->top */
+
+	return res;
+}
+
+static void insert_sorted_list(ktap_state *ks, ktap_table *t,
+				ktap_closure *cmp_func,
+				ktap_value *key, ktap_value *val)
+{
+	ktap_tnode *node = t->sort_head;
+	ktap_tnode *newnode, *prevnode = NULL;
+	int (*compare)(ktap_state *ks, ktap_closure *cmp_func,
+			ktap_value *v1, ktap_value *v2);
+	int i = 0;
+
+	if (isnil(gval(node))) {
+		*gkey(node) = *key;
+		*gval(node) = *val;
+		return;
+	}
+
+	if (!cmp_func)
+		compare = default_compare;
+	else
+		compare = closure_compare;
+
+	while (node) {
+		//if (nvalue(gval(node)) < nvalue(val)) {
+		if (compare(ks, cmp_func, gval(node), val)) {
+			prevnode = node;
+			node = gnext(node);
+			continue;
+		} else
+			break;
+	}
+
+	/* find free position */
+	while (!isnil(gval(&t->sorted[i]))) {
+		i++;
+	}
+
+	newnode = &t->sorted[i];
+	*gkey(newnode) = *key;
+	*gval(newnode) = *val;
+	gnext(newnode) = node;
+	if (prevnode)
+		gnext(prevnode) = newnode;
+	else
+		t->sort_head = newnode;
+}
+
+void kp_table_sort(ktap_state *ks, ktap_table *t, ktap_closure *cmp_func)
+{
+	unsigned long __maybe_unused flags;
+	int size = t->sizearray + sizenode(t);
+	int i;
+
+	kp_table_lock(t);
+
+	kp_realloc(ks, t->sorted, 0, size, ktap_tnode);
+	memset(t->sorted, 0, size * sizeof(ktap_tnode));
+	t->sort_head = t->sorted;
+
+	for (i = 0; i < t->sizearray; i++) {
+		ktap_value *v = &t->array[i];
+		ktap_value key;
+
+	        if (!isnil(v)) {
+			setnvalue(&key, i + 1);
+			insert_sorted_list(ks, t, cmp_func, &key, v);
+		}
+	}
+
+	for (i = 0; i < sizenode(t); i++) {
+		ktap_tnode *node = &t->node[i];
+
+		if (isnil(gkey(node)))
+			continue;
+
+		insert_sorted_list(ks, t, cmp_func, gkey(node), gval(node));
+	}
+
+	kp_table_unlock(t);
+}
+#endif
 
 static int computesizes (int nums[], int *narray)
 {
@@ -825,6 +969,7 @@ void kp_table_free(ktap_state *ks, ktap_table *t)
 		kp_free(ks, t->sd_rec);
 	}
 
+	kp_free(ks, t->sorted);
 	kp_free_gclist(ks, t->gclist);
 	kp_free(ks, t);
 }
