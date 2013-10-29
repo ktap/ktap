@@ -43,3 +43,42 @@ for (k, v in pairs(t)) {
 if (n != len(t)) {
 	failed()
 }
+
+
+#-------------------------------------------------#
+
+s = {}
+s[1] = 12
+s[2] = 2
+s[3] = 3
+s["124"] = 100
+s["125"] = -1
+
+ordered = {}
+
+number = 0
+
+function cmp(v1, v2) {
+	return (v1 > v2)
+}
+
+for (k, v in sort_pairs(s, cmp)) {
+	number += 1
+	ordered[number] = v
+}
+
+if (ordered[1] != 100) {
+	failed()
+}
+if (ordered[2] != 12) {
+	failed()
+}
+if (ordered[3] != 3) {
+	failed()
+}
+if (ordered[4] != 2) {
+	failed()
+}
+if (ordered[5] != -1) {
+	failed()
+}
