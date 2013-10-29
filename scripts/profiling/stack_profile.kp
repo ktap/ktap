@@ -18,7 +18,10 @@ tick-60s {
 }
 
 trace_end {
-	for (k, v in pairs(s)) {
+	function cmp(v1, v2) {
+		return (count(v1) < count(v2))
+	}
+	for (k, v in sort_pairs(s, cmp)) {
 		print(k)
 		print(count(v))
 		print()
