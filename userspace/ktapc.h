@@ -86,7 +86,7 @@ enum RESERVED {
 	TK_RETURN, TK_THEN, TK_TRUE, TK_UNTIL, TK_WHILE,
 	/* other terminal symbols */
 	TK_CONCAT, TK_DOTS, TK_EQ, TK_GE, TK_LE, TK_NE, TK_INCR, TK_DBCOLON,
-	TK_EOS, TK_NUMBER, TK_NAME, TK_STRING
+	TK_EOS, TK_NUMBER, TK_NAME, TK_STRING, TK_SYMBOL
 };
 
 /* number of reserved words */

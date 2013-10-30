@@ -37,6 +37,8 @@
 
 #define hasmultret(k)		((k) == VCALL || (k) == VVARARG)
 
+#define handle_error(str) do { perror(str); exit(-1); } while(0)
+
 
 /*
  * nodes for block list (list of active blocks)
@@ -601,6 +603,44 @@ static void close_func(ktap_lexstate *ls)
 	anchor_token(ls);
 }
 
+#define KALLSYMS_PATH "/proc/kallsyms"
+#define INIT_SYMENT_SIZE 4096
+
+static long readsymbol(ktap_string *ts)
+{
+	FILE *syms_fp;
+	char *line = malloc(INIT_SYMENT_SIZE);
+	size_t n = INIT_SYMENT_SIZE;
+	char *sym_addr, *sym_name;
+	const char *ts_data = getstr(ts);
+	size_t ts_len = ts->tsv.len;
+	ssize_t size;
+	long ret = 0;
+
+	syms_fp = fopen(KALLSYMS_PATH, "r");
+	if (syms_fp == NULL)
+		handle_error("open " KALLSYMS_PATH " failed");
+
+	while ((size = getline(&line, &n, syms_fp)) != -1) {
+		sym_addr = strtok(line, " ");
+		strtok(NULL, " ");
+		sym_name = strtok(NULL, " ");
+		if (strncmp(ts_data, sym_name, ts_len) == 0) {
+			ret = strtoul(sym_addr, NULL, 16);
+			break;
+		}
+	}
+	if (size < 0)
+		handle_error("read " KALLSYMS_PATH " over failed");
+
+	fclose(syms_fp);
+	free(line);
+
+	if (ret == 0)
+		handle_error("cannot find kernel symbol");
+	return ret;
+}
+
 /*============================================================*/
 /* GRAMMAR RULES */
 /*============================================================*/
@@ -993,6 +1033,11 @@ static void simpleexp(ktap_lexstate *ls, ktap_expdesc *v)
 	}
 	case TK_STRING: {
 		codestring(ls, v, ls->t.seminfo.ts);
+		break;
+	}
+	case TK_SYMBOL: {
+		init_exp(v, VKNUM, 0);
+		v->u.nval = readsymbol(ls->t.seminfo.ts);
 		break;
 	}
 	case TK_NIL: {
