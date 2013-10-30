@@ -38,7 +38,7 @@ typedef struct ktap_parm {
 #define KTAP_ENV	"_ENV"
 
 #define KTAP_VERSION_MAJOR       "0"
-#define KTAP_VERSION_MINOR       "2"
+#define KTAP_VERSION_MINOR       "3"
 
 #define KTAP_VERSION    "ktap " KTAP_VERSION_MAJOR "." KTAP_VERSION_MINOR
 #define KTAP_AUTHOR    "Jovi Zhangwei <jovi.zhangwei@gmail.com>"
