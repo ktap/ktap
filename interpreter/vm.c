@@ -46,9 +46,9 @@ static void ktap_concat(ktap_state *ks, int start, int end)
 	char *ptr, *buffer;
 
 	for (i = start; i <= end; i++) {
-		if (!ttisstring(top + i)) {
+		if (!is_string(top + i)) {
 			kp_error(ks, "cannot concat non-string\n");
-			setnilvalue(top + start);
+			set_nil(top + start);
 			return;
 		}
 
@@ -71,7 +71,7 @@ static void ktap_concat(ktap_state *ks, int start, int end)
 		ptr += len;
 	}
 	ts = kp_tstring_newlstr(ks, buffer, len);
-	setsvalue(top + start, ts);
+	set_string(top + start, ts);
 
 	preempt_enable_notrace();
 }
@@ -79,9 +79,9 @@ static void ktap_concat(ktap_state *ks, int start, int end)
 /* todo: compare l == r if both is tstring type? */
 static int lessthan(ktap_state *ks, const ktap_value *l, const ktap_value *r)
 {
-	if (ttisnumber(l) && ttisnumber(r))
+	if (is_number(l) && is_number(r))
 		return NUMLT(nvalue(l), nvalue(r));
-	else if (ttisstring(l) && ttisstring(r))
+	else if (is_string(l) && is_string(r))
 		return kp_tstring_cmp(rawtsvalue(l), rawtsvalue(r)) < 0;
 
 	return 0;
@@ -89,9 +89,9 @@ static int lessthan(ktap_state *ks, const ktap_value *l, const ktap_value *r)
 
 static int lessequal(ktap_state *ks, const ktap_value *l, const ktap_value *r)
 {
-	if (ttisnumber(l) && ttisnumber(r))
+	if (is_number(l) && is_number(r))
 		return NUMLE(nvalue(l), nvalue(r));
-	else if (ttisstring(l) && ttisstring(r))
+	else if (is_string(l) && is_string(r))
 		return kp_tstring_cmp(rawtsvalue(l), rawtsvalue(r)) <= 0;
 
 	return 0;
@@ -108,7 +108,7 @@ static int fb2int (int x)
 
 static const ktap_value *ktap_tonumber(const ktap_value *obj, ktap_value *n)
 {
-	if (ttisnumber(obj))
+	if (is_number(obj))
 		return obj;
 
 	return NULL;
@@ -150,19 +150,19 @@ static void pushclosure(ktap_state *ks, ktap_proto *p, ktap_upval **encup,
 	int nup = p->sizeupvalues;
 	ktap_upvaldesc *uv = p->upvalues;
 	int i;
-	ktap_closure *ncl = kp_newlclosure(ks, nup);
+	ktap_closure *ncl = kp_newclosure(ks, nup);
 
-	ncl->l.p = p;
-	setcllvalue(ra, ncl);  /* anchor new closure in stack */
+	ncl->p = p;
+	set_closure(ra, ncl);  /* anchor new closure in stack */
 
 	/* fill in its upvalues */
 	for (i = 0; i < nup; i++) {
 		if (uv[i].instack) {
 			/* upvalue refers to local variable? */
-			ncl->l.upvals[i] = findupval(ks, base + uv[i].idx);
+			ncl->upvals[i] = findupval(ks, base + uv[i].idx);
 		} else {
 			/* get upvalue from enclosing function */
-			ncl->l.upvals[i] = encup[uv[i].idx];
+			ncl->upvals[i] = encup[uv[i].idx];
 		}
 	}
 	//p->cache = ncl;  /* save it on cache for reuse */
@@ -171,9 +171,9 @@ static void pushclosure(ktap_state *ks, ktap_proto *p, ktap_upval **encup,
 static void gettable(ktap_state *ks, const ktap_value *t, ktap_value *key,
 		     StkId val)
 {
-	if (ttistable(t)) {
-		setobj(val, kp_table_get(hvalue(t), key));
-	} else if (ttisptable(t)) {
+	if (is_table(t)) {
+		set_obj(val, kp_table_get(hvalue(t), key));
+	} else if (is_ptable(t)) {
 		kp_ptable_get(ks, phvalue(t), key, val);
 	} else {
 		kp_error(ks, "get key from non-table\n");
@@ -183,9 +183,9 @@ static void gettable(ktap_state *ks, const ktap_value *t, ktap_value *key,
 static void settable(ktap_state *ks, const ktap_value *t, ktap_value *key,
 		     StkId val)
 {
-	if (ttistable(t)) {
+	if (is_table(t)) {
 		kp_table_setvalue(ks, hvalue(t), key, val);
-	} else if (ttisptable(t)) {
+	} else if (is_ptable(t)) {
 		kp_ptable_set(ks, phvalue(t), key, val);
 	} else {
 		kp_error(ks, "set key to non-table\n");
@@ -195,12 +195,12 @@ static void settable(ktap_state *ks, const ktap_value *t, ktap_value *key,
 static void settable_incr(ktap_state *ks, const ktap_value *t, ktap_value *key,
 			  StkId val)
 {
-	if (unlikely(!ttistable(t))) {
+	if (unlikely(!is_table(t))) {
 		kp_error(ks, "use += operator for non-table\n");
 		return;
 	}
 
-	if (unlikely(!ttisnumber(val))) {
+	if (unlikely(!is_number(val))) {
 		kp_error(ks, "use non-number to += operator\n");
 		return;
 	}
@@ -229,8 +229,8 @@ static StkId adjust_varargs(ktap_state *ks, ktap_proto *p, int actual)
 	base = ks->top;  /* final position of first argument */
 
 	for (i=0; i < nfixargs; i++) {
-		setobj(ks->top++, fixed + i);
-		setnilvalue(fixed + i);
+		set_obj(ks->top++, fixed + i);
+		set_nil(fixed + i);
 	}
 
 	return base;
@@ -250,10 +250,10 @@ static int poscall(ktap_state *ks, StkId first_result)
 	ks->ci = ci = ci->prev;
 
 	for (i = wanted; i != 0 && first_result < ks->top; i--)
-		setobj(res++, first_result++);
+		set_obj(res++, first_result++);
 
 	while(i-- > 0)
-		setnilvalue(res++);
+		set_nil(res++);
 
 	ks->top = res;
 
@@ -302,7 +302,7 @@ static int precall(ktap_state *ks, StkId func, int nresults)
 	int n;
 
 	switch (ttype(func)) {
-	case KTAP_TLCF: /* light C function */
+	case KTAP_TCFUNCTION: /* light C function */
 		f = fvalue(func);
 
 		if (checkstack(ks, KTAP_MIN_RESERVED_STACK_SIZE))
@@ -316,8 +316,8 @@ static int precall(ktap_state *ks, StkId func, int nresults)
 		n = (*f)(ks);
 		poscall(ks, ks->top - n);
 		return 1;
-	case KTAP_TLCL:	
-		p = CLVALUE(func)->p;
+	case KTAP_TCLOSURE:	
+		p = clvalue(func)->p;
 
 		if (checkstack(ks, p->maxstacksize))
 			return 1;
@@ -327,7 +327,7 @@ static int precall(ktap_state *ks, StkId func, int nresults)
 
 		/* complete missing arguments */
 		for (; n < p->numparams; n++)
-			setnilvalue(ks->top++);
+			set_nil(ks->top++);
 
 		base = (!p->is_vararg) ? func + 1 : adjust_varargs(ks, p, n);
 		ci = next_ci(ks);
@@ -362,9 +362,9 @@ static int precall(ktap_state *ks, StkId func, int nresults)
 #define arith_op(ks, op) { \
 	ktap_value *rb = RKB(instr); \
 	ktap_value *rc = RKC(instr); \
-	if (ttisnumber(rb) && ttisnumber(rc)) { \
+	if (is_number(rb) && is_number(rc)) { \
 		ktap_number nb = nvalue(rb), nc = nvalue(rc); \
-		setnvalue(ra, op(nb, nc)); \
+		set_number(ra, op(nb, nc)); \
 	} else {	\
 		kp_puts(ks, "Error: Cannot make arith operation\n");	\
 		return;	\
@@ -376,7 +376,7 @@ static void ktap_execute(ktap_state *ks)
 {
 	int exec_count = 0;
 	ktap_callinfo *ci;
-	ktap_lclosure *cl;
+	ktap_closure *cl;
 	ktap_value *k;
 	unsigned int instr, opcode;
 	StkId base; /* stack pointer */
@@ -386,7 +386,7 @@ static void ktap_execute(ktap_state *ks)
 	ci = ks->ci;
 
  newframe:
-	cl = CLVALUE(ci->func);
+	cl = clvalue(ci->func);
 	k = cl->p->k;
 	base = ci->u.l.base;
 
@@ -418,29 +418,29 @@ static void ktap_execute(ktap_state *ks)
 
 	switch (opcode) {
 	case OP_MOVE:
-		setobj(ra, base + GETARG_B(instr));
+		set_obj(ra, base + GETARG_B(instr));
 		break;
 	case OP_LOADK:
-		setobj(ra, k + GETARG_Bx(instr));
+		set_obj(ra, k + GETARG_Bx(instr));
 		break;
 	case OP_LOADKX:
-		setobj(ra, k + GETARG_Ax(*ci->u.l.savedpc++));
+		set_obj(ra, k + GETARG_Ax(*ci->u.l.savedpc++));
 		break;
 	case OP_LOADBOOL:
-		setbvalue(ra, GETARG_B(instr));
+		set_boolean(ra, GETARG_B(instr));
 		if (GETARG_C(instr))
 			ci->u.l.savedpc++;
 		break;
 	case OP_LOADNIL: {
 		int b = GETARG_B(instr);
 		do {
-			setnilvalue(ra++);
+			set_nil(ra++);
 		} while (b--);
 		break;
 		}
 	case OP_GETUPVAL: {
 		int b = GETARG_B(instr);
-		setobj(ra, cl->upvals[b]->v);
+		set_obj(ra, cl->upvals[b]->v);
 		break;
 		}
 	case OP_GETTABUP: {
@@ -468,7 +468,7 @@ static void ktap_execute(ktap_state *ks)
 	case OP_SETTABUP_AGGR: {
 		int a = GETARG_A(instr);
 		ktap_value *v = cl->upvals[a]->v;
-		if (!ttisptable(v)) {
+		if (!is_ptable(v)) {
 			kp_error(ks, "<<< must be operate on ptable\n");
 			return;
 		}
@@ -479,7 +479,7 @@ static void ktap_execute(ktap_state *ks)
 		}
 	case OP_SETUPVAL: {
 		ktap_upval *uv = cl->upvals[GETARG_B(instr)];
-		setobj(uv->v, ra);
+		set_obj(uv->v, ra);
 		break;
 		}
 	case OP_SETTABLE:
@@ -491,7 +491,7 @@ static void ktap_execute(ktap_state *ks)
 		base = ci->u.l.base;
 		break;
 	case OP_SETTABLE_AGGR:
-		if (!ttisptable(ra)) {
+		if (!is_ptable(ra)) {
 			kp_error(ks, "<<< must be operate on ptable\n");
 			return;
 		}
@@ -503,14 +503,14 @@ static void ktap_execute(ktap_state *ks)
 		int b = GETARG_B(instr);
 		int c = GETARG_C(instr);
 		ktap_table *t = kp_table_new(ks);
-		sethvalue(ra, t);
+		set_table(ra, t);
 		if (b != 0 || c != 0)
 			kp_table_resize(ks, t, fb2int(b), fb2int(c));
 		break;
 		}
 	case OP_SELF: {
 		StkId rb = RB(instr);
-		setobj(ra+1, rb);
+		set_obj(ra+1, rb);
 		gettable(ks, rb, RKC(instr), ra);
 		base = ci->u.l.base;
 		break;
@@ -545,21 +545,21 @@ static void ktap_execute(ktap_state *ks)
 		return;
 	case OP_UNM: {
 		ktap_value *rb = RB(instr);
-		if (ttisnumber(rb)) {
+		if (is_number(rb)) {
 			ktap_number nb = nvalue(rb);
-			setnvalue(ra, NUMUNM(nb));
+			set_number(ra, NUMUNM(nb));
 		}
 		break;
 		}
 	case OP_NOT:
-		res = isfalse(RB(instr));
-		setbvalue(ra, res);
+		res = is_false(RB(instr));
+		set_boolean(ra, res);
 		break;
 	case OP_LEN: {
 		int len = kp_objlen(ks, RB(instr));
 		if (len < 0)
 			return;
-		setnvalue(ra, len);
+		set_number(ra, len);
 		break;
 		}
 	case OP_CONCAT: {
@@ -574,7 +574,7 @@ static void ktap_execute(ktap_state *ks)
 	case OP_EQ: {
 		ktap_value *rb = RKB(instr);
 		ktap_value *rc = RKC(instr);
-		if ((int)equalobj(ks, rb, rc) != GETARG_A(instr))
+		if ((int)rawequalobj(rb, rc) != GETARG_A(instr))
 			ci->u.l.savedpc++;
 		else
 			donextjump(ci);
@@ -598,17 +598,17 @@ static void ktap_execute(ktap_state *ks)
 		base = ci->u.l.base;
 		break;
 	case OP_TEST:
-		if (GETARG_C(instr) ? isfalse(ra) : !isfalse(ra))
+		if (GETARG_C(instr) ? is_false(ra) : !is_false(ra))
 			ci->u.l.savedpc++;
 		else
 			donextjump(ci);
 		break;
 	case OP_TESTSET: {
 		ktap_value *rb = RB(instr);
-		if (GETARG_C(instr) ? isfalse(rb) : !isfalse(rb))
+		if (GETARG_C(instr) ? is_false(rb) : !is_false(rb))
 			ci->u.l.savedpc++;
 		else {
-			setobj(ra, rb);
+			set_obj(ra, rb);
 			donextjump(ci);
 		}
 		break;
@@ -656,7 +656,7 @@ static void ktap_execute(ktap_state *ks)
 			StkId ofunc = oci->func;  /* caller function */
 			/* last stack slot filled by 'precall' */
 			StkId lim = nci->u.l.base +
-				    CLVALUE(nfunc)->p->numparams;
+				    clvalue(nfunc)->p->numparams;
 
 			/* close all upvalues from previous call */
 			if (cl->p->sizep > 0)
@@ -664,7 +664,7 @@ static void ktap_execute(ktap_state *ks)
 
 			/* move new frame into old one */
 			for (aux = 0; nfunc + aux < lim; aux++)
-				setobj(ofunc + aux, nfunc + aux);
+				set_obj(ofunc + aux, nfunc + aux);
 			/* correct base */
 			oci->u.l.base = ofunc + (nci->u.l.base - nfunc);
 			/* correct top */
@@ -701,8 +701,8 @@ static void ktap_execute(ktap_state *ks)
 		ktap_number limit = nvalue(ra+1);
 		if (NUMLT(0, step) ? NUMLE(idx, limit) : NUMLE(limit, idx)) {
 			ci->u.l.savedpc += GETARG_sBx(instr);  /* jump back */
-			setnvalue(ra, idx);  /* update internal index... */
-			setnvalue(ra+3, idx);  /* ...and external index */
+			set_number(ra, idx);  /* update internal index... */
+			set_number(ra+3, idx);  /* ...and external index */
 		}
 		break;
 		}
@@ -724,15 +724,15 @@ static void ktap_execute(ktap_state *ks)
 			return;
 		}
 
-		setnvalue(ra, NUMSUB(nvalue(ra), nvalue(pstep)));
+		set_number(ra, NUMSUB(nvalue(ra), nvalue(pstep)));
 		ci->u.l.savedpc += GETARG_sBx(instr);
 		break;
 		}
 	case OP_TFORCALL: {
 		StkId cb = ra + 3;  /* call base */
-		setobj(cb + 2, ra + 2);
-		setobj(cb + 1, ra + 1);
-		setobj(cb, ra);
+		set_obj(cb + 2, ra + 2);
+		set_obj(cb + 1, ra + 1);
+		set_obj(cb, ra);
 		ks->top = cb + 3;  /* func. + 2 args (state and index) */
 		kp_call(ks, cb, GETARG_C(instr));
 		base = ci->u.l.base;
@@ -742,8 +742,8 @@ static void ktap_execute(ktap_state *ks)
 		}
 		/*go through */
 	case OP_TFORLOOP:
-		if (!isnil(ra + 1)) {  /* continue loop? */
-			setobj(ra, ra + 1);  /* save control variable */
+		if (!is_nil(ra + 1)) {  /* continue loop? */
+			set_obj(ra, ra + 1);  /* save control variable */
 			ci->u.l.savedpc += GETARG_sBx(instr);  /* jump back */
 		}
 		break;
@@ -791,9 +791,9 @@ static void ktap_execute(ktap_state *ks)
 		}
 		for (j = 0; j < b; j++) {
 			if (j < n) {
-				setobj(ra + j, base - n + j);
+				set_obj(ra + j, base - n + j);
 			} else
-				setnilvalue(ra + j);
+				set_nil(ra + j);
 		}
 		break;
 		}
@@ -807,7 +807,7 @@ static void ktap_execute(ktap_state *ks)
 			kp_error(ks, "invalid event context\n");
 			return;
 		}
-		setevalue(ra, e);
+		set_event(ra, e);
 		break;
 		}
 
@@ -818,7 +818,7 @@ static void ktap_execute(ktap_state *ks)
 			kp_error(ks, "invalid event context\n");
 			return;
 		}
-		setsvalue(ra, kp_tstring_new(ks, e->call->name));
+		set_string(ra, kp_tstring_new(ks, e->call->name));
 		break;
 		}
 	case OP_EVENTARG:
@@ -831,7 +831,7 @@ static void ktap_execute(ktap_state *ks)
 		break;
 	case OP_LOAD_GLOBAL: {
 		ktap_value *cfunc = cfunction_cache_get(ks, GETARG_C(instr));
-		setobj(ra, cfunc);
+		set_obj(ra, cfunc);
 		}
 		break;
 
@@ -910,7 +910,7 @@ static int cfunction_cache_getindex(ktap_state *ks, ktap_value *fname)
 static void cfunction_cache_add(ktap_state *ks, ktap_value *func)
 {
 	int nr = G(ks)->nr_builtin_cfunction;
-	setobj(&G(ks)->cfunction_tbl[nr], func);
+	set_obj(&G(ks)->cfunction_tbl[nr], func);
 	G(ks)->nr_builtin_cfunction++;
 }
 
@@ -946,16 +946,16 @@ void kp_register_lib(ktap_state *ks, const char *libname, const ktap_Reg *funcs)
 		kp_table_resize(ks, target_tbl, 0,
 				sizeof(*funcs) / sizeof(ktap_Reg));
 
-		setsvalue(&key, kp_tstring_new(ks, libname));
-		sethvalue(&val, target_tbl);
+		set_string(&key, kp_tstring_new(ks, libname));
+		set_table(&val, target_tbl);
 		kp_table_setvalue(ks, hvalue(gt), &key, &val);
 	}
 
 	for (i = 0; funcs[i].name != NULL; i++) {
 		ktap_value func_name, cl;
 
-		setsvalue(&func_name, kp_tstring_new(ks, funcs[i].name));
-		setfvalue(&cl, funcs[i].func);
+		set_string(&func_name, kp_tstring_new(ks, funcs[i].name));
+		set_cfunction(&cl, funcs[i].func);
 		kp_table_setvalue(ks, target_tbl, &func_name, &cl);
 
 		cfunction_cache_add(ks, &cl);
@@ -967,11 +967,11 @@ static void kp_init_registry(ktap_state *ks)
 	ktap_value mt;
 	ktap_table *registry = kp_table_new(ks);
 
-	sethvalue(&G(ks)->registry, registry);
+	set_table(&G(ks)->registry, registry);
 	kp_table_resize(ks, registry, KTAP_RIDX_LAST, 0);
-	setthvalue(ks, &mt, ks);
+	set_thread(&mt, ks);
 	kp_table_setint(ks, registry, KTAP_RIDX_MAINTHREAD, &mt);
-	sethvalue(&mt, kp_table_new(ks));
+	set_table(&mt, kp_table_new(ks));
 	kp_table_setint(ks, registry, KTAP_RIDX_GLOBALS, &mt);
 }
 
@@ -986,8 +986,8 @@ static int kp_init_arguments(ktap_state *ks, int argc, char __user **user_argv)
 	char **argv;
 	int i, ret;
 	
-	setsvalue(&arg_tsval, kp_tstring_new(ks, "arg"));
-	sethvalue(&arg_tblval, arg_tbl);
+	set_string(&arg_tsval, kp_tstring_new(ks, "arg"));
+	set_table(&arg_tblval, arg_tbl);
 	kp_table_setvalue(ks, global_tbl, &arg_tsval, &arg_tblval);
 
 	if (!argc)
@@ -1036,9 +1036,9 @@ static int kp_init_arguments(ktap_state *ks, int argc, char __user **user_argv)
 		kstr[len] = '\0';
 
 		if (!kstrtoint(kstr, 10, &res)) {
-			setnvalue(&val, res);
+			set_number(&val, res);
 		} else
-			setsvalue(&val, kp_tstring_new(ks, kstr));
+			set_string(&val, kp_tstring_new(ks, kstr));
 
 		kp_table_setint(ks, arg_tbl, i, &val);
 

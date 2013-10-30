@@ -118,7 +118,7 @@ static int ktap_main(struct file *file, ktap_parm *parm)
 
 	if (cl) {
 		/* optimize bytecode before excuting */
-		kp_optimize_code(ks, 0, cl->l.p);
+		kp_optimize_code(ks, 0, cl->p);
 
 		delta_time = gettimeofday_us() - start_time;
 		kp_verbose_printf(ks, "booting time: %d (us)\n", delta_time);

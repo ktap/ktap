@@ -132,12 +132,12 @@ ktap_string *lex_newstring(ktap_lexstate *ls, const char *str, size_t l)
 	ktap_value val;  /* entry for `str' */
 	ktap_value tsv;
 	ktap_string *ts = ktapc_ts_newlstr(str, l);  /* create new string */
-	setsvalue(&tsv, ts); 
+	set_string(&tsv, ts); 
 	o = ktapc_table_get(ls->fs->h, &tsv);
-	if (isnil(o)) {  /* not in use yet? (see 'addK') */
+	if (is_nil(o)) {  /* not in use yet? (see 'addK') */
 		/* boolean value does not need GC barrier;
 		table has no metatable, so it does not need to invalidate cache */
-		setbvalue(&val, 1);  /* t[string] = true */
+		set_boolean(&val, 1);  /* t[string] = true */
 		ktapc_table_setvalue(ls->fs->h, &tsv, &val);
 	}
 	return ts;

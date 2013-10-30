@@ -178,7 +178,7 @@ static const ktap_value *table_getint(ktap_table *t, int key)
 
 	n = hashnum(t, key);
 	do {
-		if (ttisnumber(gkey(n)) && nvalue(gkey(n)) == key)
+		if (is_number(gkey(n)) && nvalue(gkey(n)) == key)
 			return gval(n);
 		else
 			n = gnext(n);
@@ -219,7 +219,7 @@ static ktap_tnode *mainposition (const ktap_table *t, const ktap_value *key)
 		return hashboolean(t, bvalue(key));
 	case KTAP_TLIGHTUSERDATA:
 		return hashpointer(t, pvalue(key));
-	case KTAP_TLCF:
+	case KTAP_TCFUNCTION:
 		return hashpointer(t, fvalue(key));
 	case KTAP_TBTRACE: {
 		/* use first entry as hash key, cannot use gcvalue as key */
@@ -233,7 +233,7 @@ static ktap_tnode *mainposition (const ktap_table *t, const ktap_value *key)
 
 static int arrayindex(const ktap_value *key)
 {
-	if (ttisnumber(key)) {
+	if (is_number(key)) {
 		ktap_number n = nvalue(key);
 		int k = (int)n;
 		if ((ktap_number)k == n)
@@ -253,7 +253,7 @@ static int findindex(ktap_state *ks, ktap_table *t, StkId key)
 {
 	int i;
 
-	if (isnil(key))
+	if (is_nil(key))
 		return -1;  /* first iteration */
 
 	i = arrayindex(key);
@@ -287,18 +287,18 @@ int kp_table_next(ktap_state *ks, ktap_table *t, StkId key)
 	i = findindex(ks, t, key);  /* find original element */
 
 	for (i++; i < t->sizearray; i++) {  /* try first array part */
-	        if (!isnil(&t->array[i])) {  /* a non-nil value? */
-			setnvalue(key, i+1);
-			setobj(key+1, &t->array[i]);
+	        if (!is_nil(&t->array[i])) {  /* a non-nil value? */
+			set_number(key, i+1);
+			set_obj(key+1, &t->array[i]);
 			kp_table_unlock(t);
 			return 1;
 		}
 	}
 
 	for (i -= t->sizearray; i < sizenode(t); i++) {  /* then hash part */
-		if (!isnil(gval(gnode(t, i)))) {  /* a non-nil value? */
-			setobj(key, gkey(gnode(t, i)));
-			setobj(key+1, gval(gnode(t, i)));
+		if (!is_nil(gval(gnode(t, i)))) {  /* a non-nil value? */
+			set_obj(key, gkey(gnode(t, i)));
+			set_obj(key+1, gval(gnode(t, i)));
 			kp_table_unlock(t);
 			return 1;
 		}
@@ -316,22 +316,22 @@ int kp_table_sort_next(ktap_state *ks, ktap_table *t, StkId key)
 
 	kp_table_lock(t);
 
-	if (isnil(key)) {
+	if (is_nil(key)) {
 		/* first iteration */
-		setobj(key, gkey(node));
-		setobj(key + 1, gval(node));
+		set_obj(key, gkey(node));
+		set_obj(key + 1, gval(node));
 		kp_table_unlock(t);
 		return 1;
 	}
 
-	while (node && !isnil(gval(node))) {
+	while (node && !is_nil(gval(node))) {
 		if (kp_equalobjv(ks, gkey(node), key)) {
 			node = gnext(node);
 			if (!node)
 				goto out;
 
-			setobj(key, gkey(node));
-			setobj(key + 1, gval(node));
+			set_obj(key, gkey(node));
+			set_obj(key + 1, gval(node));
 			kp_table_unlock(t);
 			return 1;
 		}
@@ -357,13 +357,13 @@ static int closure_compare(ktap_state *ks, ktap_closure *cmp_func,
 	int res;
 
 	func = ks->top;
-	setcllvalue(ks->top++, cmp_func);
-	setobj(ks->top++, v1);
-	setobj(ks->top++, v2);
+	set_closure(ks->top++, cmp_func);
+	set_obj(ks->top++, v1);
+	set_obj(ks->top++, v2);
 
 	kp_call(ks, func, 1);
 
-	res = !isfalse(ks->top - 1);
+	res = !is_false(ks->top - 1);
 
 	ks->top = func; /* restore ks->top */
 
@@ -380,7 +380,7 @@ static void insert_sorted_list(ktap_state *ks, ktap_table *t,
 			ktap_value *v1, ktap_value *v2);
 	int i = 0;
 
-	if (isnil(gval(node))) {
+	if (is_nil(gval(node))) {
 		*gkey(node) = *key;
 		*gval(node) = *val;
 		return;
@@ -402,7 +402,7 @@ static void insert_sorted_list(ktap_state *ks, ktap_table *t,
 	}
 
 	/* find free position */
-	while (!isnil(gval(&t->sorted[i]))) {
+	while (!is_nil(gval(&t->sorted[i]))) {
 		i++;
 	}
 
@@ -432,8 +432,8 @@ void kp_table_sort(ktap_state *ks, ktap_table *t, ktap_closure *cmp_func)
 		ktap_value *v = &t->array[i];
 		ktap_value key;
 
-	        if (!isnil(v)) {
-			setnvalue(&key, i + 1);
+	        if (!is_nil(v)) {
+			set_number(&key, i + 1);
 			insert_sorted_list(ks, t, cmp_func, &key, v);
 		}
 	}
@@ -441,7 +441,7 @@ void kp_table_sort(ktap_state *ks, ktap_table *t, ktap_closure *cmp_func)
 	for (i = 0; i < sizenode(t); i++) {
 		ktap_tnode *node = &t->node[i];
 
-		if (isnil(gkey(node)))
+		if (is_nil(gkey(node)))
 			continue;
 
 		insert_sorted_list(ks, t, cmp_func, gkey(node), gval(node));
@@ -514,7 +514,7 @@ static int numusearray(const ktap_table *t, int *nums)
 
 		/* count elements in range (2^(lg-1), 2^lg] */
 		for (; i <= lim; i++) {
-			if (!isnil(&t->array[i-1]))
+			if (!is_nil(&t->array[i-1]))
 				lc++;
 		}
 		nums[lg] += lc;
@@ -531,7 +531,7 @@ static int numusehash(const ktap_table *t, int *nums, int *pnasize)
 
 	while (i--) {
 		ktap_tnode *n = &t->node[i];
-		if (!isnil(gval(n))) {
+		if (!is_nil(gval(n))) {
 			ause += countint(gkey(n), nums);
 			totaluse++;
 		}
@@ -548,10 +548,10 @@ static void update_array_sd(ktap_table *t)
 	for (i = 0; i < t->sizearray; i++) {
 		ktap_value *v = &t->array[i];
 
-		if (!ttisstatdata(v))
+		if (!is_statdata(v))
 			continue;
 
-		setsdvalue(v, &t->sd_arr[i]);
+		set_statdata(v, &t->sd_arr[i]);
 	}
 }
 
@@ -567,7 +567,7 @@ static void setarrayvector(ktap_state *ks, ktap_table *t, int size)
 	}
 
 	for (i = t->sizearray; i < size; i++)
-		setnilvalue(&t->array[i]);
+		set_nil(&t->array[i]);
 
 	t->sizearray = size;
 }
@@ -595,8 +595,8 @@ static void setnodevector(ktap_state *ks, ktap_table *t, int size)
 		for (i = 0; i < size; i++) {
 			ktap_tnode *n = gnode(t, i);
 			gnext(n) = NULL;
-			setnilvalue(gkey(n));
-			setnilvalue(gval(n));
+			set_nil(gkey(n));
+			set_nil(gval(n));
 		}
 	}
 
@@ -627,14 +627,14 @@ static void table_resize(ktap_state *ks, ktap_table *t, int nasize, int nhsize)
 		t->sizearray = nasize;
 		/* re-insert elements from vanishing slice */
 		for (i = nasize; i < oldasize; i++) {
-			if (!isnil(&t->array[i])) {
+			if (!is_nil(&t->array[i])) {
 				ktap_value *v;
 				v = (ktap_value *)table_getint(t, i + 1);
-				setobj(v, &t->array[i]);
+				set_obj(v, &t->array[i]);
 
 				if (t->with_stats) {
 					*read_sd(t, v) = t->sd_arr[i];
-					setsdvalue(v, read_sd(t, v));
+					set_statdata(v, read_sd(t, v));
 				}
 			}
 		}
@@ -651,20 +651,20 @@ static void table_resize(ktap_state *ks, ktap_table *t, int nasize, int nhsize)
 	/* re-insert elements from hash part */
 	for (i = twoto(oldhsize) - 1; i >= 0; i--) {
 		ktap_tnode *old = nold + i;
-		if (!isnil(gval(old))) {
+		if (!is_nil(gval(old))) {
 			ktap_value *v = table_set(ks, t, gkey(old));
 			/*
 			 * doesn't need barrier/invalidate cache, as entry was
 			 * already present in the table
 			 */
-			setobj(v, gval(old));
+			set_obj(v, gval(old));
 			
 			if (t->with_stats) {
 				ktap_stat_data *sd;
 
 				sd = read_sd(t, v);
 				*sd = *_read_sd(gval(old), nold, sd_rec_old);
-				setsdvalue(v, sd);
+				set_statdata(v, sd);
 			}
 		}
 	}
@@ -725,7 +725,7 @@ static ktap_tnode *getfreepos(ktap_table *t)
 {
 	while (t->lastfree > t->node) {
 		t->lastfree--;
-		if (isnil(gkey(t->lastfree)))
+		if (is_nil(gkey(t->lastfree)))
 			return t->lastfree;
 	}
 	return NULL;  /* could not find a free place */
@@ -739,7 +739,7 @@ static ktap_value *table_newkey(ktap_state *ks, ktap_table *t,
 	ktap_value newkey;
 
 	mp = mainposition(t, key);
-	if (!isnil(gval(mp)) || isdummy(mp)) {  /* main position is taken? */
+	if (!is_nil(gval(mp)) || isdummy(mp)) {  /* main position is taken? */
 		ktap_tnode *othern;
 		ktap_tnode *n = getfreepos(t);  /* get a free place */
 		if (n == NULL) {  /* cannot find a free place? */
@@ -765,11 +765,11 @@ static ktap_value *table_newkey(ktap_state *ks, ktap_table *t,
 			if (t->with_stats) {
 				ktap_stat_data *sd = read_sd(t, gval(n));
 				*sd = *read_sd(t, gval(mp));
-				setsdvalue(gval(n), sd);
+				set_statdata(gval(n), sd);
 			}
 
 			gnext(mp) = NULL;  /* now `mp' is free */
-			setnilvalue(gval(mp));
+			set_nil(gval(mp));
 		} else {
 			/* colliding node is in its own main position */
 
@@ -781,12 +781,12 @@ static ktap_value *table_newkey(ktap_state *ks, ktap_table *t,
 	}
 
 	/* special handling for cloneable object, maily for btrace object */
-	if (ttisclone(key))
+	if (is_needclone(key))
 		kp_objclone(ks, key, &newkey, &t->gclist);
 	else
 		newkey = *key;
 
-	setobj(gkey(mp), &newkey);
+	set_obj(gkey(mp), &newkey);
 	return gval(mp);
 }
 
@@ -799,7 +799,7 @@ static const ktap_value *table_getstr(ktap_table *t, ktap_string *key)
 	ktap_tnode *n = hashstr(t, key);
 
 	do {  /* check whether `key' is somewhere in the chain */
-		if (ttisshrstring(gkey(n)) && eqshrstr(rawtsvalue(gkey(n)),
+		if (is_shrstring(gkey(n)) && eqshrstr(rawtsvalue(gkey(n)),
 								key))
 			return gval(n);  /* that's it */
 		else
@@ -869,14 +869,14 @@ void kp_table_setvalue(ktap_state *ks, ktap_table *t,
 {
 	unsigned long __maybe_unused flags;
 
-	if (isnil(key)) {
+	if (is_nil(key)) {
 		kp_printf(ks, "table index is nil\n");
 		kp_exit(ks);
 		return;
 	}
 
 	kp_table_lock(t);
-	setobj(table_set(ks, t, key), val);
+	set_obj(table_set(ks, t, key), val);
 	kp_table_unlock(t);
 }
 
@@ -891,11 +891,11 @@ static void table_setint(ktap_state *ks, ktap_table *t, int key, ktap_value *v)
 		cell = (ktap_value *)p;
 	else {
 		ktap_value k;
-		setnvalue(&k, key);
+		set_number(&k, key);
 		cell = table_newkey(ks, t, &k);
 	}
 
-	setobj(cell, v);
+	set_obj(cell, v);
 }
 
 void kp_table_setint(ktap_state *ks, ktap_table *t, int key, ktap_value *val)
@@ -912,7 +912,7 @@ void kp_table_atomic_inc(ktap_state *ks, ktap_table *t, ktap_value *key, int n)
 	unsigned long __maybe_unused flags;
 	ktap_value *v;
 
-	if (isnil(key)) {
+	if (is_nil(key)) {
 		kp_printf(ks, "table index is nil\n");
 		kp_exit(ks);
 		return;
@@ -921,10 +921,10 @@ void kp_table_atomic_inc(ktap_state *ks, ktap_table *t, ktap_value *key, int n)
 	kp_table_lock(t);
 
 	v = table_set(ks, t, key);
-	if (isnil(v)) {
-		setnvalue(v, n);
+	if (is_nil(v)) {
+		set_number(v, n);
 	} else
-		setnvalue(v, nvalue(v) + n);
+		set_number(v, nvalue(v) + n);
 
 	kp_table_unlock(t);
 }
@@ -939,7 +939,7 @@ int kp_table_length(ktap_state *ks, ktap_table *t)
 	for (i = 0; i < t->sizearray; i++) {
 		ktap_value *v = &t->array[i];
 
-		if (isnil(v))
+		if (is_nil(v))
 			continue;
 		len++;
 	}
@@ -947,7 +947,7 @@ int kp_table_length(ktap_state *ks, ktap_table *t)
 	for (i = 0; i < sizenode(t); i++) {
 		ktap_tnode *n = &t->node[i];
 
-		if (isnil(gkey(n)))
+		if (is_nil(gkey(n)))
 			continue;
 
 		len++;
@@ -981,7 +981,7 @@ void kp_table_dump(ktap_state *ks, ktap_table *t)
 	for (i = 0; i < t->sizearray; i++) {
 		ktap_value *v = &t->array[i];
 
-		if (isnil(v))
+		if (is_nil(v))
 			continue;
 
 		kp_printf(ks, "%d:\t", i + 1);
@@ -992,7 +992,7 @@ void kp_table_dump(ktap_state *ks, ktap_table *t)
 	for (i = 0; i < sizenode(t); i++) {
 		ktap_tnode *n = &t->node[i];
 
-		if (isnil(gkey(n)))
+		if (is_nil(gkey(n)))
 			continue;
 
 		kp_showobj(ks, gkey(n));
@@ -1070,20 +1070,20 @@ static void table_histdump(ktap_state *ks, ktap_table *t, int shownums)
 	for (i = 0; i < t->sizearray; i++) {
 		ktap_value *v = &t->array[i];
 
-		if (isnil(v))
+		if (is_nil(v))
 			continue;
 
-		if (ttisnumber(v))
+		if (is_number(v))
 			num = nvalue(v);
-		else if (ttisstatdata(v))
+		else if (is_statdata(v))
 			num = sdvalue(v)->count;
 		else {
 			kp_table_unlock(t);
 			goto error;
 		}
 
-		setnvalue(&thr[count].key, i + 1);
-		setnvalue(&thr[count].val, num);
+		set_number(&thr[count].key, i + 1);
+		set_number(&thr[count].val, num);
 		count++;
 		total += num;
 	}
@@ -1092,20 +1092,20 @@ static void table_histdump(ktap_state *ks, ktap_table *t, int shownums)
 		ktap_tnode *n = &t->node[i];
 		ktap_value *v = gval(n);
 
-		if (isnil(gkey(n)))
+		if (is_nil(gkey(n)))
 			continue;
 
-		if (ttisnumber(v))
+		if (is_number(v))
 			num = nvalue(v);
-		else if (ttisstatdata(v))
+		else if (is_statdata(v))
 			num = sdvalue(v)->count;
 		else {
 			kp_table_unlock(t);
 			goto error;
 		}
 
-		setobj(&thr[count].key, gkey(n));
-		setnvalue(&thr[count].val, num);
+		set_obj(&thr[count].key, gkey(n));
+		set_number(&thr[count].val, num);
 		count++;
 		total += num;
 	}
@@ -1118,7 +1118,7 @@ static void table_histdump(ktap_state *ks, ktap_table *t, int shownums)
 	dist_str[sizeof(dist_str) - 1] = '\0';
 
 	/* check the first key is a kernel text symbol or not */
-	if (ttisnumber(&thr[0].key)) {
+	if (is_number(&thr[0].key)) {
 		char str[KSYM_SYMBOL_LEN];
 
 		SPRINT_SYMBOL(str, nvalue(&thr[0].key));
@@ -1135,13 +1135,13 @@ static void table_histdump(ktap_state *ks, ktap_table *t, int shownums)
 		ratio = (nvalue(val) * (sizeof(dist_str) - 1)) / total;
 		memset(dist_str, '@', ratio);
 
-		if (ttisstring(key)) {
+		if (is_string(key)) {
 			char buf[32 + 1] = {0};
 
 			string_convert(buf, svalue(key));
 			kp_printf(ks, "%32s |%s%-7d\n", buf, dist_str,
 				      nvalue(val));
-		} else if (ttisnumber(key)) {
+		} else if (is_number(key)) {
 			char str[KSYM_SYMBOL_LEN];
 			char buf[32 + 1] = {0};
 
@@ -1213,16 +1213,16 @@ static void merge_table(ktap_state *ks, ktap_table *t1, ktap_table *t2)
 		ktap_value *v = &t1->array[i];
 		ktap_stat_data *sd;
 
-		if (isnil(v))
+		if (is_nil(v))
 			continue;
 
-		setnvalue(&n, i);
+		set_number(&n, i);
 
 		newv = table_set(ks, t2, &n);
 		sd = read_sd(t2, newv);
-		if (isnil(newv)) {
+		if (is_nil(newv)) {
 			*sd = *read_sd(t1, v);
-			setsdvalue(newv, sd);
+			set_statdata(newv, sd);
 		} else
 			statdata_add(read_sd(t1, v), sd);
 	}
@@ -1230,13 +1230,13 @@ static void merge_table(ktap_state *ks, ktap_table *t1, ktap_table *t2)
 	for (i = 0; i < sizenode(t1); i++) {
 		ktap_tnode *node = &t1->node[i];
 
-		if (isnil(gkey(node)))
+		if (is_nil(gkey(node)))
 			continue;
 
 		newv = table_set(ks, t2, gkey(node));
-		if (isnil(newv)) {
+		if (is_nil(newv)) {
 			*read_sd(t2, newv) = *read_sd(t1, gval(node));
-			setsdvalue(newv, read_sd(t2, newv));
+			set_statdata(newv, read_sd(t2, newv));
 		} else
 			statdata_add(read_sd(t1, gval(node)),
 				     read_sd(t2, newv));
@@ -1310,7 +1310,7 @@ void kp_ptable_set(ktap_state *ks, ktap_ptable *ph,
 	ktap_stat_data *sd;
 	int aggval;;
 
-	if (unlikely(!ttisnumber(val))) {
+	if (unlikely(!is_number(val))) {
 		kp_error(ks, "add non number value to aggregation table\n");
 		return;
 	}
@@ -1322,10 +1322,10 @@ void kp_ptable_set(ktap_state *ks, ktap_ptable *ph,
 	v = table_set(ks, t, key);
 	sd = read_sd(t, v);
 
-	if (isnil(v)) {
+	if (is_nil(v)) {
 		sd->count = 1;
 		sd->sum = sd->min = sd->max = aggval;
-		setsdvalue(v, sd);
+		set_statdata(v, sd);
 		kp_table_unlock(t);
 		return;
 	}
@@ -1357,7 +1357,7 @@ void kp_ptable_get(ktap_state *ks, ktap_ptable *ph,
 
 		kp_table_lock(*t);
 		v = table_get(*t, key);
-		if (isnil(v)) {
+		if (is_nil(v)) {
 			kp_table_unlock(*t);
 			continue;
 		}
@@ -1373,7 +1373,7 @@ void kp_ptable_get(ktap_state *ks, ktap_ptable *ph,
 	}
 
 	if (sd.count == -1) {
-		setnilvalue(val);
+		set_nil(val);
 		return;
 	}
 
@@ -1381,8 +1381,8 @@ void kp_ptable_get(ktap_state *ks, ktap_ptable *ph,
 	aggval = table_set(ks, ph->agg, key);
 	aggsd = read_sd(ph->agg, aggval);
 	*aggsd = sd;
-	setsdvalue(aggval, aggsd);
-	setsdvalue(val, aggsd);
+	set_statdata(aggval, aggsd);
+	set_statdata(val, aggsd);
 	kp_table_unlock(ph->agg);
 }
 

@@ -150,7 +150,7 @@ void kp_obj_dump(ktap_state *ks, const ktap_value *v)
 	case KTAP_TLIGHTUSERDATA:
 		kp_printf(ks, "LIGHTUSERDATA 0x%lx", (unsigned long)pvalue(v));
 		break;
-	case KTAP_TLCF:
+	case KTAP_TCFUNCTION:
 		kp_printf(ks, "LIGHTCFCUNTION 0x%lx", (unsigned long)fvalue(v));
 		break;
 	case KTAP_TSHRSTR:
@@ -220,7 +220,7 @@ void kp_showobj(ktap_state *ks, const ktap_value *v)
 	case KTAP_TLIGHTUSERDATA:
 		kp_printf(ks, "0x%lx", (unsigned long)pvalue(v));
 		break;
-	case KTAP_TLCF:
+	case KTAP_TCFUNCTION:
 		kp_printf(ks, "0x%lx", (unsigned long)fvalue(v));
 		break;
 	case KTAP_TSHRSTR:
@@ -265,7 +265,7 @@ int kp_equalobjv(ktap_state *ks, const ktap_value *t1, const ktap_value *t2)
 		return bvalue(t1) == bvalue(t2);  /* true must be 1 !! */
 	case KTAP_TLIGHTUSERDATA:
 		return pvalue(t1) == pvalue(t2);
-	case KTAP_TLCF:
+	case KTAP_TCFUNCTION:
 		return fvalue(t1) == fvalue(t2);
 	case KTAP_TSHRSTR:
 		return eqshrstr(rawtsvalue(t1), rawtsvalue(t2));
@@ -328,7 +328,7 @@ ktap_upval *kp_newupval(ktap_state *ks)
 
 	uv = &kp_newobject(ks, KTAP_TUPVAL, sizeof(ktap_upval), NULL)->uv;
 	uv->v = &uv->u.value;
-	setnilvalue(uv->v);
+	set_nil(uv->v);
 	return uv;
 }
 
@@ -346,29 +346,29 @@ static ktap_btrace *kp_newbacktrace(ktap_state *ks, int nr_entries,
 void kp_objclone(ktap_state *ks, const ktap_value *o, ktap_value *newo,
 		 ktap_gcobject **list)
 {
-	if (ttisbtrace(o)) {
+	if (is_btrace(o)) {
 		int nr_entries = btvalue(o)->nr_entries;
 		ktap_btrace *bt;
 
 		bt = kp_newbacktrace(ks, nr_entries, list);
 		memcpy((unsigned long *)(bt + 1), btvalue(o) + 1,
 			nr_entries * sizeof(unsigned long));
-		setbtvalue(newo, bt);
+		set_btrace(newo, bt);
 	} else {
 		kp_error(ks, "cannot clone ktap value type %d\n", ttype(o));
-		setnilvalue(newo);
+		set_nil(newo);
 	}
 }
 
-ktap_closure *kp_newlclosure(ktap_state *ks, int n)
+ktap_closure *kp_newclosure(ktap_state *ks, int n)
 {
 	ktap_closure *cl;
 
-	cl = (ktap_closure *)kp_newobject(ks, KTAP_TLCL, sizeof(*cl), NULL);
-	cl->l.p = NULL;
-	cl->l.nupvalues = n;
+	cl = (ktap_closure *)kp_newobject(ks, KTAP_TCLOSURE, sizeof(*cl), NULL);
+	cl->p = NULL;
+	cl->nupvalues = n;
 	while (n--)
-		cl->l.upvals[n] = NULL;
+		cl->upvals[n] = NULL;
 
 	return cl;
 }

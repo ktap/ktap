@@ -158,12 +158,12 @@ int kp_strfmt(ktap_state *ks, struct trace_seq *seq)
 				const char *s;
 				size_t l;
 
-				if (isnil(v)) {
+				if (is_nil(v)) {
 					trace_seq_puts(seq, "nil");
 					return 0;
 				}
 
-				if (ttisevent(v)) {
+				if (is_event(v)) {
 					kp_event_tostring(ks, seq);
 					return 0;
 				}

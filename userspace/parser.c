@@ -1896,11 +1896,11 @@ ktap_closure *ktapc_parser(char *ptr, const char *name)
 	ktap_dyndata dyd;
 	ktap_mbuffer buff;
 	int firstchar = *ptr++;
-	ktap_closure *cl = ktapc_newlclosure(1);  /* create main closure */
+	ktap_closure *cl = ktapc_newclosure(1);  /* create main closure */
 
 	memset(&lexstate, 0, sizeof(ktap_lexstate));
 	memset(&funcstate, 0, sizeof(ktap_funcstate));
-	funcstate.f = cl->l.p = ktapc_newproto();
+	funcstate.f = cl->p = ktapc_newproto();
 	funcstate.f->source = ktapc_ts_new(name);  /* create and anchor ktap_string */
 
 	lex_init();

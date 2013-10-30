@@ -45,9 +45,9 @@ void *ktapc_reallocv(void *block, size_t osize, size_t nsize)
 	return kp_reallocv(NULL, block, osize, nsize);
 }
 
-ktap_closure *ktapc_newlclosure(int n)
+ktap_closure *ktapc_newclosure(int n)
 {
-	return kp_newlclosure(NULL, n);
+	return kp_newclosure(NULL, n);
 }
 
 ktap_proto *ktapc_newproto()
@@ -582,7 +582,7 @@ static void compile(const char *input)
 
  dump:
 	if (dump_bytecode) {
-		dump_function(1, cl->l.p);
+		dump_function(1, cl->p);
 		exit(0);
 	}
 
@@ -591,7 +591,7 @@ static void compile(const char *input)
 	if (!uparm.trunk)
 		handle_error("malloc failed");
 
-	ktapc_dump(cl->l.p, ktapc_writer, NULL, 0);
+	ktapc_dump(cl->p, ktapc_writer, NULL, 0);
 }
 
 int main(int argc, char **argv)

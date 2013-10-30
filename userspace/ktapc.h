@@ -305,7 +305,7 @@ ktap_proto *ktapc_newproto();
 ktap_table *ktapc_table_new();
 const ktap_value *ktapc_table_get(ktap_table *t, const ktap_value *key);
 void ktapc_table_setvalue(ktap_table *t, const ktap_value *key, ktap_value *val);
-ktap_closure *ktapc_newlclosure(int n);
+ktap_closure *ktapc_newclosure(int n);
 char *ktapc_sprintf(const char *fmt, ...);
 
 void *ktapc_reallocv(void *block, size_t osize, size_t nsize);

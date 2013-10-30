@@ -32,7 +32,7 @@ static void ktap_call_probe_closure(ktap_state *mainthread, ktap_closure *cl,
 	ktap_value *func;
 
 	ks = kp_newthread(mainthread);
-	setcllvalue(ks->top, cl);
+	set_closure(ks->top, cl);
 	func = ks->top;
 	incr_top(ks);
 
@@ -100,16 +100,16 @@ static void get_field_value(ktap_state *ks, struct ktap_event *e,
 
 	if (field->size == 4) {
 		int n = *(int *)value;
-		setnvalue(ra, n);
+		set_number(ra, n);
 		return;
 	} else if (field->size == 8) {
 		long n = *(long *)value;
-		setnvalue(ra, n);
+		set_number(ra, n);
 		return;
 	}
 
 	if (!strncmp(field->type, "char", 4)) {
-		setsvalue(ra, kp_tstring_new(ks, (char *)value));
+		set_string(ra, kp_tstring_new(ks, (char *)value));
 		return;
 	}
 }
@@ -130,7 +130,7 @@ void kp_event_getarg(ktap_state *ks, ktap_value *ra, int n)
 		}
 	}
 
-	setnilvalue(ra);
+	set_nil(ra);
 	return;
 }
 
@@ -364,7 +364,7 @@ static int ktap_lib_traceoff(ktap_state *ks)
 
 	/* call trace_end_closure after probed end */
 	if (G(ks)->trace_end_closure) {
-		setcllvalue(ks->top, G(ks)->trace_end_closure);
+		set_closure(ks->top, G(ks)->trace_end_closure);
 		incr_top(ks);
 		kp_call(ks, ks->top - 1, 0);
 		G(ks)->trace_end_closure = NULL;
@@ -382,7 +382,7 @@ void kp_probe_exit(ktap_state *ks)
 
 	/* call trace_end_closure after probed end */
 	if (!G(ks)->error && G(ks)->trace_end_closure) {
-		setcllvalue(ks->top, G(ks)->trace_end_closure);
+		set_closure(ks->top, G(ks)->trace_end_closure);
 		incr_top(ks);
 		kp_call(ks, ks->top - 1, 0);
 		G(ks)->trace_end_closure = NULL;

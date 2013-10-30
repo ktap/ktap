@@ -55,7 +55,7 @@ static enum hrtimer_restart hrtimer_ktap_fn(struct hrtimer *timer)
 	t = container_of(timer, struct hrtimer_ktap, timer);
 
 	ks = kp_newthread(t->ks);
-	setcllvalue(ks->top, t->cl);
+	set_closure(ks->top, t->cl);
 	incr_top(ks);
 	kp_call(ks, ks->top - 1, 0);
 	kp_exitthread(ks);

@@ -39,7 +39,7 @@ static int ktap_lib_next(ktap_state *ks)
 		return 2;
 	} else {
 		ks->top -= 1;
-		setnilvalue(ks->top++);
+		set_nil(ks->top++);
 		return 1;
 	}
 }
@@ -49,11 +49,11 @@ static int ktap_lib_pairs(ktap_state *ks)
 	ktap_value *v = kp_arg(ks, 1);
 	ktap_table *t;
 
-	if (ttistable(v)) {
+	if (is_table(v)) {
 		t = hvalue(v);
-	} else if (ttisptable(v)) {
+	} else if (is_ptable(v)) {
 		t = kp_ptable_synthesis(ks, phvalue(v));
-	} else if (isnil(v)) {
+	} else if (is_nil(v)) {
 		kp_error(ks, "table is nil in pairs\n");
 		return 0;
 	} else {
@@ -61,9 +61,9 @@ static int ktap_lib_pairs(ktap_state *ks)
 		return 0;
 	}
 
-	setfvalue(ks->top++, ktap_lib_next);
-	sethvalue(ks->top++, t);
-	setnilvalue(ks->top++);
+	set_cfunction(ks->top++, ktap_lib_next);
+	set_table(ks->top++, t);
+	set_nil(ks->top++);
 	return 3;
 }
 
@@ -76,7 +76,7 @@ static int ktap_lib_sort_next(ktap_state *ks)
 		return 2;
 	} else {
 		ks->top -= 1;
-		setnilvalue(ks->top++);
+		set_nil(ks->top++);
 		return 1;
 	}
 }
@@ -87,11 +87,11 @@ static int ktap_lib_sort_pairs(ktap_state *ks)
 	ktap_closure *cmp_func = NULL;
 	ktap_table *t;
 
-	if (ttistable(v)) {
+	if (is_table(v)) {
 		t = hvalue(v);
-	} else if (ttisptable(v)) {
+	} else if (is_ptable(v)) {
 		t = kp_ptable_synthesis(ks, phvalue(v));
-	} else if (isnil(v)) {
+	} else if (is_nil(v)) {
 		kp_error(ks, "table is nil in pairs\n");
 		return 0;
 	} else {
@@ -105,9 +105,9 @@ static int ktap_lib_sort_pairs(ktap_state *ks)
 	}
 
 	kp_table_sort(ks, t, cmp_func); 
-	setfvalue(ks->top++, ktap_lib_sort_next);
-	sethvalue(ks->top++, t);
-	setnilvalue(ks->top++);
+	set_cfunction(ks->top++, ktap_lib_sort_next);
+	set_table(ks->top++, t);
+	set_nil(ks->top++);
 	return 3;
 }
 
@@ -118,7 +118,7 @@ static int ktap_lib_len(ktap_state *ks)
 	if (len < 0)
 		return -1;
 
-	setnvalue(ks->top, len);
+	set_number(ks->top, len);
 	incr_top(ks);
 	return 1;
 }
@@ -215,7 +215,7 @@ static int ktap_lib_backtrace(ktap_state *ks)
 	save_stack_trace(&trace);
 
 	bt->nr_entries = trace.nr_entries;
-	setbtvalue(ks->top, bt);
+	set_btrace(ks->top, bt);
 	incr_top(ks);
 	return 1;
 }
@@ -251,7 +251,7 @@ static int ktap_lib_pid(ktap_state *ks)
 {
 	pid_t pid = task_tgid_vnr(current);
 
-	setnvalue(ks->top, (int)pid);
+	set_number(ks->top, (int)pid);
 	incr_top(ks);
 	return 1;
 }
@@ -260,7 +260,7 @@ static int ktap_lib_tid(ktap_state *ks)
 {
 	pid_t pid = task_pid_vnr(current);
 
-	setnvalue(ks->top, (int)pid);
+	set_number(ks->top, (int)pid);
 	incr_top(ks);
 	return 1;
 }
@@ -268,21 +268,21 @@ static int ktap_lib_tid(ktap_state *ks)
 static int ktap_lib_execname(ktap_state *ks)
 {
 	ktap_string *ts = kp_tstring_new(ks, current->comm);
-	setsvalue(ks->top, ts);
+	set_string(ks->top, ts);
 	incr_top(ks);
 	return 1;
 }
 
 static int ktap_lib_cpu(ktap_state *ks)
 {
-	setnvalue(ks->top, smp_processor_id());
+	set_number(ks->top, smp_processor_id());
 	incr_top(ks);
 	return 1;
 }
 
 static int ktap_lib_num_cpus(ktap_state *ks)
 {
-	setnvalue(ks->top, num_online_cpus());
+	set_number(ks->top, num_online_cpus());
 	incr_top(ks);
 	return 1;
 }
@@ -291,21 +291,21 @@ static int ktap_lib_in_interrupt(ktap_state *ks)
 {
 	int ret = in_interrupt();
 
-	setnvalue(ks->top, ret);
+	set_number(ks->top, ret);
 	incr_top(ks);
 	return 1;
 }
 
 static int ktap_lib_arch(ktap_state *ks)
 {
-	setsvalue(ks->top, kp_tstring_new(ks, utsname()->machine));
+	set_string(ks->top, kp_tstring_new(ks, utsname()->machine));
 	incr_top(ks);
 	return 1;
 }
 
 static int ktap_lib_kernel_v(ktap_state *ks)
 {
-	setsvalue(ks->top, kp_tstring_new(ks, utsname()->release));
+	set_string(ks->top, kp_tstring_new(ks, utsname()->release));
 	incr_top(ks);
 	return 1;
 }
@@ -324,7 +324,7 @@ static int ktap_lib_kernel_string(ktap_state *ks)
 	(void) &ret;  /* Silence compiler warning. */
 
 	str[255] = '\0';
-	setsvalue(ks->top, kp_tstring_new_local(ks, str));
+	set_string(ks->top, kp_tstring_new_local(ks, str));
 
 	incr_top(ks);
 	return 1;
@@ -345,7 +345,7 @@ static int ktap_lib_user_string(ktap_state *ks)
 	(void) &ret;  /* Silence compiler warning. */
 	pagefault_enable();
 	str[255] = '\0';
-	setsvalue(ks->top, kp_tstring_new(ks, str));
+	set_string(ks->top, kp_tstring_new(ks, str));
 
 	incr_top(ks);
 	return 1;
@@ -355,9 +355,9 @@ static int ktap_lib_histogram(ktap_state *ks)
 {
 	ktap_value *v = kp_arg(ks, 1);
 
-	if (ttistable(v))
+	if (is_table(v))
 		kp_table_histogram(ks, hvalue(v));
-	else if (ttisptable(v))
+	else if (is_ptable(v))
 		kp_ptable_histogram(ks, phvalue(v));
 
 	return 0;
@@ -368,7 +368,7 @@ static int ktap_lib_ptable(ktap_state *ks)
 	ktap_ptable *ph;
 
 	ph = kp_ptable_new(ks);
-	setphvalue(ks->top, ph);
+	set_ptable(ks->top, ph);
 	incr_top(ks);
 	return 1;
 }
@@ -378,8 +378,8 @@ static int ktap_lib_count(ktap_state *ks)
 	ktap_value *v = kp_arg(ks, 1);
 	ktap_stat_data *sd;
 
-	if (isnil(v)) {
-		setnvalue(ks->top, 0);
+	if (is_nil(v)) {
+		set_number(ks->top, 0);
 		incr_top(ks);
 		return 1;	
 	}
@@ -387,7 +387,7 @@ static int ktap_lib_count(ktap_state *ks)
 	kp_arg_check(ks, 1, KTAP_TSTATDATA);
 	sd = sdvalue(v);
 
-	setnvalue(ks->top, sd->count);
+	set_number(ks->top, sd->count);
 	incr_top(ks);
 	return 1;
 }
@@ -397,8 +397,8 @@ static int ktap_lib_max(ktap_state *ks)
 	ktap_value *v = kp_arg(ks, 1);
 	ktap_stat_data *sd;
 
-	if (isnil(v)) {
-		setnvalue(ks->top, 0);
+	if (is_nil(v)) {
+		set_number(ks->top, 0);
 		incr_top(ks);
 		return 1;	
 	}
@@ -406,7 +406,7 @@ static int ktap_lib_max(ktap_state *ks)
 	kp_arg_check(ks, 1, KTAP_TSTATDATA);
 	sd = sdvalue(v);
 
-	setnvalue(ks->top, sd->max);
+	set_number(ks->top, sd->max);
 	incr_top(ks);
 	return 1;
 }
@@ -416,8 +416,8 @@ static int ktap_lib_min(ktap_state *ks)
 	ktap_value *v = kp_arg(ks, 1);
 	ktap_stat_data *sd;
 
-	if (isnil(v)) {
-		setnvalue(ks->top, 0);
+	if (is_nil(v)) {
+		set_number(ks->top, 0);
 		incr_top(ks);
 		return 1;	
 	}
@@ -425,7 +425,7 @@ static int ktap_lib_min(ktap_state *ks)
 	kp_arg_check(ks, 1, KTAP_TSTATDATA);
 	sd = sdvalue(v);
 
-	setnvalue(ks->top, sd->min);
+	set_number(ks->top, sd->min);
 	incr_top(ks);
 	return 1;
 }
@@ -435,8 +435,8 @@ static int ktap_lib_sum(ktap_state *ks)
 	ktap_value *v = kp_arg(ks, 1);
 	ktap_stat_data *sd;
 
-	if (isnil(v)) {
-		setnvalue(ks->top, 0);
+	if (is_nil(v)) {
+		set_number(ks->top, 0);
 		incr_top(ks);
 		return 1;	
 	}
@@ -444,7 +444,7 @@ static int ktap_lib_sum(ktap_state *ks)
 	kp_arg_check(ks, 1, KTAP_TSTATDATA);
 	sd = sdvalue(v);
 
-	setnvalue(ks->top, sd->sum);
+	set_number(ks->top, sd->sum);
 	incr_top(ks);
 	return 1;
 }
@@ -454,8 +454,8 @@ static int ktap_lib_avg(ktap_state *ks)
 	ktap_value *v = kp_arg(ks, 1);
 	ktap_stat_data *sd;
 
-	if (isnil(v)) {
-		setnvalue(ks->top, 0);
+	if (is_nil(v)) {
+		set_number(ks->top, 0);
 		incr_top(ks);
 		return 1;	
 	}
@@ -463,7 +463,7 @@ static int ktap_lib_avg(ktap_state *ks)
 	kp_arg_check(ks, 1, KTAP_TSTATDATA);
 	sd = sdvalue(v);
 
-	setnvalue(ks->top, sd->sum / sd->count);
+	set_number(ks->top, sd->sum / sd->count);
 	incr_top(ks);
 	return 1;
 }
@@ -478,7 +478,7 @@ static int ktap_lib_delete(ktap_state *ks)
 
 static int ktap_lib_gettimeofday_us(ktap_state *ks)
 {
-	setnvalue(ks->top, gettimeofday_us());
+	set_number(ks->top, gettimeofday_us());
 	incr_top(ks);
 
 	return 1;
@@ -507,7 +507,7 @@ static int ktap_lib_curr_task_info(ktap_state *ks)
 	}
 
 	if (offset >= sizeof(struct task_struct)) {
-		setnilvalue(ks->top++);
+		set_nil(ks->top++);
 		kp_error(ks, "access out of bound value of task_struct\n");
 		return 1;
 	}
@@ -516,14 +516,14 @@ static int ktap_lib_curr_task_info(ktap_state *ks)
 
 	switch (fetch_bytes) {
 	case 4:
-		setnvalue(ks->top, *(unsigned int *)RET_VALUE);
+		set_number(ks->top, *(unsigned int *)RET_VALUE);
 		break;
 	case 8:
-		setnvalue(ks->top, *(unsigned long *)RET_VALUE);
+		set_number(ks->top, *(unsigned long *)RET_VALUE);
 		break;
 	default:
 		kp_error(ks, "unsupported fetch bytes in curr_task_info\n");
-		setnilvalue(ks->top);
+		set_nil(ks->top);
 		break;
 	}
 
@@ -538,7 +538,7 @@ static int ktap_lib_curr_task_info(ktap_state *ks)
  */
 static int ktap_lib_in_iowait(ktap_state *ks)
 {
-	setnvalue(ks->top, current->in_iowait);
+	set_number(ks->top, current->in_iowait);
 	incr_top(ks);
 
 	return 1;

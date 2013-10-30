@@ -108,7 +108,7 @@ static int load_constants(struct load_state *S, ktap_proto *f)
 	f->sizek = n;
 	f->k = NEW_VECTOR(S, n * sizeof(ktap_value));
 	for (i = 0; i < n; i++)
-		setnilvalue(&f->k[i]);
+		set_nil(&f->k[i]);
 
 	for (i=0; i < n; i++) {
 		ktap_value *o = &f->k[i];
@@ -116,20 +116,20 @@ static int load_constants(struct load_state *S, ktap_proto *f)
 		int t = READ_CHAR(S);
 		switch (t) {
 		case KTAP_TNIL:
-			setnilvalue(o);
+			set_nil(o);
 			break;
 		case KTAP_TBOOLEAN:
-			setbvalue(o, READ_CHAR(S));
+			set_boolean(o, READ_CHAR(S));
 			break;
 		case KTAP_TNUMBER:
 			/*
 			 * todo: kernel not support fp, check double when
 			 * loading
 			 */
-			setnvalue(o, READ_NUMBER(S));
+			set_number(o, READ_NUMBER(S));
 			break;
 		case KTAP_TSTRING:
-			setsvalue(o, READ_STRING(S));
+			set_string(o, READ_STRING(S));
 			break;
 		default:
 			kp_error(S->ks, "ktap: load_constants: "
@@ -261,7 +261,6 @@ ktap_closure *kp_load(ktap_state *ks, unsigned char *buff)
 {
 	struct load_state S;
 	ktap_closure *cl;
-	ktap_lclosure *f;
 	int ret, i;
 
 	S.ks = ks;
@@ -272,39 +271,38 @@ ktap_closure *kp_load(ktap_state *ks, unsigned char *buff)
 	if (ret)
 		return NULL;
 
-	cl = kp_newlclosure(ks, 1);
+	cl = kp_newclosure(ks, 1);
 	if (!cl)
 		return cl;
 
 	/* put closure on the top, prepare to run with this closure */
-	setcllvalue(ks->top, cl);
+	set_closure(ks->top, cl);
 	incr_top(ks);
 
-	cl->l.p = kp_newproto(ks);
-	if (load_function(&S, cl->l.p))
+	cl->p = kp_newproto(ks);
+	if (load_function(&S, cl->p))
 		return NULL;
 
-	if (cl->l.p->sizeupvalues != 1) {
-		ktap_proto *p = cl->l.p;
-		cl = kp_newlclosure(ks, cl->l.p->sizeupvalues);
-		cl->l.p = p;
-		setcllvalue(ks->top - 1, cl);
+	if (cl->p->sizeupvalues != 1) {
+		ktap_proto *p = cl->p;
+		cl = kp_newclosure(ks, cl->p->sizeupvalues);
+		cl->p = p;
+		set_closure(ks->top - 1, cl);
 	}
 
-	f = &cl->l;
-	for (i = 0; i < f->nupvalues; i++) {  /* initialize upvalues */
+	for (i = 0; i < cl->nupvalues; i++) {  /* initialize upvalues */
 		ktap_upval *up = kp_newupval(ks);
-		f->upvals[i] = up;
+		cl->upvals[i] = up;
 	}
 
 	/* set global table as 1st upvalue of 'f' */
-	if (f->nupvalues == 1) {
+	if (cl->nupvalues == 1) {
 		ktap_table *reg = hvalue(&G(ks)->registry);
 		const ktap_value *gt = kp_table_getint(reg, KTAP_RIDX_GLOBALS);
-		setobj(f->upvals[0]->v, gt);
+		set_obj(cl->upvals[0]->v, gt);
 	}
 
-	verify_code(&S, cl->l.p);
+	verify_code(&S, cl->p);
 	return cl;
 }
 

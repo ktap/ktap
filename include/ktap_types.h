@@ -136,28 +136,13 @@ typedef struct ktap_btrace {
 	/* entries stored in here, after nr_entries */
 } ktap_btrace;
 
-#define ktap_closure_header \
-	CommonHeader; u8 nupvalues; ktap_gcobject *gclist
-
-typedef struct ktap_cclosure {
-	ktap_closure_header;
-	ktap_cfunction f;
-	ktap_value upvalue[1];  /* list of upvalues */
-} ktap_cclosure;
-
-
-typedef struct ktap_lclosure {
-	ktap_closure_header;
+typedef struct ktap_closure {
+	CommonHeader;
+	u8 nupvalues;
 	struct ktap_proto *p;
 	struct ktap_upval *upvals[1];  /* list of upvalues */
-} ktap_lclosure;
-
-
-typedef struct ktap_closure {
-	struct ktap_cclosure c;
-	struct ktap_lclosure l;
+	ktap_gcobject *gclist;
 } ktap_closure;
-
 
 typedef struct ktap_proto {
 	CommonHeader;
@@ -318,8 +303,6 @@ typedef struct ktap_state {
 	ktap_gcobject *openupval;
 	ktap_callinfo baseci;
 
-	int version;
-
 	/* list of temp collectable objects, free when thread exit */
 	ktap_gcobject *gclist;
 
@@ -348,25 +331,21 @@ union ktap_gcobject {
  	struct ktap_btrace bt;  /* backtrace object */
 };
 
-#define gch(o)	(&(o)->gch)
+#define gch(o)			(&(o)->gch)
+
 /* macros to convert a GCObject into a specific value */
-#define rawgco2ts(o)	(&((o)->ts))
-#define gco2ts(o)       (&rawgco2ts(o)->tsv)
+#define rawgco2ts(o)		(&((o)->ts))
 
-#define gco2uv(o)	(&((o)->uv))
-
-#define obj2gco(v)	((ktap_gcobject *)(v))
-
-#define ktap_assert(s)
-
-#define check_exp(c,e)                (e)
+#define gco2ts(o)		(&rawgco2ts(o)->tsv)
+#define gco2uv(o)		(&((o)->uv))
+#define obj2gco(v)		((ktap_gcobject *)(v))
+#define check_exp(c, e)		(e)
 
 
 /* predefined values in the registry */
 #define KTAP_RIDX_MAINTHREAD     1
 #define KTAP_RIDX_GLOBALS        2
 #define KTAP_RIDX_LAST           KTAP_RIDX_GLOBALS
-
 
 #define KTAP_TNONE		(-1)
 
@@ -379,134 +358,117 @@ union ktap_gcobject {
 #define KTAP_TLNGSTR		(KTAP_TSTRING | (1 << 4))  /* long strings */
 #define KTAP_TTABLE		5
 #define KTAP_TFUNCTION		6
-#define KTAP_TLCL		(KTAP_TFUNCTION | (0 << 4))  /* closure */
-#define KTAP_TLCF		(KTAP_TFUNCTION | (1 << 4))  /* light C function */
+#define KTAP_TCLOSURE		(KTAP_TFUNCTION | (0 << 4))  /* closure */
+#define KTAP_TCFUNCTION		(KTAP_TFUNCTION | (1 << 4))  /* light C function */
 #define KTAP_TTHREAD		7
+#define KTAP_TPROTO		8
+#define KTAP_TUPVAL		9
 
-#define KTAP_NUMTAGS		8
-
-#define KTAP_TPROTO		9
-#define KTAP_TUPVAL		10
-
-#define KTAP_TEVENT		11
-
-#define KTAP_TBTRACE		12
-
-#define KTAP_TPTABLE		13
-#define KTAP_TSTATDATA		14
+#define KTAP_TEVENT		10
+#define KTAP_TBTRACE		11
+#define KTAP_TPTABLE		12
+#define KTAP_TSTATDATA		13
 /*
- * TODO: type number is ok so far, but it may collide later between
+ * type number is ok so far, but it may collide later between
  * 16+ and | (1 << 4), so be careful on this.
  */
 
-#define ttype(o)	((o->type) & 0x3F)
-#define settype(obj, t)	((obj)->type = (t))
-
-
+#define ttype(o)		((o->type) & 0x3F)
+#define settype(obj, t)		((obj)->type = (t))
 
 /* raw type tag of a TValue */
-#define rttype(o)       ((o)->type)
+#define rttype(o)		((o)->type)
 
 /* tag with no variants (bits 0-3) */
-#define novariant(x)    ((x) & 0x0F)
+#define novariant(x)		((x) & 0x0F)
 
 /* type tag of a TValue with no variants (bits 0-3) */
-#define ttypenv(o)      (novariant(rttype(o)))
+#define ttypenv(o)		(novariant(rttype(o)))
 
-#define val_(o)		((o)->val)
+#define val_(o)			((o)->val)
+#define gcvalue(o)		(val_(o).gc)
 
-#define bvalue(o)	(val_(o).b)
-#define nvalue(o)	(val_(o).n)
-#define hvalue(o)	(&val_(o).gc->h)
-#define phvalue(o)	(&val_(o).gc->ph)
-#define CLVALUE(o)	(&val_(o).gc->cl.l)
-#define clcvalue(o)	(&val_(o).gc->cl.c)
-#define clvalue(o)	(&val_(o).gc->cl)
+#define bvalue(o)		(val_(o).b)
+#define nvalue(o)		(val_(o).n)
+#define hvalue(o)		(&val_(o).gc->h)
+#define phvalue(o)		(&val_(o).gc->ph)
+#define clvalue(o)		(&val_(o).gc->cl)
 
-#define getstr(ts)	(const char *)((ts) + 1)
-#define eqshrstr(a, b)	((a) == (b))
-#define rawtsvalue(o)	(&val_(o).gc->ts)
-#define svalue(o)       getstr(rawtsvalue(o))
+#define getstr(ts)		(const char *)((ts) + 1)
+#define eqshrstr(a, b)		((a) == (b))
+#define rawtsvalue(o)		(&val_(o).gc->ts)
+#define svalue(o)		getstr(rawtsvalue(o))
 
-#define pvalue(o)	(&val_(o).p)
-#define sdvalue(o)	((ktap_stat_data *)val_(o).p)
-#define fvalue(o)	(val_(o).f)
-#define evalue(o)	(val_(o).p)
-#define btvalue(o)	(&val_(o).gc->bt)
+#define pvalue(o)		(&val_(o).p)
+#define sdvalue(o)		((ktap_stat_data *)val_(o).p)
+#define fvalue(o)		(val_(o).f)
+#define evalue(o)		(val_(o).p)
+#define btvalue(o)		(&val_(o).gc->bt)
 
-#define gcvalue(o)	(val_(o).gc)
-
-#define isnil(o)	((o)->type == KTAP_TNIL)
-#define isboolean(o)	((o)->type == KTAP_TBOOLEAN)
-#define isfalse(o)	(isnil(o) || (isboolean(o) && bvalue(o) == 0))
-
-#define ttisshrstring(o)	((o)->type == KTAP_TSHRSTR)
-#define ttisstring(o)		(((o)->type & 0x0F) == KTAP_TSTRING)
-#define ttisnumber(o)		((o)->type == KTAP_TNUMBER)
-#define ttisfunc(o)		((o)->type == KTAP_TFUNCTION)
-#define ttistable(o)		((o)->type == KTAP_TTABLE)
-#define ttisptable(o)		((o)->type == KTAP_TPTABLE)
-#define ttisstatdata(o)		((o)->type == KTAP_TSTATDATA)
-#define ttisboolean(o)		((o)->type == KTAP_TBOOLEAN)
-#define ttisequal(o1,o2)        ((o1)->type == (o2)->type)
-#define ttisevent(o)		((o)->type == KTAP_TEVENT)
-#define ttisbtrace(o)		((o)->type == KTAP_TBTRACE)
-
-#define ttisclone(o)		ttisbtrace(o)
+#define is_nil(o)		((o)->type == KTAP_TNIL)
+#define is_boolean(o)		((o)->type == KTAP_TBOOLEAN)
+#define is_false(o)		(is_nil(o) || (is_boolean(o) && bvalue(o) == 0))
+#define is_shrstring(o)		((o)->type == KTAP_TSHRSTR)
+#define is_string(o)		(((o)->type & 0x0F) == KTAP_TSTRING)
+#define is_number(o)		((o)->type == KTAP_TNUMBER)
+#define is_table(o)		((o)->type == KTAP_TTABLE)
+#define is_ptable(o)		((o)->type == KTAP_TPTABLE)
+#define is_statdata(o)		((o)->type == KTAP_TSTATDATA)
+#define is_event(o)		((o)->type == KTAP_TEVENT)
+#define is_btrace(o)		((o)->type == KTAP_TBTRACE)
+#define is_needclone(o)		is_btrace(o)
 
 
-#define setnilvalue(obj) \
+#define set_nil(obj) \
 	{ ktap_value *io = (obj); io->val.n = 0; settype(io, KTAP_TNIL); }
 
-#define setbvalue(obj, x) \
+#define set_boolean(obj, x) \
 	{ ktap_value *io = (obj); io->val.b = (x); settype(io, KTAP_TBOOLEAN); }
 
-#define setnvalue(obj, x) \
+#define set_number(obj, x) \
 	{ ktap_value *io = (obj); io->val.n = (x); settype(io, KTAP_TNUMBER); }
 
-#define setsdvalue(obj, x) \
-	{ ktap_value *io = (obj); io->val.p = (x); \
-			settype(io, KTAP_TSTATDATA); }
+#define set_statdata(obj, x) \
+	{ ktap_value *io = (obj); \
+	  io->val.p = (x); settype(io, KTAP_TSTATDATA); }
 
-#define setsvalue(obj, x) \
+#define set_string(obj, x) \
 	{ ktap_value *io = (obj); \
 	  ktap_string *x_ = (x); \
 	  io->val.gc = (ktap_gcobject *)x_; settype(io, x_->tsv.tt); }
 
-#define setcllvalue(obj, x) \
+#define set_closure(obj, x) \
 	{ ktap_value *io = (obj); \
-	  io->val.gc = (ktap_gcobject *)x; settype(io, KTAP_TLCL); }
+	  io->val.gc = (ktap_gcobject *)x; settype(io, KTAP_TCLOSURE); }
 
-#define sethvalue(obj,x) \
-	{ ktap_value *io=(obj); \
+#define set_cfunction(obj, x) \
+	{ ktap_value *io = (obj); val_(io).f = (x); settype(io, KTAP_TCFUNCTION); }
+
+#define set_table(obj, x) \
+	{ ktap_value *io = (obj); \
 	  val_(io).gc = (ktap_gcobject *)(x); settype(io, KTAP_TTABLE); }
 
-#define setphvalue(obj,x) \
-	{ ktap_value *io=(obj); \
+#define set_ptable(obj, x) \
+	{ ktap_value *io = (obj); \
 	  val_(io).gc = (ktap_gcobject *)(x); settype(io, KTAP_TPTABLE); }
 
-#define setfvalue(obj,x) \
-	{ ktap_value *io=(obj); val_(io).f=(x); settype(io, KTAP_TLCF); }
-
-#define setthvalue(L,obj,x) \
-	{ ktap_value *io=(obj); \
+#define set_thread(obj, x) \
+	{ ktap_value *io = (obj); \
 	  val_(io).gc = (ktap_gcobject *)(x); settype(io, KTAP_TTHREAD); }
 
-#define setevalue(obj, x) \
-	{ ktap_value *io=(obj); val_(io).p = (x); settype(io, KTAP_TEVENT); }
+#define set_event(obj, x) \
+	{ ktap_value *io = (obj); val_(io).p = (x); settype(io, KTAP_TEVENT); }
 
-#define setbtvalue(obj,x) \
-	{ ktap_value *io=(obj); \
+#define set_btrace(obj, x) \
+	{ ktap_value *io = (obj); \
 	  val_(io).gc = (ktap_gcobject *)(x); settype(io, KTAP_TBTRACE); }
 
-#define setobj(obj1,obj2) \
-        { const ktap_value *io2=(obj2); ktap_value *io1=(obj1); \
+#define set_obj(obj1, obj2) \
+        { const ktap_value *io2 = (obj2); ktap_value *io1 = (obj1); \
           io1->val = io2->val; io1->type = io2->type; }
 
 #define rawequalobj(t1, t2) \
-	(ttisequal(t1, t2) && kp_equalobjv(NULL, t1, t2))
-
-#define equalobj(ks, t1, t2) rawequalobj(t1, t2)
+	(((t1)->type == (t2)->type) && kp_equalobjv(NULL, t1, t2))
 
 #define incr_top(ks) {ks->top++;}
 
@@ -524,6 +486,7 @@ union ktap_gcobject {
 #define NUMMOD(a, b)    ((a) % (b))
 #define NUMPOW(a, b)    (pow(a, b))
 
+#define ktap_assert(s)
 
 ktap_string *kp_tstring_newlstr(ktap_state *ks, const char *str, size_t l);
 ktap_string *kp_tstring_newlstr_local(ktap_state *ks, const char *str, size_t l);
@@ -570,7 +533,7 @@ void kp_objclone(ktap_state *ks, const ktap_value *o, ktap_value *newo,
 		 ktap_gcobject **list);
 ktap_gcobject *kp_newobject(ktap_state *ks, int type, size_t size, ktap_gcobject **list);
 int kp_equalobjv(ktap_state *ks, const ktap_value *t1, const ktap_value *t2);
-ktap_closure *kp_newlclosure(ktap_state *ks, int n);
+ktap_closure *kp_newclosure(ktap_state *ks, int n);
 ktap_proto *kp_newproto(ktap_state *ks);
 ktap_upval *kp_newupval(ktap_state *ks);
 void kp_free_gclist(ktap_state *ks, ktap_gcobject *o);

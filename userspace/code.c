@@ -315,7 +315,7 @@ static int addk(ktap_funcstate *fs, ktap_value *key, ktap_value *v)
 	ktap_value kn;
 	int k, oldsize;
 
-	if (ttisnumber(idx)) {
+	if (is_number(idx)) {
 		ktap_number n = nvalue(idx);
 		kp_number2int(k, n);
 		if (ktapc_equalobj(&f->k[k], v))
@@ -329,12 +329,12 @@ static int addk(ktap_funcstate *fs, ktap_value *key, ktap_value *v)
 
 	/* numerical value does not need GC barrier;
 	   table has no metatable, so it does not need to invalidate cache */
-	setnvalue(&kn, (ktap_number)k);
+	set_number(&kn, (ktap_number)k);
 	ktapc_table_setvalue(fs->h, key, &kn);
 	ktapc_growvector(f->k, k, f->sizek, ktap_value, MAXARG_Ax, "constants");
 	while (oldsize < f->sizek)
-		setnilvalue(&f->k[oldsize++]);
-	setobj(&f->k[k], v);
+		set_nil(&f->k[oldsize++]);
+	set_obj(&f->k[k], v);
 	fs->nk++;
 	return k;
 }
@@ -343,7 +343,7 @@ int codegen_stringK(ktap_funcstate *fs, ktap_string *s)
 {
 	ktap_value o;
 
-	setsvalue(&o, s);
+	set_string(&o, s);
 	return addk(fs, &o, &o);
 }
 
@@ -352,10 +352,10 @@ int codegen_numberK(ktap_funcstate *fs, ktap_number r)
 	int n;
 	ktap_value o, s;
 
-	setnvalue(&o, r);
+	set_number(&o, r);
 	if (r == 0 || ktap_numisnan(NULL, r)) {  /* handle -0 and NaN */
 		/* use raw representation as key to avoid numeric problems */
-		setsvalue(&s, ktapc_ts_newlstr((char *)&r, sizeof(r)));
+		set_string(&s, ktapc_ts_newlstr((char *)&r, sizeof(r)));
 		//   incr_top(L);
 		n = addk(fs, &s, &o);
 		//   L->top--;
@@ -367,16 +367,16 @@ int codegen_numberK(ktap_funcstate *fs, ktap_number r)
 static int boolK(ktap_funcstate *fs, int b)
 {
 	ktap_value o;
-	setbvalue(&o, b);
+	set_boolean(&o, b);
 	return addk(fs, &o, &o);
 }
 
 static int nilK(ktap_funcstate *fs)
 {
 	ktap_value k, v;
-	setnilvalue(&v);
+	set_nil(&v);
 	/* cannot use nil as key; instead use table itself to represent nil */
-	sethvalue(&k, fs->h);
+	set_table(&k, fs->h);
 	return addk(fs, &k, &v);
 }
 
