@@ -1,4 +1,51 @@
-Version 0.2 (July 31 2013)
+Version 0.3 (Oct 29 2013)
+-------------------------
+= Highlight changes from v0.2
+
+   * Homepage released: www.ktap.org
+
+   * Tutorial: http://www.ktap.org/doc/tutorial.html
+
+   * Wiki: https://github.com/ktap/ktap/wiki
+
+   * simple new tracing block syntax
+	trace EVENTDEF { action }
+	trace_end { action }
+
+   * New event tracing keywords: argevent, argname, arg1..arg9
+	trace "syscalls:*" function () {
+		print(argevent)
+	}
+
+   * New timer block syntax
+	tick-N { action }
+	profile-N { action }
+
+   * Basic aggregation support
+	It's similar with systemtap, use "<<<" operator
+
+   * Introduce new "+=" operator
+
+   * Introduce sort_paris for table sort iteration
+
+   * New sample scripts
+	helloworld.kp
+	syscalls/sctop.kp
+	profiling/stack_profile.kp
+	io/traceio.kp
+	mem/kmalloc-top.kp
+	syscalls/errinfo.kp
+	schedule/schedtimes.kp
+	game/tetris.kp
+
+   * ansi library for sending ANSI escape sequences
+
+	
+   * statistics of ktapvm
+	
+   * Big cleanups and lots of bugfix
+
+Version 0.2 (Jul 31 2013)
 -------------------------
 
 = Script highlight changes from v0.1
@@ -46,7 +93,7 @@ Version 0.2 (July 31 2013)
    * fixed a lot of bugs, more stable than v0.1
 
 Version 0.1 (May 21 2013)
-----------------------
+-------------------------
 
     https://lwn.net/Articles/551253/
 
