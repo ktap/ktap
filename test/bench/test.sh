@@ -13,13 +13,14 @@ $COMMAND
 
 echo ""
 
-KTAP_ONE_LINER="trace syscalls:sys_*_futex {}"
+../../ktap -e 'trace syscalls:sys_*_futex {}' &
 
 echo -e "\n\t\tPass 1 with tracing"
-../../ktap -e "$KTAP_ONE_LINER" -- $COMMAND
+$COMMAND
 echo -e "\n\t\tPass 2 with tracing"
-../../ktap -e "$KTAP_ONE_LINER" -- $COMMAND
+$COMMAND
 echo -e "\n\t\tPass 3 with tracing"
-../../ktap -e "$KTAP_ONE_LINER" -- $COMMAND
+$COMMAND
 
+pkill ktap
 rm -rf ./sembench
