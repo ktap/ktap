@@ -278,29 +278,33 @@ bool strglobmatch(const char *str, const char *pat)
 unsigned long ktapc_read_ksym(ktap_string *ts)
 {
 	const char *symbol = getstr(ts);
-	size_t ts_len = ts->tsv.len;
 	unsigned long ret = 0;
-	ssize_t size;
 	FILE *file;
 	char *line = NULL;
-	size_t n;
 
 	file = fopen(KALLSYMS_PATH, "r");
 	if (file == NULL)
 		handle_error("open " KALLSYMS_PATH " failed");
 
-	while ((size = getline(&line, &n, file)) != -1) {
+	while (!feof(file)) {
 		char *sym_addr, *sym_name;
+		int line_len;
+		size_t n;
 
+		line_len = getline(&line, &n, file);
+		if (line_len < 0 || !line)
+			break;
+
+		line[--line_len] = '\0'; /* \n */
 		sym_addr = strtok(line, " ");
 		strtok(NULL, " ");
 		sym_name = strtok(NULL, " ");
-		if (strncmp(symbol, sym_name, ts_len) == 0) {
+		if (strcmp(symbol, sym_name) == 0) {
 			ret = strtoul(sym_addr, NULL, 16);
 			break;
 		}
 	}
-	if (size < 0) {
+	if (ret == 0) {
 		fprintf(stderr, "cannot read kernel symbol \"%s\" in %s\n",
 			symbol, KALLSYMS_PATH);
 		exit(EXIT_FAILURE);
@@ -308,9 +312,6 @@ unsigned long ktapc_read_ksym(ktap_string *ts)
 
 	fclose(file);
 	free(line);
-
-	if (ret == 0)
-		handle_error("cannot find kernel symbol");
 
 	return ret;
 }
