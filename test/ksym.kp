@@ -7,8 +7,12 @@ function failed() {
 
 #-----------------------------------------#
 
-a = `generic_file_buffered_write`
-b = `generic_file_mmap`
+sched_clock = `sched_clock`
+printf("sched_clock address: 0x%x\n", sched_clock);
 
-printf("generic_file_buffered_write: 0x%x\n", a);
-printf("generic_file_mmap: 0x%x\n", b);
+sched_clock_data = `sched_clock_data`
+printf("sched_clock_data address: 0x%x\n", sched_clock);
+
+if (sched_clock == sched_clock_data) {
+	failed()
+}
