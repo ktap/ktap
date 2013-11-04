@@ -646,7 +646,7 @@ static void ktap_execute(ktap_state *ks)
 		else {
 			int aux;
 
-			/* 
+			/*
 			 * tail call: put called frame (n) in place of
 			 * caller one (o)
 			 */
@@ -827,7 +827,7 @@ static void ktap_execute(ktap_state *ks)
 			return;
 		}
 
-		kp_event_getarg(ks, ra, GETARG_B(instr));		
+		kp_event_getarg(ks, ra, GETARG_B(instr));
 		break;
 	case OP_LOAD_GLOBAL: {
 		ktap_value *cfunc = cfunction_cache_get(ks, GETARG_C(instr));
