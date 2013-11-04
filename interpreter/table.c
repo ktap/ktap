@@ -466,7 +466,7 @@ static int computesizes (int nums[], int *narray)
 			if (a > twotoi/2) {
 				/* optimal size (till now) */
 				n = twotoi;
-				/* 
+				/*
 				 * all elements smaller than n will go to
 				 * array part
 				 */
@@ -658,7 +658,7 @@ static void table_resize(ktap_state *ks, ktap_table *t, int nasize, int nhsize)
 			 * already present in the table
 			 */
 			set_obj(v, gval(old));
-			
+
 			if (t->with_stats) {
 				ktap_stat_data *sd;
 

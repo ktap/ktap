@@ -128,7 +128,7 @@ static int ktap_main(struct file *file, ktap_parm *parm)
 	kp_final_exit(ks);
 
  out:
-	atomic_dec(&kp_is_running);	
+	atomic_dec(&kp_is_running);
 	return ret;
 }
 
