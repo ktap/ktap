@@ -29,6 +29,7 @@
 #include "../include/ktap_types.h"
 #include "../include/ktap_opcodes.h"
 #include "ktapc.h"
+#include "symbol.h"
 
 static char tracing_events_path[] = "/sys/kernel/debug/tracing/events";
 
@@ -305,6 +306,51 @@ static int parse_events_add_kprobe(char *old_event)
 
 #define UPROBE_EVENTS_PATH "/sys/kernel/debug/tracing/uprobe_events"
 
+#ifndef NO_LIBELF
+static char *parse_events_resolve_symbol(char *event)
+{
+	char *colon = strchr(event, ':');
+	vaddr_t symbol_address = strtol(colon + 1 /* skip ":" */, NULL, 0);
+
+	char *end, *tail, *binary, *symbol;
+
+	/**
+	 * We already have address, no need in resolving.
+	 */
+	if (symbol_address)
+		return event;
+
+	binary = strndup(event, colon - event);
+
+	end = strpbrk(event, "% ");
+	if (end) {
+		tail = strdup(end);
+		symbol = strndup(colon + 1 /* skip ":" */, end - 1 - colon);
+	} else {
+		tail = NULL;
+		symbol = strdup(colon + 1 /* skip ":" */);
+	}
+
+	symbol_address = find_symbol(binary, symbol);
+	if (symbol_address) {
+		verbose_printf("symbol %s resolved to 0x%lx\n",
+			event, symbol_address);
+
+		event = realloc(event,
+			strlen(event) + (strlen(STRINGIFY(ULONG_MAX))));
+		sprintf(event, "%s:0x%lx%s",
+			binary, symbol_address, tail ?: "");
+	}
+
+	free(binary);
+	free(symbol);
+	if (tail)
+		free(tail);
+
+	return event;
+}
+#endif
+
 static int parse_events_add_uprobe(char *old_event)
 {
 	static int event_seq = 0;
@@ -323,9 +369,15 @@ static int parse_events_add_uprobe(char *old_event)
 	}
 
 	event = strdup(old_event);
+#ifndef NO_LIBELF
+	event = parse_events_resolve_symbol(event);
+#endif
 	r = strstr(event, "%return");
 	if (r) {
 		memset(r, ' ', 7);
+	}
+
+	if (r) {
 		snprintf(probe_event, 128, "r:uprobes/kp%d %s",
 				event_seq, event);
 	} else
@@ -541,7 +593,7 @@ ktap_string *ktapc_parse_eventdef(ktap_string *eventdef)
 		goto parse_next_eventdef;
 
 	ts = ktapc_ts_new(g_idstr);
-	free(g_idstr);	
+	free(g_idstr);
 
 	return ts;
  error:

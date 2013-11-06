@@ -600,5 +600,7 @@ extern ktap_global_state dummy_global_state;
 #define KTAP_QL(x)      "'" x "'"
 #define KTAP_QS         KTAP_QL("%s")
 
+#define STRINGIFY(type) #type
+
 #endif /* __KTAP_TYPES_H__ */
 
