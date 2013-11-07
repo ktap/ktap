@@ -21,7 +21,6 @@
 
 #include <gelf.h>
 
-
 typedef GElf_Addr vaddr_t;
 
 /**

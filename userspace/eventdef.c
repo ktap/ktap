@@ -304,9 +304,6 @@ static int parse_events_add_kprobe(char *old_event)
 	return 0;
 }
 
-#define UPROBE_EVENTS_PATH "/sys/kernel/debug/tracing/uprobe_events"
-
-#ifndef NO_LIBELF
 static char *parse_events_resolve_symbol(char *event)
 {
 	char *colon = strchr(event, ':');
@@ -319,6 +316,14 @@ static char *parse_events_resolve_symbol(char *event)
 	 */
 	if (symbol_address)
 		return event;
+
+#ifdef NO_LIBELF
+	fprintf(stderr, "error: cannot resolve event \"%s\" without libelf, "
+			"please recompile ktap with NO_LIBELF disabled\n",
+			event);
+	exit(EXIT_FAILURE);
+	return NULL;
+#endif
 
 	binary = strndup(event, colon - event);
 
@@ -340,6 +345,10 @@ static char *parse_events_resolve_symbol(char *event)
 			strlen(event) + (strlen(STRINGIFY(ULONG_MAX))));
 		sprintf(event, "%s:0x%lx%s",
 			binary, symbol_address, tail ?: "");
+	} else {
+		fprintf(stderr, "error: cannot find symbol %s in binary %s\n",
+				symbol, binary);
+		exit(EXIT_FAILURE);
 	}
 
 	free(binary);
@@ -349,7 +358,8 @@ static char *parse_events_resolve_symbol(char *event)
 
 	return event;
 }
-#endif
+
+#define UPROBE_EVENTS_PATH "/sys/kernel/debug/tracing/uprobe_events"
 
 static int parse_events_add_uprobe(char *old_event)
 {
@@ -369,9 +379,10 @@ static int parse_events_add_uprobe(char *old_event)
 	}
 
 	event = strdup(old_event);
-#ifndef NO_LIBELF
+
+	/* resolve symbol with libelf help */
 	event = parse_events_resolve_symbol(event);
-#endif
+
 	r = strstr(event, "%return");
 	if (r) {
 		memset(r, ' ', 7);
