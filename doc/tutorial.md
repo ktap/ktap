@@ -467,11 +467,11 @@ For more release info, please look at RELEASES.txt in project root directory.
 
 7. uprobe tracing
 
-        trace probe:/lib/libc.so.6:0x000773c0 {
+        trace probe:/lib/libc.so.6:malloc {
                 print("entry:", execname(), argevent)
         }
 
-        trace probe:/lib/libc.so.6:0x000773c0%return {
+        trace probe:/lib/libc.so.6:malloc%return {
                 print("exit:", execname(), argevent)
         }
 

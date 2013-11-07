@@ -95,11 +95,11 @@ More information can be found at [ktap homepage][homepage].
 
 7. uprobe tracing
 
-        trace probe:/lib/libc.so.6:0x000773c0 {
+        trace probe:/lib/libc.so.6:malloc {
                 print("entry:", execname(), argevent)
         }
 
-        trace probe:/lib/libc.so.6:0x000773c0%return {
+        trace probe:/lib/libc.so.6:malloc%return {
                 print("exit:", execname(), argevent)
         }
 
