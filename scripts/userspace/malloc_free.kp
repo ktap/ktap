@@ -1,0 +1,20 @@
+#!/usr/bin/env ktap
+
+#only tested in x86-64 system,
+#if you run this script in x86_32, change the libc path.
+
+trace probe:/lib64/libc.so.6:malloc {
+	print("malloc entry:", execname())
+}
+
+trace probe:/lib64/libc.so.6:malloc%return {
+	print("malloc exit:", execname())
+}
+
+trace probe:/lib64/libc.so.6:free {
+	print("free entry:", execname())
+}
+
+trace probe:/lib64/libc.so.6:free%return {
+	print("free exit:", execname())
+}
