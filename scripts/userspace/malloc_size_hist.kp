@@ -1,0 +1,22 @@
+#!/usr/bin/env ktap
+
+# Aggregate system or process malloc size
+
+# only tested in x86-64 system,
+# if you run this script in x86_32, change the libc path and register name.
+#
+# Examples:
+#
+# ktap malloc_size_hist.kp
+# ktap malloc_size_hist.kp -- ls
+
+m = {}
+
+trace probe:/lib64/libc.so.6:malloc size=%di {
+	#arg2 is argument "size" of malloc function
+	m[arg2] += 1
+}
+
+trace_end {
+	histogram(m)
+}
