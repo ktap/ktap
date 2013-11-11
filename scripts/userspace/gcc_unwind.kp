@@ -3,7 +3,7 @@
 #only tested in x86-64 system,
 #if you run this script in x86_32, change the libc path.
 
-trace stapsdt:/lib/x86_64-linux-gnu/libgcc_s.so.1:unwind {
+trace sdt:/lib/x86_64-linux-gnu/libgcc_s.so.1:unwind {
 	print(execname(), argevent)
 }
 

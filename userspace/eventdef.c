@@ -438,7 +438,7 @@ static int parse_events_add_probe(char *old_event)
 		return parse_events_add_uprobe(old_event, FIND_SYMBOL);
 }
 
-static int parse_events_add_stapsdt(char *old_event)
+static int parse_events_add_sdt(char *old_event)
 {
 	return parse_events_add_uprobe(old_event, FIND_STAPSDT_NOTE);
 }
@@ -577,8 +577,8 @@ ktap_string *ktapc_parse_eventdef(ktap_string *eventdef)
 
 	if (!strcmp(sys, "probe"))
 		ret = parse_events_add_probe(event);
-	else if (!strcmp(sys, "stapsdt"))
-		ret = parse_events_add_stapsdt(event);
+	else if (!strcmp(sys, "sdt"))
+		ret = parse_events_add_sdt(event);
 	else
 		ret = parse_events_add_tracepoint(sys, event);
 
