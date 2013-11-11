@@ -306,10 +306,14 @@ static int parse_events_add_kprobe(char *old_event)
 
 static char *parse_events_resolve_symbol(char *event, int type)
 {
-	char *colon = strchr(event, ':');
-	vaddr_t symbol_address = strtol(colon + 1 /* skip ":" */, NULL, 0);
+	char *colon, *end, *tail, *binary, *symbol;
+	vaddr_t symbol_address;
 
-	char *end, *tail, *binary, *symbol;
+	colon = strchr(event, ':');
+	if (!colon)
+		return event;
+
+	symbol_address = strtol(colon + 1 /* skip ":" */, NULL, 0);
 
 	/**
 	 * We already have address, no need in resolving.
