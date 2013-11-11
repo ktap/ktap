@@ -114,6 +114,114 @@ static vaddr_t search_symbol(Elf *elf, const char *symbol)
 	return 0;
 }
 
+#define SDT_NOTE_TYPE 3
+#define SDT_NOTE_COUNT 3
+#define SDT_NOTE_SCN ".note.stapsdt"
+#define SDT_NOTE_NAME "stapsdt"
+
+static vaddr_t sdt_note_addr(Elf *elf, const char *data, size_t len, int type)
+{
+	vaddr_t vaddr;
+
+	/*
+	 * dst and src are required for translation from file to memory
+	 * representation
+	 */
+	Elf_Data dst = {
+		.d_buf = &vaddr, .d_type = ELF_T_ADDR, .d_version = EV_CURRENT,
+		.d_size = gelf_fsize(elf, ELF_T_ADDR, SDT_NOTE_COUNT, EV_CURRENT),
+		.d_off = 0, .d_align = 0
+	};
+
+	Elf_Data src = {
+		.d_buf = (void *) data, .d_type = ELF_T_ADDR,
+		.d_version = EV_CURRENT, .d_size = dst.d_size, .d_off = 0,
+		.d_align = 0
+	};
+
+	/* Check the type of each of the notes */
+	if (type != SDT_NOTE_TYPE)
+		return 0;
+
+	if (len < dst.d_size + SDT_NOTE_COUNT)
+		return 0;
+
+	/* Translation from file representation to memory representation */
+	if (gelf_xlatetom(elf, &dst, &src,
+			  elf_getident(elf, NULL)[EI_DATA]) == NULL)
+		return 0; /* TODO */
+
+	return vaddr;
+}
+
+static const char *sdt_note_name(Elf *elf, GElf_Nhdr *nhdr, const char *data)
+{
+	const char *provider = data + gelf_fsize(elf,
+		ELF_T_ADDR, SDT_NOTE_COUNT, EV_CURRENT);
+	const char *name = (const char *)memchr(provider, '\0',
+		data + nhdr->n_descsz - provider);
+
+	if (name++ == NULL)
+		return NULL;
+
+	return name;
+}
+
+static const char *sdt_note_data(const Elf_Data *data, size_t off)
+{
+	return ((data->d_buf) + off);
+}
+
+static vaddr_t search_stapsdt_note(Elf *elf, const char *note)
+{
+	GElf_Ehdr ehdr;
+	Elf_Scn *scn = NULL;
+	Elf_Data *data;
+	GElf_Shdr shdr;
+	size_t shstrndx;
+	size_t next;
+	GElf_Nhdr nhdr;
+	size_t name_off, desc_off, offset;
+	vaddr_t vaddr = 0;
+
+	if (gelf_getehdr(elf, &ehdr) == NULL)
+		return 0;
+	if (elf_getshdrstrndx(elf, &shstrndx) != 0)
+		return 0;
+
+	/*
+	 * Look for section type = SHT_NOTE, flags = no SHF_ALLOC
+	 * and name = .note.stapsdt
+	 */
+	scn = elf_section_by_name(elf, &ehdr, &shdr, SDT_NOTE_SCN);
+	if (!scn)
+		return 0;
+	if (!(shdr.sh_type == SHT_NOTE) || (shdr.sh_flags & SHF_ALLOC))
+		return 0;
+
+	data = elf_getdata(scn, NULL);
+
+	for (offset = 0;
+		(next = gelf_getnote(data, offset, &nhdr, &name_off, &desc_off)) > 0;
+		offset = next) {
+		const char *name;
+
+		if (nhdr.n_namesz != sizeof(SDT_NOTE_NAME) ||
+		    memcmp(data->d_buf + name_off, SDT_NOTE_NAME,
+			    sizeof(SDT_NOTE_NAME)))
+			continue;
+
+		name = sdt_note_name(elf, &nhdr, sdt_note_data(data, desc_off));
+		if (!name || strcmp(name, note))
+			continue;
+
+		vaddr = sdt_note_addr(elf, sdt_note_data(data, desc_off),
+					nhdr.n_descsz, nhdr.n_type);
+	}
+
+	return vaddr;
+}
+
 vaddr_t find_symbol(const char *exec, const char *symbol)
 {
 	vaddr_t vaddr = 0;
