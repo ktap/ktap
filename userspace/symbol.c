@@ -222,7 +222,7 @@ static vaddr_t search_stapsdt_note(Elf *elf, const char *note)
 	return vaddr;
 }
 
-vaddr_t find_symbol(const char *exec, const char *symbol)
+vaddr_t find_symbol(const char *exec, const char *symbol, int type)
 {
 	vaddr_t vaddr = 0;
 	Elf *elf;
@@ -237,11 +237,18 @@ vaddr_t find_symbol(const char *exec, const char *symbol)
 
 	elf = elf_begin(fd, ELF_C_READ, NULL);
 	if (elf) {
-		vaddr = search_symbol(elf, symbol);
+		switch (type) {
+		case FIND_SYMBOL:
+			vaddr = search_symbol(elf, symbol);
+			break;
+		case FIND_STAPSDT_NOTE:
+			vaddr = search_stapsdt_note(elf, symbol);
+			break;
+		}
+
 		elf_end(elf);
 	}
 
 	close(fd);
 	return vaddr;
 }
-

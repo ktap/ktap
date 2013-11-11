@@ -21,6 +21,9 @@
 
 #include <gelf.h>
 
+#define FIND_SYMBOL 1
+#define FIND_STAPSDT_NOTE 2
+
 typedef GElf_Addr vaddr_t;
 
 /**
@@ -28,4 +31,4 @@ typedef GElf_Addr vaddr_t;
  *
  * @return 0 on failure, otherwise address of symbol.
  */
-vaddr_t find_symbol(const char *exec, const char *symbol);
+vaddr_t find_symbol(const char *exec, const char *symbol, int type);

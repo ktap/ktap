@@ -304,7 +304,7 @@ static int parse_events_add_kprobe(char *old_event)
 	return 0;
 }
 
-static char *parse_events_resolve_symbol(char *event)
+static char *parse_events_resolve_symbol(char *event, int type)
 {
 	char *colon = strchr(event, ':');
 	vaddr_t symbol_address = strtol(colon + 1 /* skip ":" */, NULL, 0);
@@ -336,7 +336,7 @@ static char *parse_events_resolve_symbol(char *event)
 		symbol = strdup(colon + 1 /* skip ":" */);
 	}
 
-	symbol_address = find_symbol(binary, symbol);
+	symbol_address = find_symbol(binary, symbol, type);
 	if (symbol_address) {
 		verbose_printf("symbol %s resolved to 0x%lx\n",
 			event, symbol_address);
@@ -361,7 +361,7 @@ static char *parse_events_resolve_symbol(char *event)
 
 #define UPROBE_EVENTS_PATH "/sys/kernel/debug/tracing/uprobe_events"
 
-static int parse_events_add_uprobe(char *old_event)
+static int parse_events_add_uprobe(char *old_event, int type)
 {
 	static int event_seq = 0;
 	struct probe_list *pl;
@@ -381,7 +381,7 @@ static int parse_events_add_uprobe(char *old_event)
 	event = strdup(old_event);
 
 	/* resolve symbol with libelf help */
-	event = parse_events_resolve_symbol(event);
+	event = parse_events_resolve_symbol(event, type);
 
 	r = strstr(event, "%return");
 	if (r) {
@@ -435,14 +435,12 @@ static int parse_events_add_probe(char *old_event)
 	if (!separator || (separator == old_event))
 		return parse_events_add_kprobe(old_event);
 	else
-		return parse_events_add_uprobe(old_event);
+		return parse_events_add_uprobe(old_event, FIND_SYMBOL);
 }
 
 static int parse_events_add_stapsdt(char *old_event)
 {
-	printf("Currently ktap don't support stapsdt, please waiting\n");
-
-	return -1;
+	return parse_events_add_uprobe(old_event, FIND_STAPSDT_NOTE);
 }
 
 static void strim(char *s)
