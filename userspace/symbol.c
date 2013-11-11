@@ -32,6 +32,26 @@
 
 #include <libelf.h>
 
+static Elf_Scn *elf_section_by_name(Elf *elf, GElf_Ehdr *ep,
+				    GElf_Shdr *shp, const char *name)
+{
+	Elf_Scn *scn = NULL;
+
+	/* Elf is corrupted/truncated, avoid calling elf_strptr. */
+	if (!elf_rawdata(elf_getscn(elf, ep->e_shstrndx), NULL))
+		return NULL;
+
+	while ((scn = elf_nextscn(elf, scn)) != NULL) {
+		char *str;
+
+		gelf_getshdr(scn, shp);
+		str = elf_strptr(elf, ep->e_shstrndx, shp->sh_name);
+		if (!strcmp(name, str))
+			break;
+	}
+
+	return scn;
+}
 
 /**
  * @return v_addr of "LOAD" program header, that have zero offset.
