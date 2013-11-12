@@ -304,6 +304,31 @@ static int parse_events_add_kprobe(char *old_event)
 	return 0;
 }
 
+#ifdef NO_LIBELF
+static char *parse_events_resolve_symbol(char *event, int type)
+{
+	char *colon;
+	unsigned long symbol_address;
+
+	colon = strchr(event, ':');
+	if (!colon)
+		return event;
+
+	symbol_address = strtol(colon + 1 /* skip ":" */, NULL, 0);
+
+	/**
+	 * We already have address, no need in resolving.
+	 */
+	if (symbol_address)
+		return event;
+
+	fprintf(stderr, "error: cannot resolve event \"%s\" without libelf, "
+			"please recompile ktap with NO_LIBELF disabled\n",
+			event);
+	exit(EXIT_FAILURE);
+	return NULL;
+}
+#else
 static char *parse_events_resolve_symbol(char *event, int type)
 {
 	char *colon, *end, *tail, *binary, *symbol;
@@ -320,14 +345,6 @@ static char *parse_events_resolve_symbol(char *event, int type)
 	 */
 	if (symbol_address)
 		return event;
-
-#ifdef NO_LIBELF
-	fprintf(stderr, "error: cannot resolve event \"%s\" without libelf, "
-			"please recompile ktap with NO_LIBELF disabled\n",
-			event);
-	exit(EXIT_FAILURE);
-	return NULL;
-#endif
 
 	binary = strndup(event, colon - event);
 
@@ -362,6 +379,7 @@ static char *parse_events_resolve_symbol(char *event, int type)
 
 	return event;
 }
+#endif
 
 #define UPROBE_EVENTS_PATH "/sys/kernel/debug/tracing/uprobe_events"
 

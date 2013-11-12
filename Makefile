@@ -40,10 +40,44 @@ modules_install:
 	$(MAKE) -C $(KERNEL_SRC) M=$(PWD) modules_install
 
 KTAPC_CFLAGS = -Wall -O2
+
+# try-cc
+# Usage: option = $(call try-cc, source-to-build, cc-options, msg)
+ifneq ($(V),1)
+TRY_CC_OUTPUT= > /dev/null 2>&1
+endif
+TRY_CC_MSG=echo "    CHK $(3)" 1>&2;
+
+try-cc = $(shell sh -c							\
+         'TMP="/tmp/.$$$$";						\
+          $(TRY_CC_MSG)							\
+          echo "$(1)" |							\
+          $(CC) -x c - $(2) -o "$$TMP" $(TRY_CC_OUTPUT) && echo y;	\
+          rm -f "$$TMP"')
+
+
+define SOURCE_LIBELF
+#include <libelf.h>
+
+int main(void)
+{
+        Elf *elf = elf_begin(0, ELF_C_READ, 0);
+        return (long)elf;
+}
+endef
+
+FLAGS_LIBELF = -lelf
+
 ifdef NO_LIBELF
 	KTAPC_CFLAGS += -DNO_LIBELF
 else
-	KTAP_LIBS += -lelf
+ifneq ($(call try-cc,$(SOURCE_LIBELF),$(FLAGS_LIBELF),libelf),y)
+    $(warning No libelf found, disables symbol resolving, please install elfutils-libelf-devel/libelf-dev);
+    NO_LIBELF := 1
+    KTAPC_CFLAGS += -DNO_LIBELF
+else
+    KTAP_LIBS += -lelf
+endif
 endif
 
 UDIR = userspace
