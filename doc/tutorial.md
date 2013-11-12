@@ -2,9 +2,10 @@
 
 # Introduction
 
-ktap is a new scripting dynamic tracing tool for linux
+ktap is a new script-based dynamic tracing tool for linux
+http://www.ktap.org
 
-ktap is a new scripting dynamic tracing tool for Linux,
+ktap is a new script-based dynamic tracing tool for Linux,
 it uses a scripting language and lets users trace the Linux kernel dynamically.
 ktap is designed to give operational insights with interoperability
 that allows users to tune, troubleshoot and extend kernel and application.
@@ -19,7 +20,7 @@ Highlights features:
 
 * simple but powerful scripting language
 * register based interpreter (heavily optimized) in Linux kernel
-* small and lightweight (6KLOC of interpreter)
+* small and lightweight
 * not depend on gcc for each script running
 * easy to use in embedded environment without debugging info
 * support for tracepoint, kprobe, uprobe, function trace, timer, and more
@@ -35,8 +36,13 @@ Requirements
 * CONFIG_EVENT_TRACING enabled
 * CONFIG_PERF_EVENTS enabled
 * CONFIG_DEBUG_FS enabled  
-  (make sure debugfs mounted before insmod ktapvm  
-   mount debugfs: mount -t debugfs none /sys/kernel/debug/)
+     make sure debugfs mounted before insmod ktapvm  
+     mount debugfs: mount -t debugfs none /sys/kernel/debug/
+* libelf (optional)
+     Install elfutils-libelf-devel on RHEL-based distros, or libelf-dev on
+     Debian-based distros.
+     Use `make NO_LIBELF=1` to build without libelf support.
+     libelf is required for resolving symbols to addresses in DSO, and for sdt.
 
 Note that those configuration is always enabled in Linux distribution,
 like REHL, Fedora, Ubuntu, etc.
@@ -227,15 +233,50 @@ Ring buffer
 This is the basic tracing block for ktap, you need to use a specific EVENTDEF
 string, and own event function.
 
-EVENTDEF is compatible with perf(see perf-list), with glob match, for example:
+There have four type of EVENTDEF, tracepoint, kprobe, uprobe, sdt. 
 
-	syscalls:*			trace all syscalls events
-	syscalls:sys_enter_*		trace all syscalls entry events
-	kmem:*				trace all kmem related events
-	sched:*				trace all sched related events
-	*:*				trace all tracepoints in system.
+- tracepoint:  
 
-All events are based on: /sys/kernel/debug/tracing/events/$SYS/$EVENT
+	| EventDef           | Description |
+	| ------------------ | ----------- |
+	syscalls:*           | trace all syscalls events
+	syscalls:sys_enter_* | trace all syscalls entry events
+	kmem:*               | trace all kmem related events
+	sched:*              | trace all sched related events
+	sched:sched_switch   | trace sched_switch tracepoint
+	\*:\*                | trace all tracepoints in system
+
+	All tracepoint events are based on:  
+	          /sys/kernel/debug/tracing/events/$SYS/$EVENT
+
+- kprobe:  
+
+	| EventDef           | Description |
+	| ------------------ | ----------- |
+	probe:schedule       | trace schedule function
+	probe:schedule%return| trace schedule function return
+	probe:SyS_write      | trace SyS_write function
+
+- uprobe:
+
+	| EventDef                           | Description |
+	| ---------------------------------- | ----------- |
+	probe:/lib64/libc.so.6:malloc        | trace malloc function
+	probe:/lib64/libc.so.6:malloc%return | trace malloc function return
+	probe:/lib64/libc.so.6:free          | trace free function
+	probe:/lib64/libc.so.6:0x82000       | trace function with file offset 0x82000
+
+	symbol resolving need libelf support
+
+- sdt:
+
+	| EventDef                           | Description |
+	| ---------------------------------- | ----------- |
+	sdt:/libc64/libc.so.6:lll_futex_wake | trace stapsdt lll_futex_wake
+	sdt:/libc64/libc.so.6:*              | trace all static markers in libc
+
+	sdt resolving need libelf support
+
 
 **trace_end { ACTION }**
 
@@ -285,7 +326,7 @@ flame graph
 
 ktap have more fast boot time thant Systemtap(try the helloword script)  
 ktap have little memory usage than Systemtap  
-and some scripts show that ktap have a little overhead then Systemtap
+and some scripts show that ktap have a little overhead than Systemtap
 (we choosed two scripts to compare, function profile, stack profile.
 this is not means all scripts in Systemtap have big overhead than ktap)
 
@@ -401,13 +442,15 @@ A: the current plan is deliver stable ktapvm kernel modules, more ktap script,
 * [Linux Performance Analysis and Tools][LPAT]
 * [Dtrace Blog][dtraceblog]
 * [Dtrace User Guide][dug]
-* [LWN: ktap -- yet another kernel tracer][lwn]
+* [LWN: ktap -- yet another kernel tracer][lwn1]
+* [LWN: Ktap almost gets into 3.13][lwn2]
 * [ktap introduction in LinuxCon Japan 2013][lcj]
 
 [LPAT]: http://www.brendangregg.com/Slides/SCaLE_Linux_Performance2013.pdf
 [dtraceblog]: http://dtrace.org/blogs/
 [dug]: http://docs.huihoo.com/opensolaris/dtrace-user-guide/html/index.html
-[lwn]: http://lwn.net/Articles/551314/
+[lwn1]: http://lwn.net/Articles/551314/
+[lwn2]: http://lwn.net/Articles/572788/
 [lcj]: http://events.linuxfoundation.org/sites/events/files/lcjpcojp13_zhangwei.pdf
 
 
@@ -418,6 +461,7 @@ A: the current plan is deliver stable ktapvm kernel modules, more ktap script,
 * The code was released in github at 2013.01.18
 * ktap released v0.1 at 2013.05.21
 * ktap released v0.2 at 2013.07.31
+* ktap released v0.3 at 2013.10.29
 
 For more release info, please look at RELEASES.txt in project root directory.
 
