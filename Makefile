@@ -32,6 +32,7 @@ ktapvm-y	:= $(INTP_OBJS)
 
 KVERSION ?= $(shell uname -r)
 KERNEL_SRC ?= /lib/modules/$(KVERSION)/build
+PWD := $(shell pwd)
 mod:
 	$(MAKE) -C $(KERNEL_SRC) M=$(PWD) modules
 
