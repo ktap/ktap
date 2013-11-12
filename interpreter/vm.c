@@ -27,6 +27,7 @@
 #include <linux/ftrace_event.h>
 #include <linux/signal.h>
 #include <linux/sched.h>
+#include <linux/uaccess.h>
 #include "../include/ktap.h"
 
 #define KTAP_MIN_RESERVED_STACK_SIZE 20
