@@ -175,11 +175,6 @@ static ktap_string *newshrstr(ktap_state *ks, const char *str, size_t l,
 	return s;
 }
 
-#ifdef __KERNEL__
-static arch_spinlock_t tstring_lock =
-		(arch_spinlock_t)__ARCH_SPIN_LOCK_UNLOCKED;
-#endif
-
 /*
  * checks whether short string exists and reuses it or creates a new one
  */
@@ -193,7 +188,7 @@ static ktap_string *internshrstr(ktap_state *ks, const char *str, size_t l)
 
 #ifdef __KERNEL__
 	local_irq_save(flags);
-	arch_spin_lock(&tstring_lock);
+	arch_spin_lock(&G(ks)->str_lock);
 #endif
 
 	for (o = g->strt.hash[lmod(h, g->strt.size)]; o != NULL;
@@ -209,7 +204,7 @@ static ktap_string *internshrstr(ktap_state *ks, const char *str, size_t l)
 
  out:
 #ifdef __KERNEL__
-	arch_spin_unlock(&tstring_lock);
+	arch_spin_unlock(&G(ks)->str_lock);
 	local_irq_restore(flags);
 #endif
 	return ts;

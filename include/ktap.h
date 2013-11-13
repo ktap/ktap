@@ -6,7 +6,6 @@
 
 #include <linux/version.h>
 #include <linux/hardirq.h>
-#include <linux/perf_event.h>
 #include <linux/trace_seq.h>
 
 typedef struct ktap_Reg {
@@ -30,16 +29,6 @@ struct ktap_event {
 	struct pt_regs *regs;
 };
 
-enum {
-	KTAP_PERCPU_DATA_STATE,
-	KTAP_PERCPU_DATA_STACK,
-	KTAP_PERCPU_DATA_BUFFER,
-	KTAP_PERCPU_DATA_BUFFER2,
-	KTAP_PERCPU_DATA_BTRACE,
-
-	KTAP_PERCPU_DATA_MAX
-};
-
 #define KTAP_PERCPU_BUFFER_SIZE	(3 * PAGE_SIZE)
 
 int gettimeofday_us(void);
@@ -51,9 +40,8 @@ void kp_exitthread(ktap_state *ks);
 ktap_closure *kp_load(ktap_state *ks, unsigned char *buff);
 void kp_call(ktap_state *ks, StkId func, int nresults);
 void kp_optimize_code(ktap_state *ks, int level, ktap_proto *f);
-void kp_register_lib(ktap_state *ks, const char *libname, const ktap_Reg *funcs);
-void *kp_percpu_data(int type);
-
+void kp_register_lib(ktap_state *ks, const char *libname,
+			const ktap_Reg *funcs);
 void kp_init_baselib(ktap_state *ks);
 void kp_init_oslib(ktap_state *ks);
 void kp_init_kdebuglib(ktap_state *ks);
@@ -101,28 +89,32 @@ static __always_inline int trace_get_context_bit(void)
 	return bit;
 }
 
-/* use a special timer context kp_state instead use this recursion approach? */
-DECLARE_PER_CPU(int, kp_recursion_context[PERF_NR_CONTEXTS]);
-
-static __always_inline int get_recursion_context(void)
+static __always_inline int get_recursion_context(ktap_state *ks)
 {
 	int rctx = trace_get_context_bit();
+	int *val = __this_cpu_ptr(G(ks)->recursion_context[rctx]);
 
-	if (__this_cpu_read(kp_recursion_context[rctx]))
+	if (*val)
 		return -1;
 
-	__this_cpu_write(kp_recursion_context[rctx], true);
+	*val = true;
 	barrier();
 
 	return rctx;
 }
 
-static inline void put_recursion_context(int rctx)
+static inline void put_recursion_context(ktap_state *ks, int rctx)
 {
+	int *val = __this_cpu_ptr(G(ks)->recursion_context[rctx]);
+
 	barrier();
-	__this_cpu_write(kp_recursion_context[rctx], false);
+	*val = false;
 }
 
+static inline void *kp_percpu_data(ktap_state *ks, int type)
+{
+	return this_cpu_ptr(G(ks)->pcpu_data[type][trace_get_context_bit()]);
+}
 
 extern unsigned int kp_stub_exit_instr;
 

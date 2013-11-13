@@ -79,7 +79,6 @@ int gettimeofday_us(void)
 }
 
 struct dentry *kp_dir_dentry;
-static atomic_t kp_is_running = ATOMIC_INIT(0);
 
 /* Ktap Main Entry */
 static int ktap_main(struct file *file, ktap_parm *parm)
@@ -90,26 +89,18 @@ static int ktap_main(struct file *file, ktap_parm *parm)
 	int start_time, delta_time;
 	int ret;
 
-	if (atomic_inc_return(&kp_is_running) != 1) {
-		atomic_dec(&kp_is_running);
-		pr_info("only one ktap thread allow to run\n");
-		return -EBUSY;
-	}
-
 	start_time = gettimeofday_us();
 
 	ks = kp_newstate(parm, kp_dir_dentry);
-	if (unlikely(!ks)) {
-		ret = -ENOEXEC;
-		goto out;
-	}
+	if (unlikely(!ks))
+		return -ENOEXEC;
 
 	file->private_data = ks;
 
 	ret = load_trunk(parm, &buff);
 	if (ret) {
 		pr_err("cannot load file\n");
-		goto out;
+		return ret;
 	}
 
 	cl = kp_load(ks, (unsigned char *)buff);
@@ -126,9 +117,6 @@ static int ktap_main(struct file *file, ktap_parm *parm)
 	}
 
 	kp_final_exit(ks);
-
- out:
-	atomic_dec(&kp_is_running);
 	return ret;
 }
 

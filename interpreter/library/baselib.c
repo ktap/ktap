@@ -147,7 +147,7 @@ static int ktap_lib_printf(ktap_state *ks)
 
 	preempt_disable_notrace();
 
-	seq = kp_percpu_data(KTAP_PERCPU_DATA_BUFFER);
+	seq = kp_percpu_data(ks, KTAP_PERCPU_DATA_BUFFER);
 	trace_seq_init(seq);
 
 	if (kp_strfmt(ks, seq))
@@ -206,7 +206,7 @@ static int ktap_lib_backtrace(ktap_state *ks)
 		max_entries = min(max_entries, KTAP_MAX_STACK_ENTRIES);
 	}
 
-	bt = kp_percpu_data(KTAP_PERCPU_DATA_BTRACE);
+	bt = kp_percpu_data(ks, KTAP_PERCPU_DATA_BTRACE);
 
 	trace.nr_entries = 0;
 	trace.skip = skip;

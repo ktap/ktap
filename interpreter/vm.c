@@ -63,7 +63,7 @@ static void ktap_concat(ktap_state *ks, int start, int end)
 
 	preempt_disable_notrace();
 
-	buffer = kp_percpu_data(KTAP_PERCPU_DATA_BUFFER);
+	buffer = kp_percpu_data(ks, KTAP_PERCPU_DATA_BUFFER);
 	ptr = buffer;
 
 	for (i = start; i <= end; i++) {
@@ -1050,29 +1050,21 @@ static int kp_init_arguments(ktap_state *ks, int argc, char __user **user_argv)
 	return ret;
 }
 
-DEFINE_PER_CPU(int, kp_recursion_context[PERF_NR_CONTEXTS]);
-
-/* todo: make this per-session aware */
-static void __percpu *kp_pcpu_data[KTAP_PERCPU_DATA_MAX][PERF_NR_CONTEXTS];
-
-void *kp_percpu_data(int type)
-{
-	return this_cpu_ptr(kp_pcpu_data[type][trace_get_context_bit()]);
-}
-
-static void free_kp_percpu_data(void)
+static void free_kp_percpu_data(ktap_state *ks)
 {
 	int i, j;
 
 	for (i = 0; i < KTAP_PERCPU_DATA_MAX; i++) {
-		for (j = 0; j < PERF_NR_CONTEXTS; j++) {
-			free_percpu(kp_pcpu_data[i][j]);
-			kp_pcpu_data[i][j] = NULL;
-		}
+		for (j = 0; j < PERF_NR_CONTEXTS; j++)
+			free_percpu(G(ks)->pcpu_data[i][j]);
 	}
+
+	for (j = 0; j < PERF_NR_CONTEXTS; j++)
+		if (G(ks)->recursion_context[j])
+			free_percpu(G(ks)->recursion_context[j]);
 }
 
-static int alloc_kp_percpu_data(void)
+static int alloc_kp_percpu_data(ktap_state *ks)
 {
 	int data_size[KTAP_PERCPU_DATA_MAX] = {
 		sizeof(ktap_state), KTAP_STACK_SIZE_BYTES,
@@ -1087,14 +1079,20 @@ static int alloc_kp_percpu_data(void)
 							     __alignof__(char));
 			if (!data)
 				goto fail;
-			kp_pcpu_data[i][j] = data;
+			G(ks)->pcpu_data[i][j] = data;
 		}
+	}
+
+	for (j = 0; j < PERF_NR_CONTEXTS; j++) {
+		G(ks)->recursion_context[j] = alloc_percpu(int);
+		if (!G(ks)->recursion_context[j])
+			goto fail;
 	}
 
 	return 0;
 
  fail:
-	free_kp_percpu_data();
+	free_kp_percpu_data(ks);
 	return -ENOMEM;
 }
 
@@ -1117,17 +1115,17 @@ static void kp_init_state(ktap_state *ks)
 
 static void free_all_ci(ktap_state *ks)
 {
-	int cpu;
+	int cpu, j;
 
 	for_each_possible_cpu(cpu) {
-		ktap_state *ks;
-		int j;
-
 		for (j = 0; j < PERF_NR_CONTEXTS; j++) {
-			if (!kp_pcpu_data[KTAP_PERCPU_DATA_STATE][j])
+			void *pcd = G(ks)->pcpu_data[KTAP_PERCPU_DATA_STATE][j];
+			ktap_state *ks;
+
+			if (!pcd)
 				break;
 
-			ks = per_cpu_ptr(kp_pcpu_data[KTAP_PERCPU_DATA_STATE][j], cpu);
+			ks = per_cpu_ptr(pcd, cpu);
 			if (!ks)
 				break;
 
@@ -1148,8 +1146,8 @@ ktap_state *kp_newthread(ktap_state *mainthread)
 {
 	ktap_state *ks;
 
-	ks = kp_percpu_data(KTAP_PERCPU_DATA_STATE);
-	ks->stack = kp_percpu_data(KTAP_PERCPU_DATA_STACK);
+	ks = kp_percpu_data(mainthread, KTAP_PERCPU_DATA_STATE);
+	ks->stack = kp_percpu_data(mainthread, KTAP_PERCPU_DATA_STACK);
 	G(ks) = G(mainthread);
 	ks->gclist = NULL;
 	kp_init_state(ks);
@@ -1286,7 +1284,7 @@ void kp_final_exit(ktap_state *ks)
 	kp_free(ks, ks->stack);
 	free_all_ci(ks);
 
-	free_kp_percpu_data();
+	free_kp_percpu_data(ks);
 	free_cpumask_var(G(ks)->cpumask);
 
 	kp_stats_cleanup(ks);
@@ -1317,6 +1315,7 @@ ktap_state *kp_newstate(ktap_parm *parm, struct dentry *dir)
 	G(ks)->seed = 201236; /* todo: make more random in future */
 	G(ks)->task = current;
 	G(ks)->parm = parm;
+	G(ks)->str_lock = (arch_spinlock_t)__ARCH_SPIN_LOCK_UNLOCKED;
 	INIT_LIST_HEAD(&(G(ks)->timers));
 	INIT_LIST_HEAD(&(G(ks)->probe_events_head));
 	G(ks)->exit = 0;
@@ -1376,7 +1375,7 @@ ktap_state *kp_newstate(ktap_parm *parm, struct dentry *dir)
 	kp_init_timerlib(ks);
 	kp_init_ansilib(ks);
 
-	if (alloc_kp_percpu_data())
+	if (alloc_kp_percpu_data(ks))
 		goto out;
 
 	if (kp_probe_init(ks))

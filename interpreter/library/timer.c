@@ -50,9 +50,9 @@ static enum hrtimer_restart hrtimer_ktap_fn(struct hrtimer *timer)
 	int rctx;
 
 	rcu_read_lock_sched_notrace();
-	rctx = get_recursion_context();
 
 	t = container_of(timer, struct hrtimer_ktap, timer);
+	rctx = get_recursion_context(t->ks);
 
 	ks = kp_newthread(t->ks);
 	set_closure(ks->top, t->cl);
@@ -62,7 +62,7 @@ static enum hrtimer_restart hrtimer_ktap_fn(struct hrtimer *timer)
 
 	hrtimer_add_expires_ns(timer, t->ns);
 
-	put_recursion_context(rctx);
+	put_recursion_context(ks, rctx);
 	rcu_read_unlock_sched_notrace();
 
 	return HRTIMER_RESTART;

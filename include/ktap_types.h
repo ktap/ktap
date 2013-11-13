@@ -8,6 +8,7 @@
 #include <linux/slab.h>
 #include <linux/semaphore.h>
 #include <linux/wait.h>
+#include <linux/perf_event.h>
 #else
 typedef char u8;
 #include <stdlib.h>
@@ -260,6 +261,16 @@ typedef struct ktap_stats {
 
 #define KTAP_STATS(ks)	this_cpu_ptr(G(ks)->stats)
 
+enum {
+	KTAP_PERCPU_DATA_STATE,
+	KTAP_PERCPU_DATA_STACK,
+	KTAP_PERCPU_DATA_BUFFER,
+	KTAP_PERCPU_DATA_BUFFER2,
+	KTAP_PERCPU_DATA_BTRACE,
+
+	KTAP_PERCPU_DATA_MAX
+};
+
 typedef struct ktap_global_state {
 	ktap_stringtable strt;  /* hash table for strings */
 	ktap_value registry;
@@ -271,6 +282,13 @@ typedef struct ktap_global_state {
 
 	struct ktap_state *mainthread;
 #ifdef __KERNEL__
+	/* global percpu data(like stack) */
+	void __percpu *pcpu_data[KTAP_PERCPU_DATA_MAX][PERF_NR_CONTEXTS];
+
+	int __percpu *recursion_context[PERF_NR_CONTEXTS];
+
+	arch_spinlock_t str_lock; /* string opertion lock */
+
 	ktap_parm *parm;
 	pid_t trace_pid;
 	struct task_struct *trace_task;

@@ -57,7 +57,7 @@ void kp_event_tostring(ktap_state *ks, struct trace_seq *seq)
 	 * use temp percpu buffer as trace_iterator
 	 * we cannot use same temp buffer as printf.
 	 */
-	iter = kp_percpu_data(KTAP_PERCPU_DATA_BUFFER2);
+	iter = kp_percpu_data(ks, KTAP_PERCPU_DATA_BUFFER2);
 
 	trace_seq_init(&iter->seq);
 	iter->ent = e->entry;
@@ -160,7 +160,7 @@ static void ktap_overflow_callback(struct perf_event *event,
 	if (unlikely(ks->stop))
 		return;
 
-	rctx = get_recursion_context();
+	rctx = get_recursion_context(ks);
 	if (rctx < 0)
 		return;
 
@@ -177,7 +177,7 @@ static void ktap_overflow_callback(struct perf_event *event,
 
 	ktap_call_probe_closure(ks, ktap_pevent->cl, &e);
 
-	put_recursion_context(rctx);
+	put_recursion_context(ks, rctx);
 }
 
 static void perf_destructor(struct ktap_probe_event *ktap_pevent)
