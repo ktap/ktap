@@ -172,11 +172,20 @@ static vaddr_t sdt_note_addr(Elf *elf, const char *data, size_t len, int type)
 	vaddr_t vaddr;
 
 	/*
+	 * Three addresses need to be obtained :
+	 * Marker location, address of base section and semaphore location
+	 */
+	union {
+		Elf64_Addr a64[3];
+		Elf32_Addr a32[3];
+	} buf;
+
+	/*
 	 * dst and src are required for translation from file to memory
 	 * representation
 	 */
 	Elf_Data dst = {
-		.d_buf = &vaddr, .d_type = ELF_T_ADDR, .d_version = EV_CURRENT,
+		.d_buf = &buf, .d_type = ELF_T_ADDR, .d_version = EV_CURRENT,
 		.d_size = gelf_fsize(elf, ELF_T_ADDR, SDT_NOTE_COUNT, EV_CURRENT),
 		.d_off = 0, .d_align = 0
 	};
@@ -198,6 +207,8 @@ static vaddr_t sdt_note_addr(Elf *elf, const char *data, size_t len, int type)
 	if (gelf_xlatetom(elf, &dst, &src,
 			  elf_getident(elf, NULL)[EI_DATA]) == NULL)
 		return 0; /* TODO */
+
+	memcpy(&vaddr, &buf, sizeof(vaddr));
 
 	return vaddr;
 }
