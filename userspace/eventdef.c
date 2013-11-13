@@ -304,51 +304,92 @@ static int parse_events_add_kprobe(char *old_event)
 	return 0;
 }
 
+#define UPROBE_EVENTS_PATH "/sys/kernel/debug/tracing/uprobe_events"
+
+/**
+ * @return 1 on success, otherwise 0
+ */
+static int
+write_uprobe_event(int fd, int ret, int seq, const char *binary, size_t addr)
+{
+	char probe_event[128] = {0};
+
+	if (ret)
+		snprintf(probe_event, 128, "r:uprobes/kp%d %s:0x%lx", seq, binary, addr);
+	else
+		snprintf(probe_event, 128, "p:uprobes/kp%d %s:0x%lx", seq, binary, addr);
+
+	 verbose_printf("uprobe event %s\n", probe_event);
+	 if (write(fd, probe_event, strlen(probe_event)) <= 0) {
+		 fprintf(stderr, "Cannot write %s to %s\n", probe_event,
+				 UPROBE_EVENTS_PATH);
+		 return 0;
+	 }
+
+	 return 1;
+}
+
+/**
+ * TODO: avoid copy-paste stuff
+ *
+ * @return 1 on success, otherwise 0
+ */
 #ifdef NO_LIBELF
-static char *parse_events_resolve_symbol(char *event, int type)
+static int parse_events_resolve_symbol(int fd, int seq, char *event, int type)
 {
 	char *colon;
+	char *binary;
 	unsigned long symbol_address;
 
 	colon = strchr(event, ':');
 	if (!colon)
-		return event;
+		return 0;
 
 	symbol_address = strtol(colon + 1 /* skip ":" */, NULL, 0);
 
 	/**
 	 * We already have address, no need in resolving.
 	 */
-	if (symbol_address)
-		return event;
+	if (symbol_address) {
+		int ret;
+
+		binary = strndup(event, colon - event);
+		ret = write_uprobe_event(fd, !!strstr(event, "%return"), seq,
+			binary, symbol_address);
+		free(binary);
+
+		return ret;
+	}
 
 	fprintf(stderr, "error: cannot resolve event \"%s\" without libelf, "
 			"please recompile ktap with NO_LIBELF disabled\n",
 			event);
 	exit(EXIT_FAILURE);
-	return NULL;
+	return 0;
 }
 #else
-static char *parse_events_resolve_symbol(char *event, int type)
+static int parse_events_resolve_symbol(int fd, int seq, char *event, int type)
 {
 	char *colon, *end, *tail, *binary, *symbol;
+	char *r;
 	vaddr_t symbol_address;
 	struct dso_symbol *symbols = NULL;
 	size_t symbols_count, i;
+	int ret = 0;
 
 	colon = strchr(event, ':');
 	if (!colon)
-		return event;
+		return 0;
 
+	r = strstr(event, "%return");
 	symbol_address = strtol(colon + 1 /* skip ":" */, NULL, 0);
+	binary = strndup(event, colon - event);
 
 	/**
 	 * We already have address, no need in resolving.
 	 */
 	if (symbol_address)
-		return event;
-
-	binary = strndup(event, colon - event);
+		return write_uprobe_event(fd, !!r, seq, binary, symbol_address);
 
 	end = strpbrk(event, "% ");
 	if (end) {
@@ -361,23 +402,21 @@ static char *parse_events_resolve_symbol(char *event, int type)
 
 	symbols_count = get_dso_symbols(&symbols, binary, type);
 	for (i = 0; i < symbols_count; ++i) {
+
 		if (strcmp(symbols[i].name, symbol))
 			continue;
 
 		symbol_address = symbols[i].addr;
-		break;
+
+		verbose_printf("symbol %s resolved to 0x%lx\n",
+			event, symbol_address);
+		ret = write_uprobe_event(fd, !!r, seq, binary, symbol_address);
+		if (!ret)
+			break;
 	}
 	free_dso_symbols(symbols, symbols_count);
 
-	if (symbol_address) {
-		verbose_printf("symbol %s resolved to 0x%lx\n",
-			event, symbol_address);
-
-		event = realloc(event,
-			strlen(event) + (strlen(STRINGIFY(ULONG_MAX))));
-		sprintf(event, "%s:0x%lx%s",
-			binary, symbol_address, tail ?: "");
-	} else {
+	if (!ret) {
 		fprintf(stderr, "error: cannot find symbol %s in binary %s\n",
 				symbol, binary);
 		exit(EXIT_FAILURE);
@@ -388,22 +427,17 @@ static char *parse_events_resolve_symbol(char *event, int type)
 	if (tail)
 		free(tail);
 
-	return event;
+	return ret;
 }
 #endif
-
-#define UPROBE_EVENTS_PATH "/sys/kernel/debug/tracing/uprobe_events"
 
 static int parse_events_add_uprobe(char *old_event, int type)
 {
 	static int event_seq = 0;
 	struct probe_list *pl;
-	char probe_event[128] = {0};
 	char event_id_path[128] = {0};
-	char *event;
-	char *r;
-	int fd;
 	int ret;
+	int fd;
 
 	fd = open(UPROBE_EVENTS_PATH, O_WRONLY);
 	if (fd < 0) {
@@ -411,33 +445,7 @@ static int parse_events_add_uprobe(char *old_event, int type)
 		return -1;
 	}
 
-	event = strdup(old_event);
-
-	/* resolve symbol with libelf help */
-	event = parse_events_resolve_symbol(event, type);
-
-	r = strstr(event, "%return");
-	if (r) {
-		memset(r, ' ', 7);
-	}
-
-	if (r) {
-		snprintf(probe_event, 128, "r:uprobes/kp%d %s",
-				event_seq, event);
-	} else
-		snprintf(probe_event, 128, "p:uprobes/kp%d %s",
-				event_seq, event);
-
-	free(event);
-
-	verbose_printf("uprobe event %s\n", probe_event);
-	ret = write(fd, probe_event, strlen(probe_event));
-	if (ret <= 0) {
-		fprintf(stderr, "Cannot write %s to %s\n", probe_event,
-				UPROBE_EVENTS_PATH);
-		close(fd);
-		return -1;
-	}
+	parse_events_resolve_symbol(fd, event_seq, old_event, type);
 
 	close(fd);
 
