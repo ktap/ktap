@@ -75,21 +75,59 @@ static vaddr_t find_load_address(Elf *elf)
 	return address;
 }
 
-static vaddr_t search_symbol(Elf *elf, const char *symbol)
+void free_dso_symbols(struct dso_symbol *symbols, size_t symbols_count)
+{
+	size_t i;
+	for (i = 0; i < symbols_count; ++i) {
+		free(symbols[i].name);
+	}
+
+	free(symbols);
+}
+
+/**
+ * libc have about ~2000 symbols.
+ */
+#define SYMBOLS_COUNT 3000
+
+/**
+ * realloc() and free() on failure
+ *
+ * TODO: allocation by chunks
+ */
+static struct dso_symbol *
+realloc_symbols(struct dso_symbol *symbols, size_t symbols_count)
+{
+	struct dso_symbol *new;
+
+	new = realloc(symbols, sizeof(*symbols) * symbols_count);
+
+	if (!new && symbols)
+		free_dso_symbols(symbols, symbols_count);
+
+	return new;
+}
+
+static size_t elf_symbols(GElf_Shdr shdr)
+{
+	return shdr.sh_size / shdr.sh_entsize;
+}
+
+static size_t dso_symbols(struct dso_symbol **symbols, Elf *elf)
 {
 	Elf_Data *elf_data = NULL;
 	Elf_Scn *scn = NULL;
 	GElf_Sym sym;
 	GElf_Shdr shdr;
 
+	size_t symbols_count = 0;
 	vaddr_t load_address = find_load_address(elf);
 
 	if (!load_address)
-		return 0;
+		return symbols_count;
 
 	while ((scn = elf_nextscn(elf, scn))) {
-		int i, symbols;
-		char *current_symbol;
+		int i;
 
 		gelf_getshdr(scn, &shdr);
 
@@ -97,21 +135,31 @@ static vaddr_t search_symbol(Elf *elf, const char *symbol)
 			continue;
 
 		elf_data = elf_getdata(scn, elf_data);
-		symbols = shdr.sh_size / shdr.sh_entsize;
 
-		for (i = 0; i < symbols; i++) {
+		for (i = 0; i < elf_symbols(shdr); i++) {
+			char *name;
+			struct dso_symbol symbol;
+
 			gelf_getsym(elf_data, i, &sym);
 
 			if (GELF_ST_TYPE(sym.st_info) != STT_FUNC)
 				continue;
 
-			current_symbol = elf_strptr(elf, shdr.sh_link, sym.st_name);
-			if (!strcmp(current_symbol, symbol))
-				return sym.st_value - load_address;
+			++symbols_count;
+			*symbols = realloc_symbols(*symbols, symbols_count);
+			if (!*symbols) {
+				symbols_count = 0;
+				break;
+			}
+
+			name = elf_strptr(elf, shdr.sh_link, sym.st_name);
+			symbol.name = strdup(name);
+			symbol.addr = sym.st_value - load_address;
+			memcpy(&(*symbols)[symbols_count - 1], &symbol, sizeof(symbol));
 		}
 	}
 
-	return 0;
+	return symbols_count;
 }
 
 #define SDT_NOTE_TYPE 3
@@ -172,7 +220,7 @@ static const char *sdt_note_data(const Elf_Data *data, size_t off)
 	return ((data->d_buf) + off);
 }
 
-static vaddr_t search_stapsdt_note(Elf *elf, const char *note)
+static size_t dso_sdt_notes(struct dso_symbol **symbols, Elf *elf)
 {
 	GElf_Ehdr ehdr;
 	Elf_Scn *scn = NULL;
@@ -182,7 +230,9 @@ static vaddr_t search_stapsdt_note(Elf *elf, const char *note)
 	size_t next;
 	GElf_Nhdr nhdr;
 	size_t name_off, desc_off, offset;
+
 	vaddr_t vaddr = 0;
+	size_t symbols_count = 0;
 
 	if (gelf_getehdr(elf, &ehdr) == NULL)
 		return 0;
@@ -205,6 +255,7 @@ static vaddr_t search_stapsdt_note(Elf *elf, const char *note)
 		(next = gelf_getnote(data, offset, &nhdr, &name_off, &desc_off)) > 0;
 		offset = next) {
 		const char *name;
+		struct dso_symbol symbol;
 
 		if (nhdr.n_namesz != sizeof(SDT_NOTE_NAME) ||
 		    memcmp(data->d_buf + name_off, SDT_NOTE_NAME,
@@ -212,37 +263,51 @@ static vaddr_t search_stapsdt_note(Elf *elf, const char *note)
 			continue;
 
 		name = sdt_note_name(elf, &nhdr, sdt_note_data(data, desc_off));
-		if (!name || strcmp(name, note))
+		if (!name)
 			continue;
 
 		vaddr = sdt_note_addr(elf, sdt_note_data(data, desc_off),
 					nhdr.n_descsz, nhdr.n_type);
+		if (!vaddr)
+			continue;
+
+		++symbols_count;
+		*symbols = realloc_symbols(*symbols, symbols_count);
+		if (!*symbols) {
+			symbols_count = 0;
+			break;
+		}
+
+		symbol.name = strdup(name);
+		symbol.addr = vaddr;
+		memcpy(&(*symbols)[symbols_count - 1], &symbol, sizeof(symbol));
 	}
 
-	return vaddr;
+	return symbols_count;
 }
 
-vaddr_t find_symbol(const char *exec, const char *symbol, int type)
+size_t get_dso_symbols(struct dso_symbol **symbols, const char *exec, int type)
 {
-	vaddr_t vaddr = 0;
+	size_t symbols_count = 0;
+
 	Elf *elf;
 	int fd;
 
 	if (elf_version(EV_CURRENT) == EV_NONE)
-		return vaddr;
+		return symbols_count;
 
 	fd = open(exec, O_RDONLY);
 	if (fd < 0)
-		return vaddr;
+		return symbols_count;
 
 	elf = elf_begin(fd, ELF_C_READ, NULL);
 	if (elf) {
 		switch (type) {
 		case FIND_SYMBOL:
-			vaddr = search_symbol(elf, symbol);
+			symbols_count = dso_symbols(symbols, elf);
 			break;
 		case FIND_STAPSDT_NOTE:
-			vaddr = search_stapsdt_note(elf, symbol);
+			symbols_count = dso_sdt_notes(symbols, elf);
 			break;
 		}
 
@@ -250,5 +315,5 @@ vaddr_t find_symbol(const char *exec, const char *symbol, int type)
 	}
 
 	close(fd);
-	return vaddr;
+	return symbols_count;
 }

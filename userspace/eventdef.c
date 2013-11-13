@@ -333,6 +333,8 @@ static char *parse_events_resolve_symbol(char *event, int type)
 {
 	char *colon, *end, *tail, *binary, *symbol;
 	vaddr_t symbol_address;
+	struct dso_symbol *symbols = NULL;
+	size_t symbols_count, i;
 
 	colon = strchr(event, ':');
 	if (!colon)
@@ -357,7 +359,16 @@ static char *parse_events_resolve_symbol(char *event, int type)
 		symbol = strdup(colon + 1 /* skip ":" */);
 	}
 
-	symbol_address = find_symbol(binary, symbol, type);
+	symbols_count = get_dso_symbols(&symbols, binary, type);
+	for (i = 0; i < symbols_count; ++i) {
+		if (strcmp(symbols[i].name, symbol))
+			continue;
+
+		symbol_address = symbols[i].addr;
+		break;
+	}
+	free_dso_symbols(symbols, symbols_count);
+
 	if (symbol_address) {
 		verbose_printf("symbol %s resolved to 0x%lx\n",
 			event, symbol_address);

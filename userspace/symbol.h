@@ -1,5 +1,5 @@
 /*
- * symbol.h
+ * symbol.h - extract symbols from DSO.
  *
  * This file is part of ktap by Jovi Zhangwei.
  *
@@ -23,14 +23,29 @@
 #define FIND_SYMBOL 1
 #define FIND_STAPSDT_NOTE 2
 
+struct dso_symbol;
+
 #ifndef NO_LIBELF
+
 #include <gelf.h>
+#include <sys/queue.h>
+
 typedef GElf_Addr vaddr_t;
 
+struct dso_symbol
+{
+    char *name;
+    vaddr_t addr;
+};
+
 /**
- * Find symbol in DSO
- *
- * @return 0 on failure, otherwise address of symbol.
+ * free() symbols and it's names
  */
-vaddr_t find_symbol(const char *exec, const char *symbol, int type);
+void free_dso_symbols(struct dso_symbol *symbols, size_t symbols_count);
+/**
+ * @return all symbols and notes in DSO.
+ * (You must call free_dso_symbols() at end.)
+ */
+size_t get_dso_symbols(struct dso_symbol **symbols, const char *exec, int type);
+
 #endif
