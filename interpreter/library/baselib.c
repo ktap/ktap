@@ -249,9 +249,7 @@ static int ktap_lib_exit(ktap_state *ks)
 
 static int ktap_lib_pid(ktap_state *ks)
 {
-	pid_t pid = task_tgid_vnr(current);
-
-	set_number(ks->top, (int)pid);
+	set_number(ks->top, (int)current->pid);
 	incr_top(ks);
 	return 1;
 }
