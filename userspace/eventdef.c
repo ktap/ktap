@@ -403,7 +403,7 @@ static int parse_events_resolve_symbol(int fd, int seq, char *event, int type)
 	symbols_count = get_dso_symbols(&symbols, binary, type);
 	for (i = 0; i < symbols_count; ++i) {
 
-		if (strcmp(symbols[i].name, symbol))
+		if (!strglobmatch(symbols[i].name, symbol))
 			continue;
 
 		symbol_address = symbols[i].addr;
