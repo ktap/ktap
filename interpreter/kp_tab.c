@@ -23,20 +23,24 @@
  * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifdef __KERNEL__
-#include "../include/ktap.h"
-#include <linux/spinlock.h>
-#include <linux/kallsyms.h>
-#include <linux/sort.h>
-#else
 #include "../include/ktap_types.h"
 
+#ifdef __KERNEL__
+#include <linux/spinlock.h>
+#include <linux/module.h>
+#include <linux/kallsyms.h>
+#include <linux/sort.h>
+#include "ktap.h"
+#include "kp_vm.h"
+#else
 static inline void sort(void *base, size_t num, size_t size,
 			int (*cmp_func)(const void *, const void *),
 			void (*swap_func)(void *, void *, int size))
 {}
 #endif
 
+#include "kp_obj.h"
+#include "kp_str.h"
 
 #ifdef __KERNEL__
 #define kp_table_lock_init(t)						\

@@ -23,7 +23,10 @@
 #include <linux/slab.h>
 #include <linux/delay.h>
 #include <linux/sched.h>
-#include "../include/ktap.h"
+#include "../include/ktap_types.h"
+#include "ktap.h"
+#include "kp_obj.h"
+#include "kp_vm.h"
 
 struct hrtimer_ktap {
 	struct hrtimer timer;

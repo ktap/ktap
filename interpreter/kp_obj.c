@@ -23,13 +23,16 @@
  * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifdef __KERNEL__
-#include "../include/ktap.h"
-#else
 #include "../include/ktap_types.h"
-#endif
+#include "kp_obj.h"
+#include "kp_str.h"
+#include "kp_tab.h"
 
 #ifdef __KERNEL__
+#include <linux/slab.h>
+#include "ktap.h"
+#include "kp_vm.h"
+#include "kp_transport.h"
 
 #define KTAP_ALLOC_FLAGS ((GFP_KERNEL | __GFP_NORETRY | __GFP_NOWARN) \
 			 & ~__GFP_WAIT)
@@ -168,6 +171,7 @@ void kp_obj_dump(ktap_state *ks, const ktap_value *v)
 
 #ifdef __KERNEL__
 #include <linux/stacktrace.h>
+#include <linux/module.h>
 #include <linux/kallsyms.h>
 
 static void kp_btrace_dump(ktap_state *ks, ktap_btrace *bt)

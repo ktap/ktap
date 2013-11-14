@@ -1,13 +1,7 @@
 #ifndef __KTAP_TYPES_H__
 #define __KTAP_TYPES_H__
 
-/* opcode is copied from lua initially */
-
 #ifdef __KERNEL__
-#include <linux/module.h>
-#include <linux/slab.h>
-#include <linux/semaphore.h>
-#include <linux/wait.h>
 #include <linux/perf_event.h>
 #else
 typedef char u8;
@@ -506,60 +500,6 @@ union ktap_gcobject {
 
 #define ktap_assert(s)
 
-ktap_string *kp_tstring_newlstr(ktap_state *ks, const char *str, size_t l);
-ktap_string *kp_tstring_newlstr_local(ktap_state *ks, const char *str, size_t l);
-ktap_string *kp_tstring_new(ktap_state *ks, const char *str);
-ktap_string *kp_tstring_new_local(ktap_state *ks, const char *str);
-int kp_tstring_eqstr(ktap_string *a, ktap_string *b);
-unsigned int kp_string_hash(const char *str, size_t l, unsigned int seed);
-int kp_tstring_eqlngstr(ktap_string *a, ktap_string *b);
-int kp_tstring_cmp(const ktap_string *ls, const ktap_string *rs);
-void kp_tstring_resize(ktap_state *ks, int newsize);
-void kp_tstring_freeall(ktap_state *ks);
-
-ktap_value *kp_table_set(ktap_state *ks, ktap_table *t, const ktap_value *key);
-ktap_table *kp_table_new(ktap_state *ks);
-const ktap_value *kp_table_getint(ktap_table *t, int key);
-void kp_table_setint(ktap_state *ks, ktap_table *t, int key, ktap_value *v);
-const ktap_value *kp_table_get(ktap_table *t, const ktap_value *key);
-void kp_table_setvalue(ktap_state *ks, ktap_table *t, const ktap_value *key, ktap_value *val);
-void kp_table_resize(ktap_state *ks, ktap_table *t, int nasize, int nhsize);
-void kp_table_resizearray(ktap_state *ks, ktap_table *t, int nasize);
-void kp_table_free(ktap_state *ks, ktap_table *t);
-int kp_table_length(ktap_state *ks, ktap_table *t);
-void kp_table_dump(ktap_state *ks, ktap_table *t);
-void kp_table_clear(ktap_state *ks, ktap_table *t);
-void kp_table_histogram(ktap_state *ks, ktap_table *t);
-int kp_table_next(ktap_state *ks, ktap_table *t, StkId key);
-int kp_table_sort_next(ktap_state *ks, ktap_table *t, StkId key);
-void kp_table_sort(ktap_state *ks, ktap_table *t, ktap_closure *cmp_func);
-void kp_table_atomic_inc(ktap_state *ks, ktap_table *t, ktap_value *key, int n);
-void kp_statdata_dump(ktap_state *ks, ktap_stat_data *sd);
-ktap_ptable *kp_ptable_new(ktap_state *ks);
-ktap_table *kp_ptable_synthesis(ktap_state *ks, ktap_ptable *ph);
-void kp_ptable_dump(ktap_state *ks, ktap_ptable *ph);
-void kp_ptable_free(ktap_state *ks, ktap_ptable *ph);
-void kp_ptable_set(ktap_state *ks, ktap_ptable *ph,
-			ktap_value *key, ktap_value *val);
-void kp_ptable_get(ktap_state *ks, ktap_ptable *ph,
-			ktap_value *key, ktap_value *val);
-void kp_ptable_histogram(ktap_state *ks, ktap_ptable *ph);
-void kp_obj_dump(ktap_state *ks, const ktap_value *v);
-void kp_showobj(ktap_state *ks, const ktap_value *v);
-int kp_objlen(ktap_state *ks, const ktap_value *rb);
-void kp_objclone(ktap_state *ks, const ktap_value *o, ktap_value *newo,
-		 ktap_gcobject **list);
-ktap_gcobject *kp_newobject(ktap_state *ks, int type, size_t size, ktap_gcobject **list);
-int kp_equalobjv(ktap_state *ks, const ktap_value *t1, const ktap_value *t2);
-ktap_closure *kp_newclosure(ktap_state *ks, int n);
-ktap_proto *kp_newproto(ktap_state *ks);
-ktap_upval *kp_newupval(ktap_state *ks);
-void kp_free_gclist(ktap_state *ks, ktap_gcobject *o);
-void kp_free_all_gcobject(ktap_state *ks);
-void kp_header(u8 *h);
-
-int kp_str2d(const char *s, size_t len, ktap_number *result);
-
 #define kp_realloc(ks, v, osize, nsize, t) \
 	((v) = (t *)kp_reallocv(ks, v, osize * sizeof(t), nsize * sizeof(t)))
 
@@ -572,11 +512,6 @@ int kp_str2d(const char *s, size_t len, ktap_number *result);
 
 #ifdef __KERNEL__
 #define G(ks)   (ks->g)
-
-void *kp_malloc(ktap_state *ks, int size);
-void kp_free(ktap_state *ks, void *addr);
-void *kp_reallocv(ktap_state *ks, void *addr, int oldsize, int newsize);
-void *kp_zalloc(ktap_state *ks, int size);
 
 void kp_printf(ktap_state *ks, const char *fmt, ...);
 extern void __kp_puts(ktap_state *ks, const char *str);
@@ -601,12 +536,10 @@ extern void __kp_bputs(ktap_state *ks, const char *str);
 #define G(ks)   (&dummy_global_state)
 extern ktap_global_state dummy_global_state;
 
-#define kp_malloc(ks, size)			malloc(size)
-#define kp_free(ks, block)			free(block)
-#define kp_reallocv(ks, block, osize, nsize)	realloc(block, nsize)
 #define kp_printf(ks, args...)			printf(args)
 #define kp_puts(ks, str)			printf("%s", str)
 #define kp_exit(ks)				exit(EXIT_FAILURE)
+
 #endif
 
 #define __maybe_unused	__attribute__((unused))

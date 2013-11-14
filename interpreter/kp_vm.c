@@ -28,7 +28,14 @@
 #include <linux/signal.h>
 #include <linux/sched.h>
 #include <linux/uaccess.h>
-#include "../include/ktap.h"
+#include "../include/ktap_types.h"
+#include "../include/ktap_opcodes.h"
+#include "ktap.h"
+#include "kp_obj.h"
+#include "kp_str.h"
+#include "kp_tab.h"
+#include "kp_transport.h"
+#include "kp_vm.h"
 
 #define KTAP_MIN_RESERVED_STACK_SIZE 20
 #define KTAP_STACK_SIZE		120 /* enlarge this value for big stack */
@@ -38,6 +45,17 @@
 #define CIST_REENTRY	(1 << 2)
 
 #define isktapfunc(ci)	((ci)->callstatus & CIST_KTAP)
+
+
+/* common helper function */
+int gettimeofday_us(void)
+{
+	struct timeval tv;
+
+	do_gettimeofday(&tv);
+	return tv.tv_sec * USEC_PER_SEC + tv.tv_usec;
+}
+
 
 static void ktap_concat(ktap_state *ks, int start, int end)
 {
@@ -1217,12 +1235,36 @@ static void kp_wait(ktap_state *ks)
 
 }
 
+static unsigned int kp_stub_exit_instr;
+
+static inline void set_next_as_exit(ktap_state *ks)
+{
+	ktap_callinfo *ci;
+
+	ci = ks->ci;
+	if (!ci)
+		return;
+
+	ci->u.l.savedpc = &kp_stub_exit_instr;
+
+	/* See precall, ci changed to ci->prev after invoke C function */
+	if (ci->prev) {
+		ci = ci->prev;
+		ci->u.l.savedpc = &kp_stub_exit_instr;
+	}
+}
+
 void kp_exit(ktap_state *ks)
 {
 	set_next_as_exit(ks);
 
 	G(ks)->mainthread->stop = 1;
 	G(ks)->exit = 1;
+}
+
+void kp_init_exit_instruction(void)
+{
+	SET_OPCODE(kp_stub_exit_instr, OP_EXIT);
 }
 
 /*

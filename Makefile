@@ -96,13 +96,13 @@ $(UDIR)/ktapio.o: $(UDIR)/ktapio.c $(INC)/*
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
 $(UDIR)/eventdef.o: $(UDIR)/eventdef.c $(INC)/*
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
-$(UDIR)/opcode.o: $(INTP)/kp_opcode.c $(INC)/*
+$(UDIR)/kp_opcode.o: $(INTP)/kp_opcode.c $(INC)/*
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
-$(UDIR)/table.o: $(INTP)/kp_tab.c $(INC)/*
+$(UDIR)/kp_tab.o: $(INTP)/kp_tab.c $(INC)/*
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
-$(UDIR)/tstring.o: $(INTP)/kp_str.c $(INC)/*
+$(UDIR)/kp_str.o: $(INTP)/kp_str.c $(INC)/*
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
-$(UDIR)/object.o: $(INTP)/kp_obj.c $(INC)/*
+$(UDIR)/kp_obj.o: $(INTP)/kp_obj.c $(INC)/*
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
 ifndef NO_LIBELF
 $(UDIR)/symbol.o: $(UDIR)/symbol.c
@@ -118,10 +118,10 @@ KTAPOBJS += $(UDIR)/main.o
 KTAPOBJS += $(UDIR)/util.o
 KTAPOBJS += $(UDIR)/ktapio.o
 KTAPOBJS += $(UDIR)/eventdef.o
-KTAPOBJS += $(UDIR)/opcode.o
-KTAPOBJS += $(UDIR)/table.o
-KTAPOBJS += $(UDIR)/tstring.o
-KTAPOBJS += $(UDIR)/object.o
+KTAPOBJS += $(UDIR)/kp_opcode.o
+KTAPOBJS += $(UDIR)/kp_tab.o
+KTAPOBJS += $(UDIR)/kp_str.o
+KTAPOBJS += $(UDIR)/kp_obj.o
 ifndef NO_LIBELF
 KTAPOBJS += $(UDIR)/symbol.o
 endif

@@ -21,7 +21,9 @@
  * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include "../include/ktap.h"
+#include "../include/ktap_types.h"
+#include "ktap.h"
+#include "kp_vm.h"
 
 /**
  * function ansi.clear_screen - Move cursor to top left and clear screen.

@@ -28,7 +28,13 @@
 #include <linux/clocksource.h>
 #include <linux/ring_buffer.h>
 #include <linux/stacktrace.h>
-#include "../include/ktap.h"
+#include "../include/ktap_types.h"
+#include "ktap.h"
+#include "kp_obj.h"
+#include "kp_str.h"
+#include "kp_tab.h"
+#include "kp_transport.h"
+#include "kp_vm.h"
 
 static int ktap_lib_next(ktap_state *ks)
 {

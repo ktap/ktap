@@ -325,9 +325,6 @@ extern int verbose;
 
 #define ktapc_equalobj(t1, t2)	kp_equalobjv(NULL, t1, t2)
 
-
-#include "../include/ktap_opcodes.h"
-
 int codegen_stringK(ktap_funcstate *fs, ktap_string *s);
 void codegen_indexed(ktap_funcstate *fs, ktap_expdesc *t, ktap_expdesc *k);
 void codegen_setreturns(ktap_funcstate *fs, ktap_expdesc *e, int nresults);
@@ -375,3 +372,5 @@ ktap_number ktapc_arith(int op, ktap_number v1, ktap_number v2);
 int ktapc_int2fb(unsigned int x);
 bool strglobmatch(const char *str, const char *pat);
 unsigned long ktapc_read_ksym(ktap_string *ts);
+
+

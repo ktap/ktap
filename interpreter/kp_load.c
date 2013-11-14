@@ -24,7 +24,13 @@
  */
 
 #include <linux/slab.h>
-#include "../include/ktap.h"
+#include "../include/ktap_types.h"
+#include "ktap.h"
+#include "kp_load.h"
+#include "kp_obj.h"
+#include "kp_str.h"
+#include "kp_tab.h"
+#include "kp_vm.h"
 
 #define KTAPC_TAIL	"\x19\x93\r\n\x1a\n"
 

@@ -30,6 +30,7 @@
 #include "../include/ktap_types.h"
 #include "../include/ktap_opcodes.h"
 #include "ktapc.h"
+#include "../interpreter/kp_obj.h"
 
 
 #define hasjumps(e)	((e)->t != (e)->f)

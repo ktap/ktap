@@ -23,12 +23,17 @@
  * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include "../include/ktap_types.h"
+#include "kp_obj.h"
+#include "kp_str.h"
+
 #ifdef __KERNEL__
 #include <linux/ctype.h>
+#include <linux/module.h>
 #include <linux/kallsyms.h>
-#include "../include/ktap.h"
-#else
-#include "../include/ktap_types.h"
+#include "ktap.h"
+#include "kp_transport.h"
+#include "kp_vm.h"
 #endif
 
 #define STRING_MAXSHORTLEN	40
@@ -401,7 +406,7 @@ int kp_str_fmt(ktap_state *ks, struct trace_seq *seq)
 			case 'p': {
 				char str[KSYM_SYMBOL_LEN];
 				SPRINT_SYMBOL(str, nvalue(kp_arg(ks, arg)));
-				trace_seq_puts(seq, str);
+				_trace_seq_puts(seq, str);
 				break;
 			}
 			case 'o':  case 'u':  case 'x':  case 'X': {
@@ -417,7 +422,7 @@ int kp_str_fmt(ktap_state *ks, struct trace_seq *seq)
 				size_t l;
 
 				if (is_nil(v)) {
-					trace_seq_puts(seq, "nil");
+					_trace_seq_puts(seq, "nil");
 					return 0;
 				}
 
@@ -434,7 +439,7 @@ int kp_str_fmt(ktap_state *ks, struct trace_seq *seq)
 					 * to be formatted;
 					 * keep original string
 					 */
-					trace_seq_puts(seq, s);
+					_trace_seq_puts(seq, s);
 					break;
 				} else {
 					trace_seq_printf(seq, form, s);

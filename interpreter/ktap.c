@@ -48,7 +48,10 @@
 #include <linux/anon_inodes.h>
 #include <linux/debugfs.h>
 #include <linux/vmalloc.h>
-#include "../include/ktap.h"
+#include "../include/ktap_types.h"
+#include "ktap.h"
+#include "kp_load.h"
+#include "kp_vm.h"
 
 static int load_trunk(struct ktap_parm *parm, unsigned long **buff)
 {
@@ -70,15 +73,7 @@ static int load_trunk(struct ktap_parm *parm, unsigned long **buff)
 	return 0;
 }
 
-int gettimeofday_us(void)
-{
-	struct timeval tv;
-
-	do_gettimeofday(&tv);
-	return tv.tv_sec * USEC_PER_SEC + tv.tv_usec;
-}
-
-struct dentry *kp_dir_dentry;
+static struct dentry *kp_dir_dentry;
 
 /* Ktap Main Entry */
 static int ktap_main(struct file *file, ktap_parm *parm)
@@ -179,8 +174,6 @@ static const struct file_operations ktapvm_fops = {
 	.unlocked_ioctl         = ktapvm_ioctl,
 };
 
-unsigned int kp_stub_exit_instr;
-
 static int __init init_ktap(void)
 {
 	struct dentry *ktapvm_dentry;
@@ -200,7 +193,7 @@ static int __init init_ktap(void)
 		return -1;
 	}
 
-	SET_OPCODE(kp_stub_exit_instr, OP_EXIT);
+	kp_init_exit_instruction();
 
 	return 0;
 }

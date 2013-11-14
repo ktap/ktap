@@ -24,7 +24,12 @@
 #include <linux/stacktrace.h>
 #include <linux/clocksource.h>
 #include <asm/uaccess.h>
-#include "../include/ktap.h"
+#include <linux/slab.h>
+#include <linux/module.h>
+#include <linux/kallsyms.h>
+#include "../include/ktap_types.h"
+#include "ktap.h"
+#include "kp_transport.h"
 
 struct ktap_trace_iterator {
 	struct ring_buffer	*buffer;
@@ -49,7 +54,8 @@ enum ktap_trace_type {
 #define KTAP_TRACE_ITER(iter)	\
 	container_of(iter, struct ktap_trace_iterator, iter)
 
-ssize_t trace_seq_to_user(struct trace_seq *s, char __user *ubuf, size_t cnt)
+static
+ssize_t _trace_seq_to_user(struct trace_seq *s, char __user *ubuf, size_t cnt)
 {
 	int len;
 	int ret;
@@ -73,7 +79,7 @@ ssize_t trace_seq_to_user(struct trace_seq *s, char __user *ubuf, size_t cnt)
 	return cnt;
 }
 
-int trace_seq_puts(struct trace_seq *s, const char *str)
+int _trace_seq_puts(struct trace_seq *s, const char *str)
 {
 	int len = strlen(str);
 
@@ -169,7 +175,7 @@ static enum print_line_t print_trace_stack(struct trace_iterator *iter)
 	trace.nr_entries = (iter->ent_size - sizeof(*entry)) /
 			   sizeof(unsigned long);
 
-	if (!trace_seq_puts(&iter->seq, "<stack trace>\n"))
+	if (!_trace_seq_puts(&iter->seq, "<stack trace>\n"))
 		return TRACE_TYPE_PARTIAL_LINE;
 
 	for (i = 0; i < trace.nr_entries; i++) {
@@ -202,14 +208,14 @@ static enum print_line_t print_trace_fn(struct trace_iterator *iter)
 		return TRACE_TYPE_PARTIAL_LINE;
 
 	sprint_symbol(str, field->ip);
-	if (!trace_seq_puts(&iter->seq, str))
+	if (!_trace_seq_puts(&iter->seq, str))
 		return TRACE_TYPE_PARTIAL_LINE;
 
-	if (!trace_seq_puts(&iter->seq, " <- "))
+	if (!_trace_seq_puts(&iter->seq, " <- "))
 		return TRACE_TYPE_PARTIAL_LINE;
 
 	sprint_symbol(str, field->parent_ip);
-	if (!trace_seq_puts(&iter->seq, str))
+	if (!_trace_seq_puts(&iter->seq, str))
 		return TRACE_TYPE_PARTIAL_LINE;
 
 	return TRACE_TYPE_HANDLED;
@@ -217,7 +223,7 @@ static enum print_line_t print_trace_fn(struct trace_iterator *iter)
 
 static enum print_line_t print_trace_bputs(struct trace_iterator *iter)
 {
-	if (!trace_seq_puts(&iter->seq,
+	if (!_trace_seq_puts(&iter->seq,
 			    (const char *)(*(unsigned long *)(iter->ent + 1))))
 		return TRACE_TYPE_PARTIAL_LINE;
 
@@ -359,7 +365,7 @@ tracing_read_pipe(struct file *filp, char __user *ubuf, size_t cnt,
 	ssize_t sret;
 
 	/* return any leftover data */
-	sret = trace_seq_to_user(&iter->seq, ubuf, cnt);
+	sret = _trace_seq_to_user(&iter->seq, ubuf, cnt);
 	if (sret != -EBUSY)
 		return sret;
 	/*
@@ -415,7 +421,7 @@ waitagain:
 	}
 
 	/* Now copy what we have to the user */
-	sret = trace_seq_to_user(&iter->seq, ubuf, cnt);
+	sret = _trace_seq_to_user(&iter->seq, ubuf, cnt);
 	if (iter->seq.readpos >= iter->seq.len)
 		trace_seq_init(&iter->seq);
 

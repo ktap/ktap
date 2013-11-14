@@ -23,7 +23,12 @@
 #include <linux/ctype.h>
 #include <linux/version.h>
 #include <linux/ftrace_event.h>
-#include "../include/ktap.h"
+#include "../include/ktap_types.h"
+#include "ktap.h"
+#include "kp_obj.h"
+#include "kp_str.h"
+#include "kp_transport.h"
+#include "kp_vm.h"
 
 static void ktap_call_probe_closure(ktap_state *mainthread, ktap_closure *cl,
 				    struct ktap_event *e)
@@ -71,7 +76,7 @@ void kp_event_tostring(ktap_state *ks, struct trace_seq *seq)
 		int len = s->len >= PAGE_SIZE ? PAGE_SIZE - 1 : s->len;
 
 		s->buffer[len] = '\0';
-		trace_seq_puts(seq, s->buffer);
+		_trace_seq_puts(seq, s->buffer);
 	}
 }
 

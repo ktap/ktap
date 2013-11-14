@@ -1,12 +1,11 @@
 #ifndef __KTAP_H__
 #define __KTAP_H__
 
-#include "ktap_types.h"
-#include "ktap_opcodes.h"
-
+#ifdef __KERNEL__
 #include <linux/version.h>
 #include <linux/hardirq.h>
 #include <linux/trace_seq.h>
+#endif
 
 typedef struct ktap_Reg {
         const char *name;
@@ -31,17 +30,6 @@ struct ktap_event {
 
 #define KTAP_PERCPU_BUFFER_SIZE	(3 * PAGE_SIZE)
 
-int gettimeofday_us(void);
-ktap_state *kp_newstate(struct ktap_parm *parm, struct dentry *dir);
-void kp_exit(ktap_state *ks);
-void kp_final_exit(ktap_state *ks);
-ktap_state *kp_newthread(ktap_state *mainthread);
-void kp_exitthread(ktap_state *ks);
-ktap_closure *kp_load(ktap_state *ks, unsigned char *buff);
-void kp_call(ktap_state *ks, StkId func, int nresults);
-void kp_optimize_code(ktap_state *ks, int level, ktap_proto *f);
-void kp_register_lib(ktap_state *ks, const char *libname,
-			const ktap_Reg *funcs);
 void kp_init_baselib(ktap_state *ks);
 void kp_init_oslib(ktap_state *ks);
 void kp_init_kdebuglib(ktap_state *ks);
@@ -57,16 +45,6 @@ void kp_perf_event_register(ktap_state *ks, struct perf_event_attr *attr,
 
 void kp_event_getarg(ktap_state *ks, ktap_value *ra, int n);
 void kp_event_tostring(ktap_state *ks, struct trace_seq *seq);
-
-int kp_str_fmt(ktap_state *ks, struct trace_seq *seq);
-
-void kp_transport_write(ktap_state *ks, const void *data, size_t length);
-void kp_transport_event_write(ktap_state *ks, struct ktap_event *e);
-void kp_transport_print_backtrace(ktap_state *ks, int skip, int max_entries);
-void *kp_transport_reserve(ktap_state *ks, size_t length);
-void kp_transport_exit(ktap_state *ks);
-int kp_transport_init(ktap_state *ks, struct dentry *dir);
-
 void kp_exit_timers(ktap_state *ks);
 
 extern int kp_max_exec_count;
@@ -116,24 +94,6 @@ static inline void *kp_percpu_data(ktap_state *ks, int type)
 	return this_cpu_ptr(G(ks)->pcpu_data[type][trace_get_context_bit()]);
 }
 
-extern unsigned int kp_stub_exit_instr;
-
-static inline void set_next_as_exit(ktap_state *ks)
-{
-	ktap_callinfo *ci;
-
-	ci = ks->ci;
-	if (!ci)
-		return;
-
-	ci->u.l.savedpc = &kp_stub_exit_instr;
-
-	/* See precall, ci changed to ci->prev after invoke C function */
-	if (ci->prev) {
-		ci = ci->prev;
-		ci->u.l.savedpc = &kp_stub_exit_instr;
-	}
-}
 
 #define kp_verbose_printf(ks, ...) \
 	if (G(ks)->parm->verbose)	\
