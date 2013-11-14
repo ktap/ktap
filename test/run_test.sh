@@ -24,7 +24,7 @@ $KTAP -o /dev/null -e 'trace syscalls:* { print(argevent) }' \
 		-- ls > /devnull
 
 $KTAP -o /dev/null -e 'trace syscalls:* { print(argevent) }' \
-		-- $KTAP -e 'while (1) {}'
+		-- $KTAP -e 'print("trace ktap by self")'
 
 ktaprun arithmetic.kp
 ktaprun -o /dev/null stack_overflow.kp
