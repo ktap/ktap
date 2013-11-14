@@ -23,29 +23,25 @@
 #define FIND_SYMBOL 1
 #define FIND_STAPSDT_NOTE 2
 
-struct dso_symbol;
-
 #ifndef NO_LIBELF
 
 #include <gelf.h>
 #include <sys/queue.h>
 
 typedef GElf_Addr vaddr_t;
-
-struct dso_symbol
-{
-    char *name;
-    vaddr_t addr;
-};
+typedef void (* symbol_actor)(const char *name, vaddr_t addr, void *arg);
 
 /**
- * free() symbols and it's names
+ * Read all DSO symbols/sdt notes and all for every of them
+ * an actor.
+ *
+ * @exec - path to DSO
+ * @type - see FIND_*
+ * @symbol_actor - actor to call (callback)
+ * @arg - argument for @actor
+ *
+ * @return number of dso symbols found
  */
-void free_dso_symbols(struct dso_symbol *symbols, size_t symbols_count);
-/**
- * @return all symbols and notes in DSO.
- * (You must call free_dso_symbols() at end.)
- */
-size_t get_dso_symbols(struct dso_symbol **symbols, const char *exec, int type);
+size_t read_dso_symbols(const char *exec, int type, symbol_actor actor, void *arg);
 
 #endif

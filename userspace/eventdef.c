@@ -368,66 +368,87 @@ static int parse_events_resolve_symbol(int fd, int seq, char *event, int type)
 	return 0;
 }
 #else
+struct uprobe_base
+{
+	int fd;
+	int seq;
+	int ret_probe;
+	const char *event;
+	char *binary;
+	char *symbol;
+
+	size_t handled_events;
+};
+static void uprobe_symbol_actor(const char *name, vaddr_t addr, void *arg)
+{
+	struct uprobe_base *base = (struct uprobe_base *)arg;
+	int ret;
+
+	if (!strglobmatch(name, base->symbol))
+		return;
+
+	verbose_printf("symbol %s resolved to 0x%lx\n",
+		base->event, addr);
+	ret = write_uprobe_event(base->fd, base->ret_probe, base->seq,
+		base->binary, addr);
+
+	if (ret)
+		++base->handled_events;
+}
+
 static int parse_events_resolve_symbol(int fd, int seq, char *event, int type)
 {
-	char *colon, *end, *tail, *binary, *symbol;
-	char *r;
+	char *colon, *end, *tail;
 	vaddr_t symbol_address;
-	struct dso_symbol *symbols = NULL;
-	size_t symbols_count, i;
-	int ret = 0;
+	struct uprobe_base base = {
+		.fd = fd,
+		.seq = seq,
+		.event = event,
+
+		.handled_events = 0,
+	};
 
 	colon = strchr(event, ':');
 	if (!colon)
 		return 0;
 
-	r = strstr(event, "%return");
+	base.ret_probe = !!strstr(event, "%return");
 	symbol_address = strtol(colon + 1 /* skip ":" */, NULL, 0);
-	binary = strndup(event, colon - event);
+	base.binary = strndup(event, colon - event);
 
 	/**
 	 * We already have address, no need in resolving.
 	 */
-	if (symbol_address)
-		return write_uprobe_event(fd, !!r, seq, binary, symbol_address);
+	if (symbol_address) {
+		int ret;
+		ret = write_uprobe_event(fd, base.ret_probe, seq,
+			base.binary, symbol_address);
+		free(base.binary);
+		return ret;
+	}
 
 	end = strpbrk(event, "% ");
 	if (end) {
 		tail = strdup(end);
-		symbol = strndup(colon + 1 /* skip ":" */, end - 1 - colon);
+		base.symbol = strndup(colon + 1 /* skip ":" */, end - 1 - colon);
 	} else {
 		tail = NULL;
-		symbol = strdup(colon + 1 /* skip ":" */);
+		base.symbol = strdup(colon + 1 /* skip ":" */);
 	}
 
-	symbols_count = get_dso_symbols(&symbols, binary, type);
-	for (i = 0; i < symbols_count; ++i) {
+	read_dso_symbols(base.binary, type, uprobe_symbol_actor, (void *)&base);
 
-		if (!strglobmatch(symbols[i].name, symbol))
-			continue;
-
-		symbol_address = symbols[i].addr;
-
-		verbose_printf("symbol %s resolved to 0x%lx\n",
-			event, symbol_address);
-		ret = write_uprobe_event(fd, !!r, seq, binary, symbol_address);
-		if (!ret)
-			break;
-	}
-	free_dso_symbols(symbols, symbols_count);
-
-	if (!ret) {
+	if (!base.handled_events) {
 		fprintf(stderr, "error: cannot find symbol %s in binary %s\n",
-				symbol, binary);
-		exit(EXIT_FAILURE);
+				base.symbol, base.binary);
 	}
 
-	free(binary);
-	free(symbol);
+	free(base.binary);
+	free(base.symbol);
 	if (tail)
 		free(tail);
 
-	return ret;
+	return !!base.handled_events;
 }
 #endif
 
@@ -445,7 +466,9 @@ static int parse_events_add_uprobe(char *old_event, int type)
 		return -1;
 	}
 
-	parse_events_resolve_symbol(fd, event_seq, old_event, type);
+	ret = parse_events_resolve_symbol(fd, event_seq, old_event, type);
+	if (!ret)
+		return -1;
 
 	close(fd);
 

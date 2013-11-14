@@ -75,45 +75,12 @@ static vaddr_t find_load_address(Elf *elf)
 	return address;
 }
 
-void free_dso_symbols(struct dso_symbol *symbols, size_t symbols_count)
-{
-	size_t i;
-	for (i = 0; i < symbols_count; ++i) {
-		free(symbols[i].name);
-	}
-
-	free(symbols);
-}
-
-/**
- * libc have about ~2000 symbols.
- */
-#define SYMBOLS_COUNT 3000
-
-/**
- * realloc() and free() on failure
- *
- * TODO: allocation by chunks
- */
-static struct dso_symbol *
-realloc_symbols(struct dso_symbol *symbols, size_t symbols_count)
-{
-	struct dso_symbol *new;
-
-	new = realloc(symbols, sizeof(*symbols) * symbols_count);
-
-	if (!new && symbols)
-		free_dso_symbols(symbols, symbols_count);
-
-	return new;
-}
-
 static size_t elf_symbols(GElf_Shdr shdr)
 {
 	return shdr.sh_size / shdr.sh_entsize;
 }
 
-static size_t dso_symbols(struct dso_symbol **symbols, Elf *elf)
+static size_t dso_symbols(Elf *elf, symbol_actor actor, void *arg)
 {
 	Elf_Data *elf_data = NULL;
 	Elf_Scn *scn = NULL;
@@ -138,24 +105,18 @@ static size_t dso_symbols(struct dso_symbol **symbols, Elf *elf)
 
 		for (i = 0; i < elf_symbols(shdr); i++) {
 			char *name;
-			struct dso_symbol symbol;
+			vaddr_t addr;
 
 			gelf_getsym(elf_data, i, &sym);
 
 			if (GELF_ST_TYPE(sym.st_info) != STT_FUNC)
 				continue;
 
-			++symbols_count;
-			*symbols = realloc_symbols(*symbols, symbols_count);
-			if (!*symbols) {
-				symbols_count = 0;
-				break;
-			}
-
 			name = elf_strptr(elf, shdr.sh_link, sym.st_name);
-			symbol.name = strdup(name);
-			symbol.addr = sym.st_value - load_address;
-			memcpy(&(*symbols)[symbols_count - 1], &symbol, sizeof(symbol));
+			addr = sym.st_value - load_address;
+
+			actor(name, addr, arg);
+			++symbols_count;
 		}
 	}
 
@@ -231,7 +192,7 @@ static const char *sdt_note_data(const Elf_Data *data, size_t off)
 	return ((data->d_buf) + off);
 }
 
-static size_t dso_sdt_notes(struct dso_symbol **symbols, Elf *elf)
+static size_t dso_sdt_notes(Elf *elf, symbol_actor actor, void *arg)
 {
 	GElf_Ehdr ehdr;
 	Elf_Scn *scn = NULL;
@@ -266,7 +227,6 @@ static size_t dso_sdt_notes(struct dso_symbol **symbols, Elf *elf)
 		(next = gelf_getnote(data, offset, &nhdr, &name_off, &desc_off)) > 0;
 		offset = next) {
 		const char *name;
-		struct dso_symbol symbol;
 
 		if (nhdr.n_namesz != sizeof(SDT_NOTE_NAME) ||
 		    memcmp(data->d_buf + name_off, SDT_NOTE_NAME,
@@ -282,22 +242,14 @@ static size_t dso_sdt_notes(struct dso_symbol **symbols, Elf *elf)
 		if (!vaddr)
 			continue;
 
+		actor(name, vaddr, arg);
 		++symbols_count;
-		*symbols = realloc_symbols(*symbols, symbols_count);
-		if (!*symbols) {
-			symbols_count = 0;
-			break;
-		}
-
-		symbol.name = strdup(name);
-		symbol.addr = vaddr;
-		memcpy(&(*symbols)[symbols_count - 1], &symbol, sizeof(symbol));
 	}
 
 	return symbols_count;
 }
 
-size_t get_dso_symbols(struct dso_symbol **symbols, const char *exec, int type)
+size_t read_dso_symbols(const char *exec, int type, symbol_actor actor, void *arg)
 {
 	size_t symbols_count = 0;
 
@@ -315,10 +267,10 @@ size_t get_dso_symbols(struct dso_symbol **symbols, const char *exec, int type)
 	if (elf) {
 		switch (type) {
 		case FIND_SYMBOL:
-			symbols_count = dso_symbols(symbols, elf);
+			symbols_count = dso_symbols(elf, actor, arg);
 			break;
 		case FIND_STAPSDT_NOTE:
-			symbols_count = dso_sdt_notes(symbols, elf);
+			symbols_count = dso_sdt_notes(elf, actor, arg);
 			break;
 		}
 
