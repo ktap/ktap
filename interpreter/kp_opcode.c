@@ -1,5 +1,5 @@
 /*
- * opcode.c
+ * kp_opcode.c
  *
  * This file is part of ktap by Jovi Zhangwei.
  *

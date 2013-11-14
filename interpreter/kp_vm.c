@@ -1,5 +1,5 @@
 /*
- * vm.c - ktap script virtual machine in Linux kernel
+ * kp_vm.c - ktap script virtual machine in Linux kernel
  *
  * This file is part of ktap by Jovi Zhangwei.
  *

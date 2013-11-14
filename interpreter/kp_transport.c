@@ -1,5 +1,5 @@
 /*
- * transport.c - ktap transport functionality
+ * kp_transport.c - ktap transport functionality
  *
  * This file is part of ktap by Jovi Zhangwei.
  *

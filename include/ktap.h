@@ -58,7 +58,7 @@ void kp_perf_event_register(ktap_state *ks, struct perf_event_attr *attr,
 void kp_event_getarg(ktap_state *ks, ktap_value *ra, int n);
 void kp_event_tostring(ktap_state *ks, struct trace_seq *seq);
 
-int kp_strfmt(ktap_state *ks, struct trace_seq *seq);
+int kp_str_fmt(ktap_state *ks, struct trace_seq *seq);
 
 void kp_transport_write(ktap_state *ks, const void *data, size_t length);
 void kp_transport_event_write(ktap_state *ks, struct ktap_event *e);

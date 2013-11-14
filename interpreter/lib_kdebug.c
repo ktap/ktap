@@ -23,7 +23,7 @@
 #include <linux/ctype.h>
 #include <linux/version.h>
 #include <linux/ftrace_event.h>
-#include "../../include/ktap.h"
+#include "../include/ktap.h"
 
 static void ktap_call_probe_closure(ktap_state *mainthread, ktap_closure *cl,
 				    struct ktap_event *e)

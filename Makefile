@@ -15,16 +15,14 @@ all: mod ktap
 INC = include
 INTP = interpreter
 
-LIBDIR = $(INTP)/library
-
 KTAP_LIBS = -lpthread
 
-LIB_OBJS += $(LIBDIR)/baselib.o $(LIBDIR)/kdebug.o $(LIBDIR)/timer.o \
-		$(LIBDIR)/ansilib.o
+LIB_OBJS += $(INTP)/lib_base.o $(INTP)/lib_kdebug.o $(INTP)/lib_timer.o \
+		$(INTP)/lib_ansi.o
 
-INTP_OBJS += $(INTP)/ktap.o $(INTP)/loader.o $(INTP)/object.o \
-		$(INTP)/tstring.o $(INTP)/table.o $(INTP)/vm.o \
-		$(INTP)/opcode.o $(INTP)/strfmt.o $(INTP)/transport.o \
+INTP_OBJS += $(INTP)/ktap.o $(INTP)/kp_load.o $(INTP)/kp_obj.o \
+		$(INTP)/kp_str.o $(INTP)/kp_tab.o $(INTP)/kp_vm.o \
+		$(INTP)/kp_opcode.o $(INTP)/kp_transport.o \
 		$(LIB_OBJS)
 
 obj-m		+= ktapvm.o
@@ -98,13 +96,13 @@ $(UDIR)/ktapio.o: $(UDIR)/ktapio.c $(INC)/*
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
 $(UDIR)/eventdef.o: $(UDIR)/eventdef.c $(INC)/*
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
-$(UDIR)/opcode.o: $(INTP)/opcode.c $(INC)/*
+$(UDIR)/opcode.o: $(INTP)/kp_opcode.c $(INC)/*
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
-$(UDIR)/table.o: $(INTP)/table.c $(INC)/*
+$(UDIR)/table.o: $(INTP)/kp_tab.c $(INC)/*
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
-$(UDIR)/tstring.o: $(INTP)/tstring.c $(INC)/*
+$(UDIR)/tstring.o: $(INTP)/kp_str.c $(INC)/*
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
-$(UDIR)/object.o: $(INTP)/object.c $(INC)/*
+$(UDIR)/object.o: $(INTP)/kp_obj.c $(INC)/*
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
 ifndef NO_LIBELF
 $(UDIR)/symbol.o: $(UDIR)/symbol.c

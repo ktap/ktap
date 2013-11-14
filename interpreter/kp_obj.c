@@ -1,5 +1,5 @@
 /*
- * object.c - ktap object generic operation
+ * kp_obj.c - ktap object generic operation
  *
  * This file is part of ktap by Jovi Zhangwei.
  *

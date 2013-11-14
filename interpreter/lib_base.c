@@ -28,7 +28,7 @@
 #include <linux/clocksource.h>
 #include <linux/ring_buffer.h>
 #include <linux/stacktrace.h>
-#include "../../include/ktap.h"
+#include "../include/ktap.h"
 
 static int ktap_lib_next(ktap_state *ks)
 {
@@ -150,7 +150,7 @@ static int ktap_lib_printf(ktap_state *ks)
 	seq = kp_percpu_data(ks, KTAP_PERCPU_DATA_BUFFER);
 	trace_seq_init(seq);
 
-	if (kp_strfmt(ks, seq))
+	if (kp_str_fmt(ks, seq))
 		goto out;
 
 	seq->buffer[seq->len] = '\0';

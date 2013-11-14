@@ -1,5 +1,5 @@
 /*
- * loader.c - loader for ktap bytecode chunk file
+ * kp_load.c - loader for ktap bytecode chunk file
  *
  * This file is part of ktap by Jovi Zhangwei.
  *

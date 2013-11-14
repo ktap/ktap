@@ -1,5 +1,5 @@
 /*
- * table.c - ktap table data structure manipulation function
+ * kp_tab.c - ktap table data structure manipulation
  *
  * This file is part of ktap by Jovi Zhangwei.
  *
