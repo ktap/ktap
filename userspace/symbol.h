@@ -29,10 +29,10 @@
 #include <sys/queue.h>
 
 typedef GElf_Addr vaddr_t;
-typedef void (* symbol_actor)(const char *name, vaddr_t addr, void *arg);
+typedef int (*symbol_actor)(const char *name, vaddr_t addr, void *arg);
 
 /**
- * Read all DSO symbols/sdt notes and all for every of them
+ * Parse all DSO symbols/sdt notes and all for every of them
  * an actor.
  *
  * @exec - path to DSO
@@ -40,8 +40,11 @@ typedef void (* symbol_actor)(const char *name, vaddr_t addr, void *arg);
  * @symbol_actor - actor to call (callback)
  * @arg - argument for @actor
  *
- * @return number of dso symbols found
+ * @return
+ * If there have errors, return negative value;
+ * No symbols found, return 0;
+ * Otherwise return number of dso symbols found
  */
-size_t read_dso_symbols(const char *exec, int type, symbol_actor actor, void *arg);
-
+int
+parse_dso_symbols(const char *exec, int type, symbol_actor actor, void *arg);
 #endif

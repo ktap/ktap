@@ -33,7 +33,7 @@
 
 static char tracing_events_path[] = "/sys/kernel/debug/tracing/events";
 
-#define IDS_ARRAY_SIZE 4096
+#define IDS_ARRAY_SIZE 4096 * 2
 static u8 *ids_array;
 
 #define set_id(id)	\
@@ -238,10 +238,10 @@ struct probe_list {
 	struct probe_list *next;
 	int type;
 	int kp_seq;
-	char *probe_event;
+	char symbol[64];
 };
 
-static struct probe_list *probe_list_head;
+static struct probe_list *probe_list_head; /* for cleanup resources */
 
 #define KPROBE_EVENTS_PATH "/sys/kernel/debug/tracing/kprobe_events"
 
@@ -294,8 +294,8 @@ static int parse_events_add_kprobe(char *old_event)
 	pl->next = probe_list_head;
 	probe_list_head = pl;
 
-	sprintf(event_id_path, "/sys/kernel/debug/tracing/events/kprobes/kp%d/id",
-			event_seq);
+	sprintf(event_id_path,
+		"/sys/kernel/debug/tracing/events/kprobes/kp%d/id", event_seq);
 	ret = add_event(event_id_path);
 	if (ret < 0)
 		return -1;
@@ -304,29 +304,95 @@ static int parse_events_add_kprobe(char *old_event)
 	return 0;
 }
 
+/*
+ * Some symbol format cannot write to uprobe_events in debugfs, like:
+ * symbol "check_one_fd.part.0" in glibc.
+ * For those symbols, we change the format, get rid of invalid chars,
+ * "check_one_fd.part.0" -> "check_one_fd"
+ *
+ * This function copy is_good_name function in linux/kernel/trace/trace_probe.h
+ */
+static char *format_symbol_name(const char *old_symbol)
+{
+	char *new_name = strdup(old_symbol);
+	char *name = new_name;
+
+        if (!isalpha(*name) && *name != '_')
+		*name = '\0';
+
+        while (*++name != '\0') {
+                if (!isalpha(*name) && !isdigit(*name) && *name != '_') {
+			*name = '\0';
+			break;
+		}
+        }
+
+	/* this is a good name */
+        return new_name;
+}
+
 #define UPROBE_EVENTS_PATH "/sys/kernel/debug/tracing/uprobe_events"
 
 /**
- * @return 1 on success, otherwise 0
+ * @return 0 on success, otherwise -1
  */
 static int
-write_uprobe_event(int fd, int ret, int seq, const char *binary, size_t addr)
+write_uprobe_event(int fd, int ret_probe, const char *binary,
+		   const char *symbol, unsigned long addr)
 {
+	static int event_seq = 0;
 	char probe_event[128] = {0};
+	struct probe_list *pl;
+	char event_id_path[128] = {0};
+	char *good_name;
+	int ret;
 
-	if (ret)
-		snprintf(probe_event, 128, "r:uprobes/kp%d %s:0x%lx", seq, binary, addr);
+	/* In case some symbols cannot write to uprobe_events debugfs file */
+	good_name = format_symbol_name(symbol);
+
+	if (ret_probe)
+		snprintf(probe_event, 128, "r:uprobes/kp%d_%s %s:0x%lx",
+			 event_seq, good_name, binary, addr);
 	else
-		snprintf(probe_event, 128, "p:uprobes/kp%d %s:0x%lx", seq, binary, addr);
+		snprintf(probe_event, 128, "p:uprobes/kp%d_%s %s:0x%lx",
+			 event_seq, good_name, binary, addr);
 
-	 verbose_printf("uprobe event %s\n", probe_event);
+	 verbose_printf("write uprobe event %s\n", probe_event);
+
 	 if (write(fd, probe_event, strlen(probe_event)) <= 0) {
-		 fprintf(stderr, "Cannot write %s to %s\n", probe_event,
-				 UPROBE_EVENTS_PATH);
-		 return 0;
+		fprintf(stderr, "Cannot write %s to %s\n", probe_event,
+				UPROBE_EVENTS_PATH);
+		goto error;
 	 }
 
-	 return 1;
+	/* add to cleanup list */
+	pl = malloc(sizeof(struct probe_list));
+	if (!pl)
+		goto error;
+
+	pl->type = UPROBE_EVENT;
+	pl->kp_seq = event_seq;
+	pl->kp_seq = event_seq;
+	pl->next = probe_list_head;
+	memset(pl->symbol, 0, 64);
+	strncpy(pl->symbol, good_name, 64);
+	probe_list_head = pl;
+
+	sprintf(event_id_path,
+		"/sys/kernel/debug/tracing/events/uprobes/kp%d_%s/id",
+		event_seq, good_name);
+	ret = add_event(event_id_path);
+	if (ret < 0)
+		goto error;
+
+	event_seq++;
+
+	free(good_name);
+	return 0;
+
+ error:
+	free(good_name);
+	return -1;
 }
 
 /**
@@ -335,7 +401,7 @@ write_uprobe_event(int fd, int ret, int seq, const char *binary, size_t addr)
  * @return 1 on success, otherwise 0
  */
 #ifdef NO_LIBELF
-static int parse_events_resolve_symbol(int fd, int seq, char *event, int type)
+static int parse_events_resolve_symbol(int fd, char *event, int type)
 {
 	char *colon;
 	char *binary;
@@ -343,7 +409,7 @@ static int parse_events_resolve_symbol(int fd, int seq, char *event, int type)
 
 	colon = strchr(event, ':');
 	if (!colon)
-		return 0;
+		return -1;
 
 	symbol_address = strtol(colon + 1 /* skip ":" */, NULL, 0);
 
@@ -354,10 +420,9 @@ static int parse_events_resolve_symbol(int fd, int seq, char *event, int type)
 		int ret;
 
 		binary = strndup(event, colon - event);
-		ret = write_uprobe_event(fd, !!strstr(event, "%return"), seq,
-			binary, symbol_address);
+		ret = write_uprobe_event(fd, !!strstr(event, "%return"), binary,
+					 symbol_address);
 		free(binary);
-
 		return ret;
 	}
 
@@ -365,47 +430,46 @@ static int parse_events_resolve_symbol(int fd, int seq, char *event, int type)
 			"please recompile ktap with NO_LIBELF disabled\n",
 			event);
 	exit(EXIT_FAILURE);
-	return 0;
+	return -1;
 }
+
 #else
-struct uprobe_base
-{
+struct uprobe_base {
 	int fd;
-	int seq;
 	int ret_probe;
 	const char *event;
 	char *binary;
 	char *symbol;
-
-	size_t handled_events;
 };
-static void uprobe_symbol_actor(const char *name, vaddr_t addr, void *arg)
+
+static int uprobe_symbol_actor(const char *name, vaddr_t addr, void *arg)
 {
 	struct uprobe_base *base = (struct uprobe_base *)arg;
 	int ret;
 
 	if (!strglobmatch(name, base->symbol))
-		return;
+		return 0;
 
-	verbose_printf("symbol %s resolved to 0x%lx\n",
-		base->event, addr);
-	ret = write_uprobe_event(base->fd, base->ret_probe, base->seq,
-		base->binary, addr);
+	verbose_printf("uprobe: binary: \"%s\" symbol \"%s\" "
+			"resolved to 0x%lx\n",
+			base->binary, base->symbol, addr);
 
+	ret = write_uprobe_event(base->fd, base->ret_probe, base->binary,
+				 name, addr);
 	if (ret)
-		++base->handled_events;
+		return ret;
+
+	return 0;
 }
 
-static int parse_events_resolve_symbol(int fd, int seq, char *event, int type)
+static int parse_events_resolve_symbol(int fd, char *event, int type)
 {
 	char *colon, *end, *tail;
 	vaddr_t symbol_address;
+	int ret;
 	struct uprobe_base base = {
 		.fd = fd,
-		.seq = seq,
-		.event = event,
-
-		.handled_events = 0,
+		.event = event
 	};
 
 	colon = strchr(event, ':');
@@ -416,13 +480,13 @@ static int parse_events_resolve_symbol(int fd, int seq, char *event, int type)
 	symbol_address = strtol(colon + 1 /* skip ":" */, NULL, 0);
 	base.binary = strndup(event, colon - event);
 
-	/**
+	/*
 	 * We already have address, no need in resolving.
 	 */
 	if (symbol_address) {
 		int ret;
-		ret = write_uprobe_event(fd, base.ret_probe, seq,
-			base.binary, symbol_address);
+		ret = write_uprobe_event(fd, base.ret_probe, base.binary,
+					 "NULL", symbol_address);
 		free(base.binary);
 		return ret;
 	}
@@ -430,17 +494,21 @@ static int parse_events_resolve_symbol(int fd, int seq, char *event, int type)
 	end = strpbrk(event, "% ");
 	if (end) {
 		tail = strdup(end);
-		base.symbol = strndup(colon + 1 /* skip ":" */, end - 1 - colon);
+		base.symbol = strndup(colon + 1, end - 1 - colon);
 	} else {
 		tail = NULL;
-		base.symbol = strdup(colon + 1 /* skip ":" */);
+		base.symbol = strdup(colon + 1);
 	}
 
-	read_dso_symbols(base.binary, type, uprobe_symbol_actor, (void *)&base);
-
-	if (!base.handled_events) {
+	ret = parse_dso_symbols(base.binary, type, uprobe_symbol_actor,
+				(void *)&base);
+	if (!ret) {
 		fprintf(stderr, "error: cannot find symbol %s in binary %s\n",
-				base.symbol, base.binary);
+			base.symbol, base.binary);
+		ret = -1;
+	} else if(ret > 0) {
+		/* no error found when parse symbols */
+		ret = 0;
 	}
 
 	free(base.binary);
@@ -448,15 +516,12 @@ static int parse_events_resolve_symbol(int fd, int seq, char *event, int type)
 	if (tail)
 		free(tail);
 
-	return !!base.handled_events;
+	return ret;
 }
 #endif
 
 static int parse_events_add_uprobe(char *old_event, int type)
 {
-	static int event_seq = 0;
-	struct probe_list *pl;
-	char event_id_path[128] = {0};
 	int ret;
 	int fd;
 
@@ -466,28 +531,11 @@ static int parse_events_add_uprobe(char *old_event, int type)
 		return -1;
 	}
 
-	ret = parse_events_resolve_symbol(fd, event_seq, old_event, type);
-	if (!ret)
-		return -1;
+	ret = parse_events_resolve_symbol(fd, old_event, type);
+	if (ret)
+		return ret;
 
 	close(fd);
-
-	pl = malloc(sizeof(struct probe_list));
-	if (!pl)
-		return -1;
-
-	pl->type = UPROBE_EVENT;
-	pl->kp_seq = event_seq;
-	pl->next = probe_list_head;
-	probe_list_head = pl;
-
-	sprintf(event_id_path, "/sys/kernel/debug/tracing/events/uprobes/kp%d/id",
-			event_seq);
-	ret = add_event(event_id_path);
-	if (ret < 0)
-		return -1;
-
-	event_seq++;
 	return 0;
 }
 
@@ -622,11 +670,11 @@ ktap_string *ktapc_parse_eventdef(ktap_string *eventdef)
 			return NULL;
 	}
 
-	g_idstr = malloc(4096);
+	g_idstr = malloc(4096 * 8);
 	if (!g_idstr)
 		return NULL;
 
-	memset(g_idstr, 0, 4096);
+	memset(g_idstr, 0, 4096 * 8);
 
  parse_next_eventdef:
 	memset(ids_array, 0, IDS_ARRAY_SIZE);
@@ -678,16 +726,18 @@ void cleanup_event_resources(void)
 {
 	struct probe_list *pl;
 	const char *path;
-	char probe_event[32] = {0};
+	char probe_event[128] = {0};
 	int fd, ret;
 
 	for (pl = probe_list_head; pl; pl = pl->next) {
 		if (pl->type == KPROBE_EVENT) {
 			path = KPROBE_EVENTS_PATH;
-			snprintf(probe_event, 32, "-:kprobes/kp%d", pl->kp_seq);
+			snprintf(probe_event, 128, "-:kprobes/kp%d",
+				 pl->kp_seq);
 		} else if (pl->type == UPROBE_EVENT) {
 			path = UPROBE_EVENTS_PATH;
-			snprintf(probe_event, 32, "-:uprobes/kp%d", pl->kp_seq);
+			snprintf(probe_event, 128, "-:uprobes/kp%d_%s",
+				 pl->kp_seq, pl->symbol);
 		} else {
 			fprintf(stderr, "Cannot cleanup event type %d\n", pl->type);
 			continue;

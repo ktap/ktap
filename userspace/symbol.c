@@ -80,18 +80,17 @@ static size_t elf_symbols(GElf_Shdr shdr)
 	return shdr.sh_size / shdr.sh_entsize;
 }
 
-static size_t dso_symbols(Elf *elf, symbol_actor actor, void *arg)
+static int dso_symbols(Elf *elf, symbol_actor actor, void *arg)
 {
 	Elf_Data *elf_data = NULL;
 	Elf_Scn *scn = NULL;
 	GElf_Sym sym;
 	GElf_Shdr shdr;
-
-	size_t symbols_count = 0;
+	int symbols_count = 0;
 	vaddr_t load_address = find_load_address(elf);
 
 	if (!load_address)
-		return symbols_count;
+		return -1;
 
 	while ((scn = elf_nextscn(elf, scn))) {
 		int i;
@@ -106,6 +105,7 @@ static size_t dso_symbols(Elf *elf, symbol_actor actor, void *arg)
 		for (i = 0; i < elf_symbols(shdr); i++) {
 			char *name;
 			vaddr_t addr;
+			int ret;
 
 			gelf_getsym(elf_data, i, &sym);
 
@@ -115,7 +115,10 @@ static size_t dso_symbols(Elf *elf, symbol_actor actor, void *arg)
 			name = elf_strptr(elf, shdr.sh_link, sym.st_name);
 			addr = sym.st_value - load_address;
 
-			actor(name, addr, arg);
+			ret = actor(name, addr, arg);
+			if (ret)
+				return ret;
+
 			++symbols_count;
 		}
 	}
@@ -192,7 +195,7 @@ static const char *sdt_note_data(const Elf_Data *data, size_t off)
 	return ((data->d_buf) + off);
 }
 
-static size_t dso_sdt_notes(Elf *elf, symbol_actor actor, void *arg)
+static int dso_sdt_notes(Elf *elf, symbol_actor actor, void *arg)
 {
 	GElf_Ehdr ehdr;
 	Elf_Scn *scn = NULL;
@@ -202,9 +205,8 @@ static size_t dso_sdt_notes(Elf *elf, symbol_actor actor, void *arg)
 	size_t next;
 	GElf_Nhdr nhdr;
 	size_t name_off, desc_off, offset;
-
 	vaddr_t vaddr = 0;
-	size_t symbols_count = 0;
+	int symbols_count = 0;
 
 	if (gelf_getehdr(elf, &ehdr) == NULL)
 		return 0;
@@ -227,6 +229,7 @@ static size_t dso_sdt_notes(Elf *elf, symbol_actor actor, void *arg)
 		(next = gelf_getnote(data, offset, &nhdr, &name_off, &desc_off)) > 0;
 		offset = next) {
 		const char *name;
+		int ret;
 
 		if (nhdr.n_namesz != sizeof(SDT_NOTE_NAME) ||
 		    memcmp(data->d_buf + name_off, SDT_NOTE_NAME,
@@ -242,26 +245,28 @@ static size_t dso_sdt_notes(Elf *elf, symbol_actor actor, void *arg)
 		if (!vaddr)
 			continue;
 
-		actor(name, vaddr, arg);
+		ret = actor(name, vaddr, arg);
+		if (ret)
+			return ret;
+
 		++symbols_count;
 	}
 
 	return symbols_count;
 }
 
-size_t read_dso_symbols(const char *exec, int type, symbol_actor actor, void *arg)
+int parse_dso_symbols(const char *exec, int type, symbol_actor actor, void *arg)
 {
-	size_t symbols_count = 0;
-
+	int symbols_count = 0;
 	Elf *elf;
 	int fd;
 
 	if (elf_version(EV_CURRENT) == EV_NONE)
-		return symbols_count;
+		return -1;
 
 	fd = open(exec, O_RDONLY);
 	if (fd < 0)
-		return symbols_count;
+		return -1;
 
 	elf = elf_begin(fd, ELF_C_READ, NULL);
 	if (elf) {
