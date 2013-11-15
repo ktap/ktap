@@ -519,7 +519,20 @@ For more release info, please look at RELEASES.txt in project root directory.
                 print("exit:", execname(), argevent)
         }
 
-8. timer
+8. stapsdt tracing (userspace static marker)
+
+        trace sdt:/lib64/libc.so.6:lll_futex_wake {
+                print("lll_futex_wake", execname(), argevent)
+        }
+
+        or:
+
+        #trace all static mark in libc
+        trace sdt:/lib64/libc.so.6:* {
+                print(execname(), argevent)
+        }
+
+9. timer
 
         tick-1ms {
                 printf("time fired on one cpu\n");
