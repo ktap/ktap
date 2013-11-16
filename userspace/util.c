@@ -297,9 +297,9 @@ unsigned long ktapc_read_ksym(ktap_string *ts)
 			break;
 
 		line[--line_len] = '\0'; /* \n */
-		sym_addr = strtok(line, " ");
-		strtok(NULL, " ");
-		sym_name = strtok(NULL, " ");
+		sym_addr = strtok(line, " \t");
+		strtok(NULL, " \t");
+		sym_name = strtok(NULL, " \t");
 		if (strcmp(symbol, sym_name) == 0) {
 			ret = strtoul(sym_addr, NULL, 16);
 			break;
