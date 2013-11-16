@@ -421,7 +421,7 @@ static int parse_events_resolve_symbol(int fd, char *event, int type)
 
 		binary = strndup(event, colon - event);
 		ret = write_uprobe_event(fd, !!strstr(event, "%return"), binary,
-					 symbol_address);
+					 "", symbol_address);
 		free(binary);
 		return ret;
 	}
