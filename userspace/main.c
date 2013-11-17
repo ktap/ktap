@@ -39,6 +39,7 @@
 #include "../interpreter/kp_obj.h"
 #include "../interpreter/kp_str.h"
 #include "../interpreter/kp_tab.h"
+#include "symbol.h"
 
 
 /*******************************************************************/
@@ -348,6 +349,10 @@ static void usage(const char *msg_fmt, ...)
 "  -v             : enable verbose mode\n"
 "  -s             : simple event tracing\n"
 "  -b             : list byte codes\n"
+#ifndef NO_LIBELF
+"  -F             : list available functions from DSO\n"
+"  -M             : list available sdt notes from DSO\n"
+#endif
 "  file           : program read from script file\n"
 "  -- cmd [args]  : workload to tracing\n");
 
@@ -465,6 +470,23 @@ static const char *script_file;
 static int script_args_start;
 static int script_args_end;
 
+#ifndef NO_LIBELF
+struct binary_base
+{
+	int type;
+	const char *binary;
+};
+static int print_symbol(const char *name, vaddr_t addr, void *arg)
+{
+	struct binary_base *base = (struct binary_base *)arg;
+	const char *type = base->type == FIND_SYMBOL ?
+		"probe" : "sdt";
+
+	printf("%s:%s:%s\n", type, base->binary, name);
+	return 0;
+}
+#endif
+
 static void parse_option(int argc, char **argv)
 {
 	char pid[32] = {0};
@@ -532,6 +554,27 @@ static void parse_option(int argc, char **argv)
 		case 'b':
 			dump_bytecode = 1;
 			break;
+#ifndef NO_LIBELF
+		case 'F':
+		case 'M': {
+			const char *binary = next_arg;
+			int type = argv[i][1] == 'F' ? FIND_SYMBOL : FIND_STAPSDT_NOTE;
+			struct binary_base base = {
+				.type = type,
+				.binary = binary,
+			};
+			int ret;
+
+			ret = parse_dso_symbols(binary, type,
+					print_symbol, (void *)&base);
+			if (ret <= 0) {
+				fprintf(stderr, "error: no symbols in binary %s\n",
+					binary);
+				exit(EXIT_FAILURE);
+			}
+			exit(EXIT_SUCCESS);
+		}
+#endif
 		case 'V':
 		case '?':
 		case 'h':
