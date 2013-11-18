@@ -56,23 +56,27 @@ static Elf_Scn *elf_section_by_name(Elf *elf, GElf_Ehdr *ep,
 /**
  * @return v_addr of "LOAD" program header, that have zero offset.
  */
-static vaddr_t find_load_address(Elf *elf)
+static int find_load_address(Elf *elf, vaddr_t *load_address)
 {
-	GElf_Phdr header;
-	size_t headers;
-	vaddr_t address = 0;
+	GElf_Phdr phdr;
+	size_t i, phdrnum;
 
-	elf_getphdrnum(elf, &headers);
-	while (headers-- > 0) {
-		gelf_getphdr(elf, headers, &header);
-		if (header.p_type != PT_LOAD || header.p_offset != 0)
+	if (elf_getphdrnum(elf, &phdrnum))
+		return -1;
+
+	for (i = 0; i < phdrnum; i++) {
+		if (gelf_getphdr(elf, i, &phdr) == NULL)
+			return -1;
+
+		if (phdr.p_type != PT_LOAD || phdr.p_offset != 0)
 			continue;
 
-		address = header.p_vaddr;
-		break;
+		*load_address = phdr.p_vaddr;
+		return 0;
 	}
 
-	return address;
+	/* cannot found load address */
+	return -1;
 }
 
 static size_t elf_symbols(GElf_Shdr shdr)
@@ -87,9 +91,9 @@ static int dso_symbols(Elf *elf, symbol_actor actor, void *arg)
 	GElf_Sym sym;
 	GElf_Shdr shdr;
 	int symbols_count = 0;
-	vaddr_t load_address = find_load_address(elf);
+	vaddr_t load_address;
 
-	if (!load_address)
+	if (find_load_address(elf, &load_address))
 		return -1;
 
 	while ((scn = elf_nextscn(elf, scn))) {
