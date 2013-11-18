@@ -445,6 +445,7 @@ A: the current plan is deliver stable ktapvm kernel modules, more ktap script,
 * [LWN: ktap -- yet another kernel tracer][lwn1]
 * [LWN: Ktap almost gets into 3.13][lwn2]
 * [ktap introduction in LinuxCon Japan 2013][lcj]
+* [ktap Examples by Brendan Gregg][KEBG]
 
 [LPAT]: http://www.brendangregg.com/Slides/SCaLE_Linux_Performance2013.pdf
 [dtraceblog]: http://dtrace.org/blogs/
@@ -452,7 +453,7 @@ A: the current plan is deliver stable ktapvm kernel modules, more ktap script,
 [lwn1]: http://lwn.net/Articles/551314/
 [lwn2]: http://lwn.net/Articles/572788/
 [lcj]: http://events.linuxfoundation.org/sites/events/files/lcjpcojp13_zhangwei.pdf
-
+[KEBG]: http://www.brendangregg.com/ktap.html
 
 # History
 

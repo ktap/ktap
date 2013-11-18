@@ -1,0 +1,33 @@
+#!/usr/bin/env ktap
+#
+# syslist.kp    syscall latency as a list with counts
+#
+# 10-Nov-2013   Brendan Gregg   Created this
+
+self = {}
+lats = {}
+order = {}  # a workaround for key sorting
+
+print("Tracing syscalls... Hit Ctrl-C to end.")
+
+trace syscalls:sys_enter_* {
+    self[tid()] = gettimeofday_us()
+}
+
+trace syscalls:sys_exit_* {
+    if (self[tid()] == nil) { return }
+    delta = gettimeofday_us() - self[tid()]
+    lats[delta] += 1
+    order[delta] = delta
+    self[tid()] = nil
+}
+
+trace_end {
+    printf("   %8s %8s\n", "LAT(us)", "COUNT");
+    function cmp(v1, v2) {
+        return (v1 < v2)
+    }
+    for (lat, dummy in sort_pairs(order, cmp)) {
+        printf("   %8d %8d\n", lat, lats[lat]);
+    }
+}

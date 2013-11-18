@@ -1,0 +1,32 @@
+#!/usr/bin/env ktap
+#
+# syslatl.kp	syscall latency linear aggregation
+#
+# 10-Nov-2013	Brendan Gregg	Created this
+
+step = 10	# number of ms per step
+
+self = {}
+lats = {}
+max = 0
+
+print("Tracing syscalls... Hit Ctrl-C to end.")
+
+trace syscalls:sys_enter_* {
+	self[tid()] = gettimeofday_us()
+}
+
+trace syscalls:sys_exit_* {
+	if (self[tid()] == nil) { return }
+	delta = (gettimeofday_us() - self[tid()]) / (step * 1000)
+	if (delta > max) { max = delta }
+	lats[delta] += 1
+	self[tid()] = nil
+}
+
+trace_end {
+	printf("   %8s %8s\n", "LAT(ms)+", "COUNT");
+	for (i = 0, max, 1) {
+		printf("   %8d %8d\n", i * step, lats[i]);
+	}
+}
