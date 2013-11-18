@@ -1,0 +1,12 @@
+#!/usr/bin/env ktap
+
+#This ktap script trace all functions in glibc
+
+#only tested in x86-64 system,
+#if you run this script in x86_32, change the libc path.
+
+trace probe:/lib64/libc.so.6:* {
+	print(execname(), argevent)
+}
+
+printf("Tracing... Ctrl-C to end.\n");
