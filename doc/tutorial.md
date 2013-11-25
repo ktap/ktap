@@ -159,6 +159,12 @@ quit ktap executing, similar with exit syscall
 **pid ()**  
 return current process pid
 
+**tid ()**  
+return current thread id
+
+**uid ()**  
+return current process uid
+
 **execname ()**  
 return current process exec name string
 

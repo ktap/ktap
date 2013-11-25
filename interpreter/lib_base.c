@@ -19,6 +19,7 @@
  * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include <linux/version.h>
 #include <linux/hardirq.h>
 #include <linux/kallsyms.h>
 #include <linux/sched.h>
@@ -28,6 +29,10 @@
 #include <linux/clocksource.h>
 #include <linux/ring_buffer.h>
 #include <linux/stacktrace.h>
+#include <linux/cred.h>
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 5, 0)
+#include <linux/uidgid.h>
+#endif
 #include "../include/ktap_types.h"
 #include "ktap.h"
 #include "kp_obj.h"
@@ -265,6 +270,18 @@ static int ktap_lib_tid(ktap_state *ks)
 	pid_t pid = task_pid_vnr(current);
 
 	set_number(ks->top, (int)pid);
+	incr_top(ks);
+	return 1;
+}
+
+static int ktap_lib_uid(ktap_state *ks)
+{
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 5, 0)
+	uid_t uid = from_kuid_munged(current_user_ns(), current_uid());
+#else
+	uid_t uid = current_uid();
+#endif
+	set_number(ks->top, (int)uid);
 	incr_top(ks);
 	return 1;
 }
@@ -561,6 +578,7 @@ static const ktap_Reg base_funcs[] = {
 	{"exit", ktap_lib_exit},
 	{"pid", ktap_lib_pid},
 	{"tid", ktap_lib_tid},
+	{"uid", ktap_lib_uid},
 	{"execname", ktap_lib_execname},
 	{"cpu", ktap_lib_cpu},
 	{"num_cpus", ktap_lib_num_cpus},
