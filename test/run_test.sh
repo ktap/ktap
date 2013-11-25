@@ -47,6 +47,7 @@ ktaprun -o /dev/null ksym.kp
 
 echo "testing kill deadloop ktap script"
 $KTAP -e 'while (1) {}' &
+sleep 1
 pkill ktap
 sleep 1
 
