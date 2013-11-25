@@ -8,7 +8,7 @@ if test $? -ne 0; then
 fi
 
 KTAP=../ktap
-function ktaprun {
+ktaprun() {
 	echo "$KTAP $@"
 	$KTAP $@
 }
