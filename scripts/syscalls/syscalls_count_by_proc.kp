@@ -10,8 +10,6 @@ trace_end {
 	histogram(s)
 }
 
-print("Press Control-C to stop.")
-
 #Result:
 #
 #[root@jovi ktap]# ./ktap scripts/syscalls_histogram2.kp

@@ -1215,6 +1215,9 @@ static void kp_wait(ktap_state *ks)
 	if (G(ks)->parm->workload)
 		send_sig(SIGINT, G(ks)->trace_task, 0);
 
+	if (!G(ks)->parm->quiet)
+		kp_printf(ks, "Tracing... Ctrl-C to end.\n");
+
 	while (!ks->stop) {
 		set_current_state(TASK_INTERRUPTIBLE);
 		/* sleep for 100 msecs, and try again. */
@@ -1232,7 +1235,6 @@ static void kp_wait(ktap_state *ks)
 		if (task && task->state == TASK_DEAD)
 				break;
 	}
-
 }
 
 static unsigned int kp_stub_exit_instr;

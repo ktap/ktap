@@ -12,8 +12,6 @@ trace_end {
 	histogram(s)
 }
 
-print("Press Control-C to stop.")
-
 #Results:
 #^C
 #

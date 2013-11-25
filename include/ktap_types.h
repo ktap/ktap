@@ -20,6 +20,7 @@ typedef struct ktap_parm {
 	int workload;
 	int trace_cpu;
 	int print_timestamp;
+	int quiet;
 } ktap_parm;
 
 /*

@@ -347,6 +347,7 @@ static void usage(const char *msg_fmt, ...)
 "  -T             : show timestamp for event\n"
 "  -V             : show version\n"
 "  -v             : enable verbose mode\n"
+"  -q             : suppress start tracing message\n"
 "  -s             : simple event tracing\n"
 "  -b             : list byte codes\n"
 #ifndef NO_LIBELF
@@ -457,6 +458,7 @@ static int run_ktapvm()
 }
 
 int verbose;
+static int quiet;
 static int dump_bytecode;
 static char oneline_src[1024];
 static int trace_pid = -1;
@@ -546,6 +548,9 @@ static void parse_option(int argc, char **argv)
 			break;
 		case 'v':
 			verbose = 1;
+			break;
+		case 'q':
+			quiet = 1;
 			break;
 		case 's':
 			sprintf(oneline_src, SIMPLE_ONE_LINER_FMT, next_arg);
@@ -690,6 +695,7 @@ int main(int argc, char **argv)
 	uparm.trace_pid = trace_pid;
 	uparm.trace_cpu = trace_cpu;
 	uparm.print_timestamp = print_timestamp;
+	uparm.quiet = quiet;
 
 	/* start running into kernel ktapvm */
 	ret = run_ktapvm();
