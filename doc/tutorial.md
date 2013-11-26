@@ -262,6 +262,7 @@ There have four type of EVENTDEF, tracepoint, kprobe, uprobe, sdt.
 	probe:schedule       | trace schedule function
 	probe:schedule%return| trace schedule function return
 	probe:SyS_write      | trace SyS_write function
+	probe:vfs*           | trace wildcards vfs related function
 
 - uprobe:
 
@@ -271,6 +272,7 @@ There have four type of EVENTDEF, tracepoint, kprobe, uprobe, sdt.
 	probe:/lib64/libc.so.6:malloc%return | trace malloc function return
 	probe:/lib64/libc.so.6:free          | trace free function
 	probe:/lib64/libc.so.6:0x82000       | trace function with file offset 0x82000
+	probe:/lib64/libc.so.6:*             | trace all libc function
 
 	symbol resolving need libelf support
 
