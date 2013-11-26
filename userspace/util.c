@@ -270,16 +270,47 @@ bool strglobmatch(const char *str, const char *pat)
 	return __match_glob(str, pat, false);
 }
 
+static int hex(char ch)
+{
+	if ((ch >= '0') && (ch <= '9'))
+		return ch - '0';
+	if ((ch >= 'a') && (ch <= 'f'))
+		return ch - 'a' + 10;
+	if ((ch >= 'A') && (ch <= 'F'))
+		return ch - 'A' + 10;
+	return -1;
+}
+
+static int hex2u64(const char *ptr, unsigned long *long_val)
+{
+	const char *p = ptr;
+	*long_val = 0;
+
+	while (*p) {
+		const int hex_val = hex(*p);
+
+		if (hex_val < 0)
+			break;
+
+		*long_val = (*long_val << 4) | hex_val;
+		p++;
+	}
+
+	return p - ptr;
+}
+
 #define handle_error(str) do { perror(str); exit(-1); } while(0)
 
+#define KSYM_NAME_LEN 256
 #define KALLSYMS_PATH "/proc/kallsyms"
 /*
  * read kernel symbol from /proc/kallsyms
  */
-unsigned long ktapc_read_ksym(ktap_string *ts)
+int kallsyms_parse(void *arg,
+		   int(*process_symbol)(void *arg, const char *name,
+		   char type, unsigned long start))
 {
-	const char *symbol = getstr(ts);
-	unsigned long ret = 0;
+	int ret = 0;
 	FILE *file;
 	char *line = NULL;
 
@@ -288,8 +319,10 @@ unsigned long ktapc_read_ksym(ktap_string *ts)
 		handle_error("open " KALLSYMS_PATH " failed");
 
 	while (!feof(file)) {
-		char *sym_addr, *sym_name;
-		int line_len;
+		char *symbol_name;
+		char symbol_type;
+		int line_len, len;
+		unsigned long start;
 		size_t n;
 
 		line_len = getline(&line, &n, file);
@@ -297,23 +330,66 @@ unsigned long ktapc_read_ksym(ktap_string *ts)
 			break;
 
 		line[--line_len] = '\0'; /* \n */
-		sym_addr = strtok(line, " \t");
-		strtok(NULL, " \t");
-		sym_name = strtok(NULL, " \t");
-		if (strcmp(symbol, sym_name) == 0) {
-			ret = strtoul(sym_addr, NULL, 16);
+
+		len = hex2u64(line, &start);
+		len++;
+		if (len + 2 >= line_len)
+			continue;
+
+		symbol_type = line[len];
+		len += 2;
+		symbol_name = line + len;
+		len = line_len - len;
+
+		if (len >= KSYM_NAME_LEN) {
+			ret = -1;
 			break;
 		}
+
+		ret = process_symbol(arg, symbol_name, symbol_type, start);
+		if (ret)
+			break;
 	}
-	if (ret == 0) {
+
+	free(line);
+	fclose(file);
+
+	return ret;
+}
+
+struct ksym_addr_t {
+	const char *name;
+	unsigned long addr;
+};
+
+static int symbol_cmp(void *arg, const char *name, char type,
+		      unsigned long start)
+{
+	struct ksym_addr_t *base = arg;
+
+	if (strcmp(base->name, name) == 0) {
+		base->addr = start;
+		return 1;
+	}
+
+	return 0;
+}
+
+unsigned long find_kernel_symbol(const char *symbol)
+{
+	int ret;
+	struct ksym_addr_t arg = {
+		.name = symbol,
+		.addr = 0
+	};
+
+	ret = kallsyms_parse(&arg, symbol_cmp);
+	if (ret < 0 || arg.addr == 0) {
 		fprintf(stderr, "cannot read kernel symbol \"%s\" in %s\n",
 			symbol, KALLSYMS_PATH);
 		exit(EXIT_FAILURE);
 	}
 
-	fclose(file);
-	free(line);
-
-	return ret;
+	return arg.addr;
 }
 

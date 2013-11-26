@@ -348,9 +348,69 @@ write_kprobe_event(int fd, int ret_probe, const char *symbol, char *fetch_args)
 	return -1;
 }
 
+static unsigned long core_kernel_text_start;
+static unsigned long core_kernel_text_end;
+static unsigned long kprobes_text_start;
+static unsigned long kprobes_text_end;
+
+static void init_kprobe_prohibited_area(void)
+{
+	static int once = 0;
+
+	if (once > 0)
+		return;
+
+	once = 1;
+
+	core_kernel_text_start = find_kernel_symbol("_stext");
+	core_kernel_text_end   = find_kernel_symbol("_etext");
+	kprobes_text_start     = find_kernel_symbol("__kprobes_text_start");
+	kprobes_text_end       = find_kernel_symbol("__kprobes_text_end");
+}
+
+static int check_kprobe_addr_prohibited(unsigned long addr)
+{
+	if (addr <= core_kernel_text_start || addr >= core_kernel_text_end)
+		return -1;
+
+	if (addr >= kprobes_text_start && addr <= kprobes_text_end)
+		return -1;
+
+	return 0;
+}
+
+struct probe_cb_base {
+	int fd;
+	int ret_probe;
+	const char *event;
+	char *binary;
+	char *symbol;
+	char *fetch_args;
+};
+
+static int kprobe_symbol_actor(void *arg, const char *name, char type,
+			       unsigned long start)
+{
+	struct probe_cb_base *base = (struct probe_cb_base *)arg;
+
+	/* only can probe text function */
+	if (type != 't' && type != 'T')
+		return 0;
+
+	if (!strglobmatch(name, base->symbol))
+		return 0;
+
+	if (check_kprobe_addr_prohibited(start))
+		return 0;
+
+	return write_kprobe_event(base->fd, base->ret_probe, name,
+				  base->fetch_args);
+}
+
 static int parse_events_add_kprobe(char *event)
 {
-	char *symbol, *end, *fetch_args;
+	char *symbol, *end;
+	struct probe_cb_base base;
 	int fd, ret;
 
 	fd = open(KPROBE_EVENTS_PATH, O_WRONLY);
@@ -365,14 +425,20 @@ static int parse_events_add_kprobe(char *event)
 	else
 		symbol = strdup(event);
 
-	fetch_args = strchr(event, ' ');
+	base.fd = fd;
+	base.ret_probe = !!strstr(event, "%return");
+	base.symbol = symbol;
+	base.fetch_args = strchr(event, ' ');
 
-	ret = write_kprobe_event(fd, !!strstr(event, "%return"), symbol,
-				 fetch_args);
+	init_kprobe_prohibited_area();
+
+	ret = kallsyms_parse(&base, kprobe_symbol_actor);
+	if (ret < 0)
+		fprintf(stderr, "cannot parse symbol \"%s\"\n", symbol);
 
 	free(symbol);
-
 	close(fd);
+
 	return ret;
 }
 
@@ -496,18 +562,9 @@ static int parse_events_resolve_symbol(int fd, char *event, int type)
 }
 
 #else
-struct uprobe_base {
-	int fd;
-	int ret_probe;
-	const char *event;
-	char *binary;
-	char *symbol;
-	char *fetch_args;
-};
-
 static int uprobe_symbol_actor(const char *name, vaddr_t addr, void *arg)
 {
-	struct uprobe_base *base = (struct uprobe_base *)arg;
+	struct probe_cb_base *base = (struct probe_cb_base *)arg;
 	int ret;
 
 	if (!strglobmatch(name, base->symbol))
@@ -530,7 +587,7 @@ static int parse_events_resolve_symbol(int fd, char *event, int type)
 	char *colon, *end;
 	vaddr_t symbol_address;
 	int ret;
-	struct uprobe_base base = {
+	struct probe_cb_base base = {
 		.fd = fd,
 		.event = event
 	};

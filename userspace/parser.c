@@ -997,7 +997,8 @@ static void simpleexp(ktap_lexstate *ls, ktap_expdesc *v)
 	}
 	case TK_KSYM: {
 		init_exp(v, VKNUM, 0);
-		v->u.nval = (ktap_number)ktapc_read_ksym(ls->t.seminfo.ts);
+		v->u.nval =
+		(ktap_number)find_kernel_symbol(getstr(ls->t.seminfo.ts));
 		break;
 	}
 	case TK_NIL: {

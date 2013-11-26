@@ -371,6 +371,8 @@ int ktapc_hexavalue(int c);
 ktap_number ktapc_arith(int op, ktap_number v1, ktap_number v2);
 int ktapc_int2fb(unsigned int x);
 bool strglobmatch(const char *str, const char *pat);
-unsigned long ktapc_read_ksym(ktap_string *ts);
+int kallsyms_parse(void *arg,
+		   int(*process_symbol)(void *arg, const char *name,
+		   char type, unsigned long start));
 
-
+unsigned long find_kernel_symbol(const char *symbol);
