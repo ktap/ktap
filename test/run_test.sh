@@ -33,15 +33,15 @@ ktaprun count.kp
 ktaprun fibonacci.kp
 ktaprun function.kp
 ktaprun if.kp
-ktaprun kprobe.kp
-ktaprun kretprobe.kp
+ktaprun -q kprobe.kp
+ktaprun -q kretprobe.kp
 ktaprun len.kp
 ktaprun looping.kp
 ktaprun pairs.kp
 ktaprun table.kp
 ktaprun ptable.kp
-ktaprun timer.kp
-ktaprun tracepoint.kp
+ktaprun -q timer.kp
+ktaprun -q tracepoint.kp
 ktaprun -o /dev/null zerodivide.kp
 ktaprun -o /dev/null ksym.kp
 
