@@ -35,8 +35,6 @@
 
 #define handle_error(str) do { perror(str); exit(-1); } while(0)
 
-extern pid_t ktap_pid;
-
 void sigfunc(int signo)
 {
 	/* should not not reach here */
@@ -71,7 +69,7 @@ static void *reader_thread(void *data)
 	} else
 		out_fd = 2;
 
-	sprintf(filename, "/sys/kernel/debug/ktap/trace_pipe_%d", ktap_pid);
+	sprintf(filename, "/sys/kernel/debug/ktap/trace_pipe_%d", getpid());
 
  open_again:
 	fd = open(filename, O_RDONLY);

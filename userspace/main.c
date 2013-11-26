@@ -425,14 +425,11 @@ static int fork_workload(int ktap_fd)
 #define KTAPVM_PATH "/sys/kernel/debug/ktap/ktapvm"
 
 static char *output_filename;
-pid_t ktap_pid;
 
 static int run_ktapvm()
 {
         int ktapvm_fd, ktap_fd;
 	int ret;
-
-	ktap_pid = getpid();
 
 	ktapvm_fd = open(KTAPVM_PATH, O_RDONLY);
 	if (ktapvm_fd < 0)
