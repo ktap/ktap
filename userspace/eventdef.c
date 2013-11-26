@@ -283,7 +283,7 @@ write_kprobe_event(int fd, int ret_probe, const char *symbol, char *fetch_args)
 	struct probe_list *pl;
 	char event_id_path[128] = {0};
 	char *symbol_name;
-	int ret;
+	int id_fd, ret;
 
 	/* In case some symbols cannot write to uprobe_events debugfs file */
 	symbol_name = format_symbol_name(symbol);
@@ -301,6 +301,20 @@ write_kprobe_event(int fd, int ret_probe, const char *symbol, char *fetch_args)
 			 getpid(), symbol_name);
 		snprintf(probe_event, 128, "p:%s %s %s",
 			 event, symbol, fetch_args);
+	}
+
+	sprintf(event_id_path, "/sys/kernel/debug/tracing/events/%s/id", event);
+	/* if event id already exist, then don't write to kprobes_event again */
+	id_fd = open(event_id_path, O_RDONLY);
+	if (id_fd > 0) {
+		close(id_fd);
+
+		/* remember add event id to ids_array */
+		ret = add_event(event_id_path);
+		if (ret)
+			goto error;
+
+		goto out;
 	}
 
 	verbose_printf("write kprobe event %s\n", probe_event);
@@ -321,11 +335,11 @@ write_kprobe_event(int fd, int ret_probe, const char *symbol, char *fetch_args)
 	memcpy(pl->event, event, 64);
 	probe_list_head = pl;
 
-	sprintf(event_id_path, "/sys/kernel/debug/tracing/events/%s/id", event);
 	ret = add_event(event_id_path);
 	if (ret < 0)
 		goto error;
 
+ out:
 	free(symbol_name);
 	return 0;
 
@@ -337,7 +351,7 @@ write_kprobe_event(int fd, int ret_probe, const char *symbol, char *fetch_args)
 static int parse_events_add_kprobe(char *event)
 {
 	char *symbol, *end, *fetch_args;
-	int fd;
+	int fd, ret;
 
 	fd = open(KPROBE_EVENTS_PATH, O_WRONLY);
 	if (fd < 0) {
@@ -353,12 +367,13 @@ static int parse_events_add_kprobe(char *event)
 
 	fetch_args = strchr(event, ' ');
 
-	write_kprobe_event(fd, !!strstr(event, "%return"), symbol, fetch_args);
+	ret = write_kprobe_event(fd, !!strstr(event, "%return"), symbol,
+				 fetch_args);
 
 	free(symbol);
 
 	close(fd);
-	return 0;
+	return ret;
 }
 
 #define UPROBE_EVENTS_PATH "/sys/kernel/debug/tracing/uprobe_events"
@@ -376,7 +391,7 @@ write_uprobe_event(int fd, int ret_probe, const char *binary,
 	struct probe_list *pl;
 	char event_id_path[128] = {0};
 	char *symbol_name;
-	int ret;
+	int id_fd, ret;
 
 	/* In case some symbols cannot write to uprobe_events debugfs file */
 	symbol_name = format_symbol_name(symbol);
@@ -396,13 +411,27 @@ write_uprobe_event(int fd, int ret_probe, const char *binary,
 			 event, binary, addr, fetch_args);
 	}
 
-	 verbose_printf("write uprobe event %s\n", probe_event);
+	sprintf(event_id_path, "/sys/kernel/debug/tracing/events/%s/id", event);
+	/* if event id already exist, then don't write to uprobes_event again */
+	id_fd = open(event_id_path, O_RDONLY);
+	if (id_fd > 0) {
+		close(id_fd);
 
-	 if (write(fd, probe_event, strlen(probe_event)) <= 0) {
+		/* remember add event id to ids_array */
+		ret = add_event(event_id_path);
+		if (ret)
+			goto error;
+
+		goto out;
+	}
+
+	verbose_printf("write uprobe event %s\n", probe_event);
+
+	if (write(fd, probe_event, strlen(probe_event)) <= 0) {
 		fprintf(stderr, "Cannot write %s to %s\n", probe_event,
 				UPROBE_EVENTS_PATH);
 		goto error;
-	 }
+	}
 
 	/* add to cleanup list */
 	pl = malloc(sizeof(struct probe_list));
@@ -414,11 +443,11 @@ write_uprobe_event(int fd, int ret_probe, const char *binary,
 	memcpy(pl->event, event, 64);
 	probe_list_head = pl;
 
-	sprintf(event_id_path, "/sys/kernel/debug/tracing/events/%s/id", event);
 	ret = add_event(event_id_path);
 	if (ret < 0)
 		goto error;
 
+ out:
 	free(symbol_name);
 	return 0;
 
