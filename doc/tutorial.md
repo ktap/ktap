@@ -218,6 +218,7 @@ This function is used for invoking a function when tracing end, it will wait
 until user press CTRL+C to stop tracing, then ktap will call endfunc function, 
 user could show tracing results in that function, or do other things.
 
+User don't have to use kdebug library directly, use trace/trace_end keyword.
 
 ### Timer Library
 
@@ -288,9 +289,7 @@ There have four type of EVENTDEF, tracepoint, kprobe, uprobe, sdt.
 
 **trace_end { ACTION }**
 
-This is based on kdebug.probe_end function.
-
-## Tracing built-in variable  
+## Tracing built-in variables
 
 **argevent**  
 event object, you can print it by: print(argevent), it will print events
@@ -302,6 +301,44 @@ event name, each event have a name associated with it.
 
 **arg1..9**  
 get argument 1..9 of event object.
+
+> Note of arg offset
+>
+> The arg offset(1..9) is determined by event format shown in debugfs.
+> ```
+> #cat /sys/kernel/debug/tracing/events/sched/sched_switch/format
+> name: sched_switch
+> ID: 268
+> format:
+>     field:char prev_comm[32];         <- arg1
+>     field:pid_t prev_pid;             <- arg2
+>     field:int prev_prio;              <- arg3
+>     field:long prev_state;            <- arg4
+>     field:char next_comm[32];         <- arg5
+>     field:pid_t next_pid;             <- arg6
+>     field:int next_prio;              <- arg7
+> ```
+>
+> As shown, tracepoint event sched:sched_switch have 7 arguments, from arg1 to
+> arg7.
+>
+> Need to note that arg1 of syscall event is syscall number, not first argument
+> of syscall function. Use arg2 as first argument of syscall function.
+> For example:
+> ```
+> SYSCALL_DEFINE3(read, unsigned int, fd, char __user *, buf, size_t, count)
+>                                     <arg2>             <arg3>       <arg4>
+> ```
+>
+> This is similar with kprobe and uprobe, the arg1 of kprobe/uprobe event
+> always is _probe_ip, not the first argument given by user, for example:
+> ```
+> # ktap -e 'trace probe:/lib64/libc.so.6:malloc size=%di'
+>
+> # cat /sys/kernel/debug/tracing/events/ktap_uprobes_3796/malloc/format
+>     field:unsigned long __probe_ip;   <- arg1
+>     field:u64 size;                   <- arg2
+>```
 
 
 ## Timer syntax
