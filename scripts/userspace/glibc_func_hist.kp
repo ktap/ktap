@@ -1,0 +1,44 @@
+#!/usr/bin/env ktap
+
+#This ktap script trace all glibc functions in histogram output
+
+#only tested in x86-64 system,
+#if you run this script in x86_32, change the libc path.
+
+s = {}
+
+trace probe:/lib64/libc.so.6:* {
+	s[argname] += 1
+}
+
+trace_end {
+	histogram(s)
+}
+
+# Example result:
+#[root@localhost ktap]# ./ktap ./glibc_func_hist.kp
+#Tracing... Ctrl-C to end.
+#^C
+#                          value ------------- Distribution ------------- count
+#                   _IO_sputbackc |                                       1536
+#                  __strncmp_sse2 |                                       1522
+#                    __GI_strncmp |                                       1522
+#                     __GI_memcpy |                                       1446
+#                   __memcpy_sse2 |                                       1446
+#        _dl_mcount_wrapper_check |                                       1433
+#   __GI__dl_mcount_wrapper_check |                                       1433
+# __gconv_transform_utf8_internal |                                       1429
+#                       __mbrtowc |                                       1425
+#                        mbrtoc32 |                                       1425
+#                  __GI___mbrtowc |                                       1425
+#                         mbrtowc |                                       1425
+#                    __GI_mbrtowc |                                       1425
+#                         strtouq |                                       1274
+#                        strtoull |                                       1274
+#                         strtoul |                                       1274
+#          __ctype_get_mb_cur_max |                                       984
+#         ____strtoull_l_internal |                                       970
+#     __GI_____strtoul_l_internal |                                       970
+#              __GI__IO_sputbackc |                                       960
+#                             ... |
+
