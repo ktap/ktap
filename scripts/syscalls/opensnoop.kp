@@ -1,0 +1,31 @@
+#!/usr/local/bin/ktap -q
+#
+# opensnoop.kp	trace open syscalls with pathnames and basic info
+#
+# 23-Nov-2013	Brendan Gregg	Created this
+
+path = {}
+
+printf("%5s %6s %-12s %3s %3s %s\n", "UID", "PID", "COMM", "FD", "ERR", "PATH");
+
+trace syscalls:sys_enter_open {
+	path[tid()] = user_string(arg2)
+}
+
+trace syscalls:sys_exit_open {
+	local fd
+	local errno
+
+	if (arg2 < 0) {
+		fd = 0
+		errno = -arg2
+	} else {
+		fd = arg2
+		errno = 0
+	}
+
+	printf("%5d %6d %-12s %3d %3d %s\n", uid(), pid(), execname(), fd,
+	    errno, path[tid()])
+
+	path[tid()] = 0
+}
