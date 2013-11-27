@@ -376,3 +376,4 @@ int kallsyms_parse(void *arg,
 		   char type, unsigned long start));
 
 unsigned long find_kernel_symbol(const char *symbol);
+void list_available_events(const char *match);

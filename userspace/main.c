@@ -350,9 +350,10 @@ static void usage(const char *msg_fmt, ...)
 "  -q             : suppress start tracing message\n"
 "  -s             : simple event tracing\n"
 "  -b             : list byte codes\n"
+"  -le [glob]     : list pre-defined events in system\n"
 #ifndef NO_LIBELF
-"  -F             : list available functions from DSO\n"
-"  -M             : list available sdt notes from DSO\n"
+"  -lf DSO        : list available functions from DSO\n"
+"  -lm DSO        : list available sdt notes from DSO\n"
 #endif
 "  file           : program read from script file\n"
 "  -- cmd [args]  : workload to tracing\n");
@@ -556,27 +557,39 @@ static void parse_option(int argc, char **argv)
 		case 'b':
 			dump_bytecode = 1;
 			break;
+		case 'l': /* list available events */
+			switch (argv[i][2]) {
+			case 'e': /* tracepoints */
+				list_available_events(next_arg);
+				exit(EXIT_SUCCESS);
 #ifndef NO_LIBELF
-		case 'F':
-		case 'M': {
-			const char *binary = next_arg;
-			int type = argv[i][1] == 'F' ? FIND_SYMBOL : FIND_STAPSDT_NOTE;
-			struct binary_base base = {
-				.type = type,
-				.binary = binary,
-			};
-			int ret;
+			case 'f': /* functions in DSO */
+			case 'm': /* static marks in DSO */ {
+				const char *binary = next_arg;
+				int type = argv[i][2] == 'f' ?
+						FIND_SYMBOL : FIND_STAPSDT_NOTE;
+				struct binary_base base = {
+					.type = type,
+					.binary = binary,
+				};
+				int ret;
 
-			ret = parse_dso_symbols(binary, type,
-					print_symbol, (void *)&base);
-			if (ret <= 0) {
-				fprintf(stderr, "error: no symbols in binary %s\n",
-					binary);
+				ret = parse_dso_symbols(binary, type,
+							print_symbol,
+							(void *)&base);
+				if (ret <= 0) {
+					fprintf(stderr,
+					"error: no symbols in binary %s\n",
+						binary);
+					exit(EXIT_FAILURE);
+				}
+				exit(EXIT_SUCCESS);
+			}
+#endif
+			default:
 				exit(EXIT_FAILURE);
 			}
-			exit(EXIT_SUCCESS);
-		}
-#endif
+			break;
 		case 'V':
 		case '?':
 		case 'h':

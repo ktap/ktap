@@ -354,3 +354,28 @@ unsigned long find_kernel_symbol(const char *symbol)
 	return arg.addr;
 }
 
+
+#define AVAILABLE_EVENTS_PATH "/sys/kernel/debug/tracing/available_events"
+
+void list_available_events(const char *match)
+{
+	FILE *file;
+	char *line = NULL;
+
+	file = fopen(AVAILABLE_EVENTS_PATH, "r");
+	if (file == NULL)
+		handle_error("open " AVAILABLE_EVENTS_PATH " failed");
+
+	while (!feof(file)) {
+		size_t n;
+
+		getline(&line, &n, file);
+
+		if (!match || strglobmatch(line, match))
+			printf("%s", line);
+	}
+
+	free(line);
+	fclose(file);
+}
+
