@@ -270,38 +270,8 @@ bool strglobmatch(const char *str, const char *pat)
 	return __match_glob(str, pat, false);
 }
 
-static int hex(char ch)
-{
-	if ((ch >= '0') && (ch <= '9'))
-		return ch - '0';
-	if ((ch >= 'a') && (ch <= 'f'))
-		return ch - 'a' + 10;
-	if ((ch >= 'A') && (ch <= 'F'))
-		return ch - 'A' + 10;
-	return -1;
-}
-
-static int hex2u64(const char *ptr, unsigned long *long_val)
-{
-	const char *p = ptr;
-	*long_val = 0;
-
-	while (*p) {
-		const int hex_val = hex(*p);
-
-		if (hex_val < 0)
-			break;
-
-		*long_val = (*long_val << 4) | hex_val;
-		p++;
-	}
-
-	return p - ptr;
-}
-
 #define handle_error(str) do { perror(str); exit(-1); } while(0)
 
-#define KSYM_NAME_LEN 256
 #define KALLSYMS_PATH "/proc/kallsyms"
 /*
  * read kernel symbol from /proc/kallsyms
@@ -319,10 +289,10 @@ int kallsyms_parse(void *arg,
 		handle_error("open " KALLSYMS_PATH " failed");
 
 	while (!feof(file)) {
-		char *symbol_name;
+		char *symbol_addr, *symbol_name;
 		char symbol_type;
-		int line_len, len;
 		unsigned long start;
+		int line_len;
 		size_t n;
 
 		line_len = getline(&line, &n, file);
@@ -331,20 +301,11 @@ int kallsyms_parse(void *arg,
 
 		line[--line_len] = '\0'; /* \n */
 
-		len = hex2u64(line, &start);
-		len++;
-		if (len + 2 >= line_len)
-			continue;
+		symbol_addr = strtok(line, " \t");
+		start = strtoul(symbol_addr, NULL, 16);
 
-		symbol_type = line[len];
-		len += 2;
-		symbol_name = line + len;
-		len = line_len - len;
-
-		if (len >= KSYM_NAME_LEN) {
-			ret = -1;
-			break;
-		}
+		symbol_type = *strtok(NULL, " \t");
+		symbol_name = strtok(NULL, " \t");
 
 		ret = process_symbol(arg, symbol_name, symbol_type, start);
 		if (ret)
