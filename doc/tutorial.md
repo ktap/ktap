@@ -244,45 +244,45 @@ There have four type of EVENTDEF, tracepoint, kprobe, uprobe, sdt.
 
 - tracepoint:  
 
-	| EventDef           | Description |
-	| ------------------ | ----------- |
-	syscalls:*           | trace all syscalls events
-	syscalls:sys_enter_* | trace all syscalls entry events
-	kmem:*               | trace all kmem related events
-	sched:*              | trace all sched related events
-	sched:sched_switch   | trace sched_switch tracepoint
-	\*:\*                | trace all tracepoints in system
+	EventDef               Description 
+	--------------------   -------------------------------
+	syscalls:*             trace all syscalls events
+	syscalls:sys_enter_*   trace all syscalls entry events
+	kmem:*                 trace all kmem related events
+	sched:*                trace all sched related events
+	sched:sched_switch     trace sched_switch tracepoint
+	\*:\*                  trace all tracepoints in system
 
 	All tracepoint events are based on:  
 	          /sys/kernel/debug/tracing/events/$SYS/$EVENT
 
 - kprobe:  
 
-	| EventDef           | Description |
-	| ------------------ | ----------- |
-	probe:schedule       | trace schedule function
-	probe:schedule%return| trace schedule function return
-	probe:SyS_write      | trace SyS_write function
-	probe:vfs*           | trace wildcards vfs related function
+	EventDef               Description
+	--------------------   -----------------------------------
+	probe:schedule         trace schedule function
+	probe:schedule%return  trace schedule function return
+	probe:SyS_write        trace SyS_write function
+	probe:vfs*             trace wildcards vfs related function
 
 - uprobe:
 
-	| EventDef                           | Description |
-	| ---------------------------------- | ----------- |
-	probe:/lib64/libc.so.6:malloc        | trace malloc function
-	probe:/lib64/libc.so.6:malloc%return | trace malloc function return
-	probe:/lib64/libc.so.6:free          | trace free function
-	probe:/lib64/libc.so.6:0x82000       | trace function with file offset 0x82000
-	probe:/lib64/libc.so.6:*             | trace all libc function
+	EventDef                               Description
+	------------------------------------   ---------------------------
+	probe:/lib64/libc.so.6:malloc          trace malloc function
+	probe:/lib64/libc.so.6:malloc%return   trace malloc function return
+	probe:/lib64/libc.so.6:free            trace free function
+	probe:/lib64/libc.so.6:0x82000         trace function with file offset 0x82000
+	probe:/lib64/libc.so.6:*               trace all libc function
 
 	symbol resolving need libelf support
 
 - sdt:
 
-	| EventDef                           | Description |
-	| ---------------------------------- | ----------- |
-	sdt:/libc64/libc.so.6:lll_futex_wake | trace stapsdt lll_futex_wake
-	sdt:/libc64/libc.so.6:*              | trace all static markers in libc
+	EventDef                               Description
+	------------------------------------   --------------------------
+	sdt:/libc64/libc.so.6:lll_futex_wake   trace stapsdt lll_futex_wake
+	sdt:/libc64/libc.so.6:*                trace all static markers in libc
 
 	sdt resolving need libelf support
 
@@ -302,22 +302,21 @@ event name, each event have a name associated with it.
 **arg1..9**  
 get argument 1..9 of event object.
 
-> Note of arg offset
+> ***Note*** of arg offset
 >
 > The arg offset(1..9) is determined by event format shown in debugfs.
-> ```
-> #cat /sys/kernel/debug/tracing/events/sched/sched_switch/format
-> name: sched_switch
-> ID: 268
-> format:
->     field:char prev_comm[32];         <- arg1
->     field:pid_t prev_pid;             <- arg2
->     field:int prev_prio;              <- arg3
->     field:long prev_state;            <- arg4
->     field:char next_comm[32];         <- arg5
->     field:pid_t next_pid;             <- arg6
->     field:int next_prio;              <- arg7
-> ```
+>
+>     #cat /sys/kernel/debug/tracing/events/sched/sched_switch/format
+>     name: sched_switch
+>     ID: 268
+>     format:
+>         field:char prev_comm[32];         <- arg1
+>         field:pid_t prev_pid;             <- arg2
+>         field:int prev_prio;              <- arg3
+>         field:long prev_state;            <- arg4
+>         field:char next_comm[32];         <- arg5
+>         field:pid_t next_pid;             <- arg6
+>         field:int next_prio;              <- arg7
 >
 > As shown, tracepoint event sched:sched_switch have 7 arguments, from arg1 to
 > arg7.
@@ -325,20 +324,18 @@ get argument 1..9 of event object.
 > Need to note that arg1 of syscall event is syscall number, not first argument
 > of syscall function. Use arg2 as first argument of syscall function.
 > For example:
-> ```
-> SYSCALL_DEFINE3(read, unsigned int, fd, char __user *, buf, size_t, count)
->                                     <arg2>             <arg3>       <arg4>
-> ```
+>
+>     SYSCALL_DEFINE3(read, unsigned int, fd, char __user *, buf, size_t, count)
+>                                         <arg2>             <arg3>       <arg4>
 >
 > This is similar with kprobe and uprobe, the arg1 of kprobe/uprobe event
 > always is _probe_ip, not the first argument given by user, for example:
-> ```
-> # ktap -e 'trace probe:/lib64/libc.so.6:malloc size=%di'
+> 
+>     # ktap -e 'trace probe:/lib64/libc.so.6:malloc size=%di'
 >
-> # cat /sys/kernel/debug/tracing/events/ktap_uprobes_3796/malloc/format
->     field:unsigned long __probe_ip;   <- arg1
->     field:u64 size;                   <- arg2
->```
+>     # cat /sys/kernel/debug/tracing/events/ktap_uprobes_3796/malloc/format
+>         field:unsigned long __probe_ip;   <- arg1
+>         field:u64 size;                   <- arg2
 
 
 ## Timer syntax
@@ -489,7 +486,7 @@ A: the current plan is deliver stable ktapvm kernel modules, more ktap script,
 * [Dtrace User Guide][dug]
 * [LWN: ktap -- yet another kernel tracer][lwn1]
 * [LWN: Ktap almost gets into 3.13][lwn2]
-* [ktap introduction in LinuxCon Japan 2013][lcj]
+* [ktap introduction in LinuxCon Japan 2013][lcj](content is out of date)
 * [ktap Examples by Brendan Gregg][KEBG]
 
 [LPAT]: http://www.brendangregg.com/Slides/SCaLE_Linux_Performance2013.pdf
