@@ -12,7 +12,7 @@ trace_end {
 
 #Result:
 #
-#[root@jovi ktap]# ./ktap scripts/syscalls_histogram2.kp
+#[root@jovi ktap]# ./ktap samples/syscalls_histogram2.kp
 #^C
 #                          value ------------- Distribution ------------- count
 #                            sshd |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@      196

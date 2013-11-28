@@ -508,7 +508,7 @@ A: the current plan is deliver stable ktapvm kernel modules, more ktap script,
 
 For more release info, please look at RELEASES.txt in project root directory.
 
-# Sample scripts
+# Examples
 
 1. simplest one-liner command to enable all tracepoints
 
@@ -585,8 +585,9 @@ For more release info, please look at RELEASES.txt in project root directory.
                 printf("time fired on every cpu\n");
         }
 
-More sample scripts can be found at scripts/ directory.
+More examples can be found at [samples][samples_dir] directory.
 
+[samples_dir]: https://github.com/ktap/ktap/tree/master/samples
 
 # Appendix
 

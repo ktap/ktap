@@ -25,7 +25,7 @@
 #     $ sudo sh -c 'echo 50000 > /sys/module/ktapvm/parameters/max_exec_count'
 #
 #   - Run Tetris
-#     $ sudo ./ktap scripts/game/tetris.kp
+#     $ sudo ./ktap samples/game/tetris.kp
 #
  
  

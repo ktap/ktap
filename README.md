@@ -46,7 +46,7 @@ More information can be found at [ktap homepage][homepage].
 
 4. Running ktap
 
-        $ ./ktap scripts/helloworld.kp
+        $ ./ktap samples/helloworld.kp
 
 
 ## Examples
@@ -126,7 +126,9 @@ More information can be found at [ktap homepage][homepage].
                 printf("time fired on every cpu\n");
         }
 
-More sample scripts can be found at scripts/ directory.
+More examples can be found at [samples][samples_dir] directory.
+
+[samples_dir]: https://github.com/ktap/ktap/tree/master/samples
 
 ## Mailing list
 
