@@ -486,6 +486,7 @@ A: the current plan is deliver stable ktapvm kernel modules, more ktap script,
 * [Dtrace User Guide][dug]
 * [LWN: ktap -- yet another kernel tracer][lwn1]
 * [LWN: Ktap almost gets into 3.13][lwn2]
+* [staging: ktap: add to the kernel tree][ktap_commit]
 * [ktap introduction in LinuxCon Japan 2013][lcj](content is out of date)
 * [ktap Examples by Brendan Gregg][KEBG]
 
@@ -494,6 +495,7 @@ A: the current plan is deliver stable ktapvm kernel modules, more ktap script,
 [dug]: http://docs.huihoo.com/opensolaris/dtrace-user-guide/html/index.html
 [lwn1]: http://lwn.net/Articles/551314/
 [lwn2]: http://lwn.net/Articles/572788/
+[ktap_commit]: https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=c63a164271f81220ff4966d41218a9101f3d0ec4
 [lcj]: http://events.linuxfoundation.org/sites/events/files/lcjpcojp13_zhangwei.pdf
 [KEBG]: http://www.brendangregg.com/ktap.html
 
