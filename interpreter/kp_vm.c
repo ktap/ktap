@@ -1262,7 +1262,7 @@ static void kp_wait(ktap_state *ks)
 	}
 
 	if (!G(ks)->parm->quiet)
-		kp_printf(ks, "Tracing... Ctrl-C to end.\n");
+		kp_printf(ks, "Tracing... Hit Ctrl-C to end.\n");
 
 	sleep_loop(ks, sl_wait_task_exit_actor, task);
 }

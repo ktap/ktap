@@ -9,4 +9,3 @@ trace probe:/lib64/libc.so.6:* {
 	print(execname(), argevent)
 }
 
-printf("Tracing... Ctrl-C to end.\n");

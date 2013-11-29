@@ -8,8 +8,6 @@ self = {}
 lats = {}
 order = {}  # a workaround for key sorting
 
-print("Tracing syscalls... Hit Ctrl-C to end.")
-
 trace syscalls:sys_enter_* {
     self[tid()] = gettimeofday_us()
 }

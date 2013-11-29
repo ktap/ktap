@@ -10,8 +10,6 @@ self = {}
 lats = {}
 max = 0
 
-print("Tracing syscalls... Hit Ctrl-C to end.")
-
 trace syscalls:sys_enter_* {
 	self[tid()] = gettimeofday_us()
 }
