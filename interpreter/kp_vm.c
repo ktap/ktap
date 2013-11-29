@@ -1201,6 +1201,48 @@ static void wait_user_completion(ktap_state *ks)
 	}
 }
 
+static void sleep_loop(ktap_state *ks,
+			int (*actor)(ktap_state *ks, void *arg), void *arg)
+{
+	while (!ks->stop) {
+		set_current_state(TASK_INTERRUPTIBLE);
+		/* sleep for 100 msecs, and try again. */
+		schedule_timeout(HZ / 10);
+
+		if (actor(ks, arg))
+			return;
+	}
+}
+
+static int sl_wait_task_pause_actor(ktap_state *ks, void *arg)
+{
+	struct task_struct *task = (struct task_struct *)arg;
+
+	if (task->state)
+		return 1;
+	else
+		return 0;
+}
+
+static int sl_wait_task_exit_actor(ktap_state *ks, void *arg)
+{
+	struct task_struct *task = (struct task_struct *)arg;
+
+	if (signal_pending(current)) {
+		flush_signals(current);
+
+		/* newline for handle CTRL+C display as ^C */
+		kp_puts(ks, "\n");
+		return 1;
+	}
+
+	/* stop waiting if target pid is exited */
+	if (task && task->state == TASK_DEAD)
+			return 1;
+
+	return 0;
+}
+
 /* kp_wait: used for mainthread waiting for exit */
 static void kp_wait(ktap_state *ks)
 {
@@ -1211,30 +1253,18 @@ static void kp_wait(ktap_state *ks)
 
 	ks->stop = 0;
 
-	/* tell workload process to start executing */
-	if (G(ks)->parm->workload)
+	if (G(ks)->parm->workload) {
+		/* make sure workload is in pause state
+		 * so it won't miss the signal */
+		sleep_loop(ks, sl_wait_task_pause_actor, task);
+		/* tell workload process to start executing */
 		send_sig(SIGINT, G(ks)->trace_task, 0);
+	}
 
 	if (!G(ks)->parm->quiet)
 		kp_printf(ks, "Tracing... Ctrl-C to end.\n");
 
-	while (!ks->stop) {
-		set_current_state(TASK_INTERRUPTIBLE);
-		/* sleep for 100 msecs, and try again. */
-		schedule_timeout(HZ / 10);
-
-		if (signal_pending(current)) {
-			flush_signals(current);
-
-			/* newline for handle CTRL+C display as ^C */
-			kp_puts(ks, "\n");
-			break;
-		}
-
-		/* stop waiting if target pid is exited */
-		if (task && task->state == TASK_DEAD)
-				break;
-	}
+	sleep_loop(ks, sl_wait_task_exit_actor, task);
 }
 
 static unsigned int kp_stub_exit_instr;
