@@ -3,6 +3,11 @@
 # Define NO_LIBELF if you do not want libelf dependency (e.g. cross-builds)
 # (this will also disable resolve resolving symbols in DSO functionality)
 #
+# Define amalg to enable amalgamation build, This compiles the ktapvm as
+# one huge C file and allows GCC to generate faster and shorter code. Alas,
+# this requires lots of memory during the build.
+# Recommend to use amalgmation build as default.
+amalg = 1
 
 # Do not instrument the tracer itself:
 ifdef CONFIG_FUNCTION_TRACER
@@ -20,10 +25,14 @@ KTAP_LIBS = -lpthread
 LIB_OBJS += $(INTP)/lib_base.o $(INTP)/lib_kdebug.o $(INTP)/lib_timer.o \
 		$(INTP)/lib_ansi.o
 
+ifndef amalg
 INTP_OBJS += $(INTP)/ktap.o $(INTP)/kp_load.o $(INTP)/kp_obj.o \
 		$(INTP)/kp_str.o $(INTP)/kp_tab.o $(INTP)/kp_vm.o \
 		$(INTP)/kp_opcode.o $(INTP)/kp_transport.o \
 		$(LIB_OBJS)
+else
+INTP_OBJS += $(INTP)/kp_amalg.o
+endif
 
 obj-m		+= ktapvm.o
 ktapvm-y	:= $(INTP_OBJS)
