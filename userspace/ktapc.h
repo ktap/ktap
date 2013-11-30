@@ -229,7 +229,7 @@ struct ktap_blockcnt;  /* defined in lparser.c */
 /* state needed to generate code for a given function */
 typedef struct ktap_funcstate {
 	ktap_proto *f;  /* current function header */
-	ktap_table *h;  /* table to find (and reuse) elements in `k' */
+	ktap_tab *h;  /* table to find (and reuse) elements in `k' */
 	struct ktap_funcstate *prev;  /* enclosing function */
 	struct ktap_lexstate *ls;  /* lexical state */
 	struct ktap_blockcnt *bl;  /* chain of current blocks */
@@ -302,9 +302,9 @@ ktap_string *ktapc_ts_new(const char *str);
 int ktapc_ts_eqstr(ktap_string *a, ktap_string *b);
 ktap_string *ktapc_ts_newlstr(const char *str, size_t l);
 ktap_proto *ktapc_newproto();
-ktap_table *ktapc_table_new();
-const ktap_value *ktapc_table_get(ktap_table *t, const ktap_value *key);
-void ktapc_table_setvalue(ktap_table *t, const ktap_value *key, ktap_value *val);
+ktap_tab *ktapc_table_new();
+const ktap_value *ktapc_table_get(ktap_tab *t, const ktap_value *key);
+void ktapc_table_setvalue(ktap_tab *t, const ktap_value *key, ktap_value *val);
 ktap_closure *ktapc_newclosure(int n);
 char *ktapc_sprintf(const char *fmt, ...);
 

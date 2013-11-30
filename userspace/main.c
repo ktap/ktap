@@ -59,19 +59,19 @@ ktap_proto *ktapc_newproto()
 	return kp_newproto(NULL);
 }
 
-const ktap_value *ktapc_table_get(ktap_table *t, const ktap_value *key)
+const ktap_value *ktapc_table_get(ktap_tab *t, const ktap_value *key)
 {
-	return kp_table_get(t, key);
+	return kp_tab_get(t, key);
 }
 
-void ktapc_table_setvalue(ktap_table *t, const ktap_value *key, ktap_value *val)
+void ktapc_table_setvalue(ktap_tab *t, const ktap_value *key, ktap_value *val)
 {
-	kp_table_setvalue(NULL, t, key, val);
+	kp_tab_setvalue(NULL, t, key, val);
 }
 
-ktap_table *ktapc_table_new()
+ktap_tab *ktapc_table_new()
 {
-	return kp_table_new(NULL);
+	return kp_tab_new(NULL);
 }
 
 ktap_string *ktapc_ts_newlstr(const char *str, size_t l)

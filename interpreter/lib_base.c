@@ -43,9 +43,9 @@
 
 static int ktap_lib_next(ktap_state *ks)
 {
-	ktap_table *t = hvalue(ks->top - 2);
+	ktap_tab *t = hvalue(ks->top - 2);
 
-	if (kp_table_next(ks, t, ks->top-1)) {
+	if (kp_tab_next(ks, t, ks->top-1)) {
 		ks->top += 1;
 		return 2;
 	} else {
@@ -58,12 +58,12 @@ static int ktap_lib_next(ktap_state *ks)
 static int ktap_lib_pairs(ktap_state *ks)
 {
 	ktap_value *v = kp_arg(ks, 1);
-	ktap_table *t;
+	ktap_tab *t;
 
 	if (is_table(v)) {
 		t = hvalue(v);
 	} else if (is_ptable(v)) {
-		t = kp_ptable_synthesis(ks, phvalue(v));
+		t = kp_ptab_synthesis(ks, phvalue(v));
 	} else if (is_nil(v)) {
 		kp_error(ks, "table is nil in pairs\n");
 		return 0;
@@ -80,9 +80,9 @@ static int ktap_lib_pairs(ktap_state *ks)
 
 static int ktap_lib_sort_next(ktap_state *ks)
 {
-	ktap_table *t = hvalue(ks->top - 2);
+	ktap_tab *t = hvalue(ks->top - 2);
 
-	if (kp_table_sort_next(ks, t, ks->top-1)) {
+	if (kp_tab_sort_next(ks, t, ks->top-1)) {
 		ks->top += 1;
 		return 2;
 	} else {
@@ -96,12 +96,12 @@ static int ktap_lib_sort_pairs(ktap_state *ks)
 {
 	ktap_value *v = kp_arg(ks, 1);
 	ktap_closure *cmp_func = NULL;
-	ktap_table *t;
+	ktap_tab *t;
 
 	if (is_table(v)) {
 		t = hvalue(v);
 	} else if (is_ptable(v)) {
-		t = kp_ptable_synthesis(ks, phvalue(v));
+		t = kp_ptab_synthesis(ks, phvalue(v));
 	} else if (is_nil(v)) {
 		kp_error(ks, "table is nil in pairs\n");
 		return 0;
@@ -115,7 +115,7 @@ static int ktap_lib_sort_pairs(ktap_state *ks)
 		cmp_func = clvalue(kp_arg(ks, 2));
 	}
 
-	kp_table_sort(ks, t, cmp_func); 
+	kp_tab_sort(ks, t, cmp_func); 
 	set_cfunction(ks->top++, ktap_lib_sort_next);
 	set_table(ks->top++, t);
 	set_nil(ks->top++);
@@ -377,18 +377,18 @@ static int ktap_lib_histogram(ktap_state *ks)
 	ktap_value *v = kp_arg(ks, 1);
 
 	if (is_table(v))
-		kp_table_histogram(ks, hvalue(v));
+		kp_tab_histogram(ks, hvalue(v));
 	else if (is_ptable(v))
-		kp_ptable_histogram(ks, phvalue(v));
+		kp_ptab_histogram(ks, phvalue(v));
 
 	return 0;
 }
 
 static int ktap_lib_ptable(ktap_state *ks)
 {
-	ktap_ptable *ph;
+	ktap_ptab *ph;
 
-	ph = kp_ptable_new(ks);
+	ph = kp_ptab_new(ks);
 	set_ptable(ks->top, ph);
 	incr_top(ks);
 	return 1;
@@ -493,7 +493,7 @@ static int ktap_lib_delete(ktap_state *ks)
 {
 	kp_arg_check(ks, 1, KTAP_TTABLE);
 
-	kp_table_clear(ks, hvalue(kp_arg(ks, 1)));
+	kp_tab_clear(ks, hvalue(kp_arg(ks, 1)));
 	return 0;
 }
 

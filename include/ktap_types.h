@@ -188,7 +188,7 @@ typedef struct ktap_callinfo {
 
 
 /*
- * ktap_table
+ * ktap_tab
  */
 typedef struct ktap_tkey {
 	struct ktap_tnode *next;  /* for chaining */
@@ -209,7 +209,7 @@ typedef struct ktap_stat_data {
 } ktap_stat_data;
 
 
-typedef struct ktap_table {
+typedef struct ktap_tab {
 	CommonHeader;
 #ifdef __KERNEL__
 	arch_spinlock_t lock;
@@ -221,7 +221,7 @@ typedef struct ktap_table {
 	ktap_tnode *node;
 	ktap_tnode *lastfree;  /* any free position is before this position */
 
-	int with_stats;  /* for aggregation tble: ptable */
+	int with_stats;  /* for aggregation table: ptable */
 	ktap_stat_data *sd_arr;
 	ktap_stat_data *sd_rec;
 
@@ -229,16 +229,16 @@ typedef struct ktap_table {
 	ktap_tnode *sort_head;
 
 	ktap_gcobject *gclist;
-} ktap_table;
+} ktap_tab;
 
 #define lmod(s,size)	((int)((s) & ((size)-1)))
 
 /* parallel table */
-typedef struct ktap_ptable {
+typedef struct ktap_ptab {
 	CommonHeader;
-	ktap_table **tbl; /* percpu table */
-	ktap_table *agg;
-} ktap_ptable;
+	ktap_tab **tbl; /* percpu table */
+	ktap_tab *agg;
+} ktap_ptab;
 
 typedef struct ktap_stringtable {
 	ktap_gcobject **hash;
@@ -336,8 +336,8 @@ union ktap_gcobject {
 	gcheader gch;  /* common header */
 	union ktap_string ts;
 	struct ktap_closure cl;
-	struct ktap_table h;
-	struct ktap_ptable ph;
+	struct ktap_tab h;
+	struct ktap_ptab ph;
 	struct ktap_proto p;
 	struct ktap_upval uv;
 	struct ktap_state th;  /* thread */

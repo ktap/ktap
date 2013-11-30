@@ -191,9 +191,9 @@ static void gettable(ktap_state *ks, const ktap_value *t, ktap_value *key,
 		     StkId val)
 {
 	if (is_table(t)) {
-		set_obj(val, kp_table_get(hvalue(t), key));
+		set_obj(val, kp_tab_get(hvalue(t), key));
 	} else if (is_ptable(t)) {
-		kp_ptable_get(ks, phvalue(t), key, val);
+		kp_ptab_get(ks, phvalue(t), key, val);
 	} else {
 		kp_error(ks, "get key from non-table\n");
 	}
@@ -203,9 +203,9 @@ static void settable(ktap_state *ks, const ktap_value *t, ktap_value *key,
 		     StkId val)
 {
 	if (is_table(t)) {
-		kp_table_setvalue(ks, hvalue(t), key, val);
+		kp_tab_setvalue(ks, hvalue(t), key, val);
 	} else if (is_ptable(t)) {
-		kp_ptable_set(ks, phvalue(t), key, val);
+		kp_ptab_set(ks, phvalue(t), key, val);
 	} else {
 		kp_error(ks, "set key to non-table\n");
 	}
@@ -224,7 +224,7 @@ static void settable_incr(ktap_state *ks, const ktap_value *t, ktap_value *key,
 		return;
 	}
 
-	kp_table_atomic_inc(ks, hvalue(t), key, nvalue(val));
+	kp_tab_atomic_inc(ks, hvalue(t), key, nvalue(val));
 }
 
 static inline int checkstack(ktap_state *ks, int n)
@@ -492,7 +492,7 @@ static void ktap_execute(ktap_state *ks)
 			return;
 		}
 
-		kp_ptable_set(ks, phvalue(v), RKB(instr), RKC(instr));
+		kp_ptab_set(ks, phvalue(v), RKB(instr), RKC(instr));
 		base = ci->u.l.base;
 		break;
 		}
@@ -515,16 +515,16 @@ static void ktap_execute(ktap_state *ks)
 			return;
 		}
 
-		kp_ptable_set(ks, phvalue(ra), RKB(instr), RKC(instr));
+		kp_ptab_set(ks, phvalue(ra), RKB(instr), RKC(instr));
 		base = ci->u.l.base;
 		break;
 	case OP_NEWTABLE: {
 		int b = GETARG_B(instr);
 		int c = GETARG_C(instr);
-		ktap_table *t = kp_table_new(ks);
+		ktap_tab *t = kp_tab_new(ks);
 		set_table(ra, t);
 		if (b != 0 || c != 0)
-			kp_table_resize(ks, t, fb2int(b), fb2int(c));
+			kp_tab_resize(ks, t, fb2int(b), fb2int(c));
 		break;
 		}
 	case OP_SELF: {
@@ -770,7 +770,7 @@ static void ktap_execute(ktap_state *ks)
 		int n = GETARG_B(instr);
 		int c = GETARG_C(instr);
 		int last;
-		ktap_table *h;
+		ktap_tab *h;
 
 		if (n == 0)
 			n = (int)(ks->top - ra) - 1;
@@ -780,11 +780,11 @@ static void ktap_execute(ktap_state *ks)
 		h = hvalue(ra);
 		last = ((c - 1) * LFIELDS_PER_FLUSH) + n;
 		if (last > h->sizearray)  /* needs more space? */
-			kp_table_resizearray(ks, h, last);
+			kp_tab_resizearray(ks, h, last);
 
 		for (; n > 0; n--) {
 			ktap_value *val = ra+n;
-			kp_table_setint(ks, h, last--, val);
+			kp_tab_setint(ks, h, last--, val);
 		}
 		/* correct top (in case of previous open call) */
 		ks->top = ci->top;
@@ -910,13 +910,13 @@ static ktap_value *cfunction_cache_get(ktap_state *ks, int index)
 
 static int cfunction_cache_getindex(ktap_state *ks, ktap_value *fname)
 {
-	const ktap_value *gt = kp_table_getint(hvalue(&G(ks)->registry),
+	const ktap_value *gt = kp_tab_getint(hvalue(&G(ks)->registry),
 				KTAP_RIDX_GLOBALS);
 	const ktap_value *cfunc;
 	int nr, i;
 
 	nr = G(ks)->nr_builtin_cfunction;
-	cfunc = kp_table_get(hvalue(gt), fname);
+	cfunc = kp_tab_get(hvalue(gt), fname);
 
 	for (i = 0; i < nr; i++) {
 		if (rawequalobj(&G(ks)->cfunction_tbl[i], cfunc))
@@ -951,8 +951,8 @@ static int cfunction_cache_init(ktap_state *ks)
 void kp_register_lib(ktap_state *ks, const char *libname, const ktap_Reg *funcs)
 {
 	int i;
-	ktap_table *target_tbl;
-	const ktap_value *gt = kp_table_getint(hvalue(&G(ks)->registry),
+	ktap_tab *target_tbl;
+	const ktap_value *gt = kp_tab_getint(hvalue(&G(ks)->registry),
 					       KTAP_RIDX_GLOBALS);
 
 	/* lib is null when register baselib function */
@@ -961,13 +961,13 @@ void kp_register_lib(ktap_state *ks, const char *libname, const ktap_Reg *funcs)
 	else {
 		ktap_value key, val;
 
-		target_tbl = kp_table_new(ks);
-		kp_table_resize(ks, target_tbl, 0,
+		target_tbl = kp_tab_new(ks);
+		kp_tab_resize(ks, target_tbl, 0,
 				sizeof(*funcs) / sizeof(ktap_Reg));
 
 		set_string(&key, kp_tstring_new(ks, libname));
 		set_table(&val, target_tbl);
-		kp_table_setvalue(ks, hvalue(gt), &key, &val);
+		kp_tab_setvalue(ks, hvalue(gt), &key, &val);
 	}
 
 	for (i = 0; funcs[i].name != NULL; i++) {
@@ -975,7 +975,7 @@ void kp_register_lib(ktap_state *ks, const char *libname, const ktap_Reg *funcs)
 
 		set_string(&func_name, kp_tstring_new(ks, funcs[i].name));
 		set_cfunction(&cl, funcs[i].func);
-		kp_table_setvalue(ks, target_tbl, &func_name, &cl);
+		kp_tab_setvalue(ks, target_tbl, &func_name, &cl);
 
 		cfunction_cache_add(ks, &cl);
 	}
@@ -984,22 +984,22 @@ void kp_register_lib(ktap_state *ks, const char *libname, const ktap_Reg *funcs)
 static void kp_init_registry(ktap_state *ks)
 {
 	ktap_value mt;
-	ktap_table *registry = kp_table_new(ks);
+	ktap_tab *registry = kp_tab_new(ks);
 
 	set_table(&G(ks)->registry, registry);
-	kp_table_resize(ks, registry, KTAP_RIDX_LAST, 0);
+	kp_tab_resize(ks, registry, KTAP_RIDX_LAST, 0);
 	set_thread(&mt, ks);
-	kp_table_setint(ks, registry, KTAP_RIDX_MAINTHREAD, &mt);
-	set_table(&mt, kp_table_new(ks));
-	kp_table_setint(ks, registry, KTAP_RIDX_GLOBALS, &mt);
+	kp_tab_setint(ks, registry, KTAP_RIDX_MAINTHREAD, &mt);
+	set_table(&mt, kp_tab_new(ks));
+	kp_tab_setint(ks, registry, KTAP_RIDX_GLOBALS, &mt);
 }
 
 static int kp_init_arguments(ktap_state *ks, int argc, char __user **user_argv)
 {
-	const ktap_value *gt = kp_table_getint(hvalue(&G(ks)->registry),
+	const ktap_value *gt = kp_tab_getint(hvalue(&G(ks)->registry),
 			   KTAP_RIDX_GLOBALS);
-	ktap_table *global_tbl = hvalue(gt);
-	ktap_table *arg_tbl = kp_table_new(ks);
+	ktap_tab *global_tbl = hvalue(gt);
+	ktap_tab *arg_tbl = kp_tab_new(ks);
 	ktap_value arg_tblval;
 	ktap_value arg_tsval;
 	char **argv;
@@ -1007,7 +1007,7 @@ static int kp_init_arguments(ktap_state *ks, int argc, char __user **user_argv)
 	
 	set_string(&arg_tsval, kp_tstring_new(ks, "arg"));
 	set_table(&arg_tblval, arg_tbl);
-	kp_table_setvalue(ks, global_tbl, &arg_tsval, &arg_tblval);
+	kp_tab_setvalue(ks, global_tbl, &arg_tsval, &arg_tblval);
 
 	if (!argc)
 		return 0;
@@ -1025,7 +1025,7 @@ static int kp_init_arguments(ktap_state *ks, int argc, char __user **user_argv)
 		return -EFAULT;
 	}
 
-	kp_table_resize(ks, arg_tbl, argc, 1);
+	kp_tab_resize(ks, arg_tbl, argc, 1);
 
 	ret = 0;
 	for (i = 0; i < argc; i++) {
@@ -1059,7 +1059,7 @@ static int kp_init_arguments(ktap_state *ks, int argc, char __user **user_argv)
 		} else
 			set_string(&val, kp_tstring_new(ks, kstr));
 
-		kp_table_setint(ks, arg_tbl, i, &val);
+		kp_tab_setint(ks, arg_tbl, i, &val);
 
 		kfree(kstr);
 	}

@@ -232,7 +232,7 @@ void kp_showobj(ktap_state *ks, const ktap_value *v)
 		kp_puts(ks, svalue(v));
 		break;
 	case KTAP_TTABLE:
-		kp_table_dump(ks, hvalue(v));
+		kp_tab_dump(ks, hvalue(v));
 		break;
 #ifdef __KERNEL__
 	case KTAP_TEVENT:
@@ -242,7 +242,7 @@ void kp_showobj(ktap_state *ks, const ktap_value *v)
 		kp_btrace_dump(ks, btvalue(v));
 		break;
 	case KTAP_TPTABLE:
-		kp_ptable_dump(ks, phvalue(v));
+		kp_ptab_dump(ks, phvalue(v));
 		break;
 	case KTAP_TSTATDATA:
 		kp_statdata_dump(ks, sdvalue(v));
@@ -299,7 +299,7 @@ int kp_objlen(ktap_state *ks, const ktap_value *v)
 {
 	switch(v->type) {
 	case KTAP_TTABLE:
-		return kp_table_length(ks, hvalue(v));
+		return kp_tab_length(ks, hvalue(v));
 	case KTAP_TSTRING:
 		return rawtsvalue(v)->tsv.len;
 	default:
@@ -422,14 +422,14 @@ void kp_free_gclist(ktap_state *ks, ktap_gcobject *o)
 		next = gch(o)->next;
 		switch (gch(o)->tt) {
 		case KTAP_TTABLE:
-			kp_table_free(ks, (ktap_table *)o);
+			kp_tab_free(ks, (ktap_tab *)o);
 			break;
 		case KTAP_TPROTO:
 			free_proto(ks, (ktap_proto *)o);
 			break;
 #ifdef __KERNEL__
 		case KTAP_TPTABLE:
-			kp_ptable_free(ks, (ktap_ptable *)o);
+			kp_ptab_free(ks, (ktap_ptab *)o);
 			break;
 #endif
 		default:
