@@ -256,6 +256,15 @@ There have four type of EVENTDEF, tracepoint, kprobe, uprobe, sdt.
 	All tracepoint events are based on:  
 	          /sys/kernel/debug/tracing/events/$SYS/$EVENT
 
+- ftrace(kernel must compiled with CONFIG_FUNCTION_TRACER)
+
+	EventDef               Description 
+	--------------------   -------------------------------
+	ftrace:function        trace kernel functions based on ftrace
+
+	User need to use filter (/ip==*/) to trace specfic functions.
+	Function must be listed in /sys/kernel/debug/tracing/available_filter_functions
+
 - kprobe:  
 
 	EventDef               Description
@@ -265,6 +274,7 @@ There have four type of EVENTDEF, tracepoint, kprobe, uprobe, sdt.
 	probe:SyS_write        trace SyS_write function
 	probe:vfs*             trace wildcards vfs related function
 
+	kprobe functions must be listed in /proc/kallsyms
 - uprobe:
 
 	EventDef                               Description
