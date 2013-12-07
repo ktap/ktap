@@ -24,6 +24,7 @@
  */
 
 #include "../include/ktap_types.h"
+#include "../include/ktap_ffi.h"
 #include "kp_obj.h"
 #include "kp_str.h"
 #include "kp_tab.h"
@@ -235,6 +236,11 @@ void kp_showobj(ktap_state *ks, const ktap_value *v)
 		kp_tab_dump(ks, hvalue(v));
 		break;
 #ifdef __KERNEL__
+#ifdef CONFIG_KTAP_FFI
+	case KTAP_TCDATA:
+		kp_cdata_dump(ks, cdvalue(v));
+		break;
+#endif
 	case KTAP_TEVENT:
 		kp_transport_event_write(ks, evalue(v));
 		break;

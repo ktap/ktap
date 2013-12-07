@@ -1,10 +1,9 @@
 /*
  * call_x86_64.S - assembly code to call C function and handle return value
  *
- * This file is part of ktap by zhangwei(Jovi).
+ * This file is part of ktap by Jovi Zhangwei
  *
- * Copyright (C) 2012-2013 zhangwei(Jovi) <jovi.zhangwei@gmail.com>.
- * See the COPYRIGHT file at the top-level directory of this distribution.
+ * Copyright (C) 2012-2013 Jovi Zhangwei <jovi.zhangwei@gmail.com>.
  *
  * ktap is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,

@@ -30,6 +30,7 @@
 #include <linux/uaccess.h>
 #include "../include/ktap_types.h"
 #include "../include/ktap_opcodes.h"
+#include "../include/ktap_ffi.h"
 #include "ktap.h"
 #include "kp_obj.h"
 #include "kp_str.h"
@@ -316,6 +317,10 @@ static int precall(ktap_state *ks, StkId func, int nresults)
 	ktap_cfunction f;
 	ktap_callinfo *ci;
 	ktap_proto *p;
+#ifdef CONFIG_KTAP_FFI
+	ktap_cdata *cd;
+	csymbol *cs;
+#endif
 	StkId base;
 	ptrdiff_t funcr = savestack(ks, func);
 	int n;
@@ -335,7 +340,7 @@ static int precall(ktap_state *ks, StkId func, int nresults)
 		n = (*f)(ks);
 		poscall(ks, ks->top - n);
 		return 1;
-	case KTAP_TCLOSURE:	
+	case KTAP_TCLOSURE:
 		p = clvalue(func)->p;
 
 		if (checkstack(ks, p->maxstacksize))
@@ -358,6 +363,30 @@ static int precall(ktap_state *ks, StkId func, int nresults)
 		ci->callstatus = CIST_KTAP;
 		ks->top = ci->top;
 		return 0;
+#ifdef CONFIG_KTAP_FFI
+	case KTAP_TCDATA:
+		cd = cdvalue(func);
+
+		if (checkstack(ks, KTAP_MIN_RESERVED_STACK_SIZE))
+			return 1;
+
+		if (cd_type(ks, cd) != FFI_FUNC)
+			kp_error(ks, "Value in cdata is not a c funcion\n");
+		cs = cd_csym(ks, cd);
+		kp_verbose_printf(ks, "calling ffi function [%s] with address %p\n",
+				csym_name(cs), csym_func_addr(cs));
+
+		ci = next_ci(ks);
+		ci->nresults = nresults;
+		ci->func = restorestack(ks, funcr);
+		ci->top = ks->top + KTAP_MIN_RESERVED_STACK_SIZE;
+		ci->callstatus = 0;
+
+		n = kp_ffi_call(ks, csym_func(cs));
+		kp_verbose_printf(ks, "returned from ffi call...\n");
+		poscall(ks, ks->top - n);
+		return 1;
+#endif
 	default:
 		kp_error(ks, "attempt to call nil function\n");
 	}
@@ -1004,7 +1033,7 @@ static int kp_init_arguments(ktap_state *ks, int argc, char __user **user_argv)
 	ktap_value arg_tsval;
 	char **argv;
 	int i, ret;
-	
+
 	set_string(&arg_tsval, kp_tstring_new(ks, "arg"));
 	set_table(&arg_tblval, arg_tbl);
 	kp_tab_setvalue(ks, global_tbl, &arg_tsval, &arg_tblval);
@@ -1350,6 +1379,7 @@ void kp_final_exit(ktap_state *ks)
 	kp_probe_exit(ks);
 
 	/* free all resources got by ktap */
+	kp_ffi_free_symbol(ks);
 	kp_tstring_freeall(ks);
 	kp_free_all_gcobject(ks);
 	cfunction_cache_exit(ks);
@@ -1448,6 +1478,7 @@ ktap_state *kp_newstate(ktap_parm *parm, struct dentry *dir)
 	kp_init_kdebuglib(ks);
 	kp_init_timerlib(ks);
 	kp_init_ansilib(ks);
+	kp_init_ffilib(ks);
 
 	if (alloc_kp_percpu_data(ks))
 		goto out;

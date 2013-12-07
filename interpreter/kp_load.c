@@ -25,6 +25,7 @@
 
 #include <linux/slab.h>
 #include "../include/ktap_types.h"
+#include "../include/ktap_ffi.h"
 #include "ktap.h"
 #include "kp_load.h"
 #include "kp_obj.h"
@@ -52,6 +53,7 @@ struct load_state {
 	} while(0)
 
 #define NEW_VECTOR(S, size)	kp_malloc(S->ks, size)
+#define FREE_VECTOR(S, v)	kp_free(S->ks, v)
 #define GET_CURRENT(S)		&S->buff[S->pos]
 #define ADD_POS(S, size)	S->pos += size
 
@@ -141,7 +143,7 @@ static int load_constants(struct load_state *S, ktap_proto *f)
 			kp_error(S->ks, "ktap: load_constants: "
 					"unknow ktap_value\n");
 			return -1;
-			
+
 		}
 	}
 
@@ -255,6 +257,86 @@ static int load_header(struct load_state *S)
 	return -1;
 }
 
+#ifdef CONFIG_KTAP_FFI
+void ffi_set_csym_arr(ktap_state *ks, int cs_nr, csymbol *new_arr);
+
+static void load_csymbol_func(struct load_state *S, csymbol *cs)
+{
+	csymbol_func *csf = csym_func(cs);
+	int arg_nr = csymf_arg_nr(csf);
+
+	if (arg_nr > 0) {
+		csf->arg_ids = NEW_VECTOR(S, arg_nr*sizeof(int));
+		READ_VECTOR(S, csf->arg_ids, arg_nr*sizeof(int));
+	} else {
+		csf->arg_ids = NULL;
+	}
+}
+
+static void load_csymbol_struct(struct load_state *S, csymbol *cs)
+{
+	csymbol_struct *csst = csym_struct(cs);
+	int mb_nr = csymst_mb_nr(csst);
+
+	csst->members = NEW_VECTOR(S, mb_nr*sizeof(struct_member));
+	READ_VECTOR(S, csst->members, mb_nr*sizeof(struct_member));
+}
+
+static int load_csymbols(struct load_state *S)
+{
+	csymbol *cs_arr, *cs;
+	int i, csym_nr;
+
+	/* read number of csymbols */
+	csym_nr = READ_INT(S);
+	if (csym_nr <= 0) {
+		ffi_set_csym_arr(S->ks, 0, NULL);
+		return 0;
+	}
+
+	/* csymbol size safty check */
+	if (sizeof(csymbol) != READ_INT(S)) {
+		kp_error(S->ks, "invalid csymbol size in chunk\n");
+		return -1;
+	}
+
+	cs_arr = NEW_VECTOR(S, sizeof(csymbol)*csym_nr);
+	for (i = 0; i < csym_nr; i++) {
+		cs = &cs_arr[i];
+		READ_VECTOR(S, cs, sizeof(csymbol));
+		switch (cs->type) {
+		case FFI_FUNC:
+			load_csymbol_func(S, cs);
+			break;
+		case FFI_STRUCT:
+			load_csymbol_struct(S, cs);
+			break;
+		default:
+			break;
+		}
+	}
+
+	ffi_set_csym_arr(S->ks, csym_nr, cs_arr);
+
+	return 0;
+}
+#else
+static int load_csymbols(struct load_state *S)
+{
+	int csym_nr = READ_INT(S);
+
+	/* if FFI is disabled in ktapc, csym_nr should be 0 */
+	if (csym_nr != 0) {
+		 /* skip corrupted csymbol chunk */
+		int cs_size = READ_INT(S);
+		ADD_POS(S, cs_size*csym_nr);
+		kp_error(S->ks, "VM compiled without FFI support!\n");
+		return -1;
+	}
+
+	return 0;
+}
+#endif
 
 static int verify_code(struct load_state *S, ktap_proto *f)
 {
@@ -274,6 +356,10 @@ ktap_closure *kp_load(ktap_state *ks, unsigned char *buff)
 	S.pos = 0;
 
 	ret = load_header(&S);
+	if (ret)
+		return NULL;
+
+	ret = load_csymbols(&S);
 	if (ret)
 		return NULL;
 
@@ -309,6 +395,7 @@ ktap_closure *kp_load(ktap_state *ks, unsigned char *buff)
 	}
 
 	verify_code(&S, cl->p);
+
 	return cl;
 }
 

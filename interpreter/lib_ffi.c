@@ -1,5 +1,5 @@
 /*
- * kp_amalg.c - ktapvm kernel module amalgamation.
+ * ffi.c - ktapvm kernel module ffi library
  *
  * This file is part of ktap by Jovi Zhangwei.
  *
@@ -19,25 +19,32 @@
  * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include "../include/ktap_types.h"
+#include "../include/ktap_ffi.h"
+#include "ktap.h"
+#include "kp_vm.h"
 
-#include "ktap.c"
-#include "kp_opcode.c"
-#include "kp_obj.c"
-#include "kp_load.c"
-#include "kp_str.c"
-#include "kp_tab.c"
-#include "kp_transport.c"
-#include "kp_vm.c"
-#include "lib_base.c"
-#include "lib_ansi.c"
-#include "lib_kdebug.c"
-#include "lib_timer.c"
+/*@TODO Design how to implement ffi helper functions  22.11 2013 (unihorn)*/
 
-#ifdef CONFIG_KTAP_FFI
-#include "ffi/ffi_call.c"
-#include "ffi/ffi_type.c"
-#include "ffi/ffi_symbol.c"
-#include "ffi/cdata.c"
-#include "ffi/ffi_util.c"
-#include "lib_ffi.c"
-#endif
+static int kp_ffi_new(ktap_state *ks)
+{
+	/*@TODO finish this  08.11 2013 (houqp)*/
+	return 0;
+}
+
+static int kp_ffi_sizeof(ktap_state *ks)
+{
+	/*@TODO finish this  08.11 2013 (houqp)*/
+	return 0;
+}
+
+static const ktap_Reg ffi_funcs[] = {
+	{"sizeof", kp_ffi_sizeof},
+	{"new", kp_ffi_new},
+	{NULL}
+};
+
+void kp_init_ffilib(ktap_state *ks)
+{
+	kp_register_lib(ks, "ffi", ffi_funcs);
+}

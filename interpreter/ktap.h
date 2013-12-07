@@ -35,6 +35,15 @@ void kp_init_oslib(ktap_state *ks);
 void kp_init_kdebuglib(ktap_state *ks);
 void kp_init_timerlib(ktap_state *ks);
 void kp_init_ansilib(ktap_state *ks);
+#ifdef CONFIG_KTAP_FFI
+void kp_init_ffilib(ktap_state *ks);
+#else
+static void __maybe_unused kp_init_ffilib(ktap_state *ks)
+{
+	return;
+}
+#endif
+
 
 int kp_probe_init(ktap_state *ks);
 void kp_probe_exit(ktap_state *ks);
