@@ -1,0 +1,8 @@
+cdef("int printk(char *fmt, ...);")
+
+
+C.printk("This is printed out by ffi\n")
+C.printk("Show me the %s\n", "code")
+C.printk("%s should be at %02d/%02d %02d:%02d:%02d\n", "New Year", 1, 1, 0, 0, 0)
+C.printk("\'a\' + 5 = \'%c\'\n", 95 + 5)
+C.printk("The string is located at 0x%p\n", "str")

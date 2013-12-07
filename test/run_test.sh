@@ -51,6 +51,8 @@ sleep 1
 pkill ktap
 sleep 1
 
+cd ffi && make --quiet --no-print-directory test && cd -
+
 #####################################################
 rmmod ktapvm
 if test $? -ne 0; then

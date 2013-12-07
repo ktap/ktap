@@ -1,0 +1,44 @@
+function failed(msg) {
+	printf("failed: " .. msg);
+	printf("\n")
+	exit(-1);
+}
+
+
+cdef("void ffi_test_void();")
+cdef("int ffi_test_int1(unsigned char a, char b, unsigned short c, short d);")
+cdef("long long ffi_test_int2(unsigned int a, int b, unsigned long c, long d, unsigned long long e, long long f, long long g);")
+cdef("void *ffi_test_pointer1(char *a);")
+cdef("long long ffi_test_var_arg(int n, ...);")
+cdef("unsigned long long ffi_test_sched_clock(void);")
+
+
+ret = C.ffi_test_void()
+if (ret != nil) {
+	failed("ffi_test_void should return nil")
+}
+
+ret = C.ffi_test_int1(1111, 1111, 1111, 1111)
+if (ret != 2396) {
+	failed("ffi_test_int1(1111, 1111, 1111, 1111) should return 2396")
+}
+
+ret = C.ffi_test_int2(90, 7800, 560000, 34000000, 1200000000, 900000000000, 78000000000000)
+if (ret != 78901234567890) {
+	failed("ffi_test_int2 should return 78901234567890")
+}
+
+ret = C.ffi_test_pointer1("")
+if (ret == nil) {
+	failed("ffi_test_pointer1 shoudl return address around 0xffff8800--------")
+}
+
+ret = C.ffi_test_var_arg(7, 90, 7800, 560000, 34000000, 1200000000, 900000000000, 78000000000000)
+if (ret != 78901234567890) {
+	failed("ffi_test_var_arg should return 78901234567890")
+}
+
+ret = C.ffi_test_sched_clock()
+if (ret == nil) {
+	failed("ffi_test_clock should not return nil")
+}
