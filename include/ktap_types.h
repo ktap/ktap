@@ -8,6 +8,7 @@ typedef char u8;
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdint.h>
 #endif
 
 typedef struct ktap_parm {
@@ -246,6 +247,29 @@ typedef struct ktap_stringtable {
 	int size;
 } ktap_stringtable;
 
+#ifdef CONFIG_KTAP_FFI
+typedef int csymbol_id;
+typedef struct csymbol csymbol;
+
+/* global ffi state maintained in each ktap vm instance */
+typedef struct ffi_state {
+	ktap_tab *ctable;
+	int csym_nr;
+	csymbol *csym_arr;
+} ffi_state;
+
+/* instance of csymbol */
+typedef struct ktap_cdata {
+	CommonHeader;
+	csymbol_id id;
+	union {
+		uint64_t i;
+		void *p;	/* pointer address */
+		void *st;	/* struct member data */
+	} u;
+} ktap_cdata;
+#endif
+
 typedef struct ktap_stats {
 	int mem_allocated;
 	int nr_mem_allocate;
@@ -300,6 +324,9 @@ typedef struct ktap_global_state {
 	int wait_user;
 	ktap_closure *trace_end_closure;
 	struct ktap_stats __percpu *stats;
+#ifdef CONFIG_KTAP_FFI
+	ffi_state  ffis;
+#endif
 #endif
 	int error;
 } ktap_global_state;
@@ -342,6 +369,9 @@ union ktap_gcobject {
 	struct ktap_upval uv;
 	struct ktap_state th;  /* thread */
  	struct ktap_btrace bt;  /* backtrace object */
+#ifdef CONFIG_KTAP_FFI
+	struct ktap_cdata cd;
+#endif
 };
 
 #define gch(o)			(&(o)->gch)
@@ -376,11 +406,11 @@ union ktap_gcobject {
 #define KTAP_TTHREAD		7
 #define KTAP_TPROTO		8
 #define KTAP_TUPVAL		9
-
 #define KTAP_TEVENT		10
 #define KTAP_TBTRACE		11
 #define KTAP_TPTABLE		12
 #define KTAP_TSTATDATA		13
+#define KTAP_TCDATA		14
 /*
  * type number is ok so far, but it may collide later between
  * 16+ and | (1 << 4), so be careful on this.
@@ -417,6 +447,7 @@ union ktap_gcobject {
 #define fvalue(o)		(val_(o).f)
 #define evalue(o)		(val_(o).p)
 #define btvalue(o)		(&val_(o).gc->bt)
+#define cdvalue(o)		(&val_(o).gc->cd)
 
 #define is_nil(o)		((o)->type == KTAP_TNIL)
 #define is_boolean(o)		((o)->type == KTAP_TBOOLEAN)
@@ -430,6 +461,9 @@ union ktap_gcobject {
 #define is_event(o)		((o)->type == KTAP_TEVENT)
 #define is_btrace(o)		((o)->type == KTAP_TBTRACE)
 #define is_needclone(o)		is_btrace(o)
+#ifdef CONFIG_KTAP_FFI
+#define is_cdata(o)		((o)->type == KTAP_TCDATA)
+#endif
 
 
 #define set_nil(obj) \
@@ -475,6 +509,12 @@ union ktap_gcobject {
 #define set_btrace(obj, x) \
 	{ ktap_value *io = (obj); \
 	  val_(io).gc = (ktap_gcobject *)(x); settype(io, KTAP_TBTRACE); }
+
+#ifdef CONFIG_KTAP_FFI
+#define set_cdata(obj, x) \
+	{ ktap_value *io=(obj); \
+	  val_(io).gc = (ktap_gcobject *)(x); settype(io, KTAP_TCDATA); }
+#endif
 
 #define set_obj(obj1, obj2) \
         { const ktap_value *io2 = (obj2); ktap_value *io1 = (obj1); \
