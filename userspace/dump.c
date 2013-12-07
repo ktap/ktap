@@ -31,6 +31,7 @@
 #include "../include/ktap_opcodes.h"
 #include "ktapc.h"
 #include "../interpreter/kp_obj.h"
+#include "cparser.h"
 
 
 typedef struct {
@@ -171,6 +172,67 @@ static void DumpHeader(DumpState *D)
 	DumpBlock(h, KTAPC_HEADERSIZE, D);
 }
 
+#ifdef CONFIG_KTAP_FFI
+static void DumpCSymbolFunc(csymbol *cs, DumpState *D)
+{
+	csymbol_func *csf = csym_func(cs);
+
+	DumpBlock(cs, sizeof(csymbol), D);
+	/* dump csymbol index for argument types */
+	DumpBlock(csf->arg_ids, csf->arg_nr*sizeof(int), D);
+}
+
+static void DumpCSymbolStruct(csymbol *cs, DumpState *D)
+{
+	csymbol_struct *csst = csym_struct(cs);
+
+	DumpBlock(cs, sizeof(csymbol), D);
+	/* dump csymbol index for argument types */
+	DumpBlock(csst->members, csst->memb_nr*sizeof(struct_member), D);
+}
+
+static void DumpCSymbols(DumpState *D)
+{
+	int i, cs_nr;
+	cp_csymbol_state *cs_state;
+	csymbol *cs, *cs_arr;
+
+	cs_state = ctype_get_csym_state();
+	cs_arr = cs_state->cs_arr;
+	cs_nr = cs_state->cs_nr;
+
+	if (!cs_arr || cs_nr == 0) {
+		DumpInt(0, D);
+		return;
+	}
+
+	/* dump number of csymbols */
+	DumpInt(cs_nr, D);
+	/* dump size of csymbol, for safty check in vm */
+	DumpInt(sizeof(csymbol), D);
+	for (i = 0; i < cs_nr; i++) {
+		cs = &cs_arr[i];
+		switch (cs->type) {
+		case FFI_FUNC:
+			DumpCSymbolFunc(cs, D);
+			break;
+		case FFI_STRUCT:
+			DumpCSymbolStruct(cs, D);
+			break;
+		default:
+			DumpBlock(cs, sizeof(csymbol), D);
+			break;
+		}
+	}
+}
+#else
+static void DumpCSymbols(DumpState *D)
+{
+	/* always dump zero when FFI is disabled */
+	DumpInt(0, D);
+}
+#endif /* CONFIG_KTAP_FFI */
+
 /*
  * dump ktap function as precompiled chunk
  */
@@ -183,6 +245,7 @@ int ktapc_dump(const ktap_proto *f, ktap_writer w, void *data, int strip)
 	D.strip = strip;
 	D.status = 0;
 	DumpHeader(&D);
+	DumpCSymbols(&D);
 	DumpFunction(f, &D);
 	return D.status;
 }

@@ -40,6 +40,7 @@
 #include "../interpreter/kp_str.h"
 #include "../interpreter/kp_tab.h"
 #include "symbol.h"
+#include "cparser.h"
 
 
 /*******************************************************************/
@@ -618,6 +619,7 @@ static void compile(const char *input)
 
 	if (oneline_src[0] != '\0') {
 		init_dummy_global_state();
+		ffi_cparser_init();
 		cl = ktapc_parser(oneline_src, input);
 		goto dump;
 	}
@@ -636,6 +638,7 @@ static void compile(const char *input)
 		handle_error("mmap failed");
 
 	init_dummy_global_state();
+	ffi_cparser_init();
 	cl = ktapc_parser(buff, input);
 
 	munmap(buff, sb.st_size);
@@ -653,6 +656,7 @@ static void compile(const char *input)
 		handle_error("malloc failed");
 
 	ktapc_dump(cl->p, ktapc_writer, NULL, 0);
+	ffi_cparser_free();
 }
 
 int main(int argc, char **argv)

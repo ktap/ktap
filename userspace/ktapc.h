@@ -78,6 +78,7 @@ enum RESERVED {
 	/* terminal symbols denoted by reserved words */
 	TK_TRACE = FIRST_RESERVED, TK_TRACE_END,
 	TK_ARGEVENT, TK_ARGNAME,
+	TK_FFI_CDEF,
 	TK_ARG1, TK_ARG2, TK_ARG3, TK_ARG4, TK_ARG5, TK_ARG6, TK_ARG7, TK_ARG8,
 	TK_ARG9, TK_PROFILE, TK_TICK, TK_AGGR_ASSIGN,
 	TK_AND, TK_BREAK,
@@ -377,3 +378,16 @@ int kallsyms_parse(void *arg,
 
 unsigned long find_kernel_symbol(const char *symbol);
 void list_available_events(const char *match);
+
+
+#ifdef CONFIG_KTAP_FFI
+#include "../include/ktap_ffi.h"
+
+typedef struct cp_csymbol_state {
+	int cs_nr; /* number of c symbols */
+	int cs_arr_size; /* size of current symbol arrays */
+	csymbol *cs_arr;
+} cp_csymbol_state;
+
+cp_csymbol_state *ctype_get_csym_state(void);
+#endif

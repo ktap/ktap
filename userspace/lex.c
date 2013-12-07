@@ -39,7 +39,7 @@
 
 /* ORDER RESERVED */
 static const char *const ktap_tokens [] = {
-	"trace", "trace_end", "argevent", "argname",
+	"trace", "trace_end", "argevent", "argname", "cdef",
 	"arg1", "arg2", "arg3", "arg4", "arg5", "arg6", "arg7", "arg9", "arg9",
 	"profile", "tick", "<<<",
 	"and", "break", "do", "else", "elseif",
@@ -133,7 +133,7 @@ ktap_string *lex_newstring(ktap_lexstate *ls, const char *str, size_t l)
 	ktap_value val;  /* entry for `str' */
 	ktap_value tsv;
 	ktap_string *ts = ktapc_ts_newlstr(str, l);  /* create new string */
-	set_string(&tsv, ts); 
+	set_string(&tsv, ts);
 	o = ktapc_table_get(ls->fs->h, &tsv);
 	if (is_nil(o)) {  /* not in use yet? (see 'addK') */
 		/* boolean value does not need GC barrier;
@@ -553,7 +553,7 @@ static int llex(ktap_lexstate *ls, ktap_seminfo *seminfo)
 				next(ls);
 				return TK_AND;
 			}
-		} 
+		}
 		case '|': {
 			next(ls);
 			if (ls->current != '|')
@@ -562,7 +562,7 @@ static int llex(ktap_lexstate *ls, ktap_seminfo *seminfo)
 				next(ls);
 				return TK_OR;
 			}
-		} 
+		}
 		default: {
 			if (islalpha(ls->current)) {
 				/* identifier or reserved word? */
