@@ -97,7 +97,8 @@ static csymbol *ffi_get_arg_csym(ktap_state *ks, csymbol_func *csf, int idx)
 	}
 }
 
-static void ffi_unpack(ktap_state *ks, csymbol_func *csf, int idx, char *dst)
+static void ffi_unpack(ktap_state *ks, csymbol_func *csf, int idx,
+		char *dst, int align)
 {
 	StkId arg = kp_arg(ks, idx + 1);
 	csymbol *cs = ffi_get_arg_csym(ks, csf, idx);
@@ -106,16 +107,17 @@ static void ffi_unpack(ktap_state *ks, csymbol_func *csf, int idx, char *dst)
 	void *p;
 	struct ktap_cdata *cd;
 
+	/* initialize the destination section */
+	memset(dst, 0, ALIGN(size, align));
+
 	switch (ttypenv(arg)) {
 	case KTAP_TBOOLEAN:
-		memset(dst, 0, size);
 		memcpy(dst, &bvalue(arg), sizeof(bool));
 		return;
 	case KTAP_TLIGHTUSERDATA:
 		memcpy(dst, pvalue(arg), size);
 		return;
 	case KTAP_TNUMBER:
-		memset(dst, 0, size);
 		memcpy(dst, &nvalue(arg), size < sizeof(ktap_number) ?
 				size : sizeof(ktap_number));
 		return;
@@ -289,7 +291,7 @@ static void ffi_call_x86_64(ktap_state *ks, csymbol_func *csf, void *rvalue)
 			mem_p = ALIGN_STACK(mem_p, align);
 		/* Tricky way about storing it above mem_p. It won't overflow
 		 * because temp region can be temporarily used if necesseary. */
-		ffi_unpack(ks, csf, i, mem_p);
+		ffi_unpack(ks, csf, i, mem_p, GPR_SIZE);
 		if (gpr_nr + n_gpr_nr > MAX_GPR) {
 			if (st == IN_MEMORY) {
 				memcpy(arg_p, &mem_p, GPR_SIZE);
