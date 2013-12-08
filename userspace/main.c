@@ -36,9 +36,9 @@
 #include "../include/ktap_types.h"
 #include "../include/ktap_opcodes.h"
 #include "ktapc.h"
-#include "../interpreter/kp_obj.h"
-#include "../interpreter/kp_str.h"
-#include "../interpreter/kp_tab.h"
+#include "../runtime/kp_obj.h"
+#include "../runtime/kp_str.h"
+#include "../runtime/kp_tab.h"
 #include "symbol.h"
 #include "cparser.h"
 

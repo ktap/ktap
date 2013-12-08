@@ -21,35 +21,34 @@ endif
 all: mod ktap
 
 INC = include
-INTP = interpreter
+RUNTIME = runtime
 
-
-FFIDIR = $(INTP)/ffi
+FFIDIR = $(RUNTIME)/ffi
 KTAP_LIBS = -lpthread
 
-LIB_OBJS += $(INTP)/lib_base.o $(INTP)/lib_kdebug.o $(INTP)/lib_timer.o \
-		$(INTP)/lib_ansi.o
+LIB_OBJS += $(RUNTIME)/lib_base.o $(RUNTIME)/lib_kdebug.o $(RUNTIME)/lib_timer.o \
+		$(RUNTIME)/lib_ansi.o
 
 ifndef amalg
 ifdef FFI
 FFI_OBJS += $(FFIDIR)/ffi_call.o $(FFIDIR)/ffi_type.o $(FFIDIR)/ffi_symbol.o \
     $(FFIDIR)/cdata.o $(FFIDIR)/ffi_util.o
-INTP_OBJS += $(FFI_OBJS)
-LIB_OBJS += $(INTP)/lib_ffi.o
+RUNTIME_OBJS += $(FFI_OBJS)
+LIB_OBJS += $(RUNTIME)/lib_ffi.o
 endif
-INTP_OBJS += $(INTP)/ktap.o $(INTP)/kp_load.o $(INTP)/kp_obj.o \
-		$(INTP)/kp_str.o $(INTP)/kp_tab.o $(INTP)/kp_vm.o \
-		$(INTP)/kp_opcode.o $(INTP)/kp_transport.o \
+RUNTIME_OBJS += $(RUNTIME)/ktap.o $(RUNTIME)/kp_load.o $(RUNTIME)/kp_obj.o \
+		$(RUNTIME)/kp_str.o $(RUNTIME)/kp_tab.o $(RUNTIME)/kp_vm.o \
+		$(RUNTIME)/kp_opcode.o $(RUNTIME)/kp_transport.o \
 		$(LIB_OBJS)
 else
-INTP_OBJS += $(INTP)/kp_amalg.o
+RUNTIME_OBJS += $(RUNTIME)/kp_amalg.o
 endif
 
 ifdef FFI
 ifeq ($(KBUILD_MODULES), 1)
 ifdef CONFIG_X86_64
 # call_x86_64.o is compiled from call_x86_64.S
-INTP_OBJS += $(FFIDIR)/call_x86_64.o
+RUNTIME_OBJS += $(FFIDIR)/call_x86_64.o
 else
 $(error ktap FFI only supports x86_64 for now!)
 endif
@@ -60,7 +59,7 @@ ccflags-y	+= -DCONFIG_KTAP_FFI
 endif
 
 obj-m		+= ktapvm.o
-ktapvm-y	:= $(INTP_OBJS)
+ktapvm-y	:= $(RUNTIME_OBJS)
 
 KVERSION ?= $(shell uname -r)
 KERNEL_SRC ?= /lib/modules/$(KVERSION)/build
@@ -131,13 +130,13 @@ $(UDIR)/ktapio.o: $(UDIR)/ktapio.c $(INC)/*
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
 $(UDIR)/eventdef.o: $(UDIR)/eventdef.c $(INC)/*
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
-$(UDIR)/kp_opcode.o: $(INTP)/kp_opcode.c $(INC)/*
+$(UDIR)/kp_opcode.o: $(RUNTIME)/kp_opcode.c $(INC)/*
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
-$(UDIR)/kp_tab.o: $(INTP)/kp_tab.c $(INC)/*
+$(UDIR)/kp_tab.o: $(RUNTIME)/kp_tab.c $(INC)/*
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
-$(UDIR)/kp_str.o: $(INTP)/kp_str.c $(INC)/*
+$(UDIR)/kp_str.o: $(RUNTIME)/kp_str.c $(INC)/*
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
-$(UDIR)/kp_obj.o: $(INTP)/kp_obj.c $(INC)/*
+$(UDIR)/kp_obj.o: $(RUNTIME)/kp_obj.c $(INC)/*
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
 ifndef NO_LIBELF
 $(UDIR)/symbol.o: $(UDIR)/symbol.c
@@ -145,7 +144,7 @@ $(UDIR)/symbol.o: $(UDIR)/symbol.c
 endif
 ifdef FFI
 KTAPC_CFLAGS += -DCONFIG_KTAP_FFI
-$(UDIR)/ffi_type.o: $(INTP)/ffi/ffi_type.c $(INC)/*
+$(UDIR)/ffi_type.o: $(RUNTIME)/ffi/ffi_type.c $(INC)/*
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
 $(UDIR)/ffi/cparser.o: $(UDIR)/ffi/cparser.c $(INC)/*
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<

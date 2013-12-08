@@ -7,7 +7,7 @@ funct_mod:
 
 INC=../../include
 U_DIR=../../userspace
-INTP=../../interpreter
+RUNTIME=../../runtime
 U_FFI_DIR=$(U_DIR)/ffi
 CPARSER_FILES=cparser.o ctype.o ffi_type.o
 KTAPC_CFLAGS = -Wall -O2
@@ -18,7 +18,7 @@ cparser.o: $(U_FFI_DIR)/cparser.c $(INC)/*
 ctype.o: $(U_FFI_DIR)/ctype.c $(INC)/*
 	$(QUIET_CC)$(CC) -DCONFIG_KTAP_FFI -o $@ -c $<
 
-ffi_type.o: $(INTP)/ffi/ffi_type.c $(INC)/*
+ffi_type.o: $(RUNTIME)/ffi/ffi_type.c $(INC)/*
 	$(QUIET_CC)$(CC) -DCONFIG_KTAP_FFI -o $@ -c $<
 
 cparser_test: cparser_test.c $(CPARSER_FILES) $(INC)/*
