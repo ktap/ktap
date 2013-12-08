@@ -592,6 +592,12 @@ static void parse_option(int argc, char **argv)
 			}
 			break;
 		case 'V':
+#ifdef CONFIG_KTAP_FFI
+			usage("%s (with FFI)\n\n", KTAP_VERSION);
+#else
+			usage("%s\n\n", KTAP_VERSION);
+#endif
+			break;
 		case '?':
 		case 'h':
 			usage("");
