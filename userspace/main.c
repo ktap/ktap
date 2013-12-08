@@ -334,7 +334,7 @@ static void usage(const char *msg_fmt, ...)
 	va_list ap;
 
 	va_start(ap, msg_fmt);
-	fprintf(stderr, msg_fmt, ap);
+	vfprintf(stderr, msg_fmt, ap);
 	va_end(ap);
 
 	fprintf(stderr,
