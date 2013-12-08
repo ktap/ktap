@@ -1,3 +1,0 @@
-cdef("void kernel_halt(void);")
-
-C.kernel_halt()
