@@ -1803,16 +1803,12 @@ static void timerstat(ktap_lexstate *ls)
 #ifdef CONFIG_KTAP_FFI
 static void parsecdef(ktap_lexstate *ls)
 {
-	/* skip " */
-	lex_next(ls);
-	/* read cdef string */
+	/* read long string cdef */
 	lex_next(ls);
 
 	check(ls, TK_STRING);
 	ffi_cdef(getstr(ls->t.seminfo.ts));
 
-	/* consume ) */
-	lex_next(ls);
 	/* consume newline */
 	lex_next(ls);
 }
