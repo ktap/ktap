@@ -1,4 +1,6 @@
-cdef("int printk(char *fmt, ...);")
+cdef[[
+	int printk(char *fmt, ...);
+]]
 
 
 C.printk("This is printed out by ffi\n")

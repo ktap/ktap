@@ -599,7 +599,9 @@ For more release info, please look at RELEASES.txt in project root directory.
 
 10. FFI (Call kernel function from ktap script, need compile with FFI=1)
 
-        cdef("int printk(char *fmt, ...);")
+        cdef[[
+                int printk(char *fmt, ...);
+        ]]
 
         C.printk("This message is called from ktap ffi\n")
 

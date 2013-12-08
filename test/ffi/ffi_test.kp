@@ -5,12 +5,15 @@ function failed(msg) {
 }
 
 
-cdef("void ffi_test_void();")
-cdef("int ffi_test_int1(unsigned char a, char b, unsigned short c, short d);")
-cdef("long long ffi_test_int2(unsigned int a, int b, unsigned long c, long d, unsigned long long e, long long f, long long g);")
-cdef("void *ffi_test_pointer1(char *a);")
-cdef("long long ffi_test_var_arg(int n, ...);")
-cdef("unsigned long long ffi_test_sched_clock(void);")
+cdef[[
+	void ffi_test_void();
+	int ffi_test_int1(unsigned char a, char b, unsigned short c, short d);
+	long long ffi_test_int2(unsigned int a, int b, unsigned long c, long d,
+				unsigned long long e, long long f, long long g);
+	void *ffi_test_pointer1(char *a);
+	long long ffi_test_var_arg(int n, ...);
+	unsigned long long ffi_test_sched_clock(void);
+]]
 
 
 ret = C.ffi_test_void()

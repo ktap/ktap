@@ -1,4 +1,6 @@
-cdef("unsigned long long sched_clock();")
+cdef[[
+	unsigned long long sched_clock();
+]]
 
 ret = C.sched_clock()
 print("C.sched_clock returned, value: ", ret)

@@ -128,7 +128,9 @@ More information can be found at [ktap homepage][homepage].
 
 10. FFI (Call kernel function from ktap script, need compile with FFI=1)
 
-        cdef("int printk(char *fmt, ...);")
+        cdef[[
+                int printk(char *fmt, ...);
+        ]]
 
         C.printk("This message is called from ktap ffi\n")
 
@@ -148,7 +150,7 @@ http://www.freelists.org/list/ktap
 ktap is licensed under GPL v2
 
 Copyright (C) 2012-2013, Jovi Zhangwei <jovi.zhangwei@gmail.com>.
-All rights reserved.  
+All rights reserved.
 
 
 ## Contribution

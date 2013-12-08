@@ -1,9 +1,11 @@
 #!/usr/bin/env ktap
 
-cdef("typedef unsigned gfp_t;")
-cdef("typedef unsigned long size_t;")
-cdef("void *__kmalloc( size_t size, gfp_t flags);")
-cdef("void kfree(const void *objp);")
+cdef[[
+	typedef unsigned gfp_t;
+	typedef unsigned long size_t;
+	void *__kmalloc( size_t size, gfp_t flags);
+	void kfree(const void *objp);
+]]
 
 t1 = gettimeofday_us()
 
