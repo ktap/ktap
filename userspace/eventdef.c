@@ -31,79 +31,73 @@
 #include "ktapc.h"
 #include "symbol.h"
 
-static char tracing_events_path[] = "/sys/kernel/debug/tracing/events";
+#define TRACING_EVENTS_DIR "/sys/kernel/debug/tracing/events"
 
-#define IDS_ARRAY_SIZE 4096 * 2
-static u8 *ids_array;
+static u8 *idmap;
+static int idmap_size = 1024; /* set init size */
+static int id_nr = 0;
 
-#define set_id(id)	\
-	do { \
-		ids_array[id/8] = ids_array[id/8] | (1 << (id%8));	\
-	} while(0)
-
-#define clear_id(id)	\
-	do { \
-		ids_array[id/8] = ids_array[id/8] & ~ (1 << (id%8));	\
-	} while(0)
-
-
-static int get_digit_len(int id)
+static int idmap_init(void)
 {
-	int len = -1;
+	idmap = malloc(idmap_size);
+	if (!idmap)
+		return -1;
 
-	if (id < 10)
-		len = 1;
-	else if (id < 100)
-		len = 2;
-	else if (id < 1000)
-		len = 3;
-	else if (id < 10000)
-		len = 4;
-	else if (id < 100000)
-		len = 5;
-
-	return len;
+	memset(idmap, 0, idmap_size);
+	return 0;
 }
 
-static char *get_idstr(char *filter)
+static void idmap_free(void)
 {
-	char *idstr, *ptr;
-	int total_len = 0;
-	int filter_len;
-	int i;
+	free(idmap);
+}
 
-	filter_len = filter ? strlen(filter) : 0;
+static inline int idmap_is_set(int id)
+{
+	return idmap[id / 8] & (1 << (id % 8));
+}
 
-	for (i = 0; i < IDS_ARRAY_SIZE*8; i++) {
-		if (ids_array[i/8] & (1 << (i%8)))
-			total_len += get_digit_len(i) + 1;
+static void idmap_set(int id)
+{
+	if (id >= idmap_size * 8) {
+		int newsize = id + 100; /* allocate extra 800 id */
+		idmap = realloc(idmap, newsize);
+		memset(idmap + idmap_size, 0, newsize - idmap_size);
+		idmap_size = newsize;
 	}
 
-	if (!total_len)
+	if (!idmap_is_set(id))
+		id_nr++;
+
+	idmap[id / 8] = idmap[id / 8] | (1 << (id % 8));
+}
+
+static void idmap_clear(int id)
+{
+	id_nr--;
+	idmap[id / 8] = idmap[id / 8] & ~ (1 << (id % 8));
+}
+
+static int idmap_get_max_id(void)
+{
+	return idmap_size * 8;
+}
+
+static int *get_id_array()
+{
+	int *id_array;
+	int i, j = 0;
+
+	id_array = malloc(sizeof(int) * id_nr);
+	if (!id_array)
 		return NULL;
 
-	idstr = malloc(total_len + filter_len + 1);
-	if (!idstr)
-		return NULL;
-
-	memset(idstr, 0, total_len + filter_len + 1);
-	ptr = idstr;
-	for (i = 0; i < IDS_ARRAY_SIZE*8; i++) {
-		if (ids_array[i/8] & (1 << (i%8))) {
-			char digits[32] = {0};
-			int len;
-
-			sprintf(digits, "%d ", i);
-			len = strlen(digits);
-			strncpy(ptr, digits, len);
-			ptr += len;
-		}
+	for (i = 0; i < idmap_get_max_id(); i++) {
+		if (idmap_is_set(i))
+			id_array[j++] = i;
 	}
 
-	if (filter)
-		memcpy(ptr, filter, strlen(filter));
-
-	return idstr;
+	return id_array;
 }
 
 static int add_event(char *evtid_path)
@@ -129,14 +123,7 @@ static int add_event(char *evtid_path)
 
 	id = atoll(id_buf);
 
-	if (id >= IDS_ARRAY_SIZE * 8) {
-		fprintf(stderr, "tracepoint id(%d) is bigger than %d\n", id,
-				IDS_ARRAY_SIZE * 8);
-		close(fd);
-		return -1;
-	}
-
-	set_id(id);
+	idmap_set(id);
 
 	close(fd);
 	return 0;
@@ -147,7 +134,7 @@ static int add_tracepoint(char *sys_name, char *evt_name)
 	char evtid_path[PATH_MAX] = {0};
 
 
-	snprintf(evtid_path, PATH_MAX, "%s/%s/%s/id", tracing_events_path,
+	snprintf(evtid_path, PATH_MAX, "%s/%s/%s/id", TRACING_EVENTS_DIR,
 					sys_name, evt_name);
 	return add_event(evtid_path);
 }
@@ -159,7 +146,7 @@ static int add_tracepoint_multi_event(char *sys_name, char *evt_name)
 	DIR *evt_dir;
 	int ret = 0;
 
-	snprintf(evt_path, PATH_MAX, "%s/%s", tracing_events_path, sys_name);
+	snprintf(evt_path, PATH_MAX, "%s/%s", TRACING_EVENTS_DIR, sys_name);
 	evt_dir = opendir(evt_path);
 	if (!evt_dir) {
 		perror("Can't open event dir");
@@ -196,7 +183,7 @@ static int add_tracepoint_multi_sys(char *sys_name, char *evt_name)
 	DIR *events_dir;
 	int ret = 0;
 
-	events_dir = opendir(tracing_events_path);
+	events_dir = opendir(TRACING_EVENTS_DIR);
 	if (!events_dir) {
 		perror("Can't open event dir");
 		return -1;
@@ -772,29 +759,16 @@ static char *get_next_eventdef(char *str)
 	return separator + 1;
 }
 
-ktap_string *ktapc_parse_eventdef(ktap_string *eventdef)
+ktap_eventdef_info *ktapc_parse_eventdef(const char *eventdef)
 {
-	const char *def_str = getstr(eventdef);
-	char *str = strdup(def_str);
-	char *sys, *event, *filter, *idstr, *g_idstr, *next;
-	ktap_string *ts;
+	char *str = strdup(eventdef);
+	char *sys, *event, *filter, *next;
+	ktap_eventdef_info *evdef_info;
 	int ret;
 
-	if (!ids_array) {
-		ids_array = malloc(IDS_ARRAY_SIZE);
-		if (!ids_array)
-			return NULL;
-	}
-
-	g_idstr = malloc(4096 * 8);
-	if (!g_idstr)
-		return NULL;
-
-	memset(g_idstr, 0, 4096 * 8);
+	idmap_init();
 
  parse_next_eventdef:
-	memset(ids_array, 0, IDS_ARRAY_SIZE);
-
 	next = get_next_eventdef(str);
 
 	if (get_sys_event_filter_str(str, &sys, &event, &filter))
@@ -815,25 +789,30 @@ ktap_string *ktapc_parse_eventdef(ktap_string *eventdef)
 
 	/* don't trace ftrace:function when all tracepoints enabled */
 	if (!strcmp(sys, "*"))
-		clear_id(1);
+		idmap_clear(1);
 
-	idstr = get_idstr(filter);
-	if (!idstr)
+
+	if (filter && *next != '\0') {
+		fprintf(stderr, "Error: eventdef only can append one filter\n");
 		goto error;
+	}
 
 	str = next;
-
-	g_idstr = strcat(g_idstr, idstr);
-	g_idstr = strcat(g_idstr, ",");
-
 	if (*next != '\0')
 		goto parse_next_eventdef;
 
-	ts = ktapc_ts_new(g_idstr);
-	free(g_idstr);
+	evdef_info = malloc(sizeof(*evdef_info));
+	if (!evdef_info)
+		goto error;
 
-	return ts;
+	evdef_info->nr = id_nr;
+	evdef_info->id_arr = get_id_array();
+	evdef_info->filter = filter;
+
+	idmap_free();
+	return evdef_info;
  error:
+	idmap_free();
 	cleanup_event_resources();
 	return NULL;
 }

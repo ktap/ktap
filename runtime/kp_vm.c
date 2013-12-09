@@ -1060,7 +1060,7 @@ static int kp_init_arguments(ktap_state *ks, int argc, char __user **user_argv)
 	for (i = 0; i < argc; i++) {
 		ktap_value val;
 		char __user *ustr = argv[i];
-		char * kstr;
+		char *kstr;
 		int len;
 		int res;
 

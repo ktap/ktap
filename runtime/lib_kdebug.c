@@ -282,76 +282,72 @@ static void end_probes(struct ktap_state *ks)
 
 static int ktap_lib_probe_by_id(ktap_state *ks)
 {
-	const char *ids_str;
-	char *start;
 	ktap_closure *cl;
 	struct task_struct *task = G(ks)->trace_task;
-	char filter_str[128] = {0};
-	char *filter, *ptr1, *sep, *ptr;
+	ktap_eventdef_info evdef_info;
+	char *filter = NULL;
+	int *id_arr;
+	int ret, i;
 
-	kp_arg_check(ks, 1, KTAP_TSTRING);
+	/* the number is userspace address refer to ktap_eventdef_info */
+	kp_arg_check(ks, 1, KTAP_TNUMBER);
 	kp_arg_check(ks, 2, KTAP_TFUNCTION);
 
-	ids_str = svalue(kp_arg(ks, 1));
-	cl = clvalue(kp_arg(ks, 2));
+	ret = copy_from_user(&evdef_info, (void *)nvalue(kp_arg(ks, 1)),
+			     sizeof(evdef_info));
+	if (ret < 0)
+		return -1;
 
-	start = (char *)ids_str;
+	if (evdef_info.filter) {
+		int len;
 
- again:
-	filter = NULL;
+		len = strlen_user(evdef_info.filter);
+		if (len > 0x1000)
+			return -1;
 
-	sep = strchr(start, ',');
-	if (!sep)
-		ptr1 = strchr(start, '/');
-	else
-		ptr1 = strnchr(start, sep - start, '/');
+		filter = kmalloc(len + 1, GFP_KERNEL);
+		if (!filter)
+			return -1;
 
-	if (ptr1) {
-		char *ptr2 = strrchr(ptr1 + 1, '/');
-
-		if (ptr2) {
-			memset(filter_str, 0, sizeof(filter_str));
-			strncpy(filter_str, ptr1 + 1, ptr2 - ptr1 - 1);
-			filter = &filter_str[0];
-		} else {
-			kp_printf(ks, "cannot parse ids_str: %s\n", ids_str);
+		if (strncpy_from_user(filter, evdef_info.filter, len) < 0) {
+			kfree(filter);
 			return -1;
 		}
 	}
 
-	for (ptr = start; *ptr != ',' && *ptr != '\0' && *ptr != '/'; ptr++) {
-		char token[32] = {0};
-		int id;
-		int i = 0;
-
-		if (*ptr == ' ')
-			continue;
-
-		while (isdigit(*ptr)) {
-			token[i++] = *ptr++;
-		}
-
-		if (!kstrtoint(token, 10, &id)) {
-			struct perf_event_attr attr;
-
-			memset(&attr, 0, sizeof(attr));
-			attr.type = PERF_TYPE_TRACEPOINT;	
-			attr.config = id;
-			attr.sample_type = PERF_SAMPLE_RAW | PERF_SAMPLE_TIME |
-					   PERF_SAMPLE_CPU | PERF_SAMPLE_PERIOD;
-			attr.sample_period = 1;
-			attr.size = sizeof(attr);
-			attr.disabled = 0;
-
-			kp_perf_event_register(ks, &attr, task, filter, cl);
-		}
+	id_arr = kmalloc(evdef_info.nr * sizeof(int), GFP_KERNEL);
+	if (!id_arr) {
+		kfree(filter);
+		return -1;
 	}
 
-	if (sep && (*(sep + 1) != '\0')) {
-		start = sep + 1;
-		goto again;
+	ret = copy_from_user(id_arr, evdef_info.id_arr,
+			     evdef_info.nr * sizeof(int));
+	if (ret < 0) {
+		kfree(filter);
+		kfree(id_arr);
+		return -1;
 	}
 
+	cl = clvalue(kp_arg(ks, 2));
+
+	for (i = 0; i < evdef_info.nr; i++) {
+		struct perf_event_attr attr;
+
+		memset(&attr, 0, sizeof(attr));
+		attr.type = PERF_TYPE_TRACEPOINT;	
+		attr.config = id_arr[i];
+		attr.sample_type = PERF_SAMPLE_RAW | PERF_SAMPLE_TIME |
+				   PERF_SAMPLE_CPU | PERF_SAMPLE_PERIOD;
+		attr.sample_period = 1;
+		attr.size = sizeof(attr);
+		attr.disabled = 0;
+
+		kp_perf_event_register(ks, &attr, task, filter, cl);
+	}
+
+	kfree(filter);
+	kfree(id_arr);
 	return 0;
 }
 

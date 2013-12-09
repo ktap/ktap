@@ -11,6 +11,16 @@ typedef char u8;
 #include <stdint.h>
 #endif
 
+/*
+ * The first argument type of kdebug.probe_by_id() 
+ * The value is a userspace memory pointer.
+ */
+typedef struct ktap_eventdef_info {
+	int nr;
+	int *id_arr;
+	char *filter;
+} ktap_eventdef_info;
+
 typedef struct ktap_parm {
 	char *trunk; /* __user */
 	int trunk_len;

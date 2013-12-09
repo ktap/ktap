@@ -316,7 +316,7 @@ void *ktapc_growaux(void *block, int *size, size_t size_elems, int limit,
 void ktapio_exit(void);
 int ktapio_create(const char *output_filename);
 
-ktap_string *ktapc_parse_eventdef(ktap_string *eventdef);
+ktap_eventdef_info *ktapc_parse_eventdef(const char *eventdef);
 void cleanup_event_resources(void);
 
 extern int verbose;

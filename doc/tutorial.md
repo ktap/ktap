@@ -199,14 +199,19 @@ print current task stack info
 
 ### Kdebug Library
 
-**kdebug.probe_by_id (event_ids, eventfun)**
+**kdebug.probe_by_id (eventdef_info, eventfun)**
 
-This function is underly representation of high level tracing primitive.
-event_ids is the id of all events, it's read from  
-/sys/kernel/debug/tracing/events/$SYS/$EVENT/id
+This function is underly representation of high level tracing primitive.  
+Note that eventdef_info is just a userspace memory pointer refer to real
+eventdef_info structure, the structure defintion is:  
 
-for multi-events tracing, the event_ids is concatenation of all id, for example:
- "2 3 4", seperated by blank space.
+        struct eventdef_info {
+            int nr; /* the number to id */
+            int *id_arr; /* id array */
+            char *filter;
+        };
+
+Those id is read from /sys/kernel/debug/tracing/events/$SYS/$EVENT/id
 
 The second argument in above examples is a function:  
 function eventfun () { action }

@@ -157,6 +157,11 @@ static void codestring(ktap_lexstate *ls, ktap_expdesc *e, ktap_string *s)
 	init_exp(e, VK, codegen_stringK(ls->fs, s));
 }
 
+static void codenumber(ktap_lexstate *ls, ktap_expdesc *e, ktap_number n)
+{
+	init_exp(e, VK, codegen_numberK(ls->fs, n));
+}
+
 static void checkname(ktap_lexstate *ls, ktap_expdesc *e)
 {
 	codestring(ls, e, str_checkname(ls));
@@ -1701,12 +1706,16 @@ static void tracestat(ktap_lexstate *ls)
 	codegen_exp2nextreg(fs, v);
 
 	if (token == TK_TRACE) {
+		ktap_eventdef_info *evdef_info;
+
 		/* argument: EVENTDEF string */
 		check(ls, TK_STRING);
 		enterlevel(ls);
-		ktap_string *ts = ktapc_parse_eventdef(ls->t.seminfo.ts);
-		check_condition(ls, ts != NULL, "Cannot parse eventdef");
-		codestring(ls, &args, ts);
+		evdef_info = ktapc_parse_eventdef(getstr(ls->t.seminfo.ts));
+		check_condition(ls, evdef_info != NULL, "Cannot parse eventdef");
+
+		/* pass a userspace pointer to kernel */
+		codenumber(ls, &args, (ktap_number)evdef_info);
 		lex_next(ls);  /* skip EVENTDEF string */
 		leavelevel(ls);
 
