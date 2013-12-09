@@ -1,0 +1,17 @@
+#!/usr/bin/env ktap
+
+cdef("typedef unsigned gfp_t;")
+cdef("typedef unsigned long size_t;")
+cdef("void *__kmalloc( size_t size, gfp_t flags);")
+cdef("void kfree(const void *objp);")
+
+t1 = gettimeofday_us()
+
+for (i = 1, 1000, 1) {
+	local object = C.__kmalloc(128, 208) #GFP_KERNEL is 208
+	C.kfree(object)
+}
+
+t2 = gettimeofday_us()
+
+printf("execution time: %d us\n", t2 - t1)
