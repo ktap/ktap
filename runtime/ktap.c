@@ -42,6 +42,7 @@
 #include <linux/module.h>
 #include <linux/errno.h>
 #include <linux/file.h>
+#include <linux/slab.h>
 #include <linux/fcntl.h>
 #include <linux/sched.h>
 #include <linux/poll.h>

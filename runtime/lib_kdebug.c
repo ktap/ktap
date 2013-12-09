@@ -202,6 +202,7 @@ void kp_perf_event_register(ktap_state *ks, struct perf_event_attr *attr,
 			    ktap_closure *cl)
 {
 	struct ktap_probe_event *ktap_pevent;
+	struct kmem_cache *pevent_cache = G(ks)->pevent_cache;
 	struct perf_event *event;
 	int cpu, ret;
 
@@ -222,7 +223,10 @@ void kp_perf_event_register(ktap_state *ks, struct perf_event_attr *attr,
 	ks->stop = 1;
 
 	for_each_cpu(cpu, G(ks)->cpumask) {
-		ktap_pevent = kp_zalloc(ks, sizeof(*ktap_pevent));
+		ktap_pevent = kmem_cache_zalloc(pevent_cache, GFP_KERNEL);
+		if (!ktap_pevent)
+			return;
+
 		ktap_pevent->ks = ks;
 		ktap_pevent->cl = cl;
 		event = perf_event_create_kernel_counter(attr, cpu, task,
@@ -389,11 +393,13 @@ void kp_probe_exit(ktap_state *ks)
 		G(ks)->trace_end_closure = NULL;
 	}
 
+	kmem_cache_destroy(G(ks)->pevent_cache);
 	G(ks)->trace_enabled = 0;
 }
 
 int kp_probe_init(ktap_state *ks)
 {
+	G(ks)->pevent_cache = KMEM_CACHE(ktap_probe_event, SLAB_PANIC);
 	G(ks)->trace_enabled = 1;
 	return 0;
 }

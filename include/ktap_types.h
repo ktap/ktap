@@ -334,6 +334,7 @@ typedef struct ktap_global_state {
 	int wait_user;
 	ktap_closure *trace_end_closure;
 	struct ktap_stats __percpu *stats;
+	struct kmem_cache *pevent_cache;
 #ifdef CONFIG_KTAP_FFI
 	ffi_state  ffis;
 #endif
