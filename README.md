@@ -59,7 +59,7 @@ More information can be found at [ktap homepage][homepage].
 
         ktap -e "trace syscalls:* { print(argevent) }" -- ls
 
-3. function tracing
+3. ftrace(kernel newer than 3.3, and must compiled with CONFIG_FUNCTION_TRACER)
 
         ktap -e "trace ftrace:function { print(argevent) }"
 

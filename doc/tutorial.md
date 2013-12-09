@@ -205,7 +205,7 @@ This function is underly representation of high level tracing primitive.
 Note that eventdef_info is just a userspace memory pointer refer to real
 eventdef_info structure, the structure defintion is:  
 
-        struct eventdef_info {
+        struct ktap_eventdef_info {
             int nr; /* the number to id */
             int *id_arr; /* id array */
             char *filter;
@@ -261,7 +261,7 @@ There have four type of EVENTDEF, tracepoint, kprobe, uprobe, sdt.
 	All tracepoint events are based on:  
 	          /sys/kernel/debug/tracing/events/$SYS/$EVENT
 
-- ftrace(kernel must compiled with CONFIG_FUNCTION_TRACER)
+- ftrace(kernel newer than 3.3, and must compiled with CONFIG_FUNCTION_TRACER)
 
 	EventDef               Description 
 	--------------------   -------------------------------
@@ -269,6 +269,19 @@ There have four type of EVENTDEF, tracepoint, kprobe, uprobe, sdt.
 
 	User need to use filter (/ip==*/) to trace specfic functions.
 	Function must be listed in /sys/kernel/debug/tracing/available_filter_functions
+
+> ***Note*** of function event
+> 
+> perf support ftrace:function tracepoint since Linux 3.3(see below commit),
+> ktap is based on perf callback, so it means kernel must be newer than 3.3
+> then can use this feature.
+> 
+>     commit ced39002f5ea736b716ae233fb68b26d59783912
+>     Author: Jiri Olsa <jolsa@redhat.com>
+>     Date:   Wed Feb 15 15:51:52 2012 +0100
+>
+>     ftrace, perf: Add support to use function tracepoint in perf 
+>
 
 - kprobe:  
 
@@ -535,7 +548,7 @@ For more release info, please look at RELEASES.txt in project root directory.
 
         ktap -e "trace syscalls:* { print(argevent) }" -- ls
 
-3. function tracing
+3. ftrace(kernel newer than 3.3, and must compiled with CONFIG_FUNCTION_TRACER)
 
         ktap -e "trace ftrace:function { print(argevent) }"
 
