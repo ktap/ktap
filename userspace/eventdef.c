@@ -35,7 +35,7 @@
 
 static u8 *idmap;
 static int idmap_size = 1024; /* set init size */
-static int id_nr = 0;
+static int id_nr;
 
 static int idmap_init(void)
 {
@@ -49,6 +49,7 @@ static int idmap_init(void)
 
 static void idmap_free(void)
 {
+	id_nr = 0;
 	free(idmap);
 }
 
