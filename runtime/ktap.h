@@ -1,11 +1,9 @@
 #ifndef __KTAP_H__
 #define __KTAP_H__
 
-#ifdef __KERNEL__
 #include <linux/version.h>
 #include <linux/hardirq.h>
 #include <linux/trace_seq.h>
-#endif
 
 typedef struct ktap_Reg {
         const char *name;
