@@ -4,6 +4,7 @@
  */
 
 #include <ctype.h>
+#include "../include/ktap_opcodes.h"
 
 typedef int bool;
 #define false 0
@@ -56,9 +57,8 @@ typedef int bool;
 #define ktap_assert(s)
 
 /*
- * ** Comparison and arithmetic functions
- * */
-
+ * Comparison and arithmetic functions
+ */
 #define KTAP_OPADD       0       /* ORDER TM */
 #define KTAP_OPSUB       1
 #define KTAP_OPMUL       2
@@ -367,6 +367,7 @@ int codegen_exp2anyreg(ktap_funcstate *fs, ktap_expdesc *e);
 
 typedef int (*ktap_writer)(const void* p, size_t sz, void* ud);
 int ktapc_dump(const ktap_proto *f, ktap_writer w, void *data, int strip);
+void ktapc_dump_function(int level, ktap_proto *f);
 void ktapc_showobj(const ktap_value *v);
 int ktapc_str2d(const char *s, size_t len, ktap_number *result);
 ktap_number ktapc_arith(int op, ktap_number v1, ktap_number v2);
