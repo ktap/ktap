@@ -38,8 +38,7 @@ LIB_OBJS += $(RUNTIME)/lib_ffi.o
 endif
 RUNTIME_OBJS += $(RUNTIME)/ktap.o $(RUNTIME)/kp_load.o $(RUNTIME)/kp_obj.o \
 		$(RUNTIME)/kp_str.o $(RUNTIME)/kp_tab.o $(RUNTIME)/kp_vm.o \
-		$(RUNTIME)/kp_opcode.o $(RUNTIME)/kp_transport.o \
-		$(LIB_OBJS)
+		$(RUNTIME)/kp_transport.o $(LIB_OBJS)
 else
 RUNTIME_OBJS += $(RUNTIME)/kp_amalg.o
 endif
@@ -130,13 +129,9 @@ $(UDIR)/ktapio.o: $(UDIR)/ktapio.c $(INC)/*
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
 $(UDIR)/eventdef.o: $(UDIR)/eventdef.c $(INC)/*
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
-$(UDIR)/kp_opcode.o: $(RUNTIME)/kp_opcode.c $(INC)/*
+$(UDIR)/ktapc_util.o: $(UDIR)/ktapc_util.c $(INC)/*
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
-$(UDIR)/kp_tab.o: $(RUNTIME)/kp_tab.c $(INC)/*
-	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
-$(UDIR)/kp_str.o: $(RUNTIME)/kp_str.c $(INC)/*
-	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
-$(UDIR)/kp_obj.o: $(RUNTIME)/kp_obj.c $(INC)/*
+$(UDIR)/ktapc_opcode.o: $(UDIR)/ktapc_opcode.c $(INC)/*
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
 ifndef NO_LIBELF
 $(UDIR)/symbol.o: $(UDIR)/symbol.c
@@ -162,10 +157,8 @@ KTAPOBJS += $(UDIR)/main.o
 KTAPOBJS += $(UDIR)/util.o
 KTAPOBJS += $(UDIR)/ktapio.o
 KTAPOBJS += $(UDIR)/eventdef.o
-KTAPOBJS += $(UDIR)/kp_opcode.o
-KTAPOBJS += $(UDIR)/kp_tab.o
-KTAPOBJS += $(UDIR)/kp_str.o
-KTAPOBJS += $(UDIR)/kp_obj.o
+KTAPOBJS += $(UDIR)/ktapc_util.o
+KTAPOBJS += $(UDIR)/ktapc_opcode.o
 ifndef NO_LIBELF
 KTAPOBJS += $(UDIR)/symbol.o
 endif

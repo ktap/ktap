@@ -36,113 +36,11 @@
 #include "../include/ktap_types.h"
 #include "../include/ktap_opcodes.h"
 #include "ktapc.h"
-#include "../runtime/kp_obj.h"
-#include "../runtime/kp_str.h"
-#include "../runtime/kp_tab.h"
 #include "symbol.h"
 #include "cparser.h"
 
 
 /*******************************************************************/
-
-void *ktapc_reallocv(void *block, size_t osize, size_t nsize)
-{
-	return kp_reallocv(NULL, block, osize, nsize);
-}
-
-ktap_closure *ktapc_newclosure(int n)
-{
-	return kp_newclosure(NULL, n);
-}
-
-ktap_proto *ktapc_newproto()
-{
-	return kp_newproto(NULL);
-}
-
-const ktap_value *ktapc_table_get(ktap_tab *t, const ktap_value *key)
-{
-	return kp_tab_get(t, key);
-}
-
-void ktapc_table_setvalue(ktap_tab *t, const ktap_value *key, ktap_value *val)
-{
-	kp_tab_setvalue(NULL, t, key, val);
-}
-
-ktap_tab *ktapc_table_new()
-{
-	return kp_tab_new(NULL);
-}
-
-ktap_string *ktapc_ts_newlstr(const char *str, size_t l)
-{
-	return kp_tstring_newlstr(NULL, str, l);
-}
-
-ktap_string *ktapc_ts_new(const char *str)
-{
-	return kp_tstring_new(NULL, str);
-}
-
-int ktapc_ts_eqstr(ktap_string *a, ktap_string *b)
-{
-	return kp_tstring_eqstr(a, b);
-}
-
-static void ktapc_runerror(const char *err_msg_fmt, ...)
-{
-	va_list ap;
-
-	fprintf(stderr, "ktapc_runerror\n");
-
-	va_start(ap, err_msg_fmt);
-	vfprintf(stderr, err_msg_fmt, ap);
-	va_end(ap);
-
-	exit(EXIT_FAILURE);
-}
-
-/*
- * todo: memory leak here
- */
-char *ktapc_sprintf(const char *fmt, ...)
-{
-	char *msg = malloc(128);
-
-	va_list argp;
-	va_start(argp, fmt);
-	vsprintf(msg, fmt, argp);
-	va_end(argp);
-	return msg;
-}
-
-
-#define MINSIZEARRAY	4
-
-void *ktapc_growaux(void *block, int *size, size_t size_elems, int limit,
-		    const char *what)
-{
-	void *newblock;
-	int newsize;
-
-	if (*size >= limit/2) {  /* cannot double it? */
-		if (*size >= limit)  /* cannot grow even a little? */
-			ktapc_runerror("too many %s (limit is %d)\n",
-					what, limit);
-		newsize = limit;  /* still have at least one free place */
-	} else {
-		newsize = (*size) * 2;
-		if (newsize < MINSIZEARRAY)
-			newsize = MINSIZEARRAY;  /* minimum size */
-	}
-
-	newblock = ktapc_reallocv(block, (*size) * size_elems, newsize * size_elems);
-	*size = newsize;  /* update only when everything else is OK */
-	return newblock;
-}
-
-/*************************************************************************/
 
 #define print_base(i) \
 	do {	\
@@ -155,7 +53,7 @@ void *ktapc_growaux(void *block, int *size, size_t size_elems, int limit,
 #define print_RK(instr, _field)  \
 	do {	\
 		if (ISK(GETARG_##_field(instr))) \
-			kp_showobj(NULL, k + INDEXK(GETARG_##_field(instr))); \
+			ktapc_showobj(k + INDEXK(GETARG_##_field(instr))); \
 		else \
 			print_base(GETARG_##_field(instr)); \
 	} while (0)
@@ -219,7 +117,7 @@ static void decode_instruction(ktap_proto *f, int instr)
 		print_base(GETARG_A(instr));
 		printf(" <- ");
 
-		kp_showobj(NULL, k + GETARG_Bx(instr));
+		ktapc_showobj(k + GETARG_Bx(instr));
 		break;
 	case OP_CALL:
 		printf("\t");
@@ -299,7 +197,7 @@ static void dump_function(int level, ktap_proto *f)
 			break;
 		default:
 			printf("\tUnknow constant type %d: ", f->k[i].type);
-			kp_showobj(NULL, &(f->k[i]));
+			ktapc_showobj(&(f->k[i]));
 			printf("\n");
 		}
 	}
@@ -360,16 +258,6 @@ static void usage(const char *msg_fmt, ...)
 "  -- cmd [args]  : workload to tracing\n");
 
 	exit(EXIT_FAILURE);
-}
-
-ktap_global_state dummy_global_state;
-
-static void init_dummy_global_state()
-{
-	memset(&dummy_global_state, 0, sizeof(ktap_global_state));
-	dummy_global_state.seed = 201236;
-
-        kp_tstring_resize(NULL, 32); /* set inital string hashtable size */
 }
 
 #define handle_error(str) do { perror(str); exit(-1); } while(0)
@@ -623,8 +511,9 @@ static void compile(const char *input)
 	struct stat sb;
 	int fdin;
 
+	ktapc_init_stringtable();
+
 	if (oneline_src[0] != '\0') {
-		init_dummy_global_state();
 		ffi_cparser_init();
 		cl = ktapc_parser(oneline_src, input);
 		goto dump;
@@ -643,7 +532,6 @@ static void compile(const char *input)
 	if (buff == MAP_FAILED)
 		handle_error("mmap failed");
 
-	init_dummy_global_state();
 	ffi_cparser_init();
 	cl = ktapc_parser(buff, input);
 

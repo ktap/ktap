@@ -303,11 +303,13 @@ ktap_string *ktapc_ts_new(const char *str);
 int ktapc_ts_eqstr(ktap_string *a, ktap_string *b);
 ktap_string *ktapc_ts_newlstr(const char *str, size_t l);
 ktap_proto *ktapc_newproto();
-ktap_tab *ktapc_table_new();
-const ktap_value *ktapc_table_get(ktap_tab *t, const ktap_value *key);
-void ktapc_table_setvalue(ktap_tab *t, const ktap_value *key, ktap_value *val);
+ktap_tab *ktapc_tab_new();
+const ktap_value *ktapc_tab_get(ktap_tab *t, const ktap_value *key);
+void ktapc_tab_setvalue(ktap_tab *t, const ktap_value *key, ktap_value *val);
 ktap_closure *ktapc_newclosure(int n);
 char *ktapc_sprintf(const char *fmt, ...);
+void ktapc_init_stringtable(void);
+int ktapc_equalobj(const ktap_value *t1, const ktap_value *t2);
 
 void *ktapc_reallocv(void *block, size_t osize, size_t nsize);
 void *ktapc_growaux(void *block, int *size, size_t size_elems, int limit,
@@ -323,8 +325,6 @@ extern int verbose;
 #define verbose_printf(...) \
 	if (verbose)	\
 		printf("[verbose] " __VA_ARGS__);
-
-#define ktapc_equalobj(t1, t2)	kp_equalobjv(NULL, t1, t2)
 
 int codegen_stringK(ktap_funcstate *fs, ktap_string *s);
 void codegen_indexed(ktap_funcstate *fs, ktap_expdesc *t, ktap_expdesc *k);
@@ -365,7 +365,7 @@ int codegen_exp2anyreg(ktap_funcstate *fs, ktap_expdesc *e);
 
 typedef int (*ktap_writer)(const void* p, size_t sz, void* ud);
 int ktapc_dump(const ktap_proto *f, ktap_writer w, void *data, int strip);
-
+void ktapc_showobj(const ktap_value *v);
 void ktapc_chunkid(char *out, const char *source, size_t bufflen);
 int ktapc_str2d(const char *s, size_t len, ktap_number *result);
 int ktapc_hexavalue(int c);

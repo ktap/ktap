@@ -576,8 +576,7 @@ static void open_func(ktap_lexstate *ls, ktap_funcstate *fs, ktap_blockcnt *bl)
 	f = fs->f;
 	f->source = ls->source;
 	f->maxstacksize = 2;  /* registers 0/1 are always valid */
-	fs->h = ktapc_table_new();
-	//table_resize(NULL, fs->h, 32, 32);
+	fs->h = ktapc_tab_new();
 	enterblock(fs, bl, 0);
 }
 

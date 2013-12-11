@@ -14,6 +14,7 @@ typedef char u8;
 /*
  * The first argument type of kdebug.probe_by_id() 
  * The value is a userspace memory pointer.
+ * Maybe embed it info trunk file in future.
  */
 typedef struct ktap_eventdef_info {
 	int nr;
@@ -604,6 +605,28 @@ extern ktap_global_state dummy_global_state;
 #define KTAP_QS         KTAP_QL("%s")
 
 #define STRINGIFY(type) #type
+
+/*
+ * make header for precompiled chunks
+ * if you change the code below be sure to update load_header and FORMAT above
+ * and KTAPC_HEADERSIZE in ktap_types.h
+ */
+static inline void kp_header(u8 *h)
+{
+	int x = 1;
+
+	memcpy(h, KTAP_SIGNATURE, sizeof(KTAP_SIGNATURE) - sizeof(char));
+	h += sizeof(KTAP_SIGNATURE) - sizeof(char);
+	*h++ = (u8)VERSION;
+	*h++ = (u8)FORMAT;
+	*h++ = (u8)(*(char*)&x);                    /* endianness */
+	*h++ = (u8)(sizeof(int));
+	*h++ = (u8)(sizeof(size_t));
+	*h++ = (u8)(sizeof(ktap_instruction));
+	*h++ = (u8)(sizeof(ktap_number));
+	*h++ = (u8)(((ktap_number)0.5) == 0); /* is ktap_number integral? */
+	memcpy(h, KTAPC_TAIL, sizeof(KTAPC_TAIL) - sizeof(char));
+}
 
 #endif /* __KTAP_TYPES_H__ */
 

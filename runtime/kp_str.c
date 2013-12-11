@@ -27,14 +27,12 @@
 #include "kp_obj.h"
 #include "kp_str.h"
 
-#ifdef __KERNEL__
 #include <linux/ctype.h>
 #include <linux/module.h>
 #include <linux/kallsyms.h>
 #include "ktap.h"
 #include "kp_transport.h"
 #include "kp_vm.h"
-#endif
 
 #define STRING_MAXSHORTLEN	40
 
@@ -191,12 +189,10 @@ static ktap_string *internshrstr(ktap_state *ks, const char *str, size_t l)
 	ktap_global_state *g = G(ks);
 	ktap_string *ts;
 	unsigned int h = kp_string_hash(str, l, g->seed);
-	unsigned long __maybe_unused flags;
+	unsigned long flags;
 
-#ifdef __KERNEL__
 	local_irq_save(flags);
 	arch_spin_lock(&G(ks)->str_lock);
-#endif
 
 	for (o = g->strt.hash[lmod(h, g->strt.size)]; o != NULL;
 	     o = gch(o)->next) {
@@ -210,10 +206,8 @@ static ktap_string *internshrstr(ktap_state *ks, const char *str, size_t l)
 	ts = newshrstr(ks, str, l, h);  /* not found; create a new string */
 
  out:
-#ifdef __KERNEL__
 	arch_spin_unlock(&G(ks)->str_lock);
 	local_irq_restore(flags);
-#endif
 	return ts;
 }
 
@@ -287,7 +281,6 @@ void kp_tstring_dump(ktap_state *ks)
 	}
 }
 
-#ifdef __KERNEL__
 /* kp_str_fmt - printf implementation */
 
 /* macro to `unsign' a character */
@@ -456,5 +449,4 @@ int kp_str_fmt(ktap_state *ks, struct trace_seq *seq)
 
 	return 0;
 }
-#endif
 

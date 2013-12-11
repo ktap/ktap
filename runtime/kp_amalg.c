@@ -21,7 +21,6 @@
 
 
 #include "ktap.c"
-#include "kp_opcode.c"
 #include "kp_obj.c"
 #include "kp_load.c"
 #include "kp_str.c"

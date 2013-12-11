@@ -30,7 +30,6 @@
 #include "../include/ktap_types.h"
 #include "../include/ktap_opcodes.h"
 #include "ktapc.h"
-#include "../runtime/kp_obj.h"
 
 
 #define hasjumps(e)	((e)->t != (e)->f)
@@ -311,7 +310,7 @@ static void freeexp(ktap_funcstate *fs, ktap_expdesc *e)
 
 static int addk(ktap_funcstate *fs, ktap_value *key, ktap_value *v)
 {
-	const ktap_value *idx = ktapc_table_get(fs->h, key);
+	const ktap_value *idx = ktapc_tab_get(fs->h, key);
 	ktap_proto *f = fs->f;
 	ktap_value kn;
 	int k, oldsize;
@@ -331,7 +330,7 @@ static int addk(ktap_funcstate *fs, ktap_value *key, ktap_value *v)
 	/* numerical value does not need GC barrier;
 	   table has no metatable, so it does not need to invalidate cache */
 	set_number(&kn, (ktap_number)k);
-	ktapc_table_setvalue(fs->h, key, &kn);
+	ktapc_tab_setvalue(fs->h, key, &kn);
 	ktapc_growvector(f->k, k, f->sizek, ktap_value, MAXARG_Ax, "constants");
 	while (oldsize < f->sizek)
 		set_nil(&f->k[oldsize++]);

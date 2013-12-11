@@ -12,9 +12,7 @@ int kp_tstring_cmp(const ktap_string *ls, const ktap_string *rs);
 void kp_tstring_resize(ktap_state *ks, int newsize);
 void kp_tstring_freeall(ktap_state *ks);
 
-#ifdef __KERNEL__
 #include <linux/trace_seq.h>
 int kp_str_fmt(ktap_state *ks, struct trace_seq *seq);
-#endif
 
 #endif /* __KTAP_STR_H__ */

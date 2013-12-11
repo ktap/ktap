@@ -25,24 +25,15 @@
 
 #include "../include/ktap_types.h"
 
-#ifdef __KERNEL__
 #include <linux/spinlock.h>
 #include <linux/module.h>
 #include <linux/kallsyms.h>
 #include <linux/sort.h>
 #include "ktap.h"
 #include "kp_vm.h"
-#else
-static inline void sort(void *base, size_t num, size_t size,
-			int (*cmp_func)(const void *, const void *),
-			void (*swap_func)(void *, void *, int size))
-{}
-#endif
-
 #include "kp_obj.h"
 #include "kp_str.h"
 
-#ifdef __KERNEL__
 #define kp_tab_lock_init(t)						\
 	do {								\
 		(t)->lock = (arch_spinlock_t)__ARCH_SPIN_LOCK_UNLOCKED;	\
@@ -57,12 +48,6 @@ static inline void sort(void *base, size_t num, size_t size,
 		arch_spin_unlock(&(t)->lock);				\
 		local_irq_restore(flags);				\
 	} while (0)
-
-#else
-#define kp_tab_lock_init(t)
-#define kp_tab_lock(t)
-#define kp_tab_unlock(t)
-#endif
 
 #define MAXBITS         30
 #define MAXASIZE        (1 << MAXBITS)
@@ -122,7 +107,6 @@ static int ceillog2(unsigned int x)
 	return l + log_2[x];
 }
 
-#ifdef __KERNEL__
 static inline ktap_stat_data *_read_sd(const ktap_value *v,
 				    ktap_tnode *hnode, ktap_stat_data *hsd)
 {
@@ -137,20 +121,6 @@ static inline ktap_stat_data *read_sd(ktap_tab *t, const ktap_value *v)
 	else
 		return _read_sd(v, t->node, t->sd_rec);
 }
-
-#else
-static inline ktap_stat_data *_read_sd(const ktap_value *v,
-				    ktap_tnode *hnode, ktap_stat_data *hsd)
-{
-	return NULL;
-}
-
-static inline ktap_stat_data *read_sd(ktap_tab *t, const ktap_value *v)
-{
-	return NULL;
-}
-#endif
-
 
 ktap_tab *kp_tab_new(ktap_state *ks)
 {
@@ -194,7 +164,7 @@ static const ktap_value *table_getint(ktap_tab *t, int key)
 const ktap_value *kp_tab_getint(ktap_tab *t, int key)
 {
 	const ktap_value *val;
-	unsigned long __maybe_unused flags;
+	unsigned long flags;
 
 	kp_tab_lock(t);
 	val = table_getint(t, key);
@@ -283,7 +253,7 @@ static int findindex(ktap_state *ks, ktap_tab *t, StkId key)
 
 int kp_tab_next(ktap_state *ks, ktap_tab *t, StkId key)
 {
-	unsigned long __maybe_unused flags;
+	unsigned long flags;
 	int i;
 
 	kp_tab_lock(t);
@@ -312,10 +282,9 @@ int kp_tab_next(ktap_state *ks, ktap_tab *t, StkId key)
 	return 0;  /* no more elements */
 }
 
-#ifdef __KERNEL__
 int kp_tab_sort_next(ktap_state *ks, ktap_tab *t, StkId key)
 {
-	unsigned long __maybe_unused flags;
+	unsigned long flags;
 	ktap_tnode *node = t->sort_head;
 
 	kp_tab_lock(t);
@@ -422,7 +391,7 @@ static void insert_sorted_list(ktap_state *ks, ktap_tab *t,
 
 void kp_tab_sort(ktap_state *ks, ktap_tab *t, ktap_closure *cmp_func)
 {
-	unsigned long __maybe_unused flags;
+	unsigned long flags;
 	int size = t->sizearray + sizenode(t);
 	int i;
 
@@ -453,7 +422,6 @@ void kp_tab_sort(ktap_state *ks, ktap_tab *t, ktap_closure *cmp_func)
 
 	kp_tab_unlock(t);
 }
-#endif
 
 static int computesizes (int nums[], int *narray)
 {
@@ -616,10 +584,8 @@ static void table_resize(ktap_state *ks, ktap_tab *t, int nasize, int nhsize)
 	ktap_stat_data *sd_rec_old = t->sd_rec;  /* save stat_data */
 	int i;
 
-#ifdef __KERNEL__
 	kp_verbose_printf(ks, "table resize, nasize: %d, nhsize: %d\n",
 				nasize, nhsize);
-#endif
 
 	if (nasize > oldasize)  /* array part must grow? */
 		setarrayvector(ks, t, nasize);
@@ -681,7 +647,7 @@ static void table_resize(ktap_state *ks, ktap_tab *t, int nasize, int nhsize)
 
 void kp_tab_resize(ktap_state *ks, ktap_tab *t, int nasize, int nhsize)
 {
-	unsigned long __maybe_unused flags;
+	unsigned long flags;
 
 	kp_tab_lock(t);
 	table_resize(ks, t, nasize, nhsize);
@@ -690,7 +656,7 @@ void kp_tab_resize(ktap_state *ks, ktap_tab *t, int nasize, int nhsize)
 
 void kp_tab_resizearray(ktap_state *ks, ktap_tab *t, int nasize)
 {
-	unsigned long __maybe_unused flags;
+	unsigned long flags;
 	int nsize;
 
 	kp_tab_lock(t);
@@ -848,7 +814,7 @@ static const ktap_value *table_get(ktap_tab *t, const ktap_value *key)
 const ktap_value *kp_tab_get(ktap_tab *t, const ktap_value *key)
 {
 	const ktap_value *val;
-	unsigned long __maybe_unused flags;
+	unsigned long flags;
 
 	kp_tab_lock(t);
 	val = table_get(t, key);
@@ -871,7 +837,7 @@ static ktap_value *table_set(ktap_state *ks, ktap_tab *t,
 void kp_tab_setvalue(ktap_state *ks, ktap_tab *t,
 		       const ktap_value *key, ktap_value *val)
 {
-	unsigned long __maybe_unused flags;
+	unsigned long flags;
 
 	if (is_nil(key)) {
 		kp_printf(ks, "table index is nil\n");
@@ -904,7 +870,7 @@ static void table_setint(ktap_state *ks, ktap_tab *t, int key, ktap_value *v)
 
 void kp_tab_setint(ktap_state *ks, ktap_tab *t, int key, ktap_value *val)
 {
-	unsigned long __maybe_unused flags;
+	unsigned long flags;
 
 	kp_tab_lock(t);
 	table_setint(ks, t, key, val);
@@ -913,7 +879,7 @@ void kp_tab_setint(ktap_state *ks, ktap_tab *t, int key, ktap_value *val)
 
 void kp_tab_atomic_inc(ktap_state *ks, ktap_tab *t, ktap_value *key, int n)
 {
-	unsigned long __maybe_unused flags;
+	unsigned long flags;
 	ktap_value *v;
 
 	if (is_nil(key)) {
@@ -935,7 +901,7 @@ void kp_tab_atomic_inc(ktap_state *ks, ktap_tab *t, ktap_value *key, int n)
 
 int kp_tab_length(ktap_state *ks, ktap_tab *t)
 {
-	unsigned long __maybe_unused flags;
+	unsigned long flags;
 	int i, len = 0;
 
 	kp_tab_lock(t);
@@ -1013,7 +979,7 @@ void kp_tab_dump(ktap_state *ks, ktap_tab *t)
  */
 void kp_tab_clear(ktap_state *ks, ktap_tab *t)
 {
-	unsigned long __maybe_unused flags;
+	unsigned long flags;
 
 	kp_tab_lock(t);
 
@@ -1023,7 +989,6 @@ void kp_tab_clear(ktap_state *ks, ktap_tab *t)
 	kp_tab_unlock(t);
 }
 
-#ifdef __KERNEL__
 static void string_convert(char *output, const char *input)
 {
 	if (strlen(input) > 32) {
@@ -1057,7 +1022,7 @@ static int hist_record_cmp(const void *r1, const void *r2)
 static void table_histdump(ktap_state *ks, ktap_tab *t, int shownums)
 {
 	struct table_hist_record *thr;
-	unsigned long __maybe_unused flags;
+	unsigned long flags;
 	char dist_str[40];
 	int i, ratio, total = 0, count = 0, top_num, is_kernel_address = 0;
 	int size, num;
@@ -1205,7 +1170,7 @@ static void statdata_add(ktap_stat_data *sd1, ktap_stat_data *sd2)
 
 static void merge_table(ktap_state *ks, ktap_tab *t1, ktap_tab *t2)
 {
-	unsigned long __maybe_unused flags;
+	unsigned long flags;
 	ktap_value *newv;
 	ktap_value n;
 	int i;
@@ -1309,7 +1274,7 @@ void kp_ptab_set(ktap_state *ks, ktap_ptab *ph,
 				 ktap_value *key, ktap_value *val)
 {
 	ktap_tab *t = *__this_cpu_ptr(ph->tbl);
-	unsigned long __maybe_unused flags;
+	unsigned long flags;
 	ktap_value *v;
 	ktap_stat_data *sd;
 	int aggval;;
@@ -1347,7 +1312,7 @@ void kp_ptab_set(ktap_state *ks, ktap_ptab *ph,
 void kp_ptab_get(ktap_state *ks, ktap_ptab *ph,
 				 ktap_value *key, ktap_value *val)
 {
-	unsigned long __maybe_unused flags;
+	unsigned long flags;
 	ktap_stat_data sd, *aggsd;
 	const ktap_value *v;
 	ktap_value *aggval;
@@ -1393,4 +1358,4 @@ void kp_ptab_histogram(ktap_state *ks, ktap_ptab *ph)
 {
 	kp_tab_histogram(ks, kp_ptab_synthesis(ks, ph));
 }
-#endif
+

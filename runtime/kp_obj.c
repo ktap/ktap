@@ -29,7 +29,6 @@
 #include "kp_str.h"
 #include "kp_tab.h"
 
-#ifdef __KERNEL__
 #include <linux/slab.h>
 #include "ktap.h"
 #include "kp_vm.h"
@@ -137,7 +136,6 @@ void *kp_zalloc(ktap_state *ks, int size)
 
 	return addr;
 }
-#endif
 
 void kp_obj_dump(ktap_state *ks, const ktap_value *v)
 {
@@ -170,7 +168,6 @@ void kp_obj_dump(ktap_state *ks, const ktap_value *v)
 	}
 }
 
-#ifdef __KERNEL__
 #include <linux/stacktrace.h>
 #include <linux/module.h>
 #include <linux/kallsyms.h>
@@ -208,7 +205,6 @@ static int kp_btrace_equal(ktap_btrace *bt1, ktap_btrace *bt2)
 
 	return 1;
 }
-#endif
 
 void kp_showobj(ktap_state *ks, const ktap_value *v)
 {
@@ -235,7 +231,6 @@ void kp_showobj(ktap_state *ks, const ktap_value *v)
 	case KTAP_TTABLE:
 		kp_tab_dump(ks, hvalue(v));
 		break;
-#ifdef __KERNEL__
 #ifdef CONFIG_KTAP_FFI
 	case KTAP_TCDATA:
 		kp_cdata_dump(ks, cdvalue(v));
@@ -253,7 +248,6 @@ void kp_showobj(ktap_state *ks, const ktap_value *v)
 	case KTAP_TSTATDATA:
 		kp_statdata_dump(ks, sdvalue(v));
 		break;
-#endif
         default:
 		kp_error(ks, "print unknown value type: %d\n", ttype(v));
 		break;
@@ -286,10 +280,8 @@ int kp_equalobjv(ktap_state *ks, const ktap_value *t1, const ktap_value *t2)
 			return 1;
 		else if (ks == NULL)
 			return 0;
-#ifdef __KERNEL__
 	case KTAP_TBTRACE:
 		return kp_btrace_equal(btvalue(t1), btvalue(t2));
-#endif
 	default:
 		return gcvalue(t1) == gcvalue(t2);
 	}
@@ -433,11 +425,9 @@ void kp_free_gclist(ktap_state *ks, ktap_gcobject *o)
 		case KTAP_TPROTO:
 			free_proto(ks, (ktap_proto *)o);
 			break;
-#ifdef __KERNEL__
 		case KTAP_TPTABLE:
 			kp_ptab_free(ks, (ktap_ptab *)o);
 			break;
-#endif
 		default:
 			kp_free(ks, o);
 		}
@@ -450,29 +440,4 @@ void kp_free_all_gcobject(ktap_state *ks)
 	kp_free_gclist(ks, G(ks)->allgc);
 	G(ks)->allgc = NULL;
 }
-
-/******************************************************************************/
-
-/*
- * make header for precompiled chunks
- * if you change the code below be sure to update load_header and FORMAT above
- * and KTAPC_HEADERSIZE in ktap_types.h
- */
-void kp_header(u8 *h)
-{
-	int x = 1;
-
-	memcpy(h, KTAP_SIGNATURE, sizeof(KTAP_SIGNATURE) - sizeof(char));
-	h += sizeof(KTAP_SIGNATURE) - sizeof(char);
-	*h++ = (u8)VERSION;
-	*h++ = (u8)FORMAT;
-	*h++ = (u8)(*(char*)&x);                    /* endianness */
-	*h++ = (u8)(sizeof(int));
-	*h++ = (u8)(sizeof(size_t));
-	*h++ = (u8)(sizeof(ktap_instruction));
-	*h++ = (u8)(sizeof(ktap_number));
-	*h++ = (u8)(((ktap_number)0.5) == 0); /* is ktap_number integral? */
-	memcpy(h, KTAPC_TAIL, sizeof(KTAPC_TAIL) - sizeof(char));
-}
-
 
