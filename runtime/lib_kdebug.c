@@ -21,6 +21,7 @@
 
 #include <linux/module.h>
 #include <linux/ctype.h>
+#include <linux/slab.h>
 #include <linux/version.h>
 #include <linux/ftrace_event.h>
 #include "../include/ktap_types.h"

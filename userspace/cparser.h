@@ -188,11 +188,11 @@ static inline csymbol *cp_csymf_arg(csymbol_func *csf, int idx)
 
 
 #else
-static void __maybe_unused ffi_cparser_init(void)
+static inline void ffi_cparser_init(void)
 {
 	return;
 }
-static void __maybe_unused ffi_cparser_free(void)
+static inline void ffi_cparser_free(void)
 {
 	return;
 }

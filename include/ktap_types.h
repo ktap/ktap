@@ -317,7 +317,7 @@ typedef struct ktap_global_state {
 
 	int __percpu *recursion_context[PERF_NR_CONTEXTS];
 
-	arch_spinlock_t str_lock; /* string opertion lock */
+	arch_spinlock_t str_lock; /* string operation lock */
 
 	ktap_parm *parm;
 	pid_t trace_pid;
@@ -363,6 +363,7 @@ typedef struct ktap_state {
 #endif
 } ktap_state;
 
+#define G(ks)   (ks->g)
 
 typedef struct gcheader {
 	CommonHeader;
@@ -551,51 +552,15 @@ union ktap_gcobject {
 #define NUMMOD(a, b)    ((a) % (b))
 #define NUMPOW(a, b)    (pow(a, b))
 
-#define ktap_assert(s)
-
 #define kp_realloc(ks, v, osize, nsize, t) \
 	((v) = (t *)kp_reallocv(ks, v, osize * sizeof(t), nsize * sizeof(t)))
 
-#define kp_error(ks, args...) \
-	do { \
+#define kp_error(ks, args...)			\
+	do {					\
 		kp_printf(ks, "error: "args);	\
-		G(ks)->error = 1; \
-		kp_exit(ks);	\
+		G(ks)->error = 1;		\
+		kp_exit(ks);			\
 	} while(0)
-
-#ifdef __KERNEL__
-#define G(ks)   (ks->g)
-
-void kp_printf(ktap_state *ks, const char *fmt, ...);
-extern void __kp_puts(ktap_state *ks, const char *str);
-extern void __kp_bputs(ktap_state *ks, const char *str);
-
-#define kp_puts(ks, str) ({						\
-	static const char *trace_printk_fmt				\
-		__attribute__((section("__trace_printk_fmt"))) =	\
-		__builtin_constant_p(str) ? str : NULL;			\
-									\
-	if (__builtin_constant_p(str))					\
-		__kp_bputs(ks, trace_printk_fmt);		\
-	else								\
-		__kp_puts(ks, str);		\
-})
-
-#else
-/*
- * this is used for ktapc tstring operation, tstring need G(ks)->strt
- * and G(ks)->seed, so ktapc need to init those field
- */
-#define G(ks)   (&dummy_global_state)
-extern ktap_global_state dummy_global_state;
-
-#define kp_printf(ks, args...)			printf(args)
-#define kp_puts(ks, str)			printf("%s", str)
-#define kp_exit(ks)				exit(EXIT_FAILURE)
-
-#endif
-
-#define __maybe_unused	__attribute__((unused))
 
 /*
  * KTAP_QL describes how error messages quote program elements.

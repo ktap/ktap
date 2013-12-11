@@ -150,7 +150,6 @@ inline csymbol *ffi_get_csym_by_id(ktap_state *ks, csymbol_id id);
 #define cd_ptr(cd) ((cd)->u.p)
 #define cd_struct(cd) ((cd)->u.st)
 
-
 #ifdef __KERNEL__
 size_t csym_size(ktap_state *ks, csymbol *sym);
 size_t csym_align(ktap_state *ks, csymbol *sym);
@@ -170,7 +169,7 @@ int kp_ffi_call(ktap_state *ks, csymbol_func *cf);
 
 #else
 
-static void __maybe_unused kp_ffi_free_symbol(ktap_state *ks)
+static inline void kp_ffi_free_symbol(ktap_state *ks)
 {
 	return;
 }

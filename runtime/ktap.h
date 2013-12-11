@@ -36,7 +36,7 @@ void kp_init_ansilib(ktap_state *ks);
 #ifdef CONFIG_KTAP_FFI
 void kp_init_ffilib(ktap_state *ks);
 #else
-static void __maybe_unused kp_init_ffilib(ktap_state *ks)
+static inline void kp_init_ffilib(ktap_state *ks)
 {
 	return;
 }
@@ -124,5 +124,20 @@ static inline void *kp_percpu_data(ktap_state *ks, int type)
 #else
 #define SPRINT_SYMBOL	sprint_symbol
 #endif
+
+void kp_printf(ktap_state *ks, const char *fmt, ...);
+void __kp_puts(ktap_state *ks, const char *str);
+void __kp_bputs(ktap_state *ks, const char *str);
+
+#define kp_puts(ks, str) ({						\
+	static const char *trace_printk_fmt				\
+		__attribute__((section("__trace_printk_fmt"))) =	\
+		__builtin_constant_p(str) ? str : NULL;			\
+									\
+	if (__builtin_constant_p(str))					\
+		__kp_bputs(ks, trace_printk_fmt);		\
+	else								\
+		__kp_puts(ks, str);		\
+})
 
 #endif /* __KTAP_H__ */

@@ -53,6 +53,8 @@ typedef int bool;
 
 #define ktap_numunm(a)		(-(a))
 
+#define ktap_assert(s)
+
 /*
  * ** Comparison and arithmetic functions
  * */
