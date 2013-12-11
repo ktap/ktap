@@ -1710,7 +1710,7 @@ static void tracestat(ktap_lexstate *ls)
 		/* argument: EVENTDEF string */
 		check(ls, TK_STRING);
 		enterlevel(ls);
-		evdef_info = ktapc_parse_eventdef(getstr(ls->t.seminfo.ts));
+		evdef_info = ktapc_parse_events(getstr(ls->t.seminfo.ts));
 		check_condition(ls, evdef_info != NULL, "Cannot parse eventdef");
 
 		/* pass a userspace pointer to kernel */

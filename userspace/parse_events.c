@@ -1,5 +1,5 @@
 /*
- * eventdef.c - ktap eventdef parser
+ * parse_events.c - ktap events parser
  *
  * This file is part of ktap by Jovi Zhangwei.
  *
@@ -760,7 +760,7 @@ static char *get_next_eventdef(char *str)
 	return separator + 1;
 }
 
-ktap_eventdef_info *ktapc_parse_eventdef(const char *eventdef)
+ktap_eventdef_info *ktapc_parse_events(const char *eventdef)
 {
 	char *str = strdup(eventdef);
 	char *sys, *event, *filter, *next;

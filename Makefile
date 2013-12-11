@@ -127,7 +127,7 @@ $(UDIR)/util.o: $(UDIR)/util.c $(INC)/*
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
 $(UDIR)/ktap_io.o: $(UDIR)/ktap_io.c $(INC)/*
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
-$(UDIR)/eventdef.o: $(UDIR)/eventdef.c $(INC)/*
+$(UDIR)/parse_event.o: $(UDIR)/parse_event.c $(INC)/*
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
 $(UDIR)/ktapc_util.o: $(UDIR)/ktapc_util.c $(INC)/*
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
@@ -156,7 +156,7 @@ KTAPOBJS += $(UDIR)/dump.o
 KTAPOBJS += $(UDIR)/main.o
 KTAPOBJS += $(UDIR)/util.o
 KTAPOBJS += $(UDIR)/ktap_io.o
-KTAPOBJS += $(UDIR)/eventdef.o
+KTAPOBJS += $(UDIR)/parse_events.o
 KTAPOBJS += $(UDIR)/ktapc_util.o
 KTAPOBJS += $(UDIR)/ktapc_opcode.o
 ifndef NO_LIBELF
