@@ -106,11 +106,10 @@ static const char *txtToken(ktap_lexstate *ls, int token)
 
 static void lexerror(ktap_lexstate *ls, const char *msg, int token)
 {
-	char buff[KTAP_IDSIZE];
 	char *newmsg;
 
-	ktapc_chunkid(buff, getstr(ls->source), KTAP_IDSIZE);
-	newmsg = ktapc_sprintf("%s:%d: %s", buff, ls->linenumber, msg);
+	newmsg = ktapc_sprintf("[%s]:%d: %s", getstr(ls->source),
+				ls->linenumber, msg);
 	if (token)
 		newmsg = ktapc_sprintf("%s near %s", newmsg, txtToken(ls, token));
 	printf("lexerror: %s\n", newmsg);
@@ -316,6 +315,14 @@ static void escerror(ktap_lexstate *ls, int *c, int n, const char *msg)
 	lexerror(ls, msg, TK_STRING);
 }
 
+static int hexavalue(int c)
+{
+	if (isdigit(c))
+		return c - '0';
+	else
+		return tolower(c) - 'a' + 10;
+}
+
 static int readhexaesc(ktap_lexstate *ls)
 {
 	int c[3], i;  /* keep input for error message */
@@ -325,7 +332,7 @@ static int readhexaesc(ktap_lexstate *ls)
 		c[i] = next(ls);
 		if (!isxdigit(c[i]))
 			escerror(ls, c, i + 1, "hexadecimal digit expected");
-		r = (r << 4) + ktapc_hexavalue(c[i]);
+		r = (r << 4) + hexavalue(c[i]);
 	}
 	return r;
 }

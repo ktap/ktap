@@ -366,11 +366,8 @@ int codegen_exp2anyreg(ktap_funcstate *fs, ktap_expdesc *e);
 typedef int (*ktap_writer)(const void* p, size_t sz, void* ud);
 int ktapc_dump(const ktap_proto *f, ktap_writer w, void *data, int strip);
 void ktapc_showobj(const ktap_value *v);
-void ktapc_chunkid(char *out, const char *source, size_t bufflen);
 int ktapc_str2d(const char *s, size_t len, ktap_number *result);
-int ktapc_hexavalue(int c);
 ktap_number ktapc_arith(int op, ktap_number v1, ktap_number v2);
-int ktapc_int2fb(unsigned int x);
 bool strglobmatch(const char *str, const char *pat);
 int kallsyms_parse(void *arg,
 		   int(*process_symbol)(void *arg, const char *name,

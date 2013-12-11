@@ -780,8 +780,8 @@ static void constructor(ktap_lexstate *ls, ktap_expdesc *t)
 	} while (testnext(ls, ',') || testnext(ls, ';'));
 	check_match(ls, '}', '{', line);
 	lastlistfield(fs, &cc);
-	SETARG_B(fs->f->code[pc], ktapc_int2fb(cc.na)); /* set initial array size */
-	SETARG_C(fs->f->code[pc], ktapc_int2fb(cc.nh));  /* set initial table size */
+	SETARG_B(fs->f->code[pc], cc.na); /* set initial array size */
+	SETARG_C(fs->f->code[pc], cc.nh);  /* set initial table size */
 }
 
 /* }====================================================================== */

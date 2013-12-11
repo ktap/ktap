@@ -32,57 +32,6 @@
 #include "../include/ktap_opcodes.h"
 #include "ktapc.h"
 
-/*
- * converts an integer to a "floating point byte", represented as
- * (eeeeexxx), where the real value is (1xxx) * 2^(eeeee - 1) if
- * eeeee != 0 and (xxx) otherwise.
- */
-int ktapc_int2fb(unsigned int x)
-{
-	int e = 0;  /* exponent */
-
-	if (x < 8)
-		return x;
-	while (x >= 0x10) {
-		x = (x+1) >> 1;
-		e++;
-	}
-	return ((e+1) << 3) | ((int)x - 8);
-}
-
-/* converts back */
-int ktapc_fb2int(int x)
-{
-	int e = (x >> 3) & 0x1f;
-
-	if (e == 0)
-		return x;
-	else
-		return ((x & 7) + 8) << (e - 1);
-}
-
-int ktapc_ceillog2(unsigned int x)
-{
-	static const u8 log_2[256] = {
-	0,1,2,2,3,3,3,3,4,4,4,4,4,4,4,4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,
-	6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,
-	7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
-	7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
-	8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,
-	8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,
-	8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,
-	8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8
-	};
-	int l = 0;
-
-	x--;
-	while (x >= 256) {
-		l += 8;
-		x >>= 8;
-	}
-	return l + log_2[x];
-}
-
 ktap_number ktapc_arith(int op, ktap_number v1, ktap_number v2)
 {
 	switch (op) {
@@ -95,14 +44,6 @@ ktap_number ktapc_arith(int op, ktap_number v1, ktap_number v2)
 	case KTAP_OPUNM: return NUMUNM(v1);
 	default: ktap_assert(0); return 0;
 	}
-}
-
-int ktapc_hexavalue(int c)
-{
-	if (isdigit(c))
-		return c - '0';
-	else
-		return tolower(c) - 'a' + 10;
 }
 
 int ktapc_str2d(const char *s, size_t len, ktap_number *result)
@@ -120,53 +61,6 @@ int ktapc_str2d(const char *s, size_t len, ktap_number *result)
 		endptr++;
 	return (endptr == s + len);  /* OK if no trailing characters */
 }
-
-/* number of chars of a literal string without the ending \0 */
-#define LL(x)	(sizeof(x)/sizeof(char) - 1)
-
-#define RETS	"..."
-#define PRE	"[string \""
-#define POS	"\"]"
-
-#define addstr(a,b,l)	( memcpy(a,b,(l) * sizeof(char)), a += (l) )
-
-void ktapc_chunkid(char *out, const char *source, size_t bufflen)
-{
-	size_t l = strlen(source);
-
-	if (*source == '=') {  /* 'literal' source */
-		if (l <= bufflen)  /* small enough? */
-			memcpy(out, source + 1, l * sizeof(char));
-		else {  /* truncate it */
-			addstr(out, source + 1, bufflen - 1);
-			*out = '\0';
-		}
-	} else if (*source == '@') {  /* file name */
-		if (l <= bufflen)  /* small enough? */
-			memcpy(out, source + 1, l * sizeof(char));
-		else {  /* add '...' before rest of name */
-			addstr(out, RETS, LL(RETS));
-			bufflen -= LL(RETS);
-			memcpy(out, source + 1 + l - bufflen, bufflen * sizeof(char));
-		}
-	} else {  /* string; format as [string "source"] */
-		const char *nl = strchr(source, '\n');  /* find first new line (if any) */
-		addstr(out, PRE, LL(PRE));  /* add prefix */
-		bufflen -= LL(PRE RETS POS) + 1;  /* save space for prefix+suffix+'\0' */
-		if (l < bufflen && nl == NULL) {  /* small one-line source? */
-			addstr(out, source, l);  /* keep it */
-		} else {
-			if (nl != NULL)
-				l = nl - source;  /* stop at first newline */
-			if (l > bufflen)
-				l = bufflen;
-			addstr(out, source, l);
-			addstr(out, RETS, LL(RETS));
-		}
-		memcpy(out, POS, (LL(POS) + 1) * sizeof(char));
-	}
-}
-
 
 /*
  * strglobmatch is copyed from perf(linux/tools/perf/util/string.c)
