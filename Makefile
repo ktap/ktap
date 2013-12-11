@@ -127,7 +127,7 @@ $(UDIR)/util.o: $(UDIR)/util.c $(INC)/*
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
 $(UDIR)/ktap_io.o: $(UDIR)/ktap_io.c $(INC)/*
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
-$(UDIR)/parse_event.o: $(UDIR)/parse_event.c $(INC)/*
+$(UDIR)/parse_events.o: $(UDIR)/parse_events.c $(INC)/*
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
 $(UDIR)/ktapc_util.o: $(UDIR)/ktapc_util.c $(INC)/*
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
