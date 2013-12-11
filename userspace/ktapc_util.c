@@ -96,20 +96,21 @@ static const struct ktap_value ktap_nilobjectv = {NILCONSTANT};
 
 const ktap_value *ktapc_tab_get(ktap_tab *t, const ktap_value *key)
 {
+	int table_node_nr = t->lastfree - t->node;
 	int i;
 
 	switch (ttype(key)) {
 	case KTAP_TNIL:
 		return ktap_nilobject;
 	case KTAP_TNUMBER:
-		for (i = 0; i < t->lsizenode; i++) {
+		for (i = 0; i < table_node_nr; i++) {
 			ktap_value *v = gkey(gnode(t, i));
 			if (is_number(v) && nvalue(key) == nvalue(v))
 				return gval(gnode(t, i));
 		}
 		break;
 	case KTAP_TSHRSTR:
-		for (i = 0; i < t->lsizenode; i++) {
+		for (i = 0; i < table_node_nr; i++) {
 			ktap_value *v = gkey(gnode(t, i));
 			if (is_string(v) &&
 				ktapc_ts_eqstr(rawtsvalue(key), rawtsvalue(v)))
@@ -117,7 +118,7 @@ const ktap_value *ktapc_tab_get(ktap_tab *t, const ktap_value *key)
 		}
 		break;
 	default:
-		for (i = 0; i < t->lsizenode; i++) {
+		for (i = 0; i < table_node_nr; i++) {
 			if (ktapc_equalobj(key, gkey(gnode(t, i))))
 				return gval(gnode(t, i));
 		}
@@ -134,22 +135,18 @@ void ktapc_tab_setvalue(ktap_tab *t, const ktap_value *key, ktap_value *val)
 	if (v != ktap_nilobject) {
 		set_obj((ktap_value *)v, val);
 	} else {
-		int i;
-
-		for (i = 0; i < t->lsizenode; i++)
-			if (is_nil(gkey(gnode(t, i))))
-				break;
-
-		if (i == t->lsizenode) {
+		if (t->lastfree == t->node + t->lsizenode) {
 			t->node = realloc(t->node, t->lsizenode * 2);
 			memset(t->node + t->lsizenode, 0,
 				t->lsizenode * sizeof(ktap_tnode));
 			t->lsizenode *= 2;
+			t->lastfree = t->node + t->lsizenode;
 		}
 
-		ktap_tnode *n = &t->node[i];
+		ktap_tnode *n = t->lastfree;
 		set_obj(gkey(n), key);
 		set_obj(gval(n), val);
+		t->lastfree++;
 	}	
 }
 
@@ -159,14 +156,16 @@ ktap_tab *ktapc_tab_new(void)
 	t->lsizenode = 100;
 	t->node = (ktap_tnode *)malloc(t->lsizenode * sizeof(ktap_tnode));
 	memset(t->node, 0, t->lsizenode * sizeof(ktap_tnode));
+	t->lastfree = &t->node[0];
 	return t;
 }
 
 static void ktapc_tab_dump(ktap_tab *t)
 {
+	int table_node_nr = t->lastfree - t->node;
 	int i;
 
-	for (i = 0; i < t->lsizenode; i++) {
+	for (i = 0; i < table_node_nr; i++) {
 		if (!is_nil(gkey(gnode(t, i)))) {
 			ktapc_showobj(gkey(gnode(t, i)));	
 			printf(":\t");
