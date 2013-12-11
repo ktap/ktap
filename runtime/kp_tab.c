@@ -529,8 +529,6 @@ static void update_array_sd(ktap_tab *t)
 
 static void setarrayvector(ktap_state *ks, ktap_tab *t, int size)
 {
-	int i;
-
 	kp_realloc(ks, t->array, t->sizearray, size, ktap_value);
 	if (t->with_stats) {
 		kp_realloc(ks, t->sd_arr, t->sizearray, size,
@@ -538,8 +536,8 @@ static void setarrayvector(ktap_state *ks, ktap_tab *t, int size)
 		update_array_sd(t);
 	}
 
-	for (i = t->sizearray; i < size; i++)
-		set_nil(&t->array[i]);
+	memset(&t->array[t->sizearray], 0,
+			(size - t->sizearray) * sizeof(ktap_value));
 
 	t->sizearray = size;
 }
@@ -552,7 +550,6 @@ static void setnodevector(ktap_state *ks, ktap_tab *t, int size)
 		t->node = (ktap_tnode *)dummynode;  /* use common `dummynode' */
 		lsize = 0;
 	} else {
-		int i;
 		lsize = ceillog2(size);
 		if (lsize > MAXBITS) {
 			kp_error(ks, "table overflow\n");
@@ -560,16 +557,10 @@ static void setnodevector(ktap_state *ks, ktap_tab *t, int size)
 		}
 
 		size = twoto(lsize);
-		t->node = kp_malloc(ks, size * sizeof(ktap_tnode));
+		t->node = kp_zalloc(ks, size * sizeof(ktap_tnode));
 		if (t->with_stats)
 			t->sd_rec = kp_malloc(ks, size *
 						sizeof(ktap_stat_data));
-		for (i = 0; i < size; i++) {
-			ktap_tnode *n = gnode(t, i);
-			gnext(n) = NULL;
-			set_nil(gkey(n));
-			set_nil(gval(n));
-		}
 	}
 
 	t->lsizenode = (u8)lsize;
