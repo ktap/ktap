@@ -614,7 +614,11 @@ int kp_transport_init(ktap_state *ks, struct dentry *dir)
 	struct dentry *dentry;
 	char filename[32] = {0};
 
+#ifdef CONFIG_PPC64
+	ftrace_find_event = (void *)kallsyms_lookup_name(".ftrace_find_event");
+#else
 	ftrace_find_event = (void *)kallsyms_lookup_name("ftrace_find_event");
+#endif
 	if (!ftrace_find_event) {
 		printk("ktap: cannot lookup ftrace_find_event in kallsyms\n");
 		return -EINVAL;
