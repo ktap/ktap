@@ -601,7 +601,8 @@ void __kp_bputs(ktap_state *ks, const char *str)
 
 void kp_transport_exit(ktap_state *ks)
 {
-	ring_buffer_free(G(ks)->buffer);
+	if (G(ks)->buffer)
+		ring_buffer_free(G(ks)->buffer);
 	debugfs_remove(G(ks)->trace_pipe_dentry);
 }
 
