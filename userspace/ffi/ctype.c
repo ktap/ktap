@@ -94,16 +94,14 @@ void ctype_stack_reset()
 	cts.top = 0;
 }
 
-/* push ctype to stack, create new csymbol if needed */
-void cp_push_ctype_with_name(struct cp_ctype *ct, const char *name, int nlen)
+/* This function should be called before you would fetch
+ * ffi_cs_id from ctype */
+void cp_update_csym_in_ctype(struct cp_ctype *ct)
 {
 	int i;
 	struct cp_ctype *nct;
 
-	if (ctype_stack_free_space() < 1)
-		ctype_stack_grow(4);
-
-	/* we have to check pointer here because does type lookup by name
+	/* we have to check pointer here because cparser does type lookup by name
 	 * before parsing '*', and for pointers, ct will always be the
 	 * original type */
 	if (ct->pointers) {
@@ -124,9 +122,18 @@ void cp_push_ctype_with_name(struct cp_ctype *ct, const char *name, int nlen)
 			cp_ctype_reg_type(csym_name(ct_ffi_cs(ct)), ct);
 		} else {
 			/* pointer type already registered, reinstantiate ct */
-			*ct = cte_arr[i].ct;
+			ct->ffi_cs_id = cte_arr[i].ct.ffi_cs_id;
 		}
 	}
+}
+
+/* push ctype to stack, create new csymbol if needed */
+void cp_push_ctype_with_name(struct cp_ctype *ct, const char *name, int nlen)
+{
+	if (ctype_stack_free_space() < 1)
+		ctype_stack_grow(4);
+
+	cp_update_csym_in_ctype(ct);
 	memset(ct_stack(cts.top), 0, sizeof(cp_ctype_entry));
 	ct_stack(cts.top)->ct = *ct;
 	if (name)

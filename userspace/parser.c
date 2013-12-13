@@ -883,6 +883,7 @@ static void funcargs(ktap_lexstate *ls, ktap_expdesc *f, int line)
 	switch (ls->t.token) {
 	case '(': {  /* funcargs -> `(' [ explist ] `)' */
 		lex_next(ls);
+
 		if (ls->t.token == ')')  /* arg list is empty? */
 			args.k = VVOID;
 		else {
@@ -946,6 +947,54 @@ static void primaryexp(ktap_lexstate *ls, ktap_expdesc *v)
 	}
 }
 
+#ifdef CONFIG_KTAP_FFI
+static void ffi_new_args(ktap_lexstate *ls, ktap_expdesc *f, int line)
+{
+	int base;
+	struct cp_ctype ct;
+	ktap_expdesc args, *v;
+
+	codegen_exp2nextreg(ls->fs, f);
+
+	switch (ls->t.token) {
+	case '(': {
+		/* skip " */
+		lex_next(ls);
+		/* read cdef string */
+		lex_next(ls);
+
+		ffi_parse_new(getstr(ls->t.seminfo.ts), &ct);
+
+		check_match(ls, ')', '(', line);
+		break;
+	}
+	case TK_STRING: {
+		ffi_parse_new(getstr(ls->t.seminfo.ts), &ct);
+		break;
+	}
+	default: {
+		lex_syntaxerror(ls, "invalid ffi.new call.");
+	}
+	}
+
+	if (!ct.is_array)
+		lex_syntaxerror(ls, "ffi.new only accepts array declaration.");
+
+	v = &args;
+	/* generate arguments for ffi.new */
+	init_exp(v, VKNUM, 0);
+	v->u.nval = ct.ffi_cs_id;
+	codegen_exp2nextreg(ls->fs, v);
+	init_exp(v, VKNUM, 0);
+	v->u.nval = ct.array_size;
+	codegen_exp2nextreg(ls->fs, v);
+
+	base = f->u.info;  /* base register for call */
+	/* ffi.new takes two arguments and return 1 */
+	init_exp(f, VCALL, codegen_codeABC(ls->fs, OP_CALL, base, 3, 2));
+}
+#endif
+
 static void suffixedexp(ktap_lexstate *ls, ktap_expdesc *v)
 {
 	/* suffixedexp ->
@@ -953,11 +1002,22 @@ static void suffixedexp(ktap_lexstate *ls, ktap_expdesc *v)
 	ktap_funcstate *fs = ls->fs;
 	int line = ls->linenumber;
 
+#ifdef CONFIG_KTAP_FFI
+	int is_ffi = 0;
+
+	if (!strcmp(getstr(ls->t.seminfo.ts), "ffi"))
+		is_ffi = 1;
+#endif
+
 	primaryexp(ls, v);
 	for (;;) {
 		switch (ls->t.token) {
 		case '.': {  /* fieldsel */
 			fieldsel(ls, v);
+#ifdef CONFIG_KTAP_FFI
+			if (is_ffi && !strcmp(getstr(ls->t.seminfo.ts), "new"))
+				ffi_new_args(ls, v, line);
+#endif
 			break;
 		}
 		case '[': {  /* `[' exp1 `]' */
@@ -1815,7 +1875,7 @@ static void parsecdef(ktap_lexstate *ls)
 	lex_next(ls);
 
 	check(ls, TK_STRING);
-	ffi_cdef(getstr(ls->t.seminfo.ts));
+	ffi_parse_cdef(getstr(ls->t.seminfo.ts));
 
 	/* consume newline */
 	lex_next(ls);

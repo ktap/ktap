@@ -162,16 +162,18 @@ void cp_ctype_dump_stack();
 void cp_error(const char *err_msg_fmt, ...);
 struct cp_ctype *cp_ctype_reg_type(char *name, struct cp_ctype *ct);
 
+void cp_update_csym_in_ctype(struct cp_ctype *ct);
 void cp_push_ctype_with_name(struct cp_ctype *ct, const char *name, int nlen);
 void cp_push_ctype(struct cp_ctype *ct);
 void cp_set_defined(struct cp_ctype *ct);
 
-int cp_symbol_build_func(struct cp_ctype *type,
-		const char *fname, int fn_size);
+int cp_symbol_build_func(struct cp_ctype *type, const char *fname, int fn_size);
 int cp_symbol_build_struct(const char *stname);
 int cp_symbol_build_pointer(struct cp_ctype *ct);
 
-int ffi_cdef(const char *s);
+int ffi_parse_cdef(const char *s);
+void ffi_parse_new(const char *s, struct cp_ctype *ct);
+
 void ffi_cparser_init(void);
 void ffi_cparser_free(void);
 

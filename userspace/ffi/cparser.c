@@ -1727,21 +1727,37 @@ int64_t calculate_constant(struct parser* P)
 	return ret;
 }
 
-int ffi_cdef(const char *s)
+void cp_init_parser(struct parser *P, const char *s)
+{
+	memset(P, 0, sizeof(struct parser));
+	P->line = 1;
+	P->prev = P->next = s;
+	P->align_mask = DEFAULT_ALIGN_MASK;
+}
+
+/* used for cdef keyword */
+int ffi_parse_cdef(const char *s)
 {
 	struct parser P;
 
-	memset(&P, 0, sizeof(struct parser));
-	P.line = 1;
-	P.prev = P.next = s;
-	P.align_mask = DEFAULT_ALIGN_MASK;
-
+	cp_init_parser(&P, s);
 	if (parse_root(&P) == PRAGMA_POP) {
 		cp_error("pragma pop without an associated push on line %d",
 				P.line);
 	}
 
 	return 0;
+}
+
+/* used for cnew keyword */
+void ffi_parse_new(const char *s, struct cp_ctype *ct)
+{
+	struct parser P;
+
+	cp_init_parser(&P, s);
+	parse_type(&P, ct);
+	parse_argument(&P, ct, NULL, NULL);
+	cp_update_csym_in_ctype(ct);
 }
 
 void ffi_cparser_init(void)
