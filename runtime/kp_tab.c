@@ -86,6 +86,7 @@ static void table_setint(ktap_state *ks, ktap_tab *t, int key, ktap_value *v);
 static ktap_value *table_set(ktap_state *ks, ktap_tab *t,
 			     const ktap_value *key);
 static void setnodevector(ktap_state *ks, ktap_tab *t, int size);
+static void table_resize(ktap_state *ks, ktap_tab *t, int nasize, int nhsize);
 
 static int ceillog2(unsigned int x)
 {
@@ -122,7 +123,8 @@ static inline ktap_stat_data *read_sd(ktap_tab *t, const ktap_value *v)
 		return _read_sd(v, t->node, t->sd_rec);
 }
 
-ktap_tab *kp_tab_new(ktap_state *ks)
+static
+ktap_tab *kp_tab_new_withstat(ktap_state *ks, int narr, int nrec, int with_stat)
 {
 	ktap_tab *t = &kp_newobject(ks, KTAP_TTABLE, sizeof(ktap_tab),
 				      NULL)->h;
@@ -131,7 +133,7 @@ ktap_tab *kp_tab_new(ktap_state *ks)
 	t->sizearray = 0;
 	t->node = (ktap_tnode *)dummynode;
 	t->gclist = NULL;
-	t->with_stats = 0;
+	t->with_stats = with_stat;
 	t->sd_arr = NULL;
 	t->sd_rec = NULL;
 	setnodevector(ks, t, 0);
@@ -140,7 +142,14 @@ ktap_tab *kp_tab_new(ktap_state *ks)
 	t->sort_head = NULL;
 
 	kp_tab_lock_init(t);
+
+	table_resize(ks, t, narr, nrec);
 	return t;
+}
+
+ktap_tab *kp_tab_new(ktap_state *ks, int narr, int nrec)
+{
+	return kp_tab_new_withstat(ks, narr, nrec, 0);
 }
 
 static const ktap_value *table_getint(ktap_tab *t, int key)
@@ -423,96 +432,6 @@ void kp_tab_sort(ktap_state *ks, ktap_tab *t, ktap_closure *cmp_func)
 	kp_tab_unlock(t);
 }
 
-static int computesizes (int nums[], int *narray)
-{
-	int i;
-	int twotoi;  /* 2^i */
-	int a = 0;  /* number of elements smaller than 2^i */
-	int na = 0;  /* number of elements to go to array part */
-	int n = 0;  /* optimal size for array part */
-
-	for (i = 0, twotoi = 1; twotoi/2 < *narray; i++, twotoi *= 2) {
-		if (nums[i] > 0) {
-			a += nums[i];
-			/* more than half elements present? */
-			if (a > twotoi/2) {
-				/* optimal size (till now) */
-				n = twotoi;
-				/*
-				 * all elements smaller than n will go to
-				 * array part
-				 */
-				na = a;
-			}
-		}
-		if (a == *narray)
-			break;  /* all elements already counted */
-	}
-	*narray = n;
-	return na;
-}
-
-
-static int countint(const ktap_value *key, int *nums)
-{
-	int k = arrayindex(key);
-
-	/* is `key' an appropriate array index? */
-	if (0 < k && k <= MAXASIZE) {
-		nums[ceillog2(k)]++;  /* count as such */
-		return 1;
-	} else
-		return 0;
-}
-
-
-static int numusearray(const ktap_tab *t, int *nums)
-{
-	int lg;
-	int ttlg;  /* 2^lg */
-	int ause = 0;  /* summation of `nums' */
-	int i = 1;  /* count to traverse all array keys */
-
-	/* for each slice */
-	for (lg=0, ttlg=1; lg <= MAXBITS; lg++, ttlg *= 2) {
-		int lc = 0;  /* counter */
-		int lim = ttlg;
-
-		if (lim > t->sizearray) {
-			lim = t->sizearray;  /* adjust upper limit */
-			if (i > lim)
-				break;  /* no more elements to count */
-		}
-
-		/* count elements in range (2^(lg-1), 2^lg] */
-		for (; i <= lim; i++) {
-			if (!is_nil(&t->array[i-1]))
-				lc++;
-		}
-		nums[lg] += lc;
-		ause += lc;
-	}
-	return ause;
-}
-
-static int numusehash(const ktap_tab *t, int *nums, int *pnasize)
-{
-	int totaluse = 0;  /* total number of elements */
-	int ause = 0;  /* summation of `nums' */
-	int i = sizenode(t);
-
-	while (i--) {
-		ktap_tnode *n = &t->node[i];
-		if (!is_nil(gval(n))) {
-			ause += countint(gkey(n), nums);
-			totaluse++;
-		}
-	}
-
-	*pnasize += ause;
-	return totaluse;
-}
-
 static void update_array_sd(ktap_tab *t)
 {
 	int i;
@@ -567,6 +486,9 @@ static void setnodevector(ktap_state *ks, ktap_tab *t, int size)
 	t->lastfree = gnode(t, size);  /* all positions are free */
 }
 
+#define TABLE_NARR_ENTRIES	128;
+#define TABLE_NREC_ENTRIES	2048;
+
 static void table_resize(ktap_state *ks, ktap_tab *t, int nasize, int nhsize)
 {
 	int oldasize = t->sizearray;
@@ -574,6 +496,11 @@ static void table_resize(ktap_state *ks, ktap_tab *t, int nasize, int nhsize)
 	ktap_tnode *nold = t->node;  /* save old hash */
 	ktap_stat_data *sd_rec_old = t->sd_rec;  /* save stat_data */
 	int i;
+
+	if (nasize == 0 && nhsize == 0) {
+		nasize = TABLE_NARR_ENTRIES;
+		nhsize = TABLE_NREC_ENTRIES;
+	}
 
 	kp_verbose_printf(ks, "table resize, nasize: %d, nhsize: %d\n",
 				nasize, nhsize);
@@ -614,10 +541,9 @@ static void table_resize(ktap_state *ks, ktap_tab *t, int nasize, int nhsize)
 		ktap_tnode *old = nold + i;
 		if (!is_nil(gval(old))) {
 			ktap_value *v = table_set(ks, t, gkey(old));
-			/*
-			 * doesn't need barrier/invalidate cache, as entry was
-			 * already present in the table
-			 */
+			if (unlikely(!v))
+				break;
+
 			set_obj(v, gval(old));
 
 			if (t->with_stats) {
@@ -636,26 +562,95 @@ static void table_resize(ktap_state *ks, ktap_tab *t, int nasize, int nhsize)
 	}
 }
 
-void kp_tab_resize(ktap_state *ks, ktap_tab *t, int nasize, int nhsize)
-{
-	unsigned long flags;
+#if 0
 
-	kp_tab_lock(t);
-	table_resize(ks, t, nasize, nhsize);
-	kp_tab_unlock(t);
+static int computesizes (int nums[], int *narray)
+{
+	int i;
+	int twotoi;  /* 2^i */
+	int a = 0;  /* number of elements smaller than 2^i */
+	int na = 0;  /* number of elements to go to array part */
+	int n = 0;  /* optimal size for array part */
+
+	for (i = 0, twotoi = 1; twotoi/2 < *narray; i++, twotoi *= 2) {
+		if (nums[i] > 0) {
+			a += nums[i];
+			/* more than half elements present? */
+			if (a > twotoi/2) {
+				/* optimal size (till now) */
+				n = twotoi;
+				/*
+				 * all elements smaller than n will go to
+				 * array part
+				 */
+				na = a;
+			}
+		}
+		if (a == *narray)
+			break;  /* all elements already counted */
+	}
+	*narray = n;
+	return na;
 }
 
-void kp_tab_resizearray(ktap_state *ks, ktap_tab *t, int nasize)
+
+static int countint(const ktap_value *key, int *nums)
 {
-	unsigned long flags;
-	int nsize;
+	int k = arrayindex(key);
 
-	kp_tab_lock(t);
+	/* is `key' an appropriate array index? */
+	if (0 < k && k <= MAXASIZE) {
+		nums[ceillog2(k)]++;  /* count as such */
+		return 1;
+	} else
+		return 0;
+}
 
-	nsize = isdummy(t->node) ? 0 : sizenode(t);
-	table_resize(ks, t, nasize, nsize);
+static int numusearray(const ktap_tab *t, int *nums)
+{
+	int lg;
+	int ttlg;  /* 2^lg */
+	int ause = 0;  /* summation of `nums' */
+	int i = 1;  /* count to traverse all array keys */
 
-	kp_tab_unlock(t);
+	/* for each slice */
+	for (lg=0, ttlg=1; lg <= MAXBITS; lg++, ttlg *= 2) {
+		int lc = 0;  /* counter */
+		int lim = ttlg;
+
+		if (lim > t->sizearray) {
+			lim = t->sizearray;  /* adjust upper limit */
+			if (i > lim)
+				break;  /* no more elements to count */
+		}
+
+		/* count elements in range (2^(lg-1), 2^lg] */
+		for (; i <= lim; i++) {
+			if (!is_nil(&t->array[i-1]))
+				lc++;
+		}
+		nums[lg] += lc;
+		ause += lc;
+	}
+	return ause;
+}
+
+static int numusehash(const ktap_tab *t, int *nums, int *pnasize)
+{
+	int totaluse = 0;  /* total number of elements */
+	int ause = 0;  /* summation of `nums' */
+	int i = sizenode(t);
+
+	while (i--) {
+		ktap_tnode *n = &t->node[i];
+		if (!is_nil(gval(n))) {
+			ause += countint(gkey(n), nums);
+			totaluse++;
+		}
+	}
+
+	*pnasize += ause;
+	return totaluse;
 }
 
 static void rehash(ktap_state *ks, ktap_tab *t, const ktap_value *ek)
@@ -680,7 +675,7 @@ static void rehash(ktap_state *ks, ktap_tab *t, const ktap_value *ek)
 	/* resize the table to new computed sizes */
 	table_resize(ks, t, nasize, totaluse - na);
 }
-
+#endif
 
 static ktap_tnode *getfreepos(ktap_tab *t)
 {
@@ -692,7 +687,6 @@ static ktap_tnode *getfreepos(ktap_tab *t)
 	return NULL;  /* could not find a free place */
 }
 
-
 static ktap_value *table_newkey(ktap_state *ks, ktap_tab *t,
 				const ktap_value *key)
 {
@@ -703,10 +697,9 @@ static ktap_value *table_newkey(ktap_state *ks, ktap_tab *t,
 	if (!is_nil(gval(mp)) || isdummy(mp)) {  /* main position is taken? */
 		ktap_tnode *othern;
 		ktap_tnode *n = getfreepos(t);  /* get a free place */
-		if (n == NULL) {  /* cannot find a free place? */
-			rehash(ks, t, key);  /* grow table */
-			/* insert key into grown table */
-			return table_set(ks, t, key);
+		if (unlikely(n == NULL)) {  /* cannot find a free place? */
+			kp_error(ks, "table overflow, please enlarge entries for this table\n");
+			return NULL;
 		}
 
 		othern = mainposition(t, gkey(mp));
@@ -828,6 +821,7 @@ static ktap_value *table_set(ktap_state *ks, ktap_tab *t,
 void kp_tab_setvalue(ktap_state *ks, ktap_tab *t,
 		       const ktap_value *key, ktap_value *val)
 {
+	ktap_value *v;
 	unsigned long flags;
 
 	if (is_nil(key)) {
@@ -837,7 +831,10 @@ void kp_tab_setvalue(ktap_state *ks, ktap_tab *t,
 	}
 
 	kp_tab_lock(t);
-	set_obj(table_set(ks, t, key), val);
+	v = table_set(ks, t, key);
+	if (likely(v))
+		set_obj(v, val);
+
 	kp_tab_unlock(t);
 }
 
@@ -854,6 +851,8 @@ static void table_setint(ktap_state *ks, ktap_tab *t, int key, ktap_value *v)
 		ktap_value k;
 		set_number(&k, key);
 		cell = table_newkey(ks, t, &k);
+		if (unlikely(!cell))
+			return;
 	}
 
 	set_obj(cell, v);
@@ -882,11 +881,15 @@ void kp_tab_atomic_inc(ktap_state *ks, ktap_tab *t, ktap_value *key, int n)
 	kp_tab_lock(t);
 
 	v = table_set(ks, t, key);
+	if (unlikely(!v))
+		goto out;
+
 	if (is_nil(v)) {
 		set_number(v, n);
 	} else
 		set_number(v, nvalue(v) + n);
 
+ out:
 	kp_tab_unlock(t);
 }
 
@@ -1179,6 +1182,8 @@ static void merge_table(ktap_state *ks, ktap_tab *t1, ktap_tab *t2)
 		set_number(&n, i);
 
 		newv = table_set(ks, t2, &n);
+		if (unlikely(!newv))
+			break;
 		sd = read_sd(t2, newv);
 		if (is_nil(newv)) {
 			*sd = *read_sd(t1, v);
@@ -1194,6 +1199,8 @@ static void merge_table(ktap_state *ks, ktap_tab *t1, ktap_tab *t2)
 			continue;
 
 		newv = table_set(ks, t2, gkey(node));
+		if (unlikely(!newv))
+			break;
 		if (is_nil(newv)) {
 			*read_sd(t2, newv) = *read_sd(t1, gval(node));
 			set_statdata(newv, read_sd(t2, newv));
@@ -1229,7 +1236,7 @@ void kp_ptab_dump(ktap_state *ks, ktap_ptab *ph)
 	kp_tab_dump(ks, kp_ptab_synthesis(ks, ph));
 }
 
-ktap_ptab *kp_ptab_new(ktap_state *ks)
+ktap_ptab *kp_ptab_new(ktap_state *ks, int narr, int nrec)
 {
 	ktap_ptab *ph;
 	int cpu;
@@ -1240,18 +1247,10 @@ ktap_ptab *kp_ptab_new(ktap_state *ks)
 
 	for_each_possible_cpu(cpu) {
 		ktap_tab **t = per_cpu_ptr(ph->tbl, cpu);
-		*t = kp_tab_new(ks);
-
-		(*t)->with_stats = 1;
-
-		/* todo: make this value to be configuable, MAXENTRIES? */
-		table_resize(ks, *t, 0, 2000);
+		*t = kp_tab_new_withstat(ks, narr, nrec, 1);
 	}
 
-	ph->agg = kp_tab_new(ks);
-	ph->agg->with_stats = 1;
-	table_resize(ks, ph->agg, 0, 2000);
-
+	ph->agg = kp_tab_new_withstat(ks, narr, nrec * (cpu - 1), 1);
 	return ph;
 }
 
@@ -1268,7 +1267,7 @@ void kp_ptab_set(ktap_state *ks, ktap_ptab *ph,
 	unsigned long flags;
 	ktap_value *v;
 	ktap_stat_data *sd;
-	int aggval;;
+	int aggval;
 
 	if (unlikely(!is_number(val))) {
 		kp_error(ks, "add non number value to aggregation table\n");
@@ -1280,14 +1279,17 @@ void kp_ptab_set(ktap_state *ks, ktap_ptab *ph,
 	kp_tab_lock(t);
 
 	v = table_set(ks, t, key);
+	/* table maybe overflow, need to check */
+	if (unlikely(!v))
+		goto out;
+
 	sd = read_sd(t, v);
 
 	if (is_nil(v)) {
 		sd->count = 1;
 		sd->sum = sd->min = sd->max = aggval;
 		set_statdata(v, sd);
-		kp_tab_unlock(t);
-		return;
+		goto out;
 	}
 
 	sd->count++;
@@ -1297,6 +1299,7 @@ void kp_ptab_set(ktap_state *ks, ktap_ptab *ph,
 	if (aggval < sd->min)
 		sd->min = aggval;
 
+ out:
 	kp_tab_unlock(t);
 }
 
@@ -1338,10 +1341,13 @@ void kp_ptab_get(ktap_state *ks, ktap_ptab *ph,
 
 	kp_tab_lock(ph->agg);
 	aggval = table_set(ks, ph->agg, key);
+	if (unlikely(!aggval))
+		goto out;
 	aggsd = read_sd(ph->agg, aggval);
 	*aggsd = sd;
 	set_statdata(aggval, aggsd);
 	set_statdata(val, aggsd);
+ out:
 	kp_tab_unlock(ph->agg);
 }
 

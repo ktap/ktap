@@ -1,5 +1,5 @@
 /*
- * baselib.c - ktapvm kernel module base library
+ * lib_base.c - base library
  *
  * This file is part of ktap by Jovi Zhangwei.
  *
@@ -387,8 +387,19 @@ static int ktap_lib_histogram(ktap_state *ks)
 static int ktap_lib_ptable(ktap_state *ks)
 {
 	ktap_ptab *ph;
+	int narr = 0, nrec = 0;
 
-	ph = kp_ptab_new(ks);
+	if (kp_arg_nr(ks) >= 1) {
+		kp_arg_check(ks, 1, KTAP_TNUMBER);
+		narr = nvalue(kp_arg(ks, 1));
+	}
+
+	if (kp_arg_nr(ks) >= 2) {
+		kp_arg_check(ks, 2, KTAP_TNUMBER);
+		nrec = nvalue(kp_arg(ks, 2));
+	}
+
+	ph = kp_ptab_new(ks, narr, nrec);
 	set_ptable(ks->top, ph);
 	incr_top(ks);
 	return 1;

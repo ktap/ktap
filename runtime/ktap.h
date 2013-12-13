@@ -32,6 +32,7 @@ void kp_init_baselib(ktap_state *ks);
 void kp_init_oslib(ktap_state *ks);
 void kp_init_kdebuglib(ktap_state *ks);
 void kp_init_timerlib(ktap_state *ks);
+void kp_init_tablelib(ktap_state *ks);
 void kp_init_ansilib(ktap_state *ks);
 #ifdef CONFIG_KTAP_FFI
 void kp_init_ffilib(ktap_state *ks);

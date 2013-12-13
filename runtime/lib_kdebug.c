@@ -1,5 +1,5 @@
 /*
- * kdebug.c - ktap probing core implementation
+ * lib_kdebug.c - ktap probing core implementation
  *
  * This file is part of ktap by Jovi Zhangwei.
  *

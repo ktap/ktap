@@ -26,8 +26,9 @@ RUNTIME = runtime
 FFIDIR = $(RUNTIME)/ffi
 KTAP_LIBS = -lpthread
 
-LIB_OBJS += $(RUNTIME)/lib_base.o $(RUNTIME)/lib_kdebug.o $(RUNTIME)/lib_timer.o \
-		$(RUNTIME)/lib_ansi.o
+LIB_OBJS += $(RUNTIME)/lib_base.o $(RUNTIME)/lib_kdebug.o \
+		$(RUNTIME)/lib_timer.o $(RUNTIME)/lib_ansi.o \
+		$(RUNTIME)/lib_table.o
 
 ifndef amalg
 ifdef FFI
@@ -69,7 +70,7 @@ mod:
 modules_install:
 	$(MAKE) -C $(KERNEL_SRC) M=$(PWD) modules_install
 
-KTAPC_CFLAGS = -Wall -O2
+KTAPC_CFLAGS = -Wall -O2 -g
 
 
 # try-cc

@@ -1,5 +1,5 @@
 /*
- * ansilib.c - ANSI escape sequences library
+ * lib_ansi.c - ANSI escape sequences library
  *
  * http://en.wikipedia.org/wiki/ANSI_escape_code
  *

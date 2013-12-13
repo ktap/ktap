@@ -1,5 +1,5 @@
 /*
- * ffi.c - ktapvm kernel module ffi library
+ * lib_ffi.c - FFI library
  *
  * This file is part of ktap by Jovi Zhangwei.
  *

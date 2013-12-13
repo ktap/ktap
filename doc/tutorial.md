@@ -228,6 +228,10 @@ User don't have to use kdebug library directly, use trace/trace_end keyword.
 ### Timer Library
 
 
+### Table Library
+
+**table.new (narr, nrec)**  
+pre-allocate table with narr array entries and nrec records.
 
 # Linux tracing basics
 

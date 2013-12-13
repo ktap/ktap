@@ -1,5 +1,5 @@
 /*
- * kp_amalg.c - ktapvm kernel module amalgamation.
+ * lib_table.c - Table library
  *
  * This file is part of ktap by Jovi Zhangwei.
  *
@@ -19,25 +19,43 @@
  * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include <linux/ctype.h>
+#include <linux/slab.h>
+#include <linux/delay.h>
+#include <linux/sched.h>
+#include "../include/ktap_types.h"
+#include "ktap.h"
+#include "kp_obj.h"
+#include "kp_vm.h"
 
-#include "ktap.c"
-#include "kp_obj.c"
-#include "kp_load.c"
-#include "kp_str.c"
-#include "kp_tab.c"
-#include "kp_transport.c"
-#include "kp_vm.c"
-#include "lib_base.c"
-#include "lib_ansi.c"
-#include "lib_kdebug.c"
-#include "lib_timer.c"
-#include "lib_table.c"
+static int ktap_lib_new(ktap_state *ks)
+{
+	ktap_tab *h;
+	int narr = 0, nrec = 0;
 
-#ifdef CONFIG_KTAP_FFI
-#include "ffi/ffi_call.c"
-#include "ffi/ffi_type.c"
-#include "ffi/ffi_symbol.c"
-#include "ffi/cdata.c"
-#include "ffi/ffi_util.c"
-#include "lib_ffi.c"
-#endif
+	if (kp_arg_nr(ks) >= 1) {
+		kp_arg_check(ks, 1, KTAP_TNUMBER);
+		narr = nvalue(kp_arg(ks, 1));
+	}
+
+	if (kp_arg_nr(ks) >= 2) {
+		kp_arg_check(ks, 2, KTAP_TNUMBER);
+		nrec = nvalue(kp_arg(ks, 2));
+	}
+
+	h = kp_tab_new(ks, narr, nrec);
+	set_table(ks->top, h);
+	incr_top(ks);
+	return 1;
+}
+
+static const ktap_Reg tablelib_funcs[] = {
+	{"new",	ktap_lib_new},
+	{NULL}
+};
+
+void kp_init_tablelib(ktap_state *ks)
+{
+	kp_register_lib(ks, "table", tablelib_funcs);
+}
+

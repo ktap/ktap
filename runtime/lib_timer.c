@@ -1,5 +1,5 @@
 /*
- * timer.c - timer library support for ktap
+ * lib_timer.c - timer library support for ktap
  *
  * This file is part of ktap by Jovi Zhangwei.
  *
