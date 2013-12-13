@@ -151,7 +151,8 @@ inline csymbol *ffi_get_csym_by_id(ktap_state *ks, csymbol_id id);
 #define cd_type(ks, cd) (cd_csym(ks, cd)->type)
 
 #define cd_int(cd) ((cd)->u.i)
-#define cd_ptr(cd) ((cd)->u.p)
+#define cd_ptr(cd) ((cd)->u.p.addr)
+#define cd_ptr_allocated(cd) ((cd)->u.p.allocated)
 #define cd_struct(cd) ((cd)->u.st)
 
 #ifdef __KERNEL__

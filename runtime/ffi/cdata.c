@@ -48,10 +48,20 @@ ktap_cdata *kp_cdata_new_ptr(ktap_state *ks, void *addr,
 		/* TODO: free the space when exit the program unihorn(08.12.2013) */
 		size = csym_size(ks, id_to_csym(ks, id));
 		cd_ptr(cd) = kp_zalloc(ks, size * len);
-	} else
+		cd_ptr_allocated(cd) = 1;
+	} else {
 		cd_ptr(cd) = addr;
+		cd_ptr_allocated(cd) = 0;
+	}
 
 	return cd;
+}
+
+void kp_cdata_free_ptr(ktap_state *ks, ktap_cdata *cd)
+{
+	if (cd_ptr_allocated(cd))
+		kp_free(ks, cd_ptr(cd));
+	cd_ptr(cd) = NULL;
 }
 
 ktap_cdata *kp_cdata_new_struct(ktap_state *ks, void *val, csymbol_id id)

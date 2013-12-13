@@ -52,3 +52,4 @@ ret = C.ffi_test_array(arr, 9)
 if (ret != 0) {
 	failed("ffi_test_array should return 0")
 }
+ffi.free(arr)

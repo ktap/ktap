@@ -274,7 +274,10 @@ typedef struct ktap_cdata {
 	csymbol_id id;
 	union {
 		uint64_t i;
-		void *p;	/* pointer address */
+		struct {
+			void *addr;
+			int allocated;
+		} p;	/* pointer data */
 		void *st;	/* struct member data */
 	} u;
 } ktap_cdata;

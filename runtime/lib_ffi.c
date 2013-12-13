@@ -58,6 +58,29 @@ static int kp_ffi_new(ktap_state *ks)
 	return 1;
 }
 
+static int kp_ffi_free(ktap_state *ks)
+{
+	int n = kp_arg_nr(ks), array_size;
+	ktap_cdata *cd;
+
+	if (n != 1) {
+		set_nil(ks->top++);
+		kp_error(ks, "wrong number of arguments\n");
+		return 1;
+	}
+
+	kp_arg_check(ks, 1, KTAP_TCDATA);
+
+	cd = cdvalue(kp_arg(ks, 1));
+
+	if (cd_type(ks, cd) != FFI_PTR)
+		kp_error(ks, "could free pointer cdata only\n");
+
+	kp_cdata_free_ptr(ks, cd);
+
+	return 0;
+}
+
 static int kp_ffi_sizeof(ktap_state *ks)
 {
 	/*@TODO finish this  08.11 2013 (houqp)*/
@@ -67,6 +90,7 @@ static int kp_ffi_sizeof(ktap_state *ks)
 static const ktap_Reg ffi_funcs[] = {
 	{"sizeof", kp_ffi_sizeof},
 	{"new", kp_ffi_new},
+	{"free", kp_ffi_free},
 	{NULL}
 };
 
