@@ -65,7 +65,7 @@ static void setup_ffi_ctable(ktap_state *ks)
 
 	gt = kp_tab_getint(hvalue(&G(ks)->registry), KTAP_RIDX_GLOBALS);
 
-	G(ks)->ffis.ctable = kp_tab_new(ks);
+	G(ks)->ffis.ctable = kp_tab_new(ks, 0, 512);
 
 	/* insert ffi C table to global table */
 	set_table(&ffi_mt, get_ffi_ctable(ks));
