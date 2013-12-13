@@ -149,7 +149,7 @@ static const ktap_Reg ansi_funcs[] = {
 	{NULL}
 };
 
-void kp_init_ansilib(ktap_state *ks)
+int kp_init_ansilib(ktap_state *ks)
 {
-	kp_register_lib(ks, "ansi", ansi_funcs); 
+	return kp_register_lib(ks, "ansi", ansi_funcs); 
 }

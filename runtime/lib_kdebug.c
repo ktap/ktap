@@ -412,7 +412,7 @@ static const ktap_Reg kdebuglib_funcs[] = {
 	{NULL}
 };
 
-void kp_init_kdebuglib(ktap_state *ks)
+int kp_init_kdebuglib(ktap_state *ks)
 {
 #ifdef CONFIG_PPC64
 	kp_ftrace_profile_set_filter =
@@ -424,9 +424,9 @@ void kp_init_kdebuglib(ktap_state *ks)
 	if (!kp_ftrace_profile_set_filter) {
 		kp_error(ks, "ktap: cannot lookup ftrace_profile_set_filter "
 				"in kallsyms\n");
-		return;
+		return -1;
 	}
 
-	kp_register_lib(ks, "kdebug", kdebuglib_funcs);
+	return kp_register_lib(ks, "kdebug", kdebuglib_funcs);
 }
 

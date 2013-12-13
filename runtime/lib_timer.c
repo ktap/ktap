@@ -186,8 +186,8 @@ static const ktap_Reg timerlib_funcs[] = {
 	{NULL}
 };
 
-void kp_init_timerlib(ktap_state *ks)
+int kp_init_timerlib(ktap_state *ks)
 {
-	kp_register_lib(ks, "timer", timerlib_funcs);
+	return kp_register_lib(ks, "timer", timerlib_funcs);
 }
 

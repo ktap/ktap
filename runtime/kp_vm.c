@@ -545,6 +545,8 @@ static void ktap_execute(ktap_state *ks)
 		 * This would allocate more memory for some static table.
 		 */
 		ktap_tab *t = kp_tab_new(ks, 0, 0);
+		if (unlikely(!t))
+			return;
 		set_table(ra, t);
 		break;
 		}
@@ -967,7 +969,7 @@ static int cfunction_cache_init(ktap_state *ks)
 }
 
 /* function for register library */
-void kp_register_lib(ktap_state *ks, const char *libname, const ktap_Reg *funcs)
+int kp_register_lib(ktap_state *ks, const char *libname, const ktap_Reg *funcs)
 {
 	const ktap_value *gt = kp_tab_getint(hvalue(&G(ks)->registry),
 					       KTAP_RIDX_GLOBALS);
@@ -986,6 +988,9 @@ void kp_register_lib(ktap_state *ks, const char *libname, const ktap_Reg *funcs)
 		}
 
 		target_tbl = kp_tab_new(ks, 0, i);
+		if (!target_tbl)
+			return -1;
+
 		set_string(&key, kp_tstring_new(ks, libname));
 		set_table(&val, target_tbl);
 		kp_tab_setvalue(ks, hvalue(gt), &key, &val);
@@ -1000,21 +1005,33 @@ void kp_register_lib(ktap_state *ks, const char *libname, const ktap_Reg *funcs)
 
 		cfunction_cache_add(ks, &cl);
 	}
+
+	return 0;
 }
 
-static void kp_init_registry(ktap_state *ks)
+static int kp_init_registry(ktap_state *ks)
 {
 	ktap_tab *registry = kp_tab_new(ks, 2, 0);
 	ktap_value global_tbl;
 	ktap_value mt;
+	ktap_tab *t;
+
+	if (!registry)
+		return -1;
 
 	set_table(&G(ks)->registry, registry);
 	set_thread(&mt, ks);
 	kp_tab_setint(ks, registry, KTAP_RIDX_MAINTHREAD, &mt);
 
 	/* assume there will have max 1024 global variables */
-	set_table(&global_tbl, kp_tab_new(ks, 0, 1024));
+	t = kp_tab_new(ks, 0, 1024);
+	if (!t)
+		return -1;
+
+	set_table(&global_tbl, t);
 	kp_tab_setint(ks, registry, KTAP_RIDX_GLOBALS, &global_tbl);
+
+	return 0;
 }
 
 static int kp_init_arguments(ktap_state *ks, int argc, char __user **user_argv)
@@ -1027,6 +1044,9 @@ static int kp_init_arguments(ktap_state *ks, int argc, char __user **user_argv)
 	ktap_value arg_tsval;
 	char **argv;
 	int i, ret;
+
+	if (!arg_tbl)
+		return -1;
 
 	set_string(&arg_tsval, kp_tstring_new(ks, "arg"));
 	set_table(&arg_tblval, arg_tbl);
@@ -1418,11 +1438,12 @@ ktap_state *kp_newstate(ktap_parm *parm, struct dentry *dir)
 
 	if (kp_stats_init(ks))
 		goto out;
-
 	if (kp_transport_init(ks, dir))
 		goto out;
 
 	ks->stack = kp_malloc(ks, KTAP_STACK_SIZE_BYTES);
+	if (!ks->stack)
+		goto out;
 
 	pid = (pid_t)parm->trace_pid;
 	if (pid != -1) {
@@ -1462,20 +1483,27 @@ ktap_state *kp_newstate(ktap_parm *parm, struct dentry *dir)
 	kp_tstring_resize(ks, 512); /* set inital string hashtable size */
 
 	kp_init_state(ks);
-	kp_init_registry(ks);
-	kp_init_arguments(ks, parm->argc, parm->argv);
+	if (kp_init_registry(ks))
+		goto out;
+	if (kp_init_arguments(ks, parm->argc, parm->argv))
+		goto out;
 
 	/* init library */
-	kp_init_baselib(ks);
-	kp_init_kdebuglib(ks);
-	kp_init_timerlib(ks);
-	kp_init_ansilib(ks);
-	kp_init_ffilib(ks);
-	kp_init_tablelib(ks);
+	if (kp_init_baselib(ks))
+		goto out;
+	if (kp_init_kdebuglib(ks))
+		goto out;
+	if (kp_init_timerlib(ks))
+		goto out;
+	if (kp_init_ansilib(ks))
+		goto out;
+	if (kp_init_ffilib(ks))
+		goto out;
+	if (kp_init_tablelib(ks))
+		goto out;
 
 	if (alloc_kp_percpu_data(ks))
 		goto out;
-
 	if (kp_probe_init(ks))
 		goto out;
 

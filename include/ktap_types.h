@@ -226,7 +226,6 @@ typedef struct ktap_tab {
 #ifdef __KERNEL__
 	arch_spinlock_t lock;
 #endif
-	u8 flags;  /* 1<<p means tagmethod(p) is not present */
 	u8 lsizenode;  /* log2 of size of `node' array */
 	int sizearray;  /* size of `array' array */
 	ktap_value *array;  /* array part */

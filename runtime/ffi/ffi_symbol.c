@@ -28,8 +28,7 @@
 #include "../kp_str.h"
 #include "../kp_tab.h"
 
-void setup_kp_ffi_symbol_table(ktap_state *ks);
-
+static int setup_ffi_symbol_table(ktap_state *ks);
 
 static inline csymbol *get_csym_arr(ktap_state *ks)
 {
@@ -57,7 +56,7 @@ static inline ktap_tab *get_ffi_ctable(ktap_state *ks)
 	return G(ks)->ffis.ctable;
 }
 
-static void setup_ffi_ctable(ktap_state *ks)
+static int setup_ffi_ctable(ktap_state *ks)
 {
 	ktap_value ffi_lib_name, ffi_mt;
 	ktap_tab *registry;
@@ -66,23 +65,23 @@ static void setup_ffi_ctable(ktap_state *ks)
 	gt = kp_tab_getint(hvalue(&G(ks)->registry), KTAP_RIDX_GLOBALS);
 
 	G(ks)->ffis.ctable = kp_tab_new(ks, 0, 512);
+	if (!G(ks)->ffis.ctable)
+		return -1;
 
 	/* insert ffi C table to global table */
 	set_table(&ffi_mt, get_ffi_ctable(ks));
 	set_string(&ffi_lib_name, kp_tstring_new(ks, "C"));
 	registry = hvalue(gt);
 	kp_tab_setvalue(ks, registry, &ffi_lib_name, &ffi_mt);
+
+	return 0;
 }
 
-void ffi_set_csym_arr(ktap_state *ks, int cs_nr, csymbol *new_arr)
+int ffi_set_csym_arr(ktap_state *ks, int cs_nr, csymbol *new_arr)
 {
 	set_csym_nr(ks, cs_nr);
 	set_csym_arr(ks, new_arr);
-
-	if (!new_arr)
-		return;
-
-	setup_kp_ffi_symbol_table(ks);
+	return setup_ffi_symbol_table(ks);
 }
 
 inline csymbol *ffi_get_csym_by_id(ktap_state *ks, int id)
@@ -120,12 +119,13 @@ static void add_ffi_func_to_ctable(ktap_state *ks, csymbol_id id)
 	kp_tab_setvalue(ks, get_ffi_ctable(ks), &func_name, &fv);
 }
 
-void setup_kp_ffi_symbol_table(ktap_state *ks)
+static int setup_ffi_symbol_table(ktap_state *ks)
 {
 	int i;
 	csymbol *cs;
 
-	setup_ffi_ctable(ks);
+	if (setup_ffi_ctable(ks))
+		return -1;
 
 	/* push all functions to ctable */
 	for (i = 0; i < get_csym_nr(ks); i++) {
@@ -143,6 +143,8 @@ void setup_kp_ffi_symbol_table(ktap_state *ks)
 			break;
 		}
 	}
+
+	return 0;
 }
 
 void kp_ffi_free_symbol(ktap_state *ks)

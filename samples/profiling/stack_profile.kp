@@ -6,7 +6,7 @@
 # Flame Graphs:
 # http://dtrace.org/blogs/brendan/2012/03/17/linux-kernel-performance-flame-graphs/
 
-s = ptable()
+s = ptable(0, 20000) #pre-allocate 20000 record entries
 
 profile-10us {
 	#skip 12 stack entries, and dump all remain entries.

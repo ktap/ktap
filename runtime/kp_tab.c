@@ -23,16 +23,16 @@
  * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include "../include/ktap_types.h"
-
 #include <linux/spinlock.h>
 #include <linux/module.h>
 #include <linux/kallsyms.h>
 #include <linux/sort.h>
+#include "../include/ktap_types.h"
 #include "ktap.h"
 #include "kp_vm.h"
 #include "kp_obj.h"
 #include "kp_str.h"
+#include "kp_tab.h"
 
 #define kp_tab_lock_init(t)						\
 	do {								\
@@ -82,12 +82,6 @@ static const ktap_tnode dummynode_ = {
 #define dummynode	(&dummynode_)
 #define isdummy(n)	((n) == dummynode)
 
-static void table_setint(ktap_state *ks, ktap_tab *t, int key, ktap_value *v);
-static ktap_value *table_set(ktap_state *ks, ktap_tab *t,
-			     const ktap_value *key);
-static void setnodevector(ktap_state *ks, ktap_tab *t, int size);
-static void table_resize(ktap_state *ks, ktap_tab *t, int nasize, int nhsize);
-
 static int ceillog2(unsigned int x)
 {
 	static const u8 log_2[256] = {
@@ -123,33 +117,154 @@ static inline ktap_stat_data *read_sd(ktap_tab *t, const ktap_value *v)
 		return _read_sd(v, t->node, t->sd_rec);
 }
 
-static
-ktap_tab *kp_tab_new_withstat(ktap_state *ks, int narr, int nrec, int with_stat)
+static void update_array_sd(ktap_tab *t)
 {
+	int i;
+
+	for (i = 0; i < t->sizearray; i++) {
+		ktap_value *v = &t->array[i];
+
+		if (!is_statdata(v))
+			continue;
+
+		set_statdata(v, &t->sd_arr[i]);
+	}
+}
+
+static void table_free_array(ktap_state *ks, ktap_tab *t)
+{
+	if (t->sizearray > 0) {
+		vfree(t->array);
+		vfree(t->sd_arr);
+		t->array = NULL;
+		t->sd_arr = NULL;
+		t->sizearray = 0;
+	}
+}
+
+static int table_init_array(ktap_state *ks, ktap_tab *t, int size)
+{
+	if (size == 0)
+		return 0;
+
+	t->array = vzalloc(size * sizeof(ktap_value));
+	if (!t->array)
+		return -ENOMEM;
+
+	if (t->with_stats) {
+		t->sd_arr = vzalloc(size * sizeof(ktap_stat_data));
+		if (!t->sd_arr) {
+			vfree(t->array);
+			return -ENOMEM;
+		}
+		update_array_sd(t);
+	}
+
+	t->sizearray = size;
+	return 0;
+}
+
+static void table_free_record(ktap_state *ks, ktap_tab *t)
+{
+	if (!isdummy(t->node)) {
+		vfree(t->node);
+		vfree(t->sd_rec);
+		t->node = (ktap_tnode *)dummynode;
+		t->sd_rec = NULL;
+	}
+}
+
+static int table_init_record(ktap_state *ks, ktap_tab *t, int size)
+{
+	int lsize;
+
+	if (size == 0) {  /* no elements to hash part? */
+		t->node = (ktap_tnode *)dummynode;  /* use common `dummynode' */
+		lsize = 0;
+	} else {
+		lsize = ceillog2(size);
+		if (lsize > MAXBITS)
+			return -EINVAL;
+
+		size = twoto(lsize);
+		t->node = vzalloc(size * sizeof(ktap_tnode));
+		if (!t->node)
+			return -ENOMEM;
+
+		if (t->with_stats) {
+			t->sd_rec = vzalloc(size * sizeof(ktap_stat_data));
+			if (!t->sd_rec) {
+				vfree(t->node);
+				t->node = (ktap_tnode *)dummynode;
+				return -ENOMEM;
+			}
+		}
+	}
+
+	t->lsizenode = (u8)lsize;
+	t->lastfree = gnode(t, size);  /* all positions are free */
+
+	return 0;
+}
+
+
+#define TABLE_NARR_ENTRIES	256 /* PAGE_SIZE / sizeof(ktap_value) */
+#define TABLE_NREC_ENTRIES	2048 /* (PAGE_SIZE * 20) / sizeof(ktap_tnode)*/
+
+static
+ktap_tab *tab_new_withstat(ktap_state *ks, int narr, int nrec, int with_stat)
+{
+	int size;
+
 	ktap_tab *t = &kp_newobject(ks, KTAP_TTABLE, sizeof(ktap_tab),
 				      NULL)->h;
-	t->flags = (u8)(~0);
 	t->array = NULL;
 	t->sizearray = 0;
 	t->node = (ktap_tnode *)dummynode;
+	t->lsizenode = 0;
+	t->lastfree = t->node;  /* all positions are free */
 	t->gclist = NULL;
 	t->with_stats = with_stat;
 	t->sd_arr = NULL;
 	t->sd_rec = NULL;
-	setnodevector(ks, t, 0);
-
 	t->sorted = NULL;
-	t->sort_head = NULL;
 
 	kp_tab_lock_init(t);
 
-	table_resize(ks, t, narr, nrec);
+	if (narr == 0 && nrec == 0) {
+		narr = TABLE_NARR_ENTRIES;
+		nrec = TABLE_NREC_ENTRIES;
+	}
+
+	kp_verbose_printf(ks, "table new, narr: %d, nrec: %d\n", narr, nrec);
+
+	if (table_init_array(ks, t, narr)) {
+		kp_error(ks, "cannot allocate %d narr for table\n", narr);
+		return NULL;
+	}
+
+	if (table_init_record(ks, t, nrec)) {
+		table_free_array(ks, t);
+		kp_error(ks, "cannot allocate %d nrec for table\n", nrec);
+		return NULL;
+	}
+
+	size = t->sizearray + sizenode(t);
+	t->sorted = vzalloc(size * sizeof(ktap_tnode));
+	if (!t->sorted) {
+		table_free_array(ks, t);
+		table_free_record(ks, t);
+		kp_error(ks, "cannot allocate %d bytes memory for table sort\n",
+				size * sizeof(ktap_tnode));
+		return NULL;
+	}
+
 	return t;
 }
 
 ktap_tab *kp_tab_new(ktap_state *ks, int narr, int nrec)
 {
-	return kp_tab_new_withstat(ks, narr, nrec, 0);
+	return tab_new_withstat(ks, narr, nrec, 0);
 }
 
 static const ktap_value *table_getint(ktap_tab *t, int key)
@@ -293,8 +408,8 @@ int kp_tab_next(ktap_state *ks, ktap_tab *t, StkId key)
 
 int kp_tab_sort_next(ktap_state *ks, ktap_tab *t, StkId key)
 {
-	unsigned long flags;
 	ktap_tnode *node = t->sort_head;
+	unsigned long flags;
 
 	kp_tab_lock(t);
 
@@ -401,13 +516,10 @@ static void insert_sorted_list(ktap_state *ks, ktap_tab *t,
 void kp_tab_sort(ktap_state *ks, ktap_tab *t, ktap_closure *cmp_func)
 {
 	unsigned long flags;
-	int size = t->sizearray + sizenode(t);
 	int i;
 
 	kp_tab_lock(t);
 
-	kp_realloc(ks, t->sorted, 0, size, ktap_tnode);
-	memset(t->sorted, 0, size * sizeof(ktap_tnode));
 	t->sort_head = t->sorted;
 
 	for (i = 0; i < t->sizearray; i++) {
@@ -431,251 +543,6 @@ void kp_tab_sort(ktap_state *ks, ktap_tab *t, ktap_closure *cmp_func)
 
 	kp_tab_unlock(t);
 }
-
-static void update_array_sd(ktap_tab *t)
-{
-	int i;
-
-	for (i = 0; i < t->sizearray; i++) {
-		ktap_value *v = &t->array[i];
-
-		if (!is_statdata(v))
-			continue;
-
-		set_statdata(v, &t->sd_arr[i]);
-	}
-}
-
-static void setarrayvector(ktap_state *ks, ktap_tab *t, int size)
-{
-	kp_realloc(ks, t->array, t->sizearray, size, ktap_value);
-	if (t->with_stats) {
-		kp_realloc(ks, t->sd_arr, t->sizearray, size,
-				ktap_stat_data);
-		update_array_sd(t);
-	}
-
-	memset(&t->array[t->sizearray], 0,
-			(size - t->sizearray) * sizeof(ktap_value));
-
-	t->sizearray = size;
-}
-
-static void setnodevector(ktap_state *ks, ktap_tab *t, int size)
-{
-	int lsize;
-
-	if (size == 0) {  /* no elements to hash part? */
-		t->node = (ktap_tnode *)dummynode;  /* use common `dummynode' */
-		lsize = 0;
-	} else {
-		lsize = ceillog2(size);
-		if (lsize > MAXBITS) {
-			kp_error(ks, "table overflow\n");
-			return;
-		}
-
-		size = twoto(lsize);
-		t->node = kp_zalloc(ks, size * sizeof(ktap_tnode));
-		if (t->with_stats)
-			t->sd_rec = kp_malloc(ks, size *
-						sizeof(ktap_stat_data));
-	}
-
-	t->lsizenode = (u8)lsize;
-	t->lastfree = gnode(t, size);  /* all positions are free */
-}
-
-#define TABLE_NARR_ENTRIES	128;
-#define TABLE_NREC_ENTRIES	2048;
-
-static void table_resize(ktap_state *ks, ktap_tab *t, int nasize, int nhsize)
-{
-	int oldasize = t->sizearray;
-	int oldhsize = t->lsizenode;
-	ktap_tnode *nold = t->node;  /* save old hash */
-	ktap_stat_data *sd_rec_old = t->sd_rec;  /* save stat_data */
-	int i;
-
-	if (nasize == 0 && nhsize == 0) {
-		nasize = TABLE_NARR_ENTRIES;
-		nhsize = TABLE_NREC_ENTRIES;
-	}
-
-	kp_verbose_printf(ks, "table resize, nasize: %d, nhsize: %d\n",
-				nasize, nhsize);
-
-	if (nasize > oldasize)  /* array part must grow? */
-		setarrayvector(ks, t, nasize);
-
-	/* create new hash part with appropriate size */
-	setnodevector(ks, t, nhsize);
-
-	if (nasize < oldasize) {  /* array part must shrink? */
-		t->sizearray = nasize;
-		/* re-insert elements from vanishing slice */
-		for (i = nasize; i < oldasize; i++) {
-			if (!is_nil(&t->array[i])) {
-				ktap_value *v;
-				v = (ktap_value *)table_getint(t, i + 1);
-				set_obj(v, &t->array[i]);
-
-				if (t->with_stats) {
-					*read_sd(t, v) = t->sd_arr[i];
-					set_statdata(v, read_sd(t, v));
-				}
-			}
-		}
-
-		/* shrink array */
-		kp_realloc(ks, t->array, oldasize, nasize, ktap_value);
-		if (t->with_stats) {
-			kp_realloc(ks, t->sd_arr, oldasize, nasize,
-					ktap_stat_data);
-			update_array_sd(t);
-		}
-	}
-
-	/* re-insert elements from hash part */
-	for (i = twoto(oldhsize) - 1; i >= 0; i--) {
-		ktap_tnode *old = nold + i;
-		if (!is_nil(gval(old))) {
-			ktap_value *v = table_set(ks, t, gkey(old));
-			if (unlikely(!v))
-				break;
-
-			set_obj(v, gval(old));
-
-			if (t->with_stats) {
-				ktap_stat_data *sd;
-
-				sd = read_sd(t, v);
-				*sd = *_read_sd(gval(old), nold, sd_rec_old);
-				set_statdata(v, sd);
-			}
-		}
-	}
-
-	if (!isdummy(nold)) {
-		kp_free(ks, nold); /* free old array */
-		kp_free(ks, sd_rec_old);
-	}
-}
-
-#if 0
-
-static int computesizes (int nums[], int *narray)
-{
-	int i;
-	int twotoi;  /* 2^i */
-	int a = 0;  /* number of elements smaller than 2^i */
-	int na = 0;  /* number of elements to go to array part */
-	int n = 0;  /* optimal size for array part */
-
-	for (i = 0, twotoi = 1; twotoi/2 < *narray; i++, twotoi *= 2) {
-		if (nums[i] > 0) {
-			a += nums[i];
-			/* more than half elements present? */
-			if (a > twotoi/2) {
-				/* optimal size (till now) */
-				n = twotoi;
-				/*
-				 * all elements smaller than n will go to
-				 * array part
-				 */
-				na = a;
-			}
-		}
-		if (a == *narray)
-			break;  /* all elements already counted */
-	}
-	*narray = n;
-	return na;
-}
-
-
-static int countint(const ktap_value *key, int *nums)
-{
-	int k = arrayindex(key);
-
-	/* is `key' an appropriate array index? */
-	if (0 < k && k <= MAXASIZE) {
-		nums[ceillog2(k)]++;  /* count as such */
-		return 1;
-	} else
-		return 0;
-}
-
-static int numusearray(const ktap_tab *t, int *nums)
-{
-	int lg;
-	int ttlg;  /* 2^lg */
-	int ause = 0;  /* summation of `nums' */
-	int i = 1;  /* count to traverse all array keys */
-
-	/* for each slice */
-	for (lg=0, ttlg=1; lg <= MAXBITS; lg++, ttlg *= 2) {
-		int lc = 0;  /* counter */
-		int lim = ttlg;
-
-		if (lim > t->sizearray) {
-			lim = t->sizearray;  /* adjust upper limit */
-			if (i > lim)
-				break;  /* no more elements to count */
-		}
-
-		/* count elements in range (2^(lg-1), 2^lg] */
-		for (; i <= lim; i++) {
-			if (!is_nil(&t->array[i-1]))
-				lc++;
-		}
-		nums[lg] += lc;
-		ause += lc;
-	}
-	return ause;
-}
-
-static int numusehash(const ktap_tab *t, int *nums, int *pnasize)
-{
-	int totaluse = 0;  /* total number of elements */
-	int ause = 0;  /* summation of `nums' */
-	int i = sizenode(t);
-
-	while (i--) {
-		ktap_tnode *n = &t->node[i];
-		if (!is_nil(gval(n))) {
-			ause += countint(gkey(n), nums);
-			totaluse++;
-		}
-	}
-
-	*pnasize += ause;
-	return totaluse;
-}
-
-static void rehash(ktap_state *ks, ktap_tab *t, const ktap_value *ek)
-{
-	int nasize, na;
-	/* nums[i] = number of keys with 2^(i-1) < k <= 2^i */
-	int nums[MAXBITS+1];
-	int i;
-	int totaluse;
-
-	for (i = 0; i <= MAXBITS; i++)
-		nums[i] = 0;  /* reset counts */
-
-	nasize = numusearray(t, nums);  /* count keys in array part */
-	totaluse = nasize;  /* all those keys are integer keys */
-	totaluse += numusehash(t, nums, &nasize);  /* count keys in hash part */
-	/* count extra key */
-	nasize += countint(ek, nums);
-	totaluse++;
-	/* compute new size for array part */
-	na = computesizes(nums, &nasize);
-	/* resize the table to new computed sizes */
-	table_resize(ks, t, nasize, totaluse - na);
-}
-#endif
 
 static ktap_tnode *getfreepos(ktap_tab *t)
 {
@@ -923,17 +790,12 @@ int kp_tab_length(ktap_state *ks, ktap_tab *t)
 
 void kp_tab_free(ktap_state *ks, ktap_tab *t)
 {
-	if (t->sizearray > 0) {
-		kp_free(ks, t->array);
-		kp_free(ks, t->sd_arr);
-	}
+	table_free_array(ks, t);
+	table_free_record(ks, t);
 
-	if (!isdummy(t->node)) {
-		kp_free(ks, t->node);
-		kp_free(ks, t->sd_rec);
-	}
+	if (t->sorted)
+		vfree(t->sorted);
 
-	kp_free(ks, t->sorted);
 	kp_free_gclist(ks, t->gclist);
 	kp_free(ks, t);
 }
@@ -1247,10 +1109,10 @@ ktap_ptab *kp_ptab_new(ktap_state *ks, int narr, int nrec)
 
 	for_each_possible_cpu(cpu) {
 		ktap_tab **t = per_cpu_ptr(ph->tbl, cpu);
-		*t = kp_tab_new_withstat(ks, narr, nrec, 1);
+		*t = tab_new_withstat(ks, narr, nrec, 1);
 	}
 
-	ph->agg = kp_tab_new_withstat(ks, narr, nrec * (cpu - 1), 1);
+	ph->agg = tab_new_withstat(ks, narr, nrec * (cpu - 1), 1);
 	return ph;
 }
 

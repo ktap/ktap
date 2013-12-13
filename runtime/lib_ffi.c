@@ -44,7 +44,7 @@ static const ktap_Reg ffi_funcs[] = {
 	{NULL}
 };
 
-void kp_init_ffilib(ktap_state *ks)
+int kp_init_ffilib(ktap_state *ks)
 {
-	kp_register_lib(ks, "ffi", ffi_funcs);
+	return kp_register_lib(ks, "ffi", ffi_funcs);
 }

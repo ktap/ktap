@@ -27,6 +27,7 @@
 #include "ktap.h"
 #include "kp_obj.h"
 #include "kp_vm.h"
+#include "kp_tab.h"
 
 static int ktap_lib_new(ktap_state *ks)
 {
@@ -44,7 +45,12 @@ static int ktap_lib_new(ktap_state *ks)
 	}
 
 	h = kp_tab_new(ks, narr, nrec);
-	set_table(ks->top, h);
+	if (!h) {
+		set_nil(ks->top);
+	} else {
+		set_table(ks->top, h);
+	}
+
 	incr_top(ks);
 	return 1;
 }
@@ -54,8 +60,8 @@ static const ktap_Reg tablelib_funcs[] = {
 	{NULL}
 };
 
-void kp_init_tablelib(ktap_state *ks)
+int kp_init_tablelib(ktap_state *ks)
 {
-	kp_register_lib(ks, "table", tablelib_funcs);
+	return kp_register_lib(ks, "table", tablelib_funcs);
 }
 

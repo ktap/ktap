@@ -258,7 +258,7 @@ static int load_header(struct load_state *S)
 }
 
 #ifdef CONFIG_KTAP_FFI
-void ffi_set_csym_arr(ktap_state *ks, int cs_nr, csymbol *new_arr);
+int ffi_set_csym_arr(ktap_state *ks, int cs_nr, csymbol *new_arr);
 
 static void load_csymbol_func(struct load_state *S, csymbol *cs)
 {
@@ -289,10 +289,10 @@ static int load_csymbols(struct load_state *S)
 
 	/* read number of csymbols */
 	csym_nr = READ_INT(S);
-	if (csym_nr <= 0) {
-		ffi_set_csym_arr(S->ks, 0, NULL);
+
+	/* check if FFI is used in script */
+	if (csym_nr == 0)
 		return 0;
-	}
 
 	/* csymbol size safty check */
 	if (sizeof(csymbol) != READ_INT(S)) {
@@ -316,9 +316,7 @@ static int load_csymbols(struct load_state *S)
 		}
 	}
 
-	ffi_set_csym_arr(S->ks, csym_nr, cs_arr);
-
-	return 0;
+	return ffi_set_csym_arr(S->ks, csym_nr, cs_arr);
 }
 #else
 static int load_csymbols(struct load_state *S)
