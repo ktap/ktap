@@ -948,7 +948,16 @@ static void primaryexp(ktap_lexstate *ls, ktap_expdesc *v)
 }
 
 #ifdef CONFIG_KTAP_FFI
-static void ffi_new_args(ktap_lexstate *ls, ktap_expdesc *f, int line)
+static void parsecdef(ktap_lexstate *ls)
+{
+	check(ls, TK_STRING);
+	ffi_parse_cdef(getstr(ls->t.seminfo.ts));
+
+	/* consume TK_STRING */
+	lex_next(ls);
+}
+
+static void parsenew(ktap_lexstate *ls, ktap_expdesc *f, int line)
 {
 	int base;
 	struct cp_ctype ct;
@@ -958,7 +967,7 @@ static void ffi_new_args(ktap_lexstate *ls, ktap_expdesc *f, int line)
 
 	switch (ls->t.token) {
 	case '(': {
-		/* skip " */
+		/* skip ( */
 		lex_next(ls);
 		/* read cdef string */
 		lex_next(ls);
@@ -993,7 +1002,47 @@ static void ffi_new_args(ktap_lexstate *ls, ktap_expdesc *f, int line)
 	/* ffi.new takes two arguments and return 1 */
 	init_exp(f, VCALL, codegen_codeABC(ls->fs, OP_CALL, base, 3, 2));
 }
+
+static void ffiexp(ktap_lexstate *ls, ktap_expdesc *v)
+{
+	/* ffiexp ->
+		'ffi' '.' ( cdef STRING | NAME funcargs ) */
+	ktap_expdesc key;
+	int line = ls->linenumber;
+	ktap_funcstate *fs = ls->fs;
+	const char *field_name;
+
+	check(ls, TK_FFI);
+	/* fake to be TK_NAME to reuse functions */
+	ls->t.token = TK_NAME;
+	primaryexp(ls, v);
+
+	check(ls, '.');
+	/* fieldsel */
+	/* TODO: ffi.cdef should generate no additional code at all,
+	 * but it does now because we cannot look ahead on token.
+	 * Improve it later. 12.12.2013(unihorn) */
+	codegen_exp2anyregup(fs, v);
+	lex_next(ls);  /* skip the dot or colon */
+	field_name = getstr(ls->t.seminfo.ts);
+	checkname(ls, &key);
+	codegen_indexed(fs, v, &key);
+
+	if (!strcmp(field_name, "new"))
+		parsenew(ls, v, line);
+	else if (!strcmp(field_name, "cdef"))
+		parsecdef(ls);
+	else
+		lex_syntaxerror(ls, "unexpected ffi function");
+}
+#else
+static void ffiexp(ktap_lexstate *ls, ktap_expdesc *v)
+{
+	printf("Please compile with FFI support to use ffi module!\n");
+	exit(EXIT_SUCCESS);
+}
 #endif
+
 
 static void suffixedexp(ktap_lexstate *ls, ktap_expdesc *v)
 {
@@ -1002,22 +1051,16 @@ static void suffixedexp(ktap_lexstate *ls, ktap_expdesc *v)
 	ktap_funcstate *fs = ls->fs;
 	int line = ls->linenumber;
 
-#ifdef CONFIG_KTAP_FFI
-	int is_ffi = 0;
-
-	if (!strcmp(getstr(ls->t.seminfo.ts), "ffi"))
-		is_ffi = 1;
-#endif
+	if (ls->t.token == TK_FFI) {
+		ffiexp(ls, v);
+		return;
+	}
 
 	primaryexp(ls, v);
 	for (;;) {
 		switch (ls->t.token) {
 		case '.': {  /* fieldsel */
 			fieldsel(ls, v);
-#ifdef CONFIG_KTAP_FFI
-			if (is_ffi && !strcmp(getstr(ls->t.seminfo.ts), "new"))
-				ffi_new_args(ls, v, line);
-#endif
 			break;
 		}
 		case '[': {  /* `[' exp1 `]' */
@@ -1692,8 +1735,9 @@ static void exprstat(ktap_lexstate *ls)
 	    ls->t.token == TK_INCR || ls->t.token == TK_AGGR_ASSIGN) {
 		v.prev = NULL;
 		assignment(ls, &v, 1);
-	} else {  /* stat -> func */
-		check_condition(ls, v.v.k == VCALL, "syntax error");
+	} else if (v.v.k == VCALL) {  /* stat -> func */
+		/* ffi.cdef is a fake function call now */
+		// check_condition(ls, v.v.k == VCALL, "syntax error");
 		SETARG_C(getcode(fs, &v.v), 1);  /* call statement uses no results */
 	}
 }
@@ -1866,28 +1910,6 @@ static void timerstat(ktap_lexstate *ls)
 	SETARG_C(getcode(fs, v), 1);  /* call statement uses no results */
 }
 
-/* we still keep cdef keyword even FFI feature is disabled, it just does
- * nothing and prints out a warning */
-#ifdef CONFIG_KTAP_FFI
-static void parsecdef(ktap_lexstate *ls)
-{
-	/* read long string cdef */
-	lex_next(ls);
-
-	check(ls, TK_STRING);
-	ffi_parse_cdef(getstr(ls->t.seminfo.ts));
-
-	/* consume newline */
-	lex_next(ls);
-}
-#else
-static void parsecdef(ktap_lexstate *ls)
-{
-	printf("Please compile with FFI support to use cdef!\n");
-	exit(EXIT_SUCCESS);
-}
-#endif
-
 
 static void statement(ktap_lexstate *ls)
 {
@@ -1956,9 +1978,6 @@ static void statement(ktap_lexstate *ls)
 	case TK_PROFILE:
 	case TK_TICK:
 		timerstat(ls);
-		break;
-	case TK_FFI_CDEF:
-		parsecdef(ls);
 		break;
 	default: {  /* stat -> func | assignment */
 		exprstat(ls);

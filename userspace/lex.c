@@ -39,7 +39,7 @@
 
 /* ORDER RESERVED */
 static const char *const ktap_tokens [] = {
-	"trace", "trace_end", "argevent", "argname", "cdef",
+	"trace", "trace_end", "argevent", "argname", "ffi",
 	"arg1", "arg2", "arg3", "arg4", "arg5", "arg6", "arg7", "arg9", "arg9",
 	"profile", "tick", "<<<",
 	"and", "break", "do", "else", "elseif",

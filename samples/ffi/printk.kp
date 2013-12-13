@@ -1,4 +1,4 @@
-cdef[[
+ffi.cdef[[
 	int printk(char *fmt, ...);
 ]]
 

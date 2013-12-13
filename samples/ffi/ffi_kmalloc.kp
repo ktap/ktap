@@ -1,6 +1,6 @@
 #!/usr/bin/env ktap
 
-cdef[[
+ffi.cdef[[
 	typedef unsigned gfp_t;
 	typedef unsigned long size_t;
 	void *__kmalloc( size_t size, gfp_t flags);
