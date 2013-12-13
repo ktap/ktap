@@ -444,7 +444,12 @@ int kp_tab_sort_next(ktap_state *ks, ktap_tab *t, StkId key)
 static int default_compare(ktap_state *ks, ktap_closure *cmp_func,
 				ktap_value *v1, ktap_value *v2)
 {
-	return nvalue(v1) < nvalue(v2);
+	if (is_number(v1))
+		return nvalue(v1) > nvalue(v2);
+	else if (is_statdata(v1))
+		return sdvalue(v1)->count > sdvalue(v2)->count;
+
+	return 0;
 }
 
 static int closure_compare(ktap_state *ks, ktap_closure *cmp_func,
@@ -489,7 +494,6 @@ static void insert_sorted_list(ktap_state *ks, ktap_tab *t,
 		compare = closure_compare;
 
 	while (node) {
-		//if (nvalue(gval(node)) < nvalue(val)) {
 		if (compare(ks, cmp_func, gval(node), val)) {
 			prevnode = node;
 			node = gnext(node);
@@ -854,118 +858,63 @@ static void string_convert(char *output, const char *input)
 		memcpy(output, input, strlen(input));
 }
 
-struct table_hist_record {
-	ktap_value key;
-	ktap_value val;
-};
-
-static int hist_record_cmp(const void *r1, const void *r2)
-{
-	const struct table_hist_record *i = r1;
-	const struct table_hist_record *j = r2;
-
-	if ((nvalue(&i->val) == nvalue(&j->val))) {
-		return 0;
-	} else if ((nvalue(&i->val) < nvalue(&j->val))) {
-		return 1;
-	} else
-		return -1;
-}
-
 /* todo: make histdump to be faster */
 
 /* histogram: key should be number or string, value must be number */
 static void table_histdump(ktap_state *ks, ktap_tab *t, int shownums)
 {
-	struct table_hist_record *thr;
-	unsigned long flags;
+	int total = 0, is_kernel_address = 0;
 	char dist_str[40];
-	int i, ratio, total = 0, count = 0, top_num, is_kernel_address = 0;
-	int size, num;
+	ktap_tnode *node;
 
-	size = sizeof(*thr) * (t->sizearray + sizenode(t));
-	thr = kp_malloc(ks, size);
-	if (!thr) {
-		kp_error(ks, "Cannot allocate %d of histogram memory", size);
-		return;
-	}
+	kp_tab_sort(ks, t, NULL);
 
-	kp_tab_lock(t);
-
-	for (i = 0; i < t->sizearray; i++) {
-		ktap_value *v = &t->array[i];
-
-		if (is_nil(v))
-			continue;
-
-		if (is_number(v))
-			num = nvalue(v);
-		else if (is_statdata(v))
-			num = sdvalue(v)->count;
+	for (node = t->sort_head; node; node = gnext(node)) {
+		ktap_value *val = gval(node);
+		if (is_number(val))
+			total += nvalue(val);
+		else if (is_statdata(val))
+			total += sdvalue(val)->count;
 		else {
-			kp_tab_unlock(t);
-			goto error;
+			kp_error(ks, "table histogram only handle "
+				     " (key: string/number val: number)\n");
+			return;
 		}
-
-		set_number(&thr[count].key, i + 1);
-		set_number(&thr[count].val, num);
-		count++;
-		total += num;
 	}
-
-	for (i = 0; i < sizenode(t); i++) {
-		ktap_tnode *n = &t->node[i];
-		ktap_value *v = gval(n);
-
-		if (is_nil(gkey(n)))
-			continue;
-
-		if (is_number(v))
-			num = nvalue(v);
-		else if (is_statdata(v))
-			num = sdvalue(v)->count;
-		else {
-			kp_tab_unlock(t);
-			goto error;
-		}
-
-		set_obj(&thr[count].key, gkey(n));
-		set_number(&thr[count].val, num);
-		count++;
-		total += num;
-	}
-
-	kp_tab_unlock(t);
-
-	sort(thr, count, sizeof(struct table_hist_record),
-	     hist_record_cmp, NULL);
-
-	dist_str[sizeof(dist_str) - 1] = '\0';
 
 	/* check the first key is a kernel text symbol or not */
-	if (is_number(&thr[0].key)) {
+	if (is_number(gkey(t->sort_head))) {
 		char str[KSYM_SYMBOL_LEN];
 
-		SPRINT_SYMBOL(str, nvalue(&thr[0].key));
+		SPRINT_SYMBOL(str, nvalue(gkey(t->sort_head)));
 		if (str[0] != '0' || str[1] != 'x')
 			is_kernel_address = 1;
 	}
 
-	top_num = min(shownums, count);
-	for (i = 0; i < top_num; i++) {
-		ktap_value *key = &thr[i].key;
-		ktap_value *val = &thr[i].val;
+	dist_str[sizeof(dist_str) - 1] = '\0';
+
+	for (node = t->sort_head; node; node = gnext(node)) {
+		ktap_value *key = gkey(node);
+		ktap_value *val = gval(node);
+		int num = 0, ratio;
+
+		if (!--shownums)
+			break;
+
+		if (is_number(val))
+			num = nvalue(val);
+		else if (is_statdata(val))
+			num = sdvalue(val)->count;
 
 		memset(dist_str, ' ', sizeof(dist_str) - 1);
-		ratio = (nvalue(val) * (sizeof(dist_str) - 1)) / total;
+		ratio = (num * (sizeof(dist_str) - 1)) / total;
 		memset(dist_str, '@', ratio);
 
 		if (is_string(key)) {
 			char buf[32 + 1] = {0};
 
 			string_convert(buf, svalue(key));
-			kp_printf(ks, "%32s |%s%-7d\n", buf, dist_str,
-				      nvalue(val));
+			kp_printf(ks, "%32s |%s%-7d\n", buf, dist_str, num);
 		} else if (is_number(key)) {
 			char str[KSYM_SYMBOL_LEN];
 			char buf[32 + 1] = {0};
@@ -975,24 +924,16 @@ static void table_histdump(ktap_state *ks, ktap_tab *t, int shownums)
 				SPRINT_SYMBOL(str, nvalue(key));
 				string_convert(buf, str);
 				kp_printf(ks, "%32s |%s%-7d\n", buf, dist_str,
-						nvalue(val));
+						num);
 			} else {
 				kp_printf(ks, "%32d |%s%-7d\n", nvalue(key),
-						dist_str, nvalue(val));
+						dist_str, num);
 			}
 		}
 	}
 
-	if (count > shownums)
+	if (!shownums && node)
 		kp_printf(ks, "%32s |\n", "...");
-
-	goto out;
-
- error:
-	kp_puts(ks, "error: table histogram only handle "
-			" (key: string/number val: number)\n");
- out:
-	kp_free(ks, thr);
 }
 
 #define HISTOGRAM_DEFAULT_TOP_NUM	20
