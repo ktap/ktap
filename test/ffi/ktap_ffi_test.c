@@ -45,6 +45,11 @@ unsigned long long ffi_test_sched_clock(void)
 }
 EXPORT_SYMBOL(ffi_test_sched_clock);
 
+int ffi_test_array(int *arr, int idx)
+{
+	return arr[idx];
+}
+EXPORT_SYMBOL(ffi_test_array);
 
 
 static int __init ffi_test_init(void)

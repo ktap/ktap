@@ -13,6 +13,7 @@ cdef[[
 	void *ffi_test_pointer1(char *a);
 	long long ffi_test_var_arg(int n, ...);
 	unsigned long long ffi_test_sched_clock(void);
+	int ffi_test_array(int *arr, int idx);
 ]]
 
 
@@ -44,4 +45,10 @@ if (ret != 78901234567890) {
 ret = C.ffi_test_sched_clock()
 if (ret == nil) {
 	failed("ffi_test_clock should not return nil")
+}
+
+arr = ffi.new("int[10]")
+ret = C.ffi_test_array(arr, 9)
+if (ret != 0) {
+	failed("ffi_test_array should return 0")
 }

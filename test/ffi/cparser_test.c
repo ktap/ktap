@@ -10,7 +10,7 @@
 
 void ffi_cparser_init(void);
 void ffi_cparser_free(void);
-int ffi_cdef(const char *s);
+int ffi_parse_cdef(const char *s);
 
 static cp_csymbol_state *csym_state;
 
@@ -77,7 +77,7 @@ int test_func_sched_clock()
 	csymbol *cs;
 	csymbol_func *fcs;
 
-	ffi_cdef("unsigned long long sched_clock();");
+	ffi_parse_cdef("unsigned long long sched_clock();");
 
 	csym_state = ctype_get_csym_state();
 	assert(cs_arr);
@@ -104,13 +104,13 @@ int test_func_funct_module()
 	csymbol *cs;
 	csymbol_func *fcs;
 
-	ffi_cdef("void funct_void();");
-	ffi_cdef("int funct_int1(unsigned char a, char b, unsigned short c, "
+	ffi_parse_cdef("void funct_void();");
+	ffi_parse_cdef("int funct_int1(unsigned char a, char b, unsigned short c, "
 			"short d);");
-	ffi_cdef("long long funct_int2(unsigned int a, int b, "
+	ffi_parse_cdef("long long funct_int2(unsigned int a, int b, "
 			"unsigned long c, long d, unsigned long long e, "
 			"long long f, long long g);");
-	ffi_cdef("void *funct_pointer1(char *a);");
+	ffi_parse_cdef("void *funct_pointer1(char *a);");
 
 	csym_state = ctype_get_csym_state();
 	assert(cs_arr);
@@ -198,7 +198,7 @@ int test_struct_timespec()
 	csymbol *cs;
 	csymbol_struct *stcs;
 
-	ffi_cdef("struct timespec { long ts_sec; long ts_nsec; };");
+	ffi_parse_cdef("struct timespec { long ts_sec; long ts_nsec; };");
 
 	csym_state = ctype_get_csym_state();
 	assert(cs_arr);
@@ -222,8 +222,8 @@ int test_func_time_to_tm()
 	csymbol_struct *stcs;
 	csymbol_func *fcs;
 
-	ffi_cdef("typedef long time_t;");
-	ffi_cdef("struct tm { "
+	ffi_parse_cdef("typedef long time_t;");
+	ffi_parse_cdef("struct tm { "
 			"int tm_sec;"
 			"int tm_min;"
 			"int tm_hour;"
@@ -233,7 +233,7 @@ int test_func_time_to_tm()
 			"int tm_wday;"
 			"int tm_yday;"
 		"};");
-	ffi_cdef("void time_to_tm(time_t totalsecs, int offset, struct tm *result);");
+	ffi_parse_cdef("void time_to_tm(time_t totalsecs, int offset, struct tm *result);");
 
 	csym_state = ctype_get_csym_state();
 	assert(cs_arr);
@@ -276,8 +276,8 @@ int test_pointer_symbols()
 	csymbol_func *fcs_foo, *fcs_bar;
 
 	/* int pointer symbol should be resolved to the same id */
-	ffi_cdef("void foo(int *a);");
-	ffi_cdef("int *bar(void);");
+	ffi_parse_cdef("void foo(int *a);");
+	ffi_parse_cdef("int *bar(void);");
 
 	csym_state = ctype_get_csym_state();
 	assert(cs_arr);
@@ -295,7 +295,7 @@ int test_var_arg_function()
 {
 	csymbol_func *fcs;
 
-	ffi_cdef("int printk(char *fmt, ...);");
+	ffi_parse_cdef("int printk(char *fmt, ...);");
 
 	fcs = csym_func(cp_id_to_csym(lookup_csymbol_id_by_name("printk")));
 
