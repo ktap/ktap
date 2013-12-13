@@ -90,7 +90,11 @@ typedef struct csymbol {
 	} u;
 } csymbol;
 
-/* lookup csymbol address by it's id */
+
+/* helper macors for c symbols */
+#define max_csym_id(ks) (G(ks)->ffis.csym_nr)
+
+/* lookup csymbol address by its id */
 inline csymbol *ffi_get_csym_by_id(ktap_state *ks, csymbol_id id);
 #define id_to_csym(ks, id) (ffi_get_csym_by_id(ks, id))
 
@@ -161,7 +165,8 @@ csymbol_id ffi_get_csym_id(ktap_state *ks, char *name);
 
 ktap_cdata *kp_cdata_new(ktap_state *ks);
 void kp_cdata_dump(ktap_state *ks, ktap_cdata *cd);
-ktap_cdata *kp_cdata_new_ptr(ktap_state *ks, void *addr, csymbol_id id);
+ktap_cdata *kp_cdata_new_ptr(ktap_state *ks, void *addr,
+		int len, csymbol_id id);
 ktap_cdata *kp_cdata_new_struct(ktap_state *ks, void *val, csymbol_id id);
 
 int kp_ffi_call(ktap_state *ks, csymbol_func *cf);

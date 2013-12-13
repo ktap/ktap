@@ -33,13 +33,23 @@ ktap_cdata *kp_cdata_new(ktap_state *ks)
 	return cd;
 }
 
-ktap_cdata *kp_cdata_new_ptr(ktap_state *ks, void *addr, csymbol_id id)
+/* argument len here indicates the length of array that is pointed to */
+ktap_cdata *kp_cdata_new_ptr(ktap_state *ks, void *addr,
+		int len, csymbol_id id)
 {
 	ktap_cdata *cd;
+	size_t size;
 
 	cd = kp_cdata_new(ks);
 	cd_set_csym_id(cd, id);
-	cd_ptr(cd) = addr;
+
+	/* if val == NULL, allocate new empty space */
+	if (addr == NULL) {
+		/* TODO: free the space when exit the program unihorn(08.12.2013) */
+		size = csym_size(ks, id_to_csym(ks, id));
+		cd_ptr(cd) = kp_zalloc(ks, size * len);
+	} else
+		cd_ptr(cd) = addr;
 
 	return cd;
 }
@@ -47,10 +57,18 @@ ktap_cdata *kp_cdata_new_ptr(ktap_state *ks, void *addr, csymbol_id id)
 ktap_cdata *kp_cdata_new_struct(ktap_state *ks, void *val, csymbol_id id)
 {
 	ktap_cdata *cd;
+	size_t size;
 
 	cd = kp_cdata_new(ks);
 	cd_set_csym_id(cd, id);
-	cd_struct(cd) = val;
+
+	/* if val == NULL, allocate new empty space */
+	if (val == NULL) {
+		/* TODO: free the space when exit the program unihorn(08.12.2013) */
+		size = csym_size(ks, id_to_csym(ks, id));
+		cd_struct(cd) = kp_zalloc(ks, size);
+	} else
+		cd_struct(cd) = val;
 
 	return cd;
 }
