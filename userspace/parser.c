@@ -1003,7 +1003,7 @@ static void parsenew(ktap_lexstate *ls, ktap_expdesc *f, int line)
 	init_exp(f, VCALL, codegen_codeABC(ls->fs, OP_CALL, base, 3, 2));
 }
 
-static void parsefree(ktap_lexstate *ls, ktap_expdesc *v, int line)
+static void parse_arglist(ktap_lexstate *ls, ktap_expdesc *v, int line)
 {
 	ktap_funcstate *fs = ls->fs;
 
@@ -1011,6 +1011,18 @@ static void parsefree(ktap_lexstate *ls, ktap_expdesc *v, int line)
 	codegen_exp2nextreg(fs, v);
 	funcargs(ls, v, line);
 }
+
+static void parse_func(ktap_lexstate *ls, ktap_expdesc *v, int line)
+{
+	ktap_funcstate *fs = ls->fs;
+
+	check(ls, '.');
+	fieldsel(ls, v);
+	check(ls, '(');
+	codegen_exp2nextreg(fs, v);
+	funcargs(ls, v, line);
+}
+
 
 static void ffiexp(ktap_lexstate *ls, ktap_expdesc *v)
 {
@@ -1042,7 +1054,9 @@ static void ffiexp(ktap_lexstate *ls, ktap_expdesc *v)
 	else if (!strcmp(field_name, "cdef"))
 		parsecdef(ls);
 	else if (!strcmp(field_name, "free"))
-		parsefree(ls, v, line);
+		parse_arglist(ls, v, line);
+	else if (!strcmp(field_name, "C"))
+		parse_func(ls, v, line);
 	else
 		lex_syntaxerror(ls, "unexpected ffi function");
 }

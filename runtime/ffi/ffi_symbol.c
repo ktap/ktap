@@ -58,9 +58,9 @@ static inline ktap_tab *get_ffi_ctable(ktap_state *ks)
 
 static int setup_ffi_ctable(ktap_state *ks)
 {
-	ktap_value ffi_lib_name, ffi_mt;
+	ktap_value ffi_name, ffi_lib_name, ffi_mt;
+	const ktap_value *gt, *ffit;
 	ktap_tab *registry;
-	const ktap_value *gt;
 
 	gt = kp_tab_getint(hvalue(&G(ks)->registry), KTAP_RIDX_GLOBALS);
 
@@ -68,10 +68,14 @@ static int setup_ffi_ctable(ktap_state *ks)
 	if (!G(ks)->ffis.ctable)
 		return -1;
 
-	/* insert ffi C table to global table */
+	/* get global["ffi"] */
+	set_string(&ffi_name, kp_tstring_new(ks, "ffi"));
+	registry = hvalue(gt);
+	ffit = kp_tab_get(registry, &ffi_name);
+	/* insert ffi C table to ffi table */
 	set_table(&ffi_mt, get_ffi_ctable(ks));
 	set_string(&ffi_lib_name, kp_tstring_new(ks, "C"));
-	registry = hvalue(gt);
+	registry = hvalue(ffit);
 	kp_tab_setvalue(ks, registry, &ffi_lib_name, &ffi_mt);
 
 	return 0;

@@ -10,8 +10,8 @@ ffi.cdef[[
 t1 = gettimeofday_us()
 
 for (i = 1, 1000, 1) {
-	local object = C.__kmalloc(128, 208) #GFP_KERNEL is 208
-	C.kfree(object)
+	local object = ffi.C.__kmalloc(128, 208) #GFP_KERNEL is 208
+	ffi.C.kfree(object)
 }
 
 t2 = gettimeofday_us()
