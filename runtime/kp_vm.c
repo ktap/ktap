@@ -179,6 +179,7 @@ static void pushclosure(ktap_state *ks, ktap_proto *p, ktap_upval **encup,
 	//p->cache = ncl;  /* save it on cache for reuse */
 }
 
+/* arg t and val may point to the same address */
 static void gettable(ktap_state *ks, const ktap_value *t, ktap_value *key,
 		     StkId val)
 {
@@ -186,6 +187,11 @@ static void gettable(ktap_state *ks, const ktap_value *t, ktap_value *key,
 		set_obj(val, kp_tab_get(hvalue(t), key));
 	} else if (is_ptable(t)) {
 		kp_ptab_get(ks, phvalue(t), key, val);
+#ifdef CONFIG_KTAP_FFI
+	} else if (is_cdata(t) && gcvalue(t) != NULL
+			&& cd_type(ks, cdvalue(t)) == FFI_PTR) {
+		kp_cdata_ptr_get(ks, cdvalue(t), key, val);
+#endif
 	} else {
 		kp_error(ks, "get key from non-table\n");
 	}
@@ -198,6 +204,11 @@ static void settable(ktap_state *ks, const ktap_value *t, ktap_value *key,
 		kp_tab_setvalue(ks, hvalue(t), key, val);
 	} else if (is_ptable(t)) {
 		kp_ptab_set(ks, phvalue(t), key, val);
+#ifdef CONFIG_KTAP_FFI
+	} else if (is_cdata(t) && gcvalue(t) != NULL
+			&& cd_type(ks, cdvalue(t)) == FFI_PTR) {
+		kp_cdata_ptr_set(ks, cdvalue(t), key, val);
+#endif
 	} else {
 		kp_error(ks, "set key to non-table\n");
 	}

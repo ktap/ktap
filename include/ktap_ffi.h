@@ -148,7 +148,7 @@ inline csymbol *ffi_get_csym_by_id(ktap_state *ks, csymbol_id id);
 #define cd_csym_id(cd) ((cd)->id)
 #define cd_set_csym_id(cd, id) (cd_csym_id(cd) = (id))
 #define cd_csym(ks, cd) (id_to_csym(ks, cd_csym_id(cd)))
-#define cd_type(ks, cd) (cd_csym(ks, cd)->type)
+#define cd_type(ks, cd) (csym_type(cd_csym(ks, cd)))
 
 #define cd_int(cd) ((cd)->u.i)
 #define cd_ptr(cd) ((cd)->u.p.addr)
@@ -164,11 +164,19 @@ void init_csym_struct(ktap_state *ks, csymbol_struct *csst);
 void ffi_free_symbols(ktap_state *ks);
 csymbol_id ffi_get_csym_id(ktap_state *ks, char *name);
 
-ktap_cdata *kp_cdata_new(ktap_state *ks);
-void kp_cdata_dump(ktap_state *ks, ktap_cdata *cd);
+ktap_cdata *kp_cdata_new(ktap_state *ks, csymbol_id id);
 ktap_cdata *kp_cdata_new_ptr(ktap_state *ks, void *addr,
 		int len, csymbol_id id);
 ktap_cdata *kp_cdata_new_struct(ktap_state *ks, void *val, csymbol_id id);
+void kp_cdata_dump(ktap_state *ks, ktap_cdata *cd);
+int kp_cdata_type_match(ktap_state *ks, csymbol *cs, ktap_value *val);
+void kp_cdata_init(ktap_state *ks, ktap_value *val, csymbol_id id);
+void kp_cdata_unpack(ktap_state *ks, char *dst, csymbol *cs, ktap_value *val);
+void kp_cdata_pack(ktap_state *ks, ktap_value *val, char *src, csymbol *cs);
+void kp_cdata_ptr_set(ktap_state *ks, ktap_cdata *cd,
+				 ktap_value *key, ktap_value *val);
+void kp_cdata_ptr_get(ktap_state *ks, ktap_cdata *t,
+				 ktap_value *key, ktap_value *val);
 
 int ffi_call(ktap_state *ks, csymbol_func *cf);
 

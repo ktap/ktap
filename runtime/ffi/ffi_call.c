@@ -31,46 +31,19 @@ static int ffi_type_check(ktap_state *ks, csymbol_func *csf, int idx)
 {
 	StkId arg;
 	csymbol *cs;
-	ffi_type type;
 
 	if (idx >= csymf_arg_nr(csf))
 		return 0;
 	arg = kp_arg(ks, idx + 1);
 	cs = csymf_arg(ks, csf, idx);
-	type = csym_type(cs);
 
-	if (type == FFI_FUNC)
-		goto error;
-
-	switch (ttypenv(arg)) {
-	case KTAP_TLIGHTUSERDATA:
-		if (type != FFI_PTR) goto error;
-		break;
-	case KTAP_TBOOLEAN:
-	case KTAP_TNUMBER:
-		if (type != FFI_UINT8 && type != FFI_INT8
-		&& type != FFI_UINT16 && type != FFI_INT16
-		&& type != FFI_UINT32 && type != FFI_INT32
-		&& type != FFI_UINT64 && type != FFI_INT64)
-			goto error;
-		break;
-	case KTAP_TSTRING:
-		if (type != FFI_PTR && type != FFI_UINT8 && type != FFI_INT8)
-			goto error;
-		break;
-	case KTAP_TCDATA:
-		if (cs != cd_csym(ks, cdvalue(arg)))
-			goto error;
-		break;
-	default:
-		goto error;
+	if (!kp_cdata_type_match(ks, cs, arg))
+		return 0;
+	else {
+		kp_error(ks, "Error: Cannot convert to csymbol %s for arg %d\n",
+				csym_name(cs), idx);
+		return -1;
 	}
-	return 0;
-
- error:
-	kp_error(ks, "Error: Cannot convert to csymbol %s for arg %d\n",
-			csym_name(cs), idx);
-	return -1;
 }
 
 static csymbol *ffi_get_arg_csym(ktap_state *ks, csymbol_func *csf, int idx)
@@ -97,63 +70,17 @@ static csymbol *ffi_get_arg_csym(ktap_state *ks, csymbol_func *csf, int idx)
 	}
 }
 
-static void ffi_unpack(ktap_state *ks, csymbol_func *csf, int idx,
-		char *dst, int align)
+static void ffi_unpack(ktap_state *ks, char *dst, csymbol_func *csf,
+		int idx, int align)
 {
 	StkId arg = kp_arg(ks, idx + 1);
 	csymbol *cs = ffi_get_arg_csym(ks, csf, idx);
-	ffi_type type = csym_type(cs);
 	size_t size = csym_size(ks, cs);
-	void *p;
-	struct ktap_cdata *cd;
 
 	/* initialize the destination section */
 	memset(dst, 0, ALIGN(size, align));
 
-	switch (ttypenv(arg)) {
-	case KTAP_TBOOLEAN:
-		memcpy(dst, &bvalue(arg), sizeof(bool));
-		return;
-	case KTAP_TLIGHTUSERDATA:
-		memcpy(dst, pvalue(arg), size);
-		return;
-	case KTAP_TNUMBER:
-		memcpy(dst, &nvalue(arg), size < sizeof(ktap_number) ?
-				size : sizeof(ktap_number));
-		return;
-	case KTAP_TSTRING:
-		p = &rawtsvalue(arg)->tsv + 1;
-		memcpy(dst, &p, size);
-		return;
-	}
-
-	cd = cdvalue(arg);
-	switch (type) {
-	case FFI_VOID:
-		kp_error(ks, "Error: Cannot copy data from void type\n");
-		return;
-	case FFI_UINT8:
-	case FFI_INT8:
-	case FFI_UINT16:
-	case FFI_INT16:
-	case FFI_UINT32:
-	case FFI_INT32:
-	case FFI_UINT64:
-	case FFI_INT64:
-		memcpy(dst, &cd_int(cd), size);
-		return;
-	case FFI_PTR:
-		memcpy(dst, &cd_ptr(cd), size);
-		return;
-	case FFI_STRUCT:
-		memcpy(dst, cd_struct(cd), size);
-		return;
-	case FFI_FUNC:
-	case FFI_UNKNOWN:
-		kp_error(ks, "Error: internal error for csymbol %s\n",
-				csym_name(cs));
-		return;
-	}
+	kp_cdata_unpack(ks, dst, cs, arg);
 }
 
 #ifdef __x86_64
@@ -291,7 +218,7 @@ static void ffi_call_x86_64(ktap_state *ks, csymbol_func *csf, void *rvalue)
 			mem_p = ALIGN_STACK(mem_p, align);
 		/* Tricky way about storing it above mem_p. It won't overflow
 		 * because temp region can be temporarily used if necesseary. */
-		ffi_unpack(ks, csf, i, mem_p, GPR_SIZE);
+		ffi_unpack(ks, mem_p, csf, i, GPR_SIZE);
 		if (gpr_nr + n_gpr_nr > MAX_GPR) {
 			if (st == IN_MEMORY) {
 				memcpy(arg_p, &mem_p, GPR_SIZE);
