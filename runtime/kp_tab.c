@@ -135,7 +135,8 @@ static void table_free_array(ktap_state *ks, ktap_tab *t)
 {
 	if (t->sizearray > 0) {
 		vfree(t->array);
-		vfree(t->sd_arr);
+		if (t->sd_arr)
+			vfree(t->sd_arr);
 		t->array = NULL;
 		t->sd_arr = NULL;
 		t->sizearray = 0;
@@ -168,7 +169,8 @@ static void table_free_record(ktap_state *ks, ktap_tab *t)
 {
 	if (!isdummy(t->node)) {
 		vfree(t->node);
-		vfree(t->sd_rec);
+		if (t->sd_rec)
+			vfree(t->sd_rec);
 		t->node = (ktap_tnode *)dummynode;
 		t->sd_rec = NULL;
 	}
