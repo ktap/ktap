@@ -60,7 +60,7 @@ static int kp_ffi_new(ktap_state *ks)
 
 static int kp_ffi_free(ktap_state *ks)
 {
-	int n = kp_arg_nr(ks), array_size;
+	int n = kp_arg_nr(ks);
 	ktap_cdata *cd;
 
 	if (n != 1) {
