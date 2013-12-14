@@ -351,6 +351,9 @@ static void compile(const char *input)
 
  dump:
 	if (dump_bytecode) {
+#ifdef CONFIG_KTAP_FFI
+		ktapc_dump_csymbols();
+#endif
 		ktapc_dump_function(1, cl->p);
 		exit(0);
 	}

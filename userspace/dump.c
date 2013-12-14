@@ -367,6 +367,67 @@ static void decode_instruction(ktap_proto *f, int instr)
 
 static int function_nr = 0;
 
+#ifdef CONFIG_KTAP_FFI
+void ktapc_dump_csymbol_id(char *prefix, int id)
+{
+	csymbol *cs, *cs_arr;
+
+	cs_arr = ctype_get_csym_state()->cs_arr;
+	cs = &cs_arr[id];
+	if (prefix != NULL)
+		printf("%s: ", prefix);
+	printf("%s (id: %d; ffi_type: %s)\n", cs->name,
+			id, ffi_type_name(cs->type));
+}
+
+/* this is a debug function used for check csymbol array */
+void ktapc_dump_csymbols()
+{
+	int i, j, cs_nr;
+	cp_csymbol_state *cs_state;
+	csymbol *cs, *cs_arr;
+	csymbol_func *csf;
+	csymbol_struct *csst;
+
+	cs_state = ctype_get_csym_state();
+	cs_arr = cs_state->cs_arr;
+	cs_nr = cs_state->cs_nr;
+
+	printf("\n----------------------------------------------------\n");
+	printf("Number of csymbols: %d\n", cs_nr);
+
+	for (i = 0; i < cs_nr; i++) {
+		cs = &cs_arr[i];
+		printf("%dth symbol", i);
+		ktapc_dump_csymbol_id("", i);
+		switch (cs->type) {
+		case FFI_PTR:
+			ktapc_dump_csymbol_id("\tDeref", csym_ptr_deref_id(cs));
+			break;
+		case FFI_FUNC:
+			csf = csym_func(cs);
+			printf("\tAddress: 0x%p\n", csf->addr);
+			ktapc_dump_csymbol_id("\tReturn", csf->ret_id);
+			printf("\tArg number: %d\n", csf->arg_nr);
+			for (j = 0; j < csf->arg_nr; j++)
+				ktapc_dump_csymbol_id("\t\tArg", csf->arg_ids[j]);
+			printf("\tHas variable arg: %d\n", csf->has_var_arg);
+			break;
+		case FFI_STRUCT:
+			csst = csym_struct(cs);
+			printf("\tMember number: %d\n", csst->memb_nr);
+			for (j = 0; j < csst->memb_nr; j++) {
+				printf("\t\tMember %s", csst->members[j].name);
+				ktapc_dump_csymbol_id("", csst->members[j].id);
+			}
+			break;
+		default:
+			break;
+		}
+	}
+}
+#endif
+
 /* this is a debug function used for check bytecode chunk file */
 void ktapc_dump_function(int level, ktap_proto *f)
 {
