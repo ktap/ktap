@@ -192,7 +192,7 @@ static void kp_cdata_value(ktap_state *ks,
 		*out_addr = &cd_ptr(cd);
 		return;
 	case FFI_STRUCT:
-		*out_addr = &cd_struct(cd);
+		*out_addr = cd_struct(cd);
 		return;
 	case FFI_FUNC:
 	case FFI_UNKNOWN:
@@ -211,7 +211,7 @@ void kp_cdata_unpack(ktap_state *ks, char *dst, csymbol *cs, ktap_value *val)
 	kp_cdata_value(ks, val, &val_addr, &val_size);
 	if (val_size > size)
 		val_size = size;
-	memcpy(dst, val_addr, val_size);
+	memmove(dst, val_addr, val_size);
 	memset(dst + val_size, 0, size - val_size);
 }
 
@@ -224,22 +224,22 @@ void kp_cdata_pack(ktap_state *ks, ktap_value *val, char *src, csymbol *cs)
 	kp_cdata_value(ks, val, &val_addr, &val_size);
 	if (size > val_size)
 		size = val_size;
-	memcpy(val_addr, src, size);
+	memmove(val_addr, src, size);
 	memset(val_addr + size, 0, val_size - size);
 }
 
 /* Init its cdata type, but not its actual value */
-void kp_cdata_init(ktap_state *ks, ktap_value *val, csymbol_id id)
+void kp_cdata_init(ktap_state *ks, ktap_value *val, void *addr, csymbol_id id)
 {
 	ffi_type type = csym_type(id_to_csym(ks, id));
 
 	switch (type) {
 	case FFI_PTR:
-		set_cdata(val, kp_cdata_new_ptr(ks, NULL, 1,
+		set_cdata(val, kp_cdata_new_ptr(ks, addr, 1,
 					csym_ptr_deref_id(id_to_csym(ks, id))));
 		break;
 	case FFI_STRUCT:
-		set_cdata(val, kp_cdata_new_struct(ks, NULL, id));
+		set_cdata(val, kp_cdata_new_struct(ks, addr, id));
 		break;
 	default:
 		set_cdata(val, kp_cdata_new(ks, id));
@@ -301,6 +301,74 @@ void kp_cdata_ptr_get(ktap_state *ks, ktap_cdata *cd,
 	size = csym_size(ks, cs);
 	addr = cd_ptr(cd);
 	addr += size * idx;
-	kp_cdata_init(ks, val, cs_id);
+
+	kp_cdata_init(ks, val, addr, cs_id);
 	kp_cdata_pack(ks, val, addr, cs);
+}
+
+void kp_cdata_struct_set(ktap_state *ks, ktap_cdata *cd,
+				 ktap_value *key, ktap_value *val)
+{
+	const char *mb_name;
+	csymbol *cs, *mb_cs;
+	csymbol_struct *csst;
+	char *addr;
+	int idx;
+
+	if (!is_shrstring(key)) {
+		kp_printf(ks, "struct member name should be string\n");
+		kp_prepare_to_exit(ks);
+		return;
+	}
+	mb_name = svalue(key);
+	cs = cd_csym(ks, cd);
+	csst = csym_struct(cs);
+	idx = csymst_mb_idx_by_name(ks, csst, mb_name);
+	if (idx < 0) {
+		kp_printf(ks, "struct member %s doesn't exist\n", mb_name);
+		kp_prepare_to_exit(ks);
+		return;
+	}
+	mb_cs = csymst_mb_csym(ks, csst, idx);
+	if (kp_cdata_type_match(ks, mb_cs, val)) {
+		kp_printf(ks, "struct member should be %s type\n", csym_name(mb_cs));
+		kp_prepare_to_exit(ks);
+		return;
+	}
+	addr = cd_struct(cd);
+	addr += csymst_mb_offset(ks, csst, idx);
+	kp_cdata_unpack(ks, addr, mb_cs, val);
+}
+
+void kp_cdata_struct_get(ktap_state *ks, ktap_cdata *cd,
+				 ktap_value *key, ktap_value *val)
+{
+	const char *mb_name;
+	csymbol *cs, *mb_cs;
+	csymbol_struct *csst;
+	char *addr;
+	int idx;
+	csymbol_id mb_cs_id;
+
+	if (!is_shrstring(key)) {
+		kp_printf(ks, "struct member name should be string\n");
+		kp_prepare_to_exit(ks);
+		return;
+	}
+	mb_name = svalue(key);
+	cs = cd_csym(ks, cd);
+	csst = csym_struct(cs);
+	idx = csymst_mb_idx_by_name(ks, csst, mb_name);
+	if (idx < 0) {
+		kp_printf(ks, "struct member %s doesn't exist\n", mb_name);
+		kp_prepare_to_exit(ks);
+		return;
+	}
+	mb_cs_id = csymst_mb_id(csst, idx);
+	mb_cs = id_to_csym(ks, mb_cs_id);
+	addr = cd_struct(cd);
+	addr += csymst_mb_offset(ks, csst, idx);
+
+	kp_cdata_init(ks, val, addr, mb_cs_id);
+	kp_cdata_pack(ks, val, addr, mb_cs);
 }

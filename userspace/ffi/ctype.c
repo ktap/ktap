@@ -242,6 +242,7 @@ int cp_symbol_build_struct(const char *stname)
 	strcpy(nst.name, stname);
 
 	stcs = csym_struct(&nst);
+	stcs->align = 0;
 	stcs->memb_nr = memb_size;
 	stcs->members = st_membs;
 

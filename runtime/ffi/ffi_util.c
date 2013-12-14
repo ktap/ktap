@@ -50,7 +50,7 @@ size_t csym_align(ktap_state *ks, csymbol *cs)
 	}
 }
 
-size_t csym_struct_offset(ktap_state *ks, csymbol_struct *csst, int idx)
+size_t csymst_mb_offset(ktap_state *ks, csymbol_struct *csst, int idx)
 {
 	int nr = csymst_mb_nr(csst);
 	size_t off = 0;
@@ -60,7 +60,7 @@ size_t csym_struct_offset(ktap_state *ks, csymbol_struct *csst, int idx)
 	if (idx < 0 || idx > nr)
 		return -1;
 	for (i = 0; i < idx; i++) {
-		csymbol *var_cs = csymst_mb(ks, csst, i);
+		csymbol *var_cs = csymst_mb_csym(ks, csst, i);
 		size_t var_size = csym_size(ks, var_cs);
 		size_t var_align = csym_align(ks, var_cs);
 		off = ALIGN(off, var_align);
@@ -71,6 +71,19 @@ size_t csym_struct_offset(ktap_state *ks, csymbol_struct *csst, int idx)
 	return off;
 }
 
+int csymst_mb_idx_by_name(ktap_state *ks,
+		csymbol_struct *csst, const char *name)
+{
+	int nr = csymst_mb_nr(csst);
+	int i;
+
+	for (i = 0; i < nr; i++)
+		if (!strcmp(name, csymst_mb_name(csst, i)))
+			return i;
+	return -1;
+}
+
+
 void init_csym_struct(ktap_state *ks, csymbol_struct *csst)
 {
 	int nr = csymst_mb_nr(csst);
@@ -79,7 +92,7 @@ void init_csym_struct(ktap_state *ks, csymbol_struct *csst)
 	int i;
 
 	for (i = 0; i < nr; i++) {
-		csymbol *var_cs = csymst_mb(ks, csst, i);
+		csymbol *var_cs = csymst_mb_csym(ks, csst, i);
 		size_t var_size = csym_size(ks, var_cs);
 		size_t var_align = csym_align(ks, var_cs);
 		size = ALIGN(size, var_align);

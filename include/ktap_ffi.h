@@ -137,9 +137,12 @@ inline csymbol *ffi_get_csym_by_id(ktap_state *ks, csymbol_id id);
  */
 #define csymst_mb_nr(csst) ((csst)->memb_nr)
 #define csym_struct(cs) (&(cs)->u.st)
-#define csym_struct_mb(cs) (csymst_mb(ks, csym_struct(cs), n))
+#define csym_struct_mb(cs) (csymst_mb(csym_struct(cs), n))
 /* following macro gets csymbol address for the nth struct member */
-#define csymst_mb(ks, csst, n) (id_to_csym(ks, (csst)->members[n].id))
+#define csymst_mb(csst, n) ((csst)->members[n])
+#define csymst_mb_name(csst, n) ((csst)->members[n].name)
+#define csymst_mb_id(csst, n) ((csst)->members[n].id)
+#define csymst_mb_csym(ks, csst, n) (id_to_csym(ks, (csst)->members[n].id))
 
 
 /*
@@ -158,7 +161,9 @@ inline csymbol *ffi_get_csym_by_id(ktap_state *ks, csymbol_id id);
 #ifdef __KERNEL__
 size_t csym_size(ktap_state *ks, csymbol *sym);
 size_t csym_align(ktap_state *ks, csymbol *sym);
-size_t csym_struct_offset(ktap_state *ks, csymbol_struct *csst, int idx);
+size_t csymst_mb_offset(ktap_state *ks, csymbol_struct *csst, int idx);
+int csymst_mb_idx_by_name(ktap_state *ks,
+		csymbol_struct *csst, const char *name);
 void init_csym_struct(ktap_state *ks, csymbol_struct *csst);
 
 void ffi_free_symbols(ktap_state *ks);
@@ -170,13 +175,17 @@ ktap_cdata *kp_cdata_new_ptr(ktap_state *ks, void *addr,
 ktap_cdata *kp_cdata_new_struct(ktap_state *ks, void *val, csymbol_id id);
 void kp_cdata_dump(ktap_state *ks, ktap_cdata *cd);
 int kp_cdata_type_match(ktap_state *ks, csymbol *cs, ktap_value *val);
-void kp_cdata_init(ktap_state *ks, ktap_value *val, csymbol_id id);
+void kp_cdata_init(ktap_state *ks, ktap_value *val, void *addr, csymbol_id id);
 void kp_cdata_unpack(ktap_state *ks, char *dst, csymbol *cs, ktap_value *val);
 void kp_cdata_pack(ktap_state *ks, ktap_value *val, char *src, csymbol *cs);
 void kp_cdata_ptr_set(ktap_state *ks, ktap_cdata *cd,
-				 ktap_value *key, ktap_value *val);
-void kp_cdata_ptr_get(ktap_state *ks, ktap_cdata *t,
-				 ktap_value *key, ktap_value *val);
+		ktap_value *key, ktap_value *val);
+void kp_cdata_ptr_get(ktap_state *ks, ktap_cdata *cd,
+		ktap_value *key, ktap_value *val);
+void kp_cdata_struct_set(ktap_state *ks, ktap_cdata *cd,
+		 ktap_value *key, ktap_value *val);
+void kp_cdata_struct_get(ktap_state *ks, ktap_cdata *cd,
+		 ktap_value *key, ktap_value *val);
 
 int ffi_call(ktap_state *ks, csymbol_func *cf);
 

@@ -17,7 +17,7 @@ ffi.cdef[[
 	struct ffi_struct {
 		int val;
 	};
-	struct ffi_struct *ffi_test_struct(struct ffi_struct *s);
+	int ffi_test_struct(struct ffi_struct *s);
 	struct ffi_struct_loop {
 		int val;
 		struct ffi_struct_loop *next;
@@ -66,11 +66,12 @@ if (ret != 10) {
 ffi.free(arr)
 
 struct_p = ffi.new("struct ffi_struct[1]")
-#struct_p[0].val = 10
-#ret = ffi.C.ffi_test_struct(struct_p)
-#if (struct_p[0].val != 10) {
-#	failed("ffi_test_struct should return original struct")
-#}
+struct_p[0].val = 20
+struct_p[0].val = struct_p[0].val
+ret = ffi.C.ffi_test_struct(struct_p)
+if (ret != 20) {
+	failed("ffi_test_struct should return 20")
+}
 
 #struct_p = ffi.new("struct ffi_struct_loop[1]")
 #struct_p[0].val = 10

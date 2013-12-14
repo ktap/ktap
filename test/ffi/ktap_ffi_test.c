@@ -55,9 +55,9 @@ struct ffi_struct {
 	int val;
 };
 
-struct ffi_struct *ffi_test_struct(struct ffi_struct *s)
+int ffi_test_struct(struct ffi_struct *s)
 {
-	return s;
+	return s->val;
 }
 EXPORT_SYMBOL(ffi_test_struct);
 
