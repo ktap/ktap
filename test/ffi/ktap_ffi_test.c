@@ -51,6 +51,29 @@ int ffi_test_array(int *arr, int idx)
 }
 EXPORT_SYMBOL(ffi_test_array);
 
+struct ffi_struct {
+	int val;
+};
+
+struct ffi_struct *ffi_test_struct(struct ffi_struct *s)
+{
+	return s;
+}
+EXPORT_SYMBOL(ffi_test_struct);
+
+struct ffi_struct_loop {
+	int val;
+	struct ffi_struct_loop *next;
+};
+
+int ffi_test_struct_loop(struct ffi_struct_loop *s)
+{
+	if (s->val == s->next->val && s->next->val == s->next->next->val)
+		return s->val;
+	return 0;
+}
+EXPORT_SYMBOL(ffi_test_struct_loop);
+
 
 static int __init ffi_test_init(void)
 {

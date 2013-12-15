@@ -14,6 +14,15 @@ ffi.cdef[[
 	long long ffi_test_var_arg(int n, ...);
 	unsigned long long ffi_test_sched_clock(void);
 	int ffi_test_array(int *arr, int idx);
+	struct ffi_struct {
+		int val;
+	};
+	struct ffi_struct *ffi_test_struct(struct ffi_struct *s);
+	struct ffi_struct_loop {
+		int val;
+		struct ffi_struct_loop *next;
+	};
+	int ffi_test_struct_loop(struct ffi_struct_loop *s);
 ]]
 
 
@@ -55,3 +64,18 @@ if (ret != 10) {
 	failed("ffi_test_array should return 10")
 }
 ffi.free(arr)
+
+struct_p = ffi.new("struct ffi_struct[1]")
+#struct_p[0].val = 10
+#ret = ffi.C.ffi_test_struct(struct_p)
+#if (struct_p[0].val != 10) {
+#	failed("ffi_test_struct should return original struct")
+#}
+
+#struct_p = ffi.new("struct ffi_struct_loop[1]")
+#struct_p[0].val = 10
+#struct_p[0].next = struct_p
+#ret = ffi.C.ffi_test_struct_loop(struct_p)
+#if (ret != 10) {
+#	failed("ffi_test_struct_loop should return 10")
+#}
