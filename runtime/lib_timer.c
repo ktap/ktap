@@ -57,11 +57,11 @@ static enum hrtimer_restart hrtimer_ktap_fn(struct hrtimer *timer)
 	t = container_of(timer, struct hrtimer_ktap, timer);
 	rctx = get_recursion_context(t->ks);
 
-	ks = kp_newthread(t->ks);
+	ks = kp_thread_new(t->ks);
 	set_closure(ks->top, t->cl);
 	incr_top(ks);
 	kp_call(ks, ks->top - 1, 0);
-	kp_exitthread(ks);
+	kp_thread_exit(ks);
 
 	hrtimer_add_expires_ns(timer, t->ns);
 
@@ -155,7 +155,7 @@ static int do_tick_profile(ktap_state *ks, int is_tick)
  * tick-n probes fire on only one CPU per interval.
  * valid time suffixes: sec/s, msec/ms, usec/us
  */
-static int ktap_lib_tick(ktap_state *ks)
+static int kplib_timer_tick(ktap_state *ks)
 {
 	return do_tick_profile(ks, 1);
 }
@@ -164,7 +164,7 @@ static int ktap_lib_tick(ktap_state *ks)
  * A profile-n probe fires every fixed interval on every CPU
  * valid time suffixes: sec/s, msec/ms, usec/us
  */
-static int ktap_lib_profile(ktap_state *ks)
+static int kplib_timer_profile(ktap_state *ks)
 {
 	return do_tick_profile(ks, 0);
 }
@@ -181,8 +181,8 @@ void kp_exit_timers(ktap_state *ks)
 }
 
 static const ktap_Reg timerlib_funcs[] = {
-	{"profile",	ktap_lib_profile},
-	{"tick",	ktap_lib_tick},
+	{"profile",	kplib_timer_profile},
+	{"tick",	kplib_timer_tick},
 	{NULL}
 };
 

@@ -90,7 +90,7 @@ static ktap_string *load_string(struct load_state *S)
 		char *s = GET_CURRENT(S);
 		ADD_POS(S, size);
 		/* remove trailing '\0' */
-		ts = kp_tstring_newlstr(S->ks, s, size - 1);
+		ts = kp_str_newlstr(S->ks, s, size - 1);
 		return ts;
 	}
 }
@@ -153,7 +153,7 @@ static int load_constants(struct load_state *S, ktap_proto *f)
 	for (i = 0; i < n; i++)
 		f->p[i] = NULL;
 	for (i = 0; i < n; i++) {
-		f->p[i] = kp_newproto(S->ks);
+		f->p[i] = kp_obj_newproto(S->ks);
 		if (load_function(S, f->p[i]))
 			return -1;
 	}
@@ -361,7 +361,7 @@ ktap_closure *kp_load(ktap_state *ks, unsigned char *buff)
 	if (ret)
 		return NULL;
 
-	cl = kp_newclosure(ks, 1);
+	cl = kp_obj_newclosure(ks, 1);
 	if (!cl)
 		return cl;
 
@@ -369,19 +369,19 @@ ktap_closure *kp_load(ktap_state *ks, unsigned char *buff)
 	set_closure(ks->top, cl);
 	incr_top(ks);
 
-	cl->p = kp_newproto(ks);
+	cl->p = kp_obj_newproto(ks);
 	if (load_function(&S, cl->p))
 		return NULL;
 
 	if (cl->p->sizeupvalues != 1) {
 		ktap_proto *p = cl->p;
-		cl = kp_newclosure(ks, cl->p->sizeupvalues);
+		cl = kp_obj_newclosure(ks, cl->p->sizeupvalues);
 		cl->p = p;
 		set_closure(ks->top - 1, cl);
 	}
 
 	for (i = 0; i < cl->nupvalues; i++) {  /* initialize upvalues */
-		ktap_upval *up = kp_newupval(ks);
+		ktap_upval *up = kp_obj_newupval(ks);
 		cl->upvals[i] = up;
 	}
 

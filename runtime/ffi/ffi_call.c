@@ -172,7 +172,7 @@ enum arg_status {
 #define MAX_GPR_SIZE (MAX_GPR * GPR_SIZE)
 #define NEWSTACK_SIZE 512
 
-#define ffi_call(ks, cf, rvalue) ffi_call_x86_64(ks, cf, rvalue)
+#define ffi_call_arch(ks, cf, rvalue) ffi_call_x86_64(ks, cf, rvalue)
 
 extern void ffi_call_assem_x86_64(void *stack, void *temp_stack,
 					void *func_addr, void *rvalue, ffi_type rtype);
@@ -387,7 +387,7 @@ static int ffi_set_return(ktap_state *ks, void *rvalue, csymbol_id ret_id)
  * Types between Ktap and C are converted automatically.
  * Only support x86_64 function call by now
  */
-int kp_ffi_call(ktap_state *ks, csymbol_func *csf)
+int ffi_call(ktap_state *ks, csymbol_func *csf)
 {
 	int i;
 	int expected_arg_nr, arg_nr;
@@ -419,7 +419,7 @@ int kp_ffi_call(ktap_state *ks, csymbol_func *csf)
 	}
 
 	/* platform-specific calling workflow */
-	ffi_call(ks, csf, &rvalue);
+	ffi_call_arch(ks, csf, &rvalue);
 	kp_verbose_printf(ks, "Finish FFI call\n");
 
 out:

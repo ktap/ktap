@@ -25,7 +25,7 @@
 #include "kp_vm.h"
 
 
-static int kp_ffi_new(ktap_state *ks)
+static int kplib_ffi_new(ktap_state *ks)
 {
 	int n = kp_arg_nr(ks), array_size;
 	csymbol_id cs_id;
@@ -58,7 +58,7 @@ static int kp_ffi_new(ktap_state *ks)
 	return 1;
 }
 
-static int kp_ffi_free(ktap_state *ks)
+static int kplib_ffi_free(ktap_state *ks)
 {
 	int n = kp_arg_nr(ks);
 	ktap_cdata *cd;
@@ -81,16 +81,16 @@ static int kp_ffi_free(ktap_state *ks)
 	return 0;
 }
 
-static int kp_ffi_sizeof(ktap_state *ks)
+static int kplib_ffi_sizeof(ktap_state *ks)
 {
 	/*@TODO finish this  08.11 2013 (houqp)*/
 	return 0;
 }
 
 static const ktap_Reg ffi_funcs[] = {
-	{"sizeof", kp_ffi_sizeof},
-	{"new", kp_ffi_new},
-	{"free", kp_ffi_free},
+	{"sizeof", kplib_ffi_sizeof},
+	{"new", kplib_ffi_new},
+	{"free", kplib_ffi_free},
 	{NULL}
 };
 

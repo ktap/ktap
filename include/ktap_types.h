@@ -17,8 +17,8 @@ typedef char u8;
  * Maybe embed it info trunk file in future.
  */
 typedef struct ktap_eventdef_info {
-	int nr;
-	int *id_arr;
+	int nr;  /* the number of events id */
+	int *id_arr; /* events id array */
 	char *filter;
 } ktap_eventdef_info;
 
@@ -536,7 +536,7 @@ union ktap_gcobject {
           io1->val = io2->val; io1->type = io2->type; }
 
 #define rawequalobj(t1, t2) \
-	(((t1)->type == (t2)->type) && kp_equalobjv(NULL, t1, t2))
+	(((t1)->type == (t2)->type) && kp_obj_equal(NULL, t1, t2))
 
 #define incr_top(ks) {ks->top++;}
 
@@ -553,16 +553,6 @@ union ktap_gcobject {
 /* todo: floor and pow in kernel */
 #define NUMMOD(a, b)    ((a) % (b))
 #define NUMPOW(a, b)    (pow(a, b))
-
-#define kp_realloc(ks, v, osize, nsize, t) \
-	((v) = (t *)kp_reallocv(ks, v, osize * sizeof(t), nsize * sizeof(t)))
-
-#define kp_error(ks, args...)			\
-	do {					\
-		kp_printf(ks, "error: "args);	\
-		G(ks)->error = 1;		\
-		kp_exit(ks);			\
-	} while(0)
 
 /*
  * KTAP_QL describes how error messages quote program elements.

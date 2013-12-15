@@ -36,7 +36,7 @@
 
 #define STRING_MAXSHORTLEN	40
 
-int kp_tstring_cmp(const ktap_string *ls, const ktap_string *rs)
+int kp_str_cmp(const ktap_string *ls, const ktap_string *rs)
 {
 	const char *l = getstr(ls);
 	size_t ll = ls->tsv.len;
@@ -72,7 +72,7 @@ int kp_tstring_cmp(const ktap_string *ls, const ktap_string *rs)
 /*
  * equality for long strings
  */
-int kp_tstring_eqlngstr(ktap_string *a, ktap_string *b)
+int kp_str_eqlng(ktap_string *a, ktap_string *b)
 {
 	size_t len = a->tsv.len;
 
@@ -83,15 +83,15 @@ int kp_tstring_eqlngstr(ktap_string *a, ktap_string *b)
 /*
  * equality for strings
  */
-int kp_tstring_eqstr(ktap_string *a, ktap_string *b)
+int kp_str_equal(ktap_string *a, ktap_string *b)
 {
 	return (a->tsv.tt == b->tsv.tt) &&
 	       (a->tsv.tt == KTAP_TSHRSTR ? eqshrstr(a, b) :
-				kp_tstring_eqlngstr(a, b));
+				kp_str_eqlng(a, b));
 }
 
 #define STRING_HASHLIMIT	5
-unsigned int kp_string_hash(const char *str, size_t l, unsigned int seed)
+unsigned int kp_str_hash(const char *str, size_t l, unsigned int seed)
 {
 	unsigned int h = seed ^ l;
 	size_t l1;
@@ -107,13 +107,14 @@ unsigned int kp_string_hash(const char *str, size_t l, unsigned int seed)
 /*
  * resizes the string table
  */
-void kp_tstring_resize(ktap_state *ks, int newsize)
+void kp_strtab_resize(ktap_state *ks, int newsize)
 {
 	int i;
 	ktap_stringtable *tb = &G(ks)->strt;
 
 	if (newsize > tb->size) {
-		kp_realloc(ks, tb->hash, tb->size, newsize, ktap_gcobject *);
+		tb->hash = kp_realloc(ks, tb->hash,
+				      newsize * sizeof(ktap_gcobject *));
 
 	for (i = tb->size; i < newsize; i++)
 		tb->hash[i] = NULL;
@@ -136,7 +137,8 @@ void kp_tstring_resize(ktap_state *ks, int newsize)
 
 	if (newsize < tb->size) {
 		/* shrinking slice must be empty */
-		kp_realloc(ks, tb->hash, tb->size, newsize, ktap_gcobject *);
+		tb->hash = kp_realloc(ks, tb->hash,
+				      newsize * sizeof(ktap_gcobject *));
 	}
 
 	tb->size = newsize;
@@ -152,7 +154,7 @@ static ktap_string *createstrobj(ktap_state *ks, const char *str, size_t l,
 	size_t totalsize;  /* total size of TString object */
 
 	totalsize = sizeof(ktap_string) + ((l + 1) * sizeof(char));
-	ts = &kp_newobject(ks, tag, totalsize, list)->ts;
+	ts = &kp_obj_newobject(ks, tag, totalsize, list)->ts;
 	ts->tsv.len = l;
 	ts->tsv.hash = h;
 	ts->tsv.extra = 0;
@@ -172,7 +174,7 @@ static ktap_string *newshrstr(ktap_state *ks, const char *str, size_t l,
 	ktap_string *s;
 
 	if (tb->nuse >= (int)tb->size)
-		kp_tstring_resize(ks, tb->size * 2);  /* too crowded */
+		kp_strtab_resize(ks, tb->size * 2);  /* too crowded */
 
 	list = &tb->hash[lmod(h, tb->size)];
 	s = createstrobj(ks, str, l, KTAP_TSHRSTR, h, list);
@@ -188,7 +190,7 @@ static ktap_string *internshrstr(ktap_state *ks, const char *str, size_t l)
 	ktap_gcobject *o;
 	ktap_global_state *g = G(ks);
 	ktap_string *ts;
-	unsigned int h = kp_string_hash(str, l, g->seed);
+	unsigned int h = kp_str_hash(str, l, g->seed);
 	unsigned long flags;
 
 	local_irq_save(flags);
@@ -215,7 +217,7 @@ static ktap_string *internshrstr(ktap_state *ks, const char *str, size_t l)
 /*
  * new string (with explicit length)
  */
-ktap_string *kp_tstring_newlstr(ktap_state *ks, const char *str, size_t l)
+ktap_string *kp_str_newlstr(ktap_state *ks, const char *str, size_t l)
 {
 	/* short string? */
 	if (l <= STRING_MAXSHORTLEN)
@@ -225,7 +227,7 @@ ktap_string *kp_tstring_newlstr(ktap_state *ks, const char *str, size_t l)
 				    NULL);
 }
 
-ktap_string *kp_tstring_newlstr_local(ktap_state *ks, const char *str, size_t l)
+ktap_string *kp_str_newlstr_local(ktap_state *ks, const char *str, size_t l)
 {
 	return createstrobj(ks, str, l, KTAP_TLNGSTR, G(ks)->seed,
 			    &ks->gclist);
@@ -234,18 +236,18 @@ ktap_string *kp_tstring_newlstr_local(ktap_state *ks, const char *str, size_t l)
 /*
  * new zero-terminated string
  */
-ktap_string *kp_tstring_new(ktap_state *ks, const char *str)
+ktap_string *kp_str_new(ktap_state *ks, const char *str)
 {
-	return kp_tstring_newlstr(ks, str, strlen(str));
+	return kp_str_newlstr(ks, str, strlen(str));
 }
 
-ktap_string *kp_tstring_new_local(ktap_state *ks, const char *str)
+ktap_string *kp_str_new_local(ktap_state *ks, const char *str)
 {
 	return createstrobj(ks, str, strlen(str), KTAP_TLNGSTR, G(ks)->seed,
 			    &ks->gclist);
 }
 
-void kp_tstring_freeall(ktap_state *ks)
+void kp_str_freeall(ktap_state *ks)
 {
 	ktap_global_state *g = G(ks);
 	int h;
@@ -262,23 +264,6 @@ void kp_tstring_freeall(ktap_state *ks)
 	}
 
 	kp_free(ks, g->strt.hash);
-}
-
-/* todo: dump long string, strt table only contain short string */
-void kp_tstring_dump(ktap_state *ks)
-{
-	ktap_gcobject *o;
-	ktap_global_state *g = G(ks);
-	int h;
-
-	kp_printf(ks, "tstring dump: strt size: %d, nuse: %d\n", g->strt.size,
-								 g->strt.nuse);
-	for (h = 0; h < g->strt.size; h++) {
-		for (o = g->strt.hash[h]; o != NULL; o = gch(o)->next) {
-			ktap_string *ts = rawgco2ts(o);
-			kp_printf(ks, "%s [%d]\n", getstr(ts), (int)ts->tsv.len);
-		}
-	}
 }
 
 /* kp_str_fmt - printf implementation */
@@ -353,7 +338,7 @@ static void addlenmod(char *form, const char *lenmod)
 }
 
 
-static void ktap_argerror(ktap_state *ks, int narg, const char *extramsg)
+static void arg_error(ktap_state *ks, int narg, const char *extramsg)
 {
 	kp_error(ks, "bad argument #%d: (%s)\n", narg, extramsg);
 }
@@ -379,7 +364,7 @@ int kp_str_fmt(ktap_state *ks, struct trace_seq *seq)
 			char form[MAX_FORMAT];
 
 			if (++arg > argnum) {
-				ktap_argerror(ks, arg, "no value");
+				arg_error(ks, arg, "no value");
 				return -1;
 			}
 

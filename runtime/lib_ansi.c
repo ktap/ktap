@@ -32,7 +32,7 @@
  * ansi code for clearing the screen from the cursor position to the end.
  */
 
-static int ktap_lib_clear_screen(ktap_state *ks)
+static int kplib_ansi_clear_screen(ktap_state *ks)
 {
 	kp_printf(ks, "\033[1;1H\033[J");
 	return 0;
@@ -47,7 +47,7 @@ static int ktap_lib_clear_screen(ktap_state *ks)
  * Red (31), Purple (35), Brown (33), Light Gray (37).
  */
 
-static int ktap_lib_set_color(ktap_state *ks)
+static int kplib_ansi_set_color(ktap_state *ks)
 {
 	int fg;
 
@@ -69,7 +69,7 @@ static int ktap_lib_set_color(ktap_state *ks)
  * background color, Black (40), Red (41), Green (42), Yellow (43),
  * Blue (44), Magenta (45), Cyan (46), White (47).
  */
-static int ktap_lib_set_color2(ktap_state *ks)
+static int kplib_ansi_set_color2(ktap_state *ks)
 {
 	int fg, bg;
 	
@@ -96,7 +96,7 @@ static int ktap_lib_set_color2(ktap_state *ks)
  * All attributes off (0), Intensity Bold (1), Underline Single (4),
  * Blink Slow (5), Blink Rapid (6), Image Negative (7).
  */
-static int ktap_lib_set_color3(ktap_state *ks)
+static int kplib_ansi_set_color3(ktap_state *ks)
 {
 	int fg, bg, attr;
 
@@ -122,7 +122,7 @@ static int ktap_lib_set_color3(ktap_state *ks)
  * Description: Sends ansi code to reset foreground, background and color
  * attribute to default values.
  */
-static int ktap_lib_reset_color(ktap_state *ks)
+static int kplib_ansi_reset_color(ktap_state *ks)
 {
 	kp_printf(ks, "\033[0;0m");
 	return 0;
@@ -133,19 +133,19 @@ static int ktap_lib_reset_color(ktap_state *ks)
  *
  * Description: Sends ansi code new line.
  */
-static int ktap_lib_new_line (ktap_state *ks)
+static int kplib_ansi_new_line (ktap_state *ks)
 {
 	kp_printf(ks, "\12");
 	return 0;
 }
 
 static const ktap_Reg ansi_funcs[] = {
-	{"clear_screen", ktap_lib_clear_screen},
-	{"set_color", ktap_lib_set_color},
-	{"set_color2", ktap_lib_set_color2},
-	{"set_color3", ktap_lib_set_color3},
-	{"reset_color", ktap_lib_reset_color},
-	{"new_line", ktap_lib_new_line},
+	{"clear_screen", kplib_ansi_clear_screen},
+	{"set_color", kplib_ansi_set_color},
+	{"set_color2", kplib_ansi_set_color2},
+	{"set_color3", kplib_ansi_set_color3},
+	{"reset_color", kplib_ansi_reset_color},
+	{"new_line", kplib_ansi_new_line},
 	{NULL}
 };
 

@@ -41,7 +41,7 @@
 #include "kp_transport.h"
 #include "kp_vm.h"
 
-static int ktap_lib_next(ktap_state *ks)
+static int table_iter_next(ktap_state *ks)
 {
 	ktap_tab *t = hvalue(ks->top - 2);
 
@@ -55,7 +55,7 @@ static int ktap_lib_next(ktap_state *ks)
 	}
 }
 
-static int ktap_lib_pairs(ktap_state *ks)
+static int kplib_pairs(ktap_state *ks)
 {
 	ktap_value *v = kp_arg(ks, 1);
 	ktap_tab *t;
@@ -72,13 +72,13 @@ static int ktap_lib_pairs(ktap_state *ks)
 		return 0;
 	}
 
-	set_cfunction(ks->top++, ktap_lib_next);
+	set_cfunction(ks->top++, table_iter_next);
 	set_table(ks->top++, t);
 	set_nil(ks->top++);
 	return 3;
 }
 
-static int ktap_lib_sort_next(ktap_state *ks)
+static int table_sort_iter_next(ktap_state *ks)
 {
 	ktap_tab *t = hvalue(ks->top - 2);
 
@@ -92,7 +92,7 @@ static int ktap_lib_sort_next(ktap_state *ks)
 	}
 }
 
-static int ktap_lib_sort_pairs(ktap_state *ks)
+static int kplib_sort_pairs(ktap_state *ks)
 {
 	ktap_value *v = kp_arg(ks, 1);
 	ktap_closure *cmp_func = NULL;
@@ -116,15 +116,15 @@ static int ktap_lib_sort_pairs(ktap_state *ks)
 	}
 
 	kp_tab_sort(ks, t, cmp_func); 
-	set_cfunction(ks->top++, ktap_lib_sort_next);
+	set_cfunction(ks->top++, table_sort_iter_next);
 	set_table(ks->top++, t);
 	set_nil(ks->top++);
 	return 3;
 }
 
-static int ktap_lib_len(ktap_state *ks)
+static int kplib_len(ktap_state *ks)
 {
-	int len = kp_objlen(ks, kp_arg(ks, 1));
+	int len = kp_obj_len(ks, kp_arg(ks, 1));
 
 	if (len < 0)
 		return -1;
@@ -134,7 +134,7 @@ static int ktap_lib_len(ktap_state *ks)
 	return 1;
 }
 
-static int ktap_lib_print(ktap_state *ks)
+static int kplib_print(ktap_state *ks)
 {
 	int i;
 	int n = kp_arg_nr(ks);
@@ -143,7 +143,7 @@ static int ktap_lib_print(ktap_state *ks)
 		ktap_value *arg = kp_arg(ks, i);
 		if (i > 1)
 			kp_puts(ks, "\t");
-		kp_showobj(ks, arg);
+		kp_obj_show(ks, arg);
 	}
 
 	kp_puts(ks, "\n");
@@ -152,7 +152,7 @@ static int ktap_lib_print(ktap_state *ks)
 }
 
 /* don't engage with tstring when printf, use buffer directly */
-static int ktap_lib_printf(ktap_state *ks)
+static int kplib_printf(ktap_state *ks)
 {
 	struct trace_seq *seq;
 
@@ -173,7 +173,7 @@ static int ktap_lib_printf(ktap_state *ks)
 }
 
 #ifdef CONFIG_STACKTRACE
-static int ktap_lib_print_backtrace(ktap_state *ks)
+static int kplib_print_backtrace(ktap_state *ks)
 {
 	int skip = 10, max_entries = 10;
 	int n = kp_arg_nr(ks);
@@ -192,7 +192,7 @@ static int ktap_lib_print_backtrace(ktap_state *ks)
 	return 0;
 }
 #else
-static int ktap_lib_print_backtrace(ktap_state *ks)
+static int kplib_print_backtrace(ktap_state *ks)
 {
 	kp_error(ks, "Please enable CONFIG_STACKTRACE before use "
 		     "ktap print_backtrace\n");
@@ -200,7 +200,7 @@ static int ktap_lib_print_backtrace(ktap_state *ks)
 }
 #endif
 
-static int ktap_lib_backtrace(ktap_state *ks)
+static int kplib_backtrace(ktap_state *ks)
 {
 	struct stack_trace trace;
 	int skip = 10, max_entries = 10;
@@ -232,7 +232,7 @@ static int ktap_lib_backtrace(ktap_state *ks)
 }
 
 extern unsigned long long ns2usecs(cycle_t nsec);
-static int ktap_lib_print_trace_clock(ktap_state *ks)
+static int kplib_print_trace_clock(ktap_state *ks)
 {
 	unsigned long long t;
 	unsigned long secs, usec_rem;
@@ -250,22 +250,22 @@ static int ktap_lib_print_trace_clock(ktap_state *ks)
 	return 0;
 }
 
-static int ktap_lib_exit(ktap_state *ks)
+static int kplib_exit(ktap_state *ks)
 {
-	kp_exit(ks);
+	kp_prepare_to_exit(ks);
 
 	/* do not execute bytecode any more in this thread */
-	return -1;
+	return 0;
 }
 
-static int ktap_lib_pid(ktap_state *ks)
+static int kplib_pid(ktap_state *ks)
 {
 	set_number(ks->top, (int)current->pid);
 	incr_top(ks);
 	return 1;
 }
 
-static int ktap_lib_tid(ktap_state *ks)
+static int kplib_tid(ktap_state *ks)
 {
 	pid_t pid = task_pid_vnr(current);
 
@@ -274,7 +274,7 @@ static int ktap_lib_tid(ktap_state *ks)
 	return 1;
 }
 
-static int ktap_lib_uid(ktap_state *ks)
+static int kplib_uid(ktap_state *ks)
 {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 5, 0)
 	uid_t uid = from_kuid_munged(current_user_ns(), current_uid());
@@ -286,29 +286,29 @@ static int ktap_lib_uid(ktap_state *ks)
 	return 1;
 }
 
-static int ktap_lib_execname(ktap_state *ks)
+static int kplib_execname(ktap_state *ks)
 {
-	ktap_string *ts = kp_tstring_new(ks, current->comm);
+	ktap_string *ts = kp_str_new(ks, current->comm);
 	set_string(ks->top, ts);
 	incr_top(ks);
 	return 1;
 }
 
-static int ktap_lib_cpu(ktap_state *ks)
+static int kplib_cpu(ktap_state *ks)
 {
 	set_number(ks->top, smp_processor_id());
 	incr_top(ks);
 	return 1;
 }
 
-static int ktap_lib_num_cpus(ktap_state *ks)
+static int kplib_num_cpus(ktap_state *ks)
 {
 	set_number(ks->top, num_online_cpus());
 	incr_top(ks);
 	return 1;
 }
 
-static int ktap_lib_in_interrupt(ktap_state *ks)
+static int kplib_in_interrupt(ktap_state *ks)
 {
 	int ret = in_interrupt();
 
@@ -317,21 +317,21 @@ static int ktap_lib_in_interrupt(ktap_state *ks)
 	return 1;
 }
 
-static int ktap_lib_arch(ktap_state *ks)
+static int kplib_arch(ktap_state *ks)
 {
-	set_string(ks->top, kp_tstring_new(ks, utsname()->machine));
+	set_string(ks->top, kp_str_new(ks, utsname()->machine));
 	incr_top(ks);
 	return 1;
 }
 
-static int ktap_lib_kernel_v(ktap_state *ks)
+static int kplib_kernel_v(ktap_state *ks)
 {
-	set_string(ks->top, kp_tstring_new(ks, utsname()->release));
+	set_string(ks->top, kp_str_new(ks, utsname()->release));
 	incr_top(ks);
 	return 1;
 }
 
-static int ktap_lib_kernel_string(ktap_state *ks)
+static int kplib_kernel_string(ktap_state *ks)
 {
 	unsigned long addr;
 	char str[256] = {0};
@@ -345,13 +345,13 @@ static int ktap_lib_kernel_string(ktap_state *ks)
 	(void) &ret;  /* Silence compiler warning. */
 
 	str[255] = '\0';
-	set_string(ks->top, kp_tstring_new_local(ks, str));
+	set_string(ks->top, kp_str_new_local(ks, str));
 
 	incr_top(ks);
 	return 1;
 }
 
-static int ktap_lib_user_string(ktap_state *ks)
+static int kplib_user_string(ktap_state *ks)
 {
 	unsigned long addr;
 	char str[256] = {0};
@@ -366,13 +366,13 @@ static int ktap_lib_user_string(ktap_state *ks)
 	(void) &ret;  /* Silence compiler warning. */
 	pagefault_enable();
 	str[255] = '\0';
-	set_string(ks->top, kp_tstring_new(ks, str));
+	set_string(ks->top, kp_str_new(ks, str));
 
 	incr_top(ks);
 	return 1;
 }
 
-static int ktap_lib_histogram(ktap_state *ks)
+static int kplib_histogram(ktap_state *ks)
 {
 	ktap_value *v = kp_arg(ks, 1);
 
@@ -384,7 +384,7 @@ static int ktap_lib_histogram(ktap_state *ks)
 	return 0;
 }
 
-static int ktap_lib_ptable(ktap_state *ks)
+static int kplib_ptable(ktap_state *ks)
 {
 	ktap_ptab *ph;
 	int narr = 0, nrec = 0;
@@ -405,7 +405,7 @@ static int ktap_lib_ptable(ktap_state *ks)
 	return 1;
 }
 
-static int ktap_lib_count(ktap_state *ks)
+static int kplib_count(ktap_state *ks)
 {
 	ktap_value *v = kp_arg(ks, 1);
 	ktap_stat_data *sd;
@@ -424,7 +424,7 @@ static int ktap_lib_count(ktap_state *ks)
 	return 1;
 }
 
-static int ktap_lib_max(ktap_state *ks)
+static int kplib_max(ktap_state *ks)
 {
 	ktap_value *v = kp_arg(ks, 1);
 	ktap_stat_data *sd;
@@ -443,7 +443,7 @@ static int ktap_lib_max(ktap_state *ks)
 	return 1;
 }
 
-static int ktap_lib_min(ktap_state *ks)
+static int kplib_min(ktap_state *ks)
 {
 	ktap_value *v = kp_arg(ks, 1);
 	ktap_stat_data *sd;
@@ -462,7 +462,7 @@ static int ktap_lib_min(ktap_state *ks)
 	return 1;
 }
 
-static int ktap_lib_sum(ktap_state *ks)
+static int kplib_sum(ktap_state *ks)
 {
 	ktap_value *v = kp_arg(ks, 1);
 	ktap_stat_data *sd;
@@ -481,7 +481,7 @@ static int ktap_lib_sum(ktap_state *ks)
 	return 1;
 }
 
-static int ktap_lib_avg(ktap_state *ks)
+static int kplib_avg(ktap_state *ks)
 {
 	ktap_value *v = kp_arg(ks, 1);
 	ktap_stat_data *sd;
@@ -500,7 +500,7 @@ static int ktap_lib_avg(ktap_state *ks)
 	return 1;
 }
 
-static int ktap_lib_delete(ktap_state *ks)
+static int kplib_delete(ktap_state *ks)
 {
 	kp_arg_check(ks, 1, KTAP_TTABLE);
 
@@ -508,7 +508,7 @@ static int ktap_lib_delete(ktap_state *ks)
 	return 0;
 }
 
-static int ktap_lib_gettimeofday_us(ktap_state *ks)
+static int kplib_gettimeofday_us(ktap_state *ks)
 {
 	set_number(ks->top, gettimeofday_us());
 	incr_top(ks);
@@ -522,7 +522,7 @@ static int ktap_lib_gettimeofday_us(ktap_state *ks)
  * gdb vmlinux
  * (gdb)p &(((struct task_struct *)0).prio)
  */
-static int ktap_lib_curr_task_info(ktap_state *ks)
+static int kplib_curr_taskinfo(ktap_state *ks)
 {
 	int offset;
 	int fetch_bytes;
@@ -568,7 +568,7 @@ static int ktap_lib_curr_task_info(ktap_state *ks)
 /*
  * This built-in function mainly purpose scripts/schedule/schedtimes.kp
  */
-static int ktap_lib_in_iowait(ktap_state *ks)
+static int kplib_in_iowait(ktap_state *ks)
 {
 	set_number(ks->top, current->in_iowait);
 	incr_top(ks);
@@ -577,38 +577,38 @@ static int ktap_lib_in_iowait(ktap_state *ks)
 }
 
 static const ktap_Reg base_funcs[] = {
-	{"pairs", ktap_lib_pairs},
-	{"sort_pairs", ktap_lib_sort_pairs},
-	{"len", ktap_lib_len},
-	{"print", ktap_lib_print},
-	{"printf", ktap_lib_printf},
-	{"print_backtrace", ktap_lib_print_backtrace},
-	{"backtrace", ktap_lib_backtrace},
-	{"print_trace_clock", ktap_lib_print_trace_clock},
-	{"in_interrupt", ktap_lib_in_interrupt},
-	{"exit", ktap_lib_exit},
-	{"pid", ktap_lib_pid},
-	{"tid", ktap_lib_tid},
-	{"uid", ktap_lib_uid},
-	{"execname", ktap_lib_execname},
-	{"cpu", ktap_lib_cpu},
-	{"num_cpus", ktap_lib_num_cpus},
-	{"arch", ktap_lib_arch},
-	{"kernel_v", ktap_lib_kernel_v},
-	{"kernel_string", ktap_lib_kernel_string},
-	{"user_string", ktap_lib_user_string},
-	{"histogram", ktap_lib_histogram},
-	{"ptable", ktap_lib_ptable},
-	{"count", ktap_lib_count},
-	{"max", ktap_lib_max},
-	{"min", ktap_lib_min},
-	{"sum", ktap_lib_sum},
-	{"avg", ktap_lib_avg},
+	{"pairs", kplib_pairs},
+	{"sort_pairs", kplib_sort_pairs},
+	{"len", kplib_len},
+	{"print", kplib_print},
+	{"printf", kplib_printf},
+	{"print_backtrace", kplib_print_backtrace},
+	{"backtrace", kplib_backtrace},
+	{"print_trace_clock", kplib_print_trace_clock},
+	{"in_interrupt", kplib_in_interrupt},
+	{"exit", kplib_exit},
+	{"pid", kplib_pid},
+	{"tid", kplib_tid},
+	{"uid", kplib_uid},
+	{"execname", kplib_execname},
+	{"cpu", kplib_cpu},
+	{"num_cpus", kplib_num_cpus},
+	{"arch", kplib_arch},
+	{"kernel_v", kplib_kernel_v},
+	{"kernel_string", kplib_kernel_string},
+	{"user_string", kplib_user_string},
+	{"histogram", kplib_histogram},
+	{"ptable", kplib_ptable},
+	{"count", kplib_count},
+	{"max", kplib_max},
+	{"min", kplib_min},
+	{"sum", kplib_sum},
+	{"avg", kplib_avg},
 
-	{"delete", ktap_lib_delete},
-	{"gettimeofday_us", ktap_lib_gettimeofday_us},
-	{"curr_taskinfo", ktap_lib_curr_task_info},
-	{"in_iowait", ktap_lib_in_iowait},
+	{"delete", kplib_delete},
+	{"gettimeofday_us", kplib_gettimeofday_us},
+	{"curr_taskinfo", kplib_curr_taskinfo},
+	{"in_iowait", kplib_in_iowait},
 	{NULL}
 };
 

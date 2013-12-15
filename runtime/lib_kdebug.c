@@ -37,7 +37,7 @@ static void ktap_call_probe_closure(ktap_state *mainthread, ktap_closure *cl,
 	ktap_state *ks;
 	ktap_value *func;
 
-	ks = kp_newthread(mainthread);
+	ks = kp_thread_new(mainthread);
 	set_closure(ks->top, cl);
 	func = ks->top;
 	incr_top(ks);
@@ -47,7 +47,7 @@ static void ktap_call_probe_closure(ktap_state *mainthread, ktap_closure *cl,
 	kp_call(ks, func, 0);
 
 	ks->current_event = NULL;
-	kp_exitthread(ks);
+	kp_thread_exit(ks);
 }
 
 void kp_event_tostring(ktap_state *ks, struct trace_seq *seq)
@@ -115,7 +115,7 @@ static void get_field_value(ktap_state *ks, struct ktap_event *e,
 	}
 
 	if (!strncmp(field->type, "char", 4)) {
-		set_string(ra, kp_tstring_new(ks, (char *)value));
+		set_string(ra, kp_str_new(ks, (char *)value));
 		return;
 	}
 }
@@ -285,7 +285,7 @@ static void end_probes(struct ktap_state *ks)
 	}
 }
 
-static int ktap_lib_probe_by_id(ktap_state *ks)
+static int kplib_kdebug_probe_by_id(ktap_state *ks)
 {
 	ktap_closure *cl;
 	struct task_struct *task = G(ks)->trace_task;
@@ -356,26 +356,11 @@ static int ktap_lib_probe_by_id(ktap_state *ks)
 	return 0;
 }
 
-static int ktap_lib_probe_end(ktap_state *ks)
+static int kplib_kdebug_probe_end(ktap_state *ks)
 {
 	kp_arg_check(ks, 1, KTAP_TFUNCTION);
 
 	G(ks)->trace_end_closure = clvalue(kp_arg(ks, 1));
-	return 0;
-}
-
-static int ktap_lib_traceoff(ktap_state *ks)
-{
-	end_probes(ks);
-
-	/* call trace_end_closure after probed end */
-	if (G(ks)->trace_end_closure) {
-		set_closure(ks->top, G(ks)->trace_end_closure);
-		incr_top(ks);
-		kp_call(ks, ks->top - 1, 0);
-		G(ks)->trace_end_closure = NULL;
-	}
-
 	return 0;
 }
 
@@ -406,9 +391,8 @@ int kp_probe_init(ktap_state *ks)
 }
 
 static const ktap_Reg kdebuglib_funcs[] = {
-	{"probe_by_id", ktap_lib_probe_by_id},
-	{"probe_end", ktap_lib_probe_end},
-	{"traceoff", ktap_lib_traceoff},
+	{"probe_by_id", kplib_kdebug_probe_by_id},
+	{"probe_end", kplib_kdebug_probe_end},
 	{NULL}
 };
 

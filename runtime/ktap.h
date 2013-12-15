@@ -36,11 +36,6 @@ int kp_init_tablelib(ktap_state *ks);
 int kp_init_ansilib(ktap_state *ks);
 #ifdef CONFIG_KTAP_FFI
 int kp_init_ffilib(ktap_state *ks);
-#else
-static inline int kp_init_ffilib(ktap_state *ks)
-{
-	return 0;
-}
 #endif
 
 
@@ -119,6 +114,12 @@ static inline void *kp_percpu_data(ktap_state *ks, int type)
 		}						\
 	} while (0)
 
+#define kp_error(ks, args...)			\
+	do {					\
+		kp_printf(ks, "error: "args);	\
+		G(ks)->error = 1;		\
+		kp_prepare_to_exit(ks);		\
+	} while(0)
 
 #if LINUX_VERSION_CODE > KERNEL_VERSION(3, 5, 0)
 #define SPRINT_SYMBOL	sprint_symbol_no_offset

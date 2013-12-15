@@ -28,7 +28,7 @@ ktap_cdata *kp_cdata_new(ktap_state *ks)
 {
 	ktap_cdata *cd;
 
-	cd = &kp_newobject(ks, KTAP_TCDATA, sizeof(ktap_cdata), NULL)->cd;
+	cd = &kp_obj_newobject(ks, KTAP_TCDATA, sizeof(ktap_cdata), NULL)->cd;
 
 	return cd;
 }

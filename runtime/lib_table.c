@@ -29,7 +29,7 @@
 #include "kp_vm.h"
 #include "kp_tab.h"
 
-static int ktap_lib_new(ktap_state *ks)
+static int kplib_table_new(ktap_state *ks)
 {
 	ktap_tab *h;
 	int narr = 0, nrec = 0;
@@ -56,7 +56,7 @@ static int ktap_lib_new(ktap_state *ks)
 }
 
 static const ktap_Reg tablelib_funcs[] = {
-	{"new",	ktap_lib_new},
+	{"new",	kplib_table_new},
 	{NULL}
 };
 

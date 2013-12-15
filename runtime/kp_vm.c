@@ -90,7 +90,7 @@ static void ktap_concat(ktap_state *ks, int start, int end)
 		strncpy(ptr, svalue(top + i), len);
 		ptr += len;
 	}
-	ts = kp_tstring_newlstr(ks, buffer, len);
+	ts = kp_str_newlstr(ks, buffer, len);
 	set_string(top + start, ts);
 
 	preempt_enable_notrace();
@@ -102,7 +102,7 @@ static int lessthan(ktap_state *ks, const ktap_value *l, const ktap_value *r)
 	if (is_number(l) && is_number(r))
 		return NUMLT(nvalue(l), nvalue(r));
 	else if (is_string(l) && is_string(r))
-		return kp_tstring_cmp(rawtsvalue(l), rawtsvalue(r)) < 0;
+		return kp_str_cmp(rawtsvalue(l), rawtsvalue(r)) < 0;
 
 	return 0;
 }
@@ -112,7 +112,7 @@ static int lessequal(ktap_state *ks, const ktap_value *l, const ktap_value *r)
 	if (is_number(l) && is_number(r))
 		return NUMLE(nvalue(l), nvalue(r));
 	else if (is_string(l) && is_string(r))
-		return kp_tstring_cmp(rawtsvalue(l), rawtsvalue(r)) <= 0;
+		return kp_str_cmp(rawtsvalue(l), rawtsvalue(r)) <= 0;
 
 	return 0;
 }
@@ -140,7 +140,7 @@ static ktap_upval *findupval(ktap_state *ks, StkId level)
 	}
 
 	/* not found: create a new one */
-	uv = &kp_newobject(ks, KTAP_TUPVAL, sizeof(ktap_upval), pp)->uv;
+	uv = &kp_obj_newobject(ks, KTAP_TUPVAL, sizeof(ktap_upval), pp)->uv;
 	uv->v = level;  /* current value lives in the stack */
 	uv->u.l.prev = &g->uvhead;  /* double link it in `uvhead' list */
 	uv->u.l.next = g->uvhead.u.l.next;
@@ -161,7 +161,7 @@ static void pushclosure(ktap_state *ks, ktap_proto *p, ktap_upval **encup,
 	int nup = p->sizeupvalues;
 	ktap_upvaldesc *uv = p->upvalues;
 	int i;
-	ktap_closure *ncl = kp_newclosure(ks, nup);
+	ktap_closure *ncl = kp_obj_newclosure(ks, nup);
 
 	ncl->p = p;
 	set_closure(ra, ncl);  /* anchor new closure in stack */
@@ -373,7 +373,7 @@ static int precall(ktap_state *ks, StkId func, int nresults)
 		ci->top = ks->top + KTAP_MIN_RESERVED_STACK_SIZE;
 		ci->callstatus = 0;
 
-		n = kp_ffi_call(ks, csym_func(cs));
+		n = ffi_call(ks, csym_func(cs));
 		kp_verbose_printf(ks, "returned from ffi call...\n");
 		poscall(ks, ks->top - n);
 		return 1;
@@ -598,7 +598,7 @@ static void ktap_execute(ktap_state *ks)
 		set_boolean(ra, res);
 		break;
 	case OP_LEN: {
-		int len = kp_objlen(ks, RB(instr));
+		int len = kp_obj_len(ks, RB(instr));
 		if (len < 0)
 			return;
 		set_number(ra, len);
@@ -858,7 +858,7 @@ static void ktap_execute(ktap_state *ks)
 			kp_error(ks, "invalid event context\n");
 			return;
 		}
-		set_string(ra, kp_tstring_new(ks, e->call->name));
+		set_string(ra, kp_str_new(ks, e->call->name));
 		break;
 		}
 	case OP_EVENTARG:
@@ -954,12 +954,12 @@ static void cfunction_cache_add(ktap_state *ks, ktap_value *func)
 	G(ks)->nr_builtin_cfunction++;
 }
 
-static void cfunction_cache_exit(ktap_state *ks)
+static void exit_cfunction_cache(ktap_state *ks)
 {
 	kp_free(ks, G(ks)->cfunction_tbl);
 }
 
-static int cfunction_cache_init(ktap_state *ks)
+static int init_cfunction_cache(ktap_state *ks)
 {
 	G(ks)->cfunction_tbl = kp_zalloc(ks, sizeof(ktap_value) * 128);
 	if (!G(ks)->cfunction_tbl)
@@ -991,7 +991,7 @@ int kp_register_lib(ktap_state *ks, const char *libname, const ktap_Reg *funcs)
 		if (!target_tbl)
 			return -1;
 
-		set_string(&key, kp_tstring_new(ks, libname));
+		set_string(&key, kp_str_new(ks, libname));
 		set_table(&val, target_tbl);
 		kp_tab_setvalue(ks, hvalue(gt), &key, &val);
 	}
@@ -999,7 +999,7 @@ int kp_register_lib(ktap_state *ks, const char *libname, const ktap_Reg *funcs)
 	for (i = 0; funcs[i].name != NULL; i++) {
 		ktap_value func_name, cl;
 
-		set_string(&func_name, kp_tstring_new(ks, funcs[i].name));
+		set_string(&func_name, kp_str_new(ks, funcs[i].name));
 		set_cfunction(&cl, funcs[i].func);
 		kp_tab_setvalue(ks, target_tbl, &func_name, &cl);
 
@@ -1009,7 +1009,7 @@ int kp_register_lib(ktap_state *ks, const char *libname, const ktap_Reg *funcs)
 	return 0;
 }
 
-static int kp_init_registry(ktap_state *ks)
+static int init_registry(ktap_state *ks)
 {
 	ktap_tab *registry = kp_tab_new(ks, 2, 0);
 	ktap_value global_tbl;
@@ -1034,7 +1034,7 @@ static int kp_init_registry(ktap_state *ks)
 	return 0;
 }
 
-static int kp_init_arguments(ktap_state *ks, int argc, char __user **user_argv)
+static int init_arguments(ktap_state *ks, int argc, char __user **user_argv)
 {
 	const ktap_value *gt = kp_tab_getint(hvalue(&G(ks)->registry),
 			   KTAP_RIDX_GLOBALS);
@@ -1048,7 +1048,7 @@ static int kp_init_arguments(ktap_state *ks, int argc, char __user **user_argv)
 	if (!arg_tbl)
 		return -1;
 
-	set_string(&arg_tsval, kp_tstring_new(ks, "arg"));
+	set_string(&arg_tsval, kp_str_new(ks, "arg"));
 	set_table(&arg_tblval, arg_tbl);
 	kp_tab_setvalue(ks, global_tbl, &arg_tsval, &arg_tblval);
 
@@ -1098,7 +1098,7 @@ static int kp_init_arguments(ktap_state *ks, int argc, char __user **user_argv)
 		if (!kstrtoint(kstr, 10, &res)) {
 			set_number(&val, res);
 		} else
-			set_string(&val, kp_tstring_new(ks, kstr));
+			set_string(&val, kp_str_new(ks, kstr));
 
 		kp_tab_setint(ks, arg_tbl, i, &val);
 
@@ -1109,7 +1109,7 @@ static int kp_init_arguments(ktap_state *ks, int argc, char __user **user_argv)
 	return ret;
 }
 
-static void free_kp_percpu_data(ktap_state *ks)
+static void free_percpu_data(ktap_state *ks)
 {
 	int i, j;
 
@@ -1123,7 +1123,7 @@ static void free_kp_percpu_data(ktap_state *ks)
 			free_percpu(G(ks)->recursion_context[j]);
 }
 
-static int alloc_kp_percpu_data(ktap_state *ks)
+static int init_percpu_data(ktap_state *ks)
 {
 	int data_size[KTAP_PERCPU_DATA_MAX] = {
 		sizeof(ktap_state), KTAP_STACK_SIZE_BYTES,
@@ -1151,11 +1151,11 @@ static int alloc_kp_percpu_data(ktap_state *ks)
 	return 0;
 
  fail:
-	free_kp_percpu_data(ks);
+	free_percpu_data(ks);
 	return -ENOMEM;
 }
 
-static void kp_init_state(ktap_state *ks)
+static void init_ktap_stack(ktap_state *ks)
 {
 	ktap_callinfo *ci;
 
@@ -1195,13 +1195,13 @@ static void free_all_ci(ktap_state *ks)
 	free_ci(ks);
 }
 
-void kp_exitthread(ktap_state *ks)
+void kp_thread_exit(ktap_state *ks)
 {
 	/* free local allocation objects, like annotate strings */
-	kp_free_gclist(ks, ks->gclist);
+	kp_obj_free_gclist(ks, ks->gclist);
 }
 
-ktap_state *kp_newthread(ktap_state *mainthread)
+ktap_state *kp_thread_new(ktap_state *mainthread)
 {
 	ktap_state *ks;
 
@@ -1209,7 +1209,7 @@ ktap_state *kp_newthread(ktap_state *mainthread)
 	ks->stack = kp_percpu_data(mainthread, KTAP_PERCPU_DATA_STACK);
 	G(ks) = G(mainthread);
 	ks->gclist = NULL;
-	kp_init_state(ks);
+	init_ktap_stack(ks);
 	return ks;
 }
 
@@ -1327,7 +1327,11 @@ static inline void set_next_as_exit(ktap_state *ks)
 	}
 }
 
-void kp_exit(ktap_state *ks)
+/*
+ * This function only tell ktapvm this thread want to exit,
+ * let mainthread handle real exit work later.
+ */
+void kp_prepare_to_exit(ktap_state *ks)
 {
 	set_next_as_exit(ks);
 
@@ -1344,7 +1348,7 @@ void kp_init_exit_instruction(void)
  * Be careful in stats_cleanup, only can use kp_printf, since almost
  * all ktap resources already freed now.
  */
-static void kp_stats_cleanup(ktap_state *ks)
+static void exit_stats(ktap_state *ks)
 {
 	ktap_stats __percpu *stats = G(ks)->stats;
 	int mem_allocated = 0, nr_mem_allocate = 0, nr_mem_free = 0;
@@ -1371,7 +1375,7 @@ static void kp_stats_cleanup(ktap_state *ks)
 		free_percpu(stats);
 }
 
-static int kp_stats_init(ktap_state *ks)
+static int init_stats(ktap_state *ks)
 {
 	ktap_stats __percpu *stats = alloc_percpu(ktap_stats);
 	if (!stats)
@@ -1381,6 +1385,9 @@ static int kp_stats_init(ktap_state *ks)
 	return 0;
 }
 
+/*
+ * ktap exit, free all resources.
+ */
 void kp_final_exit(ktap_state *ks)
 {
 	if (!list_empty(&G(ks)->probe_events_head) ||
@@ -1391,19 +1398,21 @@ void kp_final_exit(ktap_state *ks)
 	kp_probe_exit(ks);
 
 	/* free all resources got by ktap */
-	kp_ffi_free_symbol(ks);
-	kp_tstring_freeall(ks);
-	kp_free_all_gcobject(ks);
-	cfunction_cache_exit(ks);
+#ifdef CONFIG_KTAP_FFI
+	ffi_free_symbols(ks);
+#endif
+	kp_str_freeall(ks);
+	kp_obj_freeall(ks);
+	exit_cfunction_cache(ks);
 
-	kp_exitthread(ks);
+	kp_thread_exit(ks);
 	kp_free(ks, ks->stack);
 	free_all_ci(ks);
 
-	free_kp_percpu_data(ks);
+	free_percpu_data(ks);
 	free_cpumask_var(G(ks)->cpumask);
 
-	kp_stats_cleanup(ks);
+	exit_stats(ks);
 	wait_user_completion(ks);
 
 	/* should invoke after wait_user_completion */
@@ -1414,7 +1423,9 @@ void kp_final_exit(ktap_state *ks)
 	kp_free(ks, ks);
 }
 
-/* ktap mainthread initization, main entry for ktap */
+/*
+ * ktap mainthread initization
+ */
 ktap_state *kp_newstate(ktap_parm *parm, struct dentry *dir)
 {
 	ktap_state *ks;
@@ -1436,7 +1447,7 @@ ktap_state *kp_newstate(ktap_parm *parm, struct dentry *dir)
 	INIT_LIST_HEAD(&(G(ks)->probe_events_head));
 	G(ks)->exit = 0;
 
-	if (kp_stats_init(ks))
+	if (init_stats(ks))
 		goto out;
 	if (kp_transport_init(ks, dir))
 		goto out;
@@ -1444,6 +1455,8 @@ ktap_state *kp_newstate(ktap_parm *parm, struct dentry *dir)
 	ks->stack = kp_malloc(ks, KTAP_STACK_SIZE_BYTES);
 	if (!ks->stack)
 		goto out;
+
+	init_ktap_stack(ks);
 
 	pid = (pid_t)parm->trace_pid;
 	if (pid != -1) {
@@ -1477,15 +1490,14 @@ ktap_state *kp_newstate(ktap_parm *parm, struct dentry *dir)
 		cpumask_set_cpu(cpu, G(ks)->cpumask);
 	}
 
-	if (cfunction_cache_init(ks))
+	if (init_cfunction_cache(ks))
 		goto out;
 
-	kp_tstring_resize(ks, 512); /* set inital string hashtable size */
+	kp_strtab_resize(ks, 512); /* set inital string hashtable size */
 
-	kp_init_state(ks);
-	if (kp_init_registry(ks))
+	if (init_registry(ks))
 		goto out;
-	if (kp_init_arguments(ks, parm->argc, parm->argv))
+	if (init_arguments(ks, parm->argc, parm->argv))
 		goto out;
 
 	/* init library */
@@ -1497,12 +1509,14 @@ ktap_state *kp_newstate(ktap_parm *parm, struct dentry *dir)
 		goto out;
 	if (kp_init_ansilib(ks))
 		goto out;
+#ifdef CONFIG_KTAP_FFI
 	if (kp_init_ffilib(ks))
 		goto out;
+#endif
 	if (kp_init_tablelib(ks))
 		goto out;
 
-	if (alloc_kp_percpu_data(ks))
+	if (init_percpu_data(ks))
 		goto out;
 	if (kp_probe_init(ks))
 		goto out;

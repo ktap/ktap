@@ -85,7 +85,7 @@ void kp_free(ktap_state *ks, void *addr)
 	kfree(addr);
 }
 
-void *kp_reallocv(ktap_state *ks, void *addr, int oldsize, int newsize)
+void *kp_realloc(ktap_state *ks, void *addr, int newsize)
 {
 	void *new_addr;
 
@@ -101,13 +101,6 @@ void *kp_reallocv(ktap_state *ks, void *addr, int oldsize, int newsize)
 		}
 		kp_printf(ks, "krealloc retry success after failed, exit\n");
 	}
-
-	preempt_disable();
-	if (oldsize == 0) {
-		KTAP_STATS(ks)->nr_mem_allocate += 1;
-	}
-	KTAP_STATS(ks)->mem_allocated += newsize - oldsize;
-	preempt_enable();
 
 	return new_addr;
 }
@@ -172,7 +165,7 @@ void kp_obj_dump(ktap_state *ks, const ktap_value *v)
 #include <linux/module.h>
 #include <linux/kallsyms.h>
 
-static void kp_btrace_dump(ktap_state *ks, ktap_btrace *bt)
+static void btrace_dump(ktap_state *ks, ktap_btrace *bt)
 {
 	char str[KSYM_SYMBOL_LEN];
 	unsigned long *entries = (unsigned long *)(bt + 1);
@@ -189,7 +182,7 @@ static void kp_btrace_dump(ktap_state *ks, ktap_btrace *bt)
 	}
 }
 
-static int kp_btrace_equal(ktap_btrace *bt1, ktap_btrace *bt2)
+static int btrace_equal(ktap_btrace *bt1, ktap_btrace *bt2)
 {
 	unsigned long *entries1 = (unsigned long *)(bt1 + 1);
 	unsigned long *entries2 = (unsigned long *)(bt2 + 1);
@@ -206,7 +199,7 @@ static int kp_btrace_equal(ktap_btrace *bt1, ktap_btrace *bt2)
 	return 1;
 }
 
-void kp_showobj(ktap_state *ks, const ktap_value *v)
+void kp_obj_show(ktap_state *ks, const ktap_value *v)
 {
 	switch (ttype(v)) {
 	case KTAP_TNIL:
@@ -240,7 +233,7 @@ void kp_showobj(ktap_state *ks, const ktap_value *v)
 		kp_transport_event_write(ks, evalue(v));
 		break;
 	case KTAP_TBTRACE:
-		kp_btrace_dump(ks, btvalue(v));
+		btrace_dump(ks, btvalue(v));
 		break;
 	case KTAP_TPTABLE:
 		kp_ptab_dump(ks, phvalue(v));
@@ -258,7 +251,7 @@ void kp_showobj(ktap_state *ks, const ktap_value *v)
 /*
  * equality of ktap values. ks == NULL means raw equality
  */
-int kp_equalobjv(ktap_state *ks, const ktap_value *t1, const ktap_value *t2)
+int kp_obj_equal(ktap_state *ks, const ktap_value *t1, const ktap_value *t2)
 {
 	switch (ttype(t1)) {
 	case KTAP_TNIL:
@@ -274,14 +267,14 @@ int kp_equalobjv(ktap_state *ks, const ktap_value *t1, const ktap_value *t2)
 	case KTAP_TSHRSTR:
 		return eqshrstr(rawtsvalue(t1), rawtsvalue(t2));
 	case KTAP_TLNGSTR:
-		return kp_tstring_eqlngstr(rawtsvalue(t1), rawtsvalue(t2));
+		return kp_str_eqlng(rawtsvalue(t1), rawtsvalue(t2));
 	case KTAP_TTABLE:
 		if (hvalue(t1) == hvalue(t2))
 			return 1;
 		else if (ks == NULL)
 			return 0;
 	case KTAP_TBTRACE:
-		return kp_btrace_equal(btvalue(t1), btvalue(t2));
+		return btrace_equal(btvalue(t1), btvalue(t2));
 	default:
 		return gcvalue(t1) == gcvalue(t2);
 	}
@@ -293,7 +286,7 @@ int kp_equalobjv(ktap_state *ks, const ktap_value *t1, const ktap_value *t2)
  * ktap will not use lua's length operator on table meaning,
  * also # is not for length operator any more in ktap.
  */
-int kp_objlen(ktap_state *ks, const ktap_value *v)
+int kp_obj_len(ktap_state *ks, const ktap_value *v)
 {
 	switch(v->type) {
 	case KTAP_TTABLE:
@@ -308,7 +301,7 @@ int kp_objlen(ktap_state *ks, const ktap_value *v)
 }
 
 /* need to protect allgc field? */
-ktap_gcobject *kp_newobject(ktap_state *ks, int type, size_t size,
+ktap_gcobject *kp_obj_newobject(ktap_state *ks, int type, size_t size,
 			    ktap_gcobject **list)
 {
 	ktap_gcobject *o;
@@ -324,35 +317,35 @@ ktap_gcobject *kp_newobject(ktap_state *ks, int type, size_t size,
 	return o;
 }
 
-ktap_upval *kp_newupval(ktap_state *ks)
+ktap_upval *kp_obj_newupval(ktap_state *ks)
 {
 	ktap_upval *uv;
 
-	uv = &kp_newobject(ks, KTAP_TUPVAL, sizeof(ktap_upval), NULL)->uv;
+	uv = &kp_obj_newobject(ks, KTAP_TUPVAL, sizeof(ktap_upval), NULL)->uv;
 	uv->v = &uv->u.value;
 	set_nil(uv->v);
 	return uv;
 }
 
-static ktap_btrace *kp_newbacktrace(ktap_state *ks, int nr_entries,
+static ktap_btrace *kp_obj_newbacktrace(ktap_state *ks, int nr_entries,
 				    ktap_gcobject **list)
 {
 	ktap_btrace *bt;
 	int size = sizeof(ktap_btrace) + nr_entries * sizeof(unsigned long);
 
-	bt = &kp_newobject(ks, KTAP_TBTRACE, size, list)->bt;
+	bt = &kp_obj_newobject(ks, KTAP_TBTRACE, size, list)->bt;
 	bt->nr_entries = nr_entries;
 	return bt;
 }
 
-void kp_objclone(ktap_state *ks, const ktap_value *o, ktap_value *newo,
+void kp_obj_clone(ktap_state *ks, const ktap_value *o, ktap_value *newo,
 		 ktap_gcobject **list)
 {
 	if (is_btrace(o)) {
 		int nr_entries = btvalue(o)->nr_entries;
 		ktap_btrace *bt;
 
-		bt = kp_newbacktrace(ks, nr_entries, list);
+		bt = kp_obj_newbacktrace(ks, nr_entries, list);
 		memcpy((unsigned long *)(bt + 1), btvalue(o) + 1,
 			nr_entries * sizeof(unsigned long));
 		set_btrace(newo, bt);
@@ -362,11 +355,11 @@ void kp_objclone(ktap_state *ks, const ktap_value *o, ktap_value *newo,
 	}
 }
 
-ktap_closure *kp_newclosure(ktap_state *ks, int n)
+ktap_closure *kp_obj_newclosure(ktap_state *ks, int n)
 {
 	ktap_closure *cl;
 
-	cl = (ktap_closure *)kp_newobject(ks, KTAP_TCLOSURE, sizeof(*cl), NULL);
+	cl = (ktap_closure *)kp_obj_newobject(ks, KTAP_TCLOSURE, sizeof(*cl), NULL);
 	cl->p = NULL;
 	cl->nupvalues = n;
 	while (n--)
@@ -386,10 +379,10 @@ static void free_proto(ktap_state *ks, ktap_proto *f)
 	kp_free(ks, f);
 }
 
-ktap_proto *kp_newproto(ktap_state *ks)
+ktap_proto *kp_obj_newproto(ktap_state *ks)
 {
 	ktap_proto *f;
-	f = (ktap_proto *)kp_newobject(ks, KTAP_TPROTO, sizeof(*f), NULL);
+	f = (ktap_proto *)kp_obj_newobject(ks, KTAP_TPROTO, sizeof(*f), NULL);
 	f->k = NULL;
  	f->sizek = 0;
 	f->p = NULL;
@@ -412,7 +405,7 @@ ktap_proto *kp_newproto(ktap_state *ks)
 	return f;
 }
 
-void kp_free_gclist(ktap_state *ks, ktap_gcobject *o)
+void kp_obj_free_gclist(ktap_state *ks, ktap_gcobject *o)
 {
 	while (o) {
 		ktap_gcobject *next;
@@ -435,9 +428,9 @@ void kp_free_gclist(ktap_state *ks, ktap_gcobject *o)
 	}
 }
 
-void kp_free_all_gcobject(ktap_state *ks)
+void kp_obj_freeall(ktap_state *ks)
 {
-	kp_free_gclist(ks, G(ks)->allgc);
+	kp_obj_free_gclist(ks, G(ks)->allgc);
 	G(ks)->allgc = NULL;
 }
 

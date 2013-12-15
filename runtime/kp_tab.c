@@ -218,7 +218,7 @@ ktap_tab *tab_new_withstat(ktap_state *ks, int narr, int nrec, int with_stat)
 {
 	int size;
 
-	ktap_tab *t = &kp_newobject(ks, KTAP_TTABLE, sizeof(ktap_tab),
+	ktap_tab *t = &kp_obj_newobject(ks, KTAP_TTABLE, sizeof(ktap_tab),
 				      NULL)->h;
 	t->array = NULL;
 	t->sizearray = 0;
@@ -307,7 +307,7 @@ static ktap_tnode *mainposition (const ktap_tab *t, const ktap_value *key)
 	case KTAP_TLNGSTR: {
 		ktap_string *s = rawtsvalue(key);
 		if (s->tsv.extra == 0) {  /* no hash? */
-			s->tsv.hash = kp_string_hash(getstr(s), s->tsv.len,
+			s->tsv.hash = kp_str_hash(getstr(s), s->tsv.len,
 						     s->tsv.hash);
 			s->tsv.extra = 1;  /* now it has its hash */
 		}
@@ -363,7 +363,7 @@ static int findindex(ktap_state *ks, ktap_tab *t, StkId key)
 		ktap_tnode *n = mainposition(t, key);
 		for (;;) {  /* check whether `key' is somewhere in the chain */
 			/* key may be dead already, but it is ok to use it in `next' */
-			if (kp_equalobjv(ks, gkey(n), key)) {
+			if (kp_obj_equal(ks, gkey(n), key)) {
 				i = n - gnode(t, 0);  /* key index in hash table */
 				/* hash elements are numbered after array ones */
 				return i + t->sizearray;
@@ -424,7 +424,7 @@ int kp_tab_sort_next(ktap_state *ks, ktap_tab *t, StkId key)
 	}
 
 	while (node && !is_nil(gval(node))) {
-		if (kp_equalobjv(ks, gkey(node), key)) {
+		if (kp_obj_equal(ks, gkey(node), key)) {
 			node = gnext(node);
 			if (!node)
 				goto out;
@@ -609,7 +609,7 @@ static ktap_value *table_newkey(ktap_state *ks, ktap_tab *t,
 
 	/* special handling for cloneable object, maily for btrace object */
 	if (is_needclone(key))
-		kp_objclone(ks, key, &newkey, &t->gclist);
+		kp_obj_clone(ks, key, &newkey, &t->gclist);
 	else
 		newkey = *key;
 
@@ -698,8 +698,7 @@ void kp_tab_setvalue(ktap_state *ks, ktap_tab *t,
 	unsigned long flags;
 
 	if (is_nil(key)) {
-		kp_printf(ks, "table index is nil\n");
-		kp_exit(ks);
+		kp_error(ks, "table index is nil\n");
 		return;
 	}
 
@@ -746,8 +745,7 @@ void kp_tab_atomic_inc(ktap_state *ks, ktap_tab *t, ktap_value *key, int n)
 	ktap_value *v;
 
 	if (is_nil(key)) {
-		kp_printf(ks, "table index is nil\n");
-		kp_exit(ks);
+		kp_error(ks, "table index is nil\n");
 		return;
 	}
 
@@ -802,7 +800,7 @@ void kp_tab_free(ktap_state *ks, ktap_tab *t)
 	if (t->sorted)
 		vfree(t->sorted);
 
-	kp_free_gclist(ks, t->gclist);
+	kp_obj_free_gclist(ks, t->gclist);
 	kp_free(ks, t);
 }
 
@@ -817,7 +815,7 @@ void kp_tab_dump(ktap_state *ks, ktap_tab *t)
 			continue;
 
 		kp_printf(ks, "%d:\t", i + 1);
-		kp_showobj(ks, v);
+		kp_obj_show(ks, v);
 		kp_puts(ks, "\n");
 	}
 
@@ -827,9 +825,9 @@ void kp_tab_dump(ktap_state *ks, ktap_tab *t)
 		if (is_nil(gkey(n)))
 			continue;
 
-		kp_showobj(ks, gkey(n));
+		kp_obj_show(ks, gkey(n));
 		kp_puts(ks, ":\t");
-		kp_showobj(ks, gval(n));
+		kp_obj_show(ks, gval(n));
 		kp_puts(ks, "\n");
 	}
 }
@@ -1046,7 +1044,7 @@ ktap_ptab *kp_ptab_new(ktap_state *ks, int narr, int nrec)
 	ktap_ptab *ph;
 	int cpu;
 
-	ph = &kp_newobject(ks, KTAP_TPTABLE, sizeof(ktap_ptab),
+	ph = &kp_obj_newobject(ks, KTAP_TPTABLE, sizeof(ktap_ptab),
 			NULL)->ph;
 	ph->tbl = alloc_percpu(ktap_tab *);
 

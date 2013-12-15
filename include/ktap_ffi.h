@@ -161,7 +161,7 @@ size_t csym_align(ktap_state *ks, csymbol *sym);
 size_t csym_struct_offset(ktap_state *ks, csymbol_struct *csst, int idx);
 void init_csym_struct(ktap_state *ks, csymbol_struct *csst);
 
-void kp_ffi_free_symbol(ktap_state *ks);
+void ffi_free_symbols(ktap_state *ks);
 csymbol_id ffi_get_csym_id(ktap_state *ks, char *name);
 
 ktap_cdata *kp_cdata_new(ktap_state *ks);
@@ -170,16 +170,8 @@ ktap_cdata *kp_cdata_new_ptr(ktap_state *ks, void *addr,
 		int len, csymbol_id id);
 ktap_cdata *kp_cdata_new_struct(ktap_state *ks, void *val, csymbol_id id);
 
-int kp_ffi_call(ktap_state *ks, csymbol_func *cf);
+int ffi_call(ktap_state *ks, csymbol_func *cf);
+
+#endif /* for CONFIG_FFI_KTAP */
 #endif /* for __KERNEL__ */
-
-#else
-
-static inline void kp_ffi_free_symbol(ktap_state *ks)
-{
-	return;
-}
-
-#endif /* CONFIG_KTAP_FFI */
-
 #endif /* __KTAP_FFI_H__ */
