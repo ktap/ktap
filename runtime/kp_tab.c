@@ -787,7 +787,7 @@ int kp_tab_length(ktap_state *ks, ktap_tab *t)
 
 		len++;
 	}
-	
+
 	kp_tab_unlock(t);
 	return len;
 }

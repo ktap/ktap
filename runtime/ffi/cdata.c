@@ -168,6 +168,7 @@ static void kp_cdata_value(ktap_state *ks,
 		*out_size = sizeof(ktap_number);
 		return;
 	case KTAP_TSTRING:
+		/* TODO: should treat it as pointer here 15.12.2013(unihorn) */
 		*out_addr = (void *)svalue(val);
 		*out_size = rawtsvalue(val)->tsv.len;
 		return;

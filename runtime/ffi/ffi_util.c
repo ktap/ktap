@@ -59,15 +59,16 @@ size_t csymst_mb_offset(ktap_state *ks, csymbol_struct *csst, int idx)
 
 	if (idx < 0 || idx > nr)
 		return -1;
-	for (i = 0; i < idx; i++) {
+	for (i = 0; i <= idx; i++) {
 		csymbol *var_cs = csymst_mb_csym(ks, csst, i);
 		size_t var_size = csym_size(ks, var_cs);
 		size_t var_align = csym_align(ks, var_cs);
 		off = ALIGN(off, var_align);
+		if (i == idx)
+			break;
 		off += var_size;
 		align = align > var_align ? align : var_align;
 	}
-	off = ALIGN(off, align);
 	return off;
 }
 
