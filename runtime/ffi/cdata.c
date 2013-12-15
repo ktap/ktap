@@ -40,13 +40,15 @@ ktap_cdata *kp_cdata_new_ptr(ktap_state *ks, void *addr,
 {
 	ktap_cdata *cd;
 	size_t size;
+	csymbol_id deref_id;
 
 	cd = kp_cdata_new(ks, id);
 
-	/* if val == NULL, allocate new empty space */
-	if (addr == NULL) {
+	/* if len > 0, allocate new empty space */
+	if (len > 0) {
 		/* TODO: free the space when exit the program unihorn(08.12.2013) */
-		size = csym_size(ks, id_to_csym(ks, id));
+		deref_id = csym_ptr_deref_id(id_to_csym(ks, id));
+		size = csym_size(ks, id_to_csym(ks, deref_id));
 		cd_ptr(cd) = kp_zalloc(ks, size * len);
 		cd_ptr_allocated(cd) = 1;
 	} else {
@@ -62,6 +64,7 @@ void kp_cdata_free_ptr(ktap_state *ks, ktap_cdata *cd)
 	if (cd_ptr_allocated(cd))
 		kp_free(ks, cd_ptr(cd));
 	cd_ptr(cd) = NULL;
+	cd_ptr_allocated(cd) = 0;
 }
 
 ktap_cdata *kp_cdata_new_struct(ktap_state *ks, void *val, csymbol_id id)
@@ -235,8 +238,7 @@ void kp_cdata_init(ktap_state *ks, ktap_value *val, void *addr, csymbol_id id)
 
 	switch (type) {
 	case FFI_PTR:
-		set_cdata(val, kp_cdata_new_ptr(ks, addr, 1,
-					csym_ptr_deref_id(id_to_csym(ks, id))));
+		set_cdata(val, kp_cdata_new_ptr(ks, addr, 0, id));
 		break;
 	case FFI_STRUCT:
 		set_cdata(val, kp_cdata_new_struct(ks, addr, id));
