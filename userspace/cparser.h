@@ -101,6 +101,7 @@ enum {
  */
 struct cp_ctype {
 	size_t base_size; /* size of the base type in bytes */
+	int ffi_base_cs_id;
 	int ffi_cs_id; /* index for csymbol from ktap vm */
 	union {
 		/* valid if is_bitfield */
@@ -169,6 +170,7 @@ void cp_set_defined(struct cp_ctype *ct);
 
 int cp_symbol_build_func(struct cp_ctype *type, const char *fname, int fn_size);
 int cp_symbol_build_struct(const char *stname);
+int cp_symbol_build_fake_struct(const char *stname);
 int cp_symbol_build_pointer(struct cp_ctype *ct);
 
 int ffi_parse_cdef(const char *s);

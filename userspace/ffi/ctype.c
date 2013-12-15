@@ -43,7 +43,8 @@ static ctype_stack cts;
 
 
 
-int cp_ctype_reg_csymbol(csymbol *cs);
+csymbol_id cp_ctype_reg_csymbol(csymbol *cs);
+csymbol_id ctype_lookup_csymbol_id(const char *name);
 
 
 size_t ctype_size(const struct cp_ctype *ct)
@@ -101,6 +102,7 @@ void cp_update_csym_in_ctype(struct cp_ctype *ct)
 	int i;
 	struct cp_ctype *nct;
 
+	assert(ct->ffi_cs_id >= 0);
 	/* we have to check pointer here because cparser does type lookup by name
 	 * before parsing '*', and for pointers, ct will always be the
 	 * original type */
@@ -108,6 +110,7 @@ void cp_update_csym_in_ctype(struct cp_ctype *ct)
 		for (i = 0; i < cte_nr; i++) {
 			nct = &(cte_arr[i].ct);
 			if (nct->type == ct->type &&
+					ct->ffi_base_cs_id == nct->ffi_base_cs_id &&
 					nct->pointers == ct->pointers) {
 				break;
 			}
@@ -184,7 +187,7 @@ int ctype_reg_table_grow()
 }
 
 /* return index in csymbol array */
-int cp_ctype_reg_csymbol(csymbol *cs)
+csymbol_id cp_ctype_reg_csymbol(csymbol *cs)
 {
 	if (cs_nr >= cs_arr_size) {
 		cs_arr_size *= 2;
@@ -199,6 +202,21 @@ int cp_ctype_reg_csymbol(csymbol *cs)
 	return cs_nr-1;
 }
 
+/* start csymbol reg table */
+csymbol_id ctype_lookup_csymbol_id(const char *name)
+{
+	int i;
+	csymbol *ct;
+
+	for (i = 0; i < cs_nr; i++) {
+		ct = cp_id_to_csym(i);
+		if (!strcmp(name, ct->name))
+			return i;
+	}
+
+	return -1;
+}
+
 void __cp_symbol_dump_struct(csymbol *cs)
 {
 	int i;
@@ -209,7 +227,7 @@ void __cp_symbol_dump_struct(csymbol *cs)
 	for (i = 0; i < stcs->memb_nr; i++) {
 		printf("\t(%d) ", i);
 		printf("csym_id: %d, ", stcs->members[i].id);
-		ncs = &cs_arr[stcs->members[i].id];
+		ncs = cp_id_to_csym(stcs->members[i].id);
 		printf("name: %s, ffi_ctype: %d, %s\n",
 			stcs->members[i].name, ncs->type, csym_name(ncs));
 	}
@@ -217,7 +235,7 @@ void __cp_symbol_dump_struct(csymbol *cs)
 
 void cp_symbol_dump_struct(int id)
 {
-	__cp_symbol_dump_struct(&cs_arr[id]);
+	__cp_symbol_dump_struct(cp_id_to_csym(id));
 }
 
 int cp_symbol_build_struct(const char *stname)
@@ -230,6 +248,12 @@ int cp_symbol_build_struct(const char *stname)
 
 	if (cts.top <= 0 || !stname) {
 		cp_error("invalid struct definition.\n");
+	}
+
+	id = ctype_lookup_csymbol_id(stname);
+	if (id >= 0) {
+		assert(cp_id_to_csym(id)->type == FFI_STRUCT);
+		assert(csym_struct(cp_id_to_csym(id))->memb_nr == -1);
 	}
 
 	memb_size = cts.top;
@@ -254,12 +278,43 @@ int cp_symbol_build_struct(const char *stname)
 		st_membs[i].id = ct_stack_ct(i)->ffi_cs_id;
 	}
 
-	id = cp_ctype_reg_csymbol(&nst);
+	if (id < 0)
+		id = cp_ctype_reg_csymbol(&nst);
+	else
+		cs_arr[id] = nst;
 
 	ctype_stack_reset();
 
 	return id;
 }
+
+int cp_symbol_build_fake_struct(const char *stname)
+{
+	int id;
+	csymbol nst;
+	csymbol_struct *stcs;
+
+	if (!stname) {
+		cp_error("invalid fake struct definition.\n");
+	}
+
+	id = ctype_lookup_csymbol_id(stname);
+	if (id >= 0)
+		return id;
+
+	nst.type = FFI_STRUCT;
+	strcpy(nst.name, stname);
+
+	stcs = csym_struct(&nst);
+	stcs->align = 0;
+	stcs->memb_nr = -1;
+	stcs->members = NULL;
+
+	id = cp_ctype_reg_csymbol(&nst);
+
+	return id;
+}
+
 
 /* build pointer symbol from given csymbol */
 int cp_symbol_build_pointer(struct cp_ctype *ct)
@@ -303,7 +358,7 @@ void __cp_symbol_dump_func(csymbol *cs)
 
 void cp_symbol_dump_func(int id)
 {
-	__cp_symbol_dump_func(&cs_arr[id]);
+	__cp_symbol_dump_func(cp_id_to_csym(id));
 }
 
 int cp_symbol_build_func(struct cp_ctype *type, const char *fname, int fn_size)
@@ -427,7 +482,7 @@ static void init_builtin_type(struct cp_ctype *ct, ffi_type ftype)
 	cs_id = cp_ctype_reg_csymbol(&cs);
 
 	memset(ct, 0, sizeof(*ct));
-	ct->ffi_cs_id = cs_id;
+	ct->ffi_base_cs_id = ct->ffi_cs_id = cs_id;
 	switch (ftype) {
 	case FFI_VOID:		ct_set_type(ct, VOID_TYPE, 0); break;
 	case FFI_UINT8:		ct_set_type(ct, INT8_TYPE, 1); break;
@@ -539,7 +594,7 @@ int cp_ctype_free()
 
 	if (cs_arr) {
 		for (i = 0; i < cs_nr; i++) {
-			cs = &cs_arr[i];
+			cs = cp_id_to_csym(i);
 			if (csym_type(cs) == FFI_FUNC) {
 				if (csym_func(cs)->arg_ids)
 					free(csym_func(cs)->arg_ids);

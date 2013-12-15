@@ -564,6 +564,7 @@ static int parse_record(struct parser *P, struct cp_ctype *ct)
 		if (!lct) {
 			/* new type, delay type registration to the end
 			 * of this function */
+			ct->ffi_base_cs_id = ct->ffi_cs_id = -1;
 		} else {
 			/* get the exsting declared type */
 			if (lct->type != ct->type) {
@@ -591,6 +592,10 @@ static int parse_record(struct parser *P, struct cp_ctype *ct)
 		/* this may just be a declaration or use of the type as an
 		 * argument or member */
 		put_back(P);
+
+		/* build symbol for vm */
+		ct->ffi_base_cs_id = cp_symbol_build_fake_struct(cur_type_name);
+		ct->ffi_cs_id = ct->ffi_base_cs_id;
 		return 0;
 	}
 
@@ -611,7 +616,8 @@ static int parse_record(struct parser *P, struct cp_ctype *ct)
 		parse_struct(P, ct);
 		cp_set_defined(ct);
 		/* build symbol for vm */
-		ct->ffi_cs_id = cp_symbol_build_struct(cur_type_name);
+		ct->ffi_base_cs_id = cp_symbol_build_struct(cur_type_name);
+		ct->ffi_cs_id = ct->ffi_base_cs_id;
 		/* save cp_ctype for parser */
 		cp_ctype_reg_type(cur_type_name, ct);
 	}

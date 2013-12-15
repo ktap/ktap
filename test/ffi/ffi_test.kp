@@ -72,11 +72,13 @@ ret = ffi.C.ffi_test_struct(struct_p)
 if (ret != 20) {
 	failed("ffi_test_struct should return 20")
 }
+ffi.free(struct_p)
 
-#struct_p = ffi.new("struct ffi_struct_loop[1]")
-#struct_p[0].val = 10
-#struct_p[0].next = struct_p
-#ret = ffi.C.ffi_test_struct_loop(struct_p)
-#if (ret != 10) {
-#	failed("ffi_test_struct_loop should return 10")
-#}
+struct_p2 = ffi.new("struct ffi_struct_loop[1]")
+struct_p2[0].val = 10
+struct_p2[0].next = struct_p2
+ret = ffi.C.ffi_test_struct_loop(struct_p2)
+if (ret != 10) {
+	failed("ffi_test_struct_loop should return 10")
+}
+ffi.free(struct_p2)

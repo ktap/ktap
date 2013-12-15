@@ -68,7 +68,7 @@ struct ffi_struct_loop {
 
 int ffi_test_struct_loop(struct ffi_struct_loop *s)
 {
-	if (s->val == s->next->val && s->next->val == s->next->next->val)
+	if (s == s->next)
 		return s->val;
 	return 0;
 }
