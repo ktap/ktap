@@ -601,6 +601,7 @@ static int parse_record(struct parser *P, struct cp_ctype *ct)
 
 	if (ct->type == ENUM_TYPE) {
 		parse_enum(P, ct);
+		cp_set_defined(ct);
 	} else {
 		/* we do a two stage parse, where we parse the content first
 		 * and build up the temp user table. We then iterate over that
@@ -608,13 +609,13 @@ static int parse_record(struct parser *P, struct cp_ctype *ct)
 		 * can handle out of order members (eg vtable) and attributes
 		 * specified at the end of the struct. */
 		parse_struct(P, ct);
+		cp_set_defined(ct);
 		/* build symbol for vm */
 		ct->ffi_cs_id = cp_symbol_build_struct(cur_type_name);
 		/* save cp_ctype for parser */
 		cp_ctype_reg_type(cur_type_name, ct);
 	}
 
-	cp_set_defined(ct);
 	return 0;
 }
 
