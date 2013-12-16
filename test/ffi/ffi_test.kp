@@ -29,6 +29,10 @@ ffi.cdef[[
 		int val3;
 	};
 	int ffi_test_union(union ffi_union *s);
+	struct ffi_struct_array {
+		int val[20];
+	};
+	int ffi_test_struct_array(struct ffi_struct_array *s);
 ]]
 
 
@@ -101,3 +105,14 @@ if (ret != 10) {
 	failed("ffi_test_union should return 10")
 }
 ffi.free(union_p)
+
+struct_p3 = ffi.new("struct ffi_struct_array[1]")
+struct_p3[0].val[4] = 20
+struct_p3[0].val[9] = 40
+struct_p3[0].val[14] = 60
+struct_p3[0].val[19] = 80
+ret = ffi.C.ffi_test_struct_array(struct_p3)
+if (ret != 200) {
+	failed("ffi_test_struct_array should return 200")
+}
+ffi.free(struct_p3)

@@ -375,5 +375,6 @@ void kp_cdata_record_get(ktap_state *ks, ktap_cdata *cd,
 	addr += csym_record_mb_offset(ks, cs, idx);
 
 	kp_cdata_init(ks, val, addr, mb_cs_id);
-	kp_cdata_pack(ks, val, addr, mb_cs);
+	if (csymst_mb_len(csst, idx) < 0)
+		kp_cdata_pack(ks, val, addr, mb_cs);
 }

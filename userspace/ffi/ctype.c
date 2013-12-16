@@ -245,6 +245,7 @@ int cp_symbol_build_record(const char *stname, int type)
 	csymbol nst;
 	struct_member *st_membs;
 	csymbol_struct *stcs;
+	struct cp_ctype *ct;
 
 	if (cts.top <= 0 || !stname ||
 			(type != STRUCT_TYPE && type != UNION_TYPE)) {
@@ -280,7 +281,12 @@ int cp_symbol_build_record(const char *stname, int type)
 		cte = ct_stack(i);
 		if (cte->name)
 			strcpy(st_membs[i].name, cte->name);
-		st_membs[i].id = ct_stack_ct(i)->ffi_cs_id;
+		ct = ct_stack_ct(i);
+		st_membs[i].id = ct->ffi_cs_id;
+		if (!ct->is_array)
+			st_membs[i].len = -1;
+		else
+			st_membs[i].len = ct->array_size;
 	}
 
 	if (id < 0)

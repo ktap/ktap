@@ -86,6 +86,18 @@ int ffi_test_union(union ffi_union *s)
 }
 EXPORT_SYMBOL(ffi_test_union);
 
+struct ffi_struct_array {
+	int val[20];
+};
+
+int ffi_test_struct_array(struct ffi_struct_array *s)
+{
+	int sum = 0, i;
+	for (i = 0; i < 20; i++)
+		sum += s->val[i];
+	return sum;
+}
+EXPORT_SYMBOL(ffi_test_struct_array);
 
 
 static int __init ffi_test_init(void)

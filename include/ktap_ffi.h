@@ -67,6 +67,7 @@ typedef struct csymbol_func {
 typedef struct struct_member {
 	char name[CSYM_NAME_MAX_LEN];	/* name for this struct member */
 	csymbol_id id;			/* type for this struct member */
+	int len;				/* length of the array, -1 for non-array */
 } struct_member;
 
 typedef struct csymbol_struct {
@@ -143,6 +144,7 @@ inline csymbol *ffi_get_csym_by_id(ktap_state *ks, csymbol_id id);
 #define csymst_mb(csst, n) ((csst)->members[n])
 #define csymst_mb_name(csst, n) ((csst)->members[n].name)
 #define csymst_mb_id(csst, n) ((csst)->members[n].id)
+#define csymst_mb_len(csst, n) ((csst)->members[n].len)
 #define csymst_mb_csym(ks, csst, n) (id_to_csym(ks, (csst)->members[n].id))
 
 

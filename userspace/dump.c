@@ -420,6 +420,8 @@ void ktapc_dump_csymbols()
 			printf("\tMember number: %d\n", csst->memb_nr);
 			for (j = 0; j < csst->memb_nr; j++) {
 				printf("\t\tMember %s", csst->members[j].name);
+				if (csst->members[j].len >= 0)
+					printf("(len %d)", csst->members[j].len);
 				ktapc_dump_csymbol_id("", csst->members[j].id);
 			}
 			break;
