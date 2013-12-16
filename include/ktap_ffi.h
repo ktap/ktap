@@ -141,7 +141,7 @@ inline csymbol *ffi_get_csym_by_id(ktap_state *ks, csymbol_id id);
 #define csym_struct(cs) (&(cs)->u.st)
 #define csym_struct_mb(cs) (csymst_mb(csym_struct(cs), n))
 /* following macro gets csymbol address for the nth struct member */
-#define csymst_mb(csst, n) ((csst)->members[n])
+#define csymst_mb(csst, n) (&(csst)->members[n])
 #define csymst_mb_name(csst, n) ((csst)->members[n].name)
 #define csymst_mb_id(csst, n) ((csst)->members[n].id)
 #define csymst_mb_len(csst, n) ((csst)->members[n].len)
@@ -164,8 +164,9 @@ inline csymbol *ffi_get_csym_by_id(ktap_state *ks, csymbol_id id);
 #ifdef __KERNEL__
 size_t csym_size(ktap_state *ks, csymbol *sym);
 size_t csym_align(ktap_state *ks, csymbol *sym);
-size_t csym_record_mb_offset(ktap_state *ks, csymbol *cs, int idx);
-int csymst_mb_idx_by_name(ktap_state *ks,
+size_t csym_record_mb_offset_by_name(ktap_state *ks,
+		csymbol *cs, const char *name);
+struct_member *csymst_mb_by_name(ktap_state *ks,
 		csymbol_struct *csst, const char *name);
 
 void ffi_free_symbols(ktap_state *ks);

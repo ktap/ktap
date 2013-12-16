@@ -111,22 +111,17 @@ size_t csym_align(ktap_state *ks, csymbol *cs)
 	}
 }
 
-size_t csym_record_mb_offset(ktap_state *ks, csymbol *cs, int idx)
+size_t csym_record_mb_offset_by_name(ktap_state *ks,
+		csymbol *cs, const char *name)
 {
 	csymbol_struct *csst = csym_struct(cs);
 	int nr = csymst_mb_nr(csst);
-	size_t off = 0;
+	size_t off = 0, sub_off;
 	size_t align = 1;
 	int i, var_len;
 	size_t var_size, var_align;
 
-	if (idx < 0 || idx > nr)
-		return -1;
-
-	if (csym_type(cs) == FFI_UNION)
-		return 0;
-
-	for (i = 0; i <= idx; i++) {
+	for (i = 0; i < nr; i++) {
 		csymbol *var_cs = csymst_mb_csym(ks, csst, i);
 		var_len = csymst_mb_len(csst, i);
 		if (var_len < 0) {
@@ -137,22 +132,49 @@ size_t csym_record_mb_offset(ktap_state *ks, csymbol *cs, int idx)
 		var_size = csym_size(ks, var_cs) * var_len;
 		var_align = csym_align(ks, var_cs);
 		off = ALIGN(off, var_align);
-		if (i == idx)
-			break;
-		off += var_size;
+		if (!strcmp(name, csymst_mb_name(csst, i)))
+			return off;
+		if (!strcmp("", csymst_mb_name(csst, i))) {
+			if (csym_type(var_cs) != FFI_STRUCT &&
+					csym_type(var_cs) != FFI_UNION) {
+				kp_error(ks, "Parse error: non-record type without name");
+				return -1;
+			}
+			sub_off = csym_record_mb_offset_by_name(ks,
+					var_cs, name);
+			if (sub_off >= 0)
+				return off + sub_off;
+		}
+		if (csym_type(cs) == FFI_STRUCT)
+			off += var_size;
+		else
+			off = 0;
 		align = align > var_align ? align : var_align;
 	}
-	return off;
+	return -1;
 }
 
-int csymst_mb_idx_by_name(ktap_state *ks,
+struct_member *csymst_mb_by_name(ktap_state *ks,
 		csymbol_struct *csst, const char *name)
 {
 	int nr = csymst_mb_nr(csst);
 	int i;
+	struct_member *memb;
+	csymbol *cs = NULL;
 
-	for (i = 0; i < nr; i++)
+	for (i = 0; i < nr; i++) {
 		if (!strcmp(name, csymst_mb_name(csst, i)))
-			return i;
-	return -1;
+			return csymst_mb(csst, i);
+		if (!strcmp("", csymst_mb_name(csst, i))) {
+			cs = csymst_mb_csym(ks, csst, i);
+			if (csym_type(cs) != FFI_STRUCT && csym_type(cs) != FFI_UNION) {
+				kp_error(ks, "Parse error: non-record type without name");
+				return NULL;
+			}
+			memb = csymst_mb_by_name(ks, csym_struct(cs), name);
+			if (memb != NULL)
+				return memb;
+		}
+	}
+	return NULL;
 }

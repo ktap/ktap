@@ -99,6 +99,19 @@ int ffi_test_struct_array(struct ffi_struct_array *s)
 }
 EXPORT_SYMBOL(ffi_test_struct_array);
 
+struct ffi_struct_noname {
+	struct {
+		int pad;
+		int val;
+	};
+};
+
+int ffi_test_struct_noname(struct ffi_struct_noname *s)
+{
+	return s->val;
+}
+EXPORT_SYMBOL(ffi_test_struct_noname);
+
 
 static int __init ffi_test_init(void)
 {

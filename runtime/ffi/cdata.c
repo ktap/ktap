@@ -317,8 +317,8 @@ void kp_cdata_record_set(ktap_state *ks, ktap_cdata *cd,
 	const char *mb_name;
 	csymbol *cs, *mb_cs;
 	csymbol_struct *csst;
+	struct_member *mb;
 	char *addr;
-	int idx;
 
 	if (!is_shrstring(key)) {
 		kp_printf(ks, "struct member name should be string\n");
@@ -328,20 +328,20 @@ void kp_cdata_record_set(ktap_state *ks, ktap_cdata *cd,
 	mb_name = svalue(key);
 	cs = cd_csym(ks, cd);
 	csst = csym_struct(cs);
-	idx = csymst_mb_idx_by_name(ks, csst, mb_name);
-	if (idx < 0) {
+	mb = csymst_mb_by_name(ks, csst, mb_name);
+	if (mb == NULL) {
 		kp_printf(ks, "struct member %s doesn't exist\n", mb_name);
 		kp_prepare_to_exit(ks);
 		return;
 	}
-	mb_cs = csymst_mb_csym(ks, csst, idx);
+	mb_cs = id_to_csym(ks, mb->id);
 	if (kp_cdata_type_match(ks, mb_cs, val)) {
 		kp_printf(ks, "struct member should be %s type\n", csym_name(mb_cs));
 		kp_prepare_to_exit(ks);
 		return;
 	}
 	addr = cd_struct(cd);
-	addr += csym_record_mb_offset(ks, cs, idx);
+	addr += csym_record_mb_offset_by_name(ks, cs, mb_name);
 	kp_cdata_unpack(ks, addr, mb_cs, val);
 }
 
@@ -351,8 +351,8 @@ void kp_cdata_record_get(ktap_state *ks, ktap_cdata *cd,
 	const char *mb_name;
 	csymbol *cs, *mb_cs;
 	csymbol_struct *csst;
+	struct_member *mb;
 	char *addr;
-	int idx;
 	csymbol_id mb_cs_id;
 
 	if (!is_shrstring(key)) {
@@ -363,18 +363,18 @@ void kp_cdata_record_get(ktap_state *ks, ktap_cdata *cd,
 	mb_name = svalue(key);
 	cs = cd_csym(ks, cd);
 	csst = csym_struct(cs);
-	idx = csymst_mb_idx_by_name(ks, csst, mb_name);
-	if (idx < 0) {
+	mb = csymst_mb_by_name(ks, csst, mb_name);
+	if (mb == NULL) {
 		kp_printf(ks, "struct member %s doesn't exist\n", mb_name);
 		kp_prepare_to_exit(ks);
 		return;
 	}
-	mb_cs_id = csymst_mb_id(csst, idx);
+	mb_cs_id = mb->id;
 	mb_cs = id_to_csym(ks, mb_cs_id);
 	addr = cd_struct(cd);
-	addr += csym_record_mb_offset(ks, cs, idx);
+	addr += csym_record_mb_offset_by_name(ks, cs, mb_name);
 
 	kp_cdata_init(ks, val, addr, mb_cs_id);
-	if (csymst_mb_len(csst, idx) < 0)
+	if (mb->len < 0)
 		kp_cdata_pack(ks, val, addr, mb_cs);
 }

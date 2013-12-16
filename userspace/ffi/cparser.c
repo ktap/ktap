@@ -507,8 +507,6 @@ static int parse_struct(struct parser *P, const struct cp_ctype *ct)
 				cp_push_ctype_with_name(&mt,
 						mname.str, mname.size);
 			} else {
-				/* @TODO handle unnamed member (houqp) */
-				cp_error("TODO: unnamed member not supported.");
 				cp_push_ctype(&mt);
 			}
 
@@ -556,17 +554,18 @@ static int parse_record(struct parser *P, struct cp_ctype *ct)
 {
 	struct token tok;
 	char cur_type_name[MAX_TYPE_NAME_LEN];
+	int has_name;
 
 	require_token(P, &tok);
 
 	/* name is optional */
+	memset(cur_type_name, 0, MAX_TYPE_NAME_LEN);
 	if (tok.type == TOK_TOKEN) {
 		/* declaration */
 		struct cp_ctype *lct;
 
-		memset(cur_type_name, 0, MAX_TYPE_NAME_LEN);
 		set_type_name(cur_type_name, ct->type, tok.str, tok.size);
-;
+
 		/* lookup the name to see if we've seen this type before */
 		lct = ctype_lookup_type(cur_type_name);
 
@@ -590,17 +589,23 @@ static int parse_record(struct parser *P, struct cp_ctype *ct)
 		if (!next_token(P, &tok)) {
 			return 0;
 		}
+		has_name = 1;
 	} else {
+		char anon_name[MAX_TYPE_NAME_LEN];
 		/* create a new unnamed record */
-
-		/*@TODO clean this up after unnamed record support is added */
-		cp_error("TODO: support unnamed record.\n");
+		sprintf(anon_name, "%d line", P->line);
+		set_type_name(cur_type_name, ct->type,
+				anon_name, strlen(anon_name));
+		ct->ffi_base_cs_id = ct->ffi_cs_id = -1;
+		has_name = 0;
 	}
 
 	if (tok.type != TOK_OPEN_CURLY) {
 		/* this may just be a declaration or use of the type as an
 		 * argument or member */
 		put_back(P);
+		if (!has_name)
+			cp_error("noname record type declaration\n");
 
 		/* build symbol for vm */
 		ct->ffi_base_cs_id =

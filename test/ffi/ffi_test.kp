@@ -33,6 +33,13 @@ ffi.cdef[[
 		int val[20];
 	};
 	int ffi_test_struct_array(struct ffi_struct_array *s);
+	struct ffi_struct_noname {
+		struct {
+			int pad;
+			int val;
+		};
+	};
+	int ffi_test_struct_noname(struct ffi_struct_noname *s);
 ]]
 
 
@@ -116,3 +123,11 @@ if (ret != 200) {
 	failed("ffi_test_struct_array should return 200")
 }
 ffi.free(struct_p3)
+
+struct_p4 = ffi.new("struct ffi_struct_noname[1]")
+struct_p4[0].val = 20
+ret = ffi.C.ffi_test_struct_noname(struct_p4)
+if (ret != 20) {
+	failed("ffi_test_struct_noname should return 20")
+}
+ffi.free(struct_p4)
