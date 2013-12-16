@@ -150,7 +150,7 @@ error:
 }
 
 static void kp_cdata_value(ktap_state *ks,
-		ktap_value *val, void **out_addr, size_t *out_size)
+		ktap_value *val, void **out_addr, size_t *out_size, void **temp)
 {
 	struct ktap_cdata *cd;
 	csymbol *cs;
@@ -170,9 +170,9 @@ static void kp_cdata_value(ktap_state *ks,
 		*out_size = sizeof(ktap_number);
 		return;
 	case KTAP_TSTRING:
-		/* TODO: should treat it as pointer here 15.12.2013(unihorn) */
-		*out_addr = (void *)svalue(val);
-		*out_size = rawtsvalue(val)->tsv.len;
+		*temp = (void *)svalue(val);
+		*out_addr = temp;
+		*out_size = sizeof(void *);
 		return;
 	}
 
@@ -213,9 +213,9 @@ static void kp_cdata_value(ktap_state *ks,
 void kp_cdata_unpack(ktap_state *ks, char *dst, csymbol *cs, ktap_value *val)
 {
 	size_t size = csym_size(ks, cs), val_size;
-	void *val_addr;
+	void *val_addr, *temp;
 
-	kp_cdata_value(ks, val, &val_addr, &val_size);
+	kp_cdata_value(ks, val, &val_addr, &val_size, &temp);
 	if (val_size > size)
 		val_size = size;
 	memmove(dst, val_addr, val_size);
@@ -226,9 +226,9 @@ void kp_cdata_unpack(ktap_state *ks, char *dst, csymbol *cs, ktap_value *val)
 void kp_cdata_pack(ktap_state *ks, ktap_value *val, char *src, csymbol *cs)
 {
 	size_t size = csym_size(ks, cs), val_size;
-	void *val_addr;
+	void *val_addr, *temp;
 
-	kp_cdata_value(ks, val, &val_addr, &val_size);
+	kp_cdata_value(ks, val, &val_addr, &val_size, &temp);
 	if (size > val_size)
 		size = val_size;
 	memmove(val_addr, src, size);
