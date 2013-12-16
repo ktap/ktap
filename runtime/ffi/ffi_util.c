@@ -24,6 +24,45 @@
 #include "../../include/ktap_ffi.h"
 #include "../ktap.h"
 
+static void init_csym_struct(ktap_state *ks, csymbol_struct *csst)
+{
+	int nr = csymst_mb_nr(csst);
+	size_t size = 0;
+	size_t align = 1;
+	int i;
+
+	for (i = 0; i < nr; i++) {
+		csymbol *var_cs = csymst_mb_csym(ks, csst, i);
+		size_t var_size = csym_size(ks, var_cs);
+		size_t var_align = csym_align(ks, var_cs);
+		size = ALIGN(size, var_align);
+		size += var_size;
+		align = align > var_align ? align : var_align;
+	}
+	size = ALIGN(size, align);
+	csst->size = size;
+	csst->align = align;
+}
+
+static void init_csym_union(ktap_state *ks, csymbol_struct *csst)
+{
+	int nr = csymst_mb_nr(csst);
+	size_t size = 0;
+	size_t align = 1;
+	int i;
+
+	for (i = 0; i < nr; i++) {
+		csymbol *var_cs = csymst_mb_csym(ks, csst, i);
+		size_t var_size = csym_size(ks, var_cs);
+		size_t var_align = csym_align(ks, var_cs);
+		size = size > var_size ? size : var_size;
+		align = align > var_align ? align : var_align;
+	}
+	csst->size = size;
+	csst->align = align;
+}
+
+
 size_t csym_size(ktap_state *ks, csymbol *cs)
 {
 	ffi_type type = csym_type(cs);
@@ -31,6 +70,10 @@ size_t csym_size(ktap_state *ks, csymbol *cs)
 	case FFI_STRUCT:
 		if (csym_struct(cs)->align == 0)
 			init_csym_struct(ks, csym_struct(cs));
+		return csym_struct(cs)->size;
+	case FFI_UNION:
+		if (csym_struct(cs)->align == 0)
+			init_csym_union(ks, csym_struct(cs));
 		return csym_struct(cs)->size;
 	default:
 		return ffi_type_size(type);
@@ -45,13 +88,18 @@ size_t csym_align(ktap_state *ks, csymbol *cs)
 		if (csym_struct(cs)->align == 0)
 			init_csym_struct(ks, csym_struct(cs));
 		return csym_struct(cs)->align;
+	case FFI_UNION:
+		if (csym_struct(cs)->align == 0)
+			init_csym_union(ks, csym_struct(cs));
+		return csym_struct(cs)->align;
 	default:
 		return ffi_type_align(type);
 	}
 }
 
-size_t csymst_mb_offset(ktap_state *ks, csymbol_struct *csst, int idx)
+size_t csym_record_mb_offset(ktap_state *ks, csymbol *cs, int idx)
 {
+	csymbol_struct *csst = csym_struct(cs);
 	int nr = csymst_mb_nr(csst);
 	size_t off = 0;
 	size_t align = 1;
@@ -59,6 +107,10 @@ size_t csymst_mb_offset(ktap_state *ks, csymbol_struct *csst, int idx)
 
 	if (idx < 0 || idx > nr)
 		return -1;
+
+	if (csym_type(cs) == FFI_UNION)
+		return 0;
+
 	for (i = 0; i <= idx; i++) {
 		csymbol *var_cs = csymst_mb_csym(ks, csst, i);
 		size_t var_size = csym_size(ks, var_cs);
@@ -85,22 +137,3 @@ int csymst_mb_idx_by_name(ktap_state *ks,
 }
 
 
-void init_csym_struct(ktap_state *ks, csymbol_struct *csst)
-{
-	int nr = csymst_mb_nr(csst);
-	size_t size = 0;
-	size_t align = 1;
-	int i;
-
-	for (i = 0; i < nr; i++) {
-		csymbol *var_cs = csymst_mb_csym(ks, csst, i);
-		size_t var_size = csym_size(ks, var_cs);
-		size_t var_align = csym_align(ks, var_cs);
-		size = ALIGN(size, var_align);
-		size += var_size;
-		align = align > var_align ? align : var_align;
-	}
-	size = ALIGN(size, align);
-	csst->size = size;
-	csst->align = align;
-}

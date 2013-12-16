@@ -192,8 +192,9 @@ static void gettable(ktap_state *ks, const ktap_value *t, ktap_value *key,
 			&& cd_type(ks, cdvalue(t)) == FFI_PTR) {
 		kp_cdata_ptr_get(ks, cdvalue(t), key, val);
 	} else if (is_cdata(t) && gcvalue(t) != NULL
-			&& cd_type(ks, cdvalue(t)) == FFI_STRUCT) {
-		kp_cdata_struct_get(ks, cdvalue(t), key, val);
+			&& (cd_type(ks, cdvalue(t)) == FFI_STRUCT
+			|| cd_type(ks, cdvalue(t)) == FFI_UNION)) {
+		kp_cdata_record_get(ks, cdvalue(t), key, val);
 #endif
 	} else {
 		kp_error(ks, "get key from non-table\n");
@@ -212,8 +213,9 @@ static void settable(ktap_state *ks, const ktap_value *t, ktap_value *key,
 			&& cd_type(ks, cdvalue(t)) == FFI_PTR) {
 		kp_cdata_ptr_set(ks, cdvalue(t), key, val);
 	} else if (is_cdata(t) && gcvalue(t) != NULL
-			&& cd_type(ks, cdvalue(t)) == FFI_STRUCT) {
-		kp_cdata_struct_set(ks, cdvalue(t), key, val);
+			&& (cd_type(ks, cdvalue(t)) == FFI_STRUCT
+			|| cd_type(ks, cdvalue(t)) == FFI_UNION)) {
+		kp_cdata_record_set(ks, cdvalue(t), key, val);
 #endif
 	} else {
 		kp_error(ks, "set key to non-table\n");

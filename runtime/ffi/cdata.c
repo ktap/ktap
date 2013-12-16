@@ -67,7 +67,7 @@ void kp_cdata_free_ptr(ktap_state *ks, ktap_cdata *cd)
 	cd_ptr_allocated(cd) = 0;
 }
 
-ktap_cdata *kp_cdata_new_struct(ktap_state *ks, void *val, csymbol_id id)
+ktap_cdata *kp_cdata_new_record(ktap_state *ks, void *val, csymbol_id id)
 {
 	ktap_cdata *cd;
 	size_t size;
@@ -196,6 +196,7 @@ static void kp_cdata_value(ktap_state *ks,
 		*out_addr = &cd_ptr(cd);
 		return;
 	case FFI_STRUCT:
+	case FFI_UNION:
 		*out_addr = cd_struct(cd);
 		return;
 	case FFI_FUNC:
@@ -242,7 +243,8 @@ void kp_cdata_init(ktap_state *ks, ktap_value *val, void *addr, csymbol_id id)
 		set_cdata(val, kp_cdata_new_ptr(ks, addr, 0, id));
 		break;
 	case FFI_STRUCT:
-		set_cdata(val, kp_cdata_new_struct(ks, addr, id));
+	case FFI_UNION:
+		set_cdata(val, kp_cdata_new_record(ks, addr, id));
 		break;
 	default:
 		set_cdata(val, kp_cdata_new(ks, id));
@@ -309,7 +311,7 @@ void kp_cdata_ptr_get(ktap_state *ks, ktap_cdata *cd,
 	kp_cdata_pack(ks, val, addr, cs);
 }
 
-void kp_cdata_struct_set(ktap_state *ks, ktap_cdata *cd,
+void kp_cdata_record_set(ktap_state *ks, ktap_cdata *cd,
 				 ktap_value *key, ktap_value *val)
 {
 	const char *mb_name;
@@ -339,11 +341,11 @@ void kp_cdata_struct_set(ktap_state *ks, ktap_cdata *cd,
 		return;
 	}
 	addr = cd_struct(cd);
-	addr += csymst_mb_offset(ks, csst, idx);
+	addr += csym_record_mb_offset(ks, cs, idx);
 	kp_cdata_unpack(ks, addr, mb_cs, val);
 }
 
-void kp_cdata_struct_get(ktap_state *ks, ktap_cdata *cd,
+void kp_cdata_record_get(ktap_state *ks, ktap_cdata *cd,
 				 ktap_value *key, ktap_value *val)
 {
 	const char *mb_name;
@@ -370,7 +372,7 @@ void kp_cdata_struct_get(ktap_state *ks, ktap_cdata *cd,
 	mb_cs_id = csymst_mb_id(csst, idx);
 	mb_cs = id_to_csym(ks, mb_cs_id);
 	addr = cd_struct(cd);
-	addr += csymst_mb_offset(ks, csst, idx);
+	addr += csym_record_mb_offset(ks, cs, idx);
 
 	kp_cdata_init(ks, val, addr, mb_cs_id);
 	kp_cdata_pack(ks, val, addr, mb_cs);

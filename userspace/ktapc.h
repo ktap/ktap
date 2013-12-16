@@ -390,4 +390,5 @@ typedef struct cp_csymbol_state {
 } cp_csymbol_state;
 
 cp_csymbol_state *ctype_get_csym_state(void);
+void ktapc_dump_csymbols();
 #endif

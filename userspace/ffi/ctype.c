@@ -238,7 +238,7 @@ void cp_symbol_dump_struct(int id)
 	__cp_symbol_dump_struct(cp_id_to_csym(id));
 }
 
-int cp_symbol_build_struct(const char *stname)
+int cp_symbol_build_record(const char *stname, int type)
 {
 	int i, id, memb_size;
 	cp_ctype_entry *cte;
@@ -246,13 +246,15 @@ int cp_symbol_build_struct(const char *stname)
 	struct_member *st_membs;
 	csymbol_struct *stcs;
 
-	if (cts.top <= 0 || !stname) {
-		cp_error("invalid struct definition.\n");
+	if (cts.top <= 0 || !stname ||
+			(type != STRUCT_TYPE && type != UNION_TYPE)) {
+		cp_error("invalid struct/union definition.\n");
 	}
 
 	id = ctype_lookup_csymbol_id(stname);
 	if (id >= 0) {
-		assert(cp_id_to_csym(id)->type == FFI_STRUCT);
+		assert(cp_id_to_csym(id)->type == FFI_STRUCT ||
+				cp_id_to_csym(id)->type == FFI_UNION);
 		assert(csym_struct(cp_id_to_csym(id))->memb_nr == -1);
 	}
 
@@ -262,7 +264,10 @@ int cp_symbol_build_struct(const char *stname)
 		cp_error("failed to allocate memory for struct members.\n");
 	memset(st_membs, 0, memb_size*sizeof(struct_member));
 
-	nst.type = FFI_STRUCT;
+	if (type == STRUCT_TYPE)
+		nst.type = FFI_STRUCT;
+	else
+		nst.type = FFI_UNION;
 	strcpy(nst.name, stname);
 
 	stcs = csym_struct(&nst);
@@ -288,21 +293,24 @@ int cp_symbol_build_struct(const char *stname)
 	return id;
 }
 
-int cp_symbol_build_fake_struct(const char *stname)
+int cp_symbol_build_fake_record(const char *stname, int type)
 {
 	int id;
 	csymbol nst;
 	csymbol_struct *stcs;
 
-	if (!stname) {
-		cp_error("invalid fake struct definition.\n");
+	if (!stname || (type != STRUCT_TYPE && type != UNION_TYPE)) {
+		cp_error("invalid fake struct/union definition.\n");
 	}
 
 	id = ctype_lookup_csymbol_id(stname);
 	if (id >= 0)
 		return id;
 
-	nst.type = FFI_STRUCT;
+	if (type == STRUCT_TYPE)
+		nst.type = FFI_STRUCT;
+	else
+		nst.type = FFI_UNION;
 	strcpy(nst.name, stname);
 
 	stcs = csym_struct(&nst);

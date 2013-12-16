@@ -124,7 +124,7 @@ static void ffi_call_x86_64(ktap_state *ks, csymbol_func *csf, void *rvalue)
 	rtype = csym_type(rsym);
 	rsize = csym_size(ks, rsym);
 	ret_in_memory = false;
-	if (rtype == FFI_STRUCT) {
+	if (rtype == FFI_STRUCT || rtype == FFI_UNION) {
 		if (rsize > 16) {
 			rvalue = kp_malloc(ks, rsize);
 			rtype = FFI_VOID;
@@ -293,7 +293,8 @@ static int ffi_set_return(ktap_state *ks, void *rvalue, csymbol_id ret_id)
 		set_cdata(ks->top, cd);
 		break;
 	case FFI_STRUCT:
-		cd = kp_cdata_new_struct(ks, rvalue, ret_id);
+	case FFI_UNION:
+		cd = kp_cdata_new_record(ks, rvalue, ret_id);
 		set_cdata(ks->top, cd);
 		break;
 	case FFI_FUNC:

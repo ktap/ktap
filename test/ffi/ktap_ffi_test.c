@@ -74,6 +74,19 @@ int ffi_test_struct_loop(struct ffi_struct_loop *s)
 }
 EXPORT_SYMBOL(ffi_test_struct_loop);
 
+union ffi_union {
+	int val;
+	int val2;
+	int val3;
+};
+
+int ffi_test_union(union ffi_union *s)
+{
+	return s->val;
+}
+EXPORT_SYMBOL(ffi_test_union);
+
+
 
 static int __init ffi_test_init(void)
 {

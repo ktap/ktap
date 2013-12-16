@@ -169,8 +169,8 @@ void cp_push_ctype(struct cp_ctype *ct);
 void cp_set_defined(struct cp_ctype *ct);
 
 int cp_symbol_build_func(struct cp_ctype *type, const char *fname, int fn_size);
-int cp_symbol_build_struct(const char *stname);
-int cp_symbol_build_fake_struct(const char *stname);
+int cp_symbol_build_record(const char *stname, int type);
+int cp_symbol_build_fake_record(const char *stname, int type);
 int cp_symbol_build_pointer(struct cp_ctype *ct);
 
 int ffi_parse_cdef(const char *s);

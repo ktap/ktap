@@ -215,6 +215,7 @@ static void DumpCSymbols(DumpState *D)
 			DumpCSymbolFunc(cs, D);
 			break;
 		case FFI_STRUCT:
+		case FFI_UNION:
 			DumpCSymbolStruct(cs, D);
 			break;
 		default:
@@ -414,6 +415,7 @@ void ktapc_dump_csymbols()
 			printf("\tHas variable arg: %d\n", csf->has_var_arg);
 			break;
 		case FFI_STRUCT:
+		case FFI_UNION:
 			csst = csym_struct(cs);
 			printf("\tMember number: %d\n", csst->memb_nr);
 			for (j = 0; j < csst->memb_nr; j++) {

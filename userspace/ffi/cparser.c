@@ -107,15 +107,24 @@ void cp_error(const char *err_msg_fmt, ...)
 	exit(EXIT_FAILURE);
 }
 
-static int set_struct_type_name(char *dst, const char *src, int len)
+static int set_type_name(char *dst, unsigned type, const char *src, int len)
 {
-	int prefix_len = sizeof("struct ");
+	int prefix_len;
+	char *prefix = NULL;
+
+	if (type == STRUCT_TYPE)
+		prefix = "struct ";
+	else if (type == UNION_TYPE)
+		prefix = "union ";
+	else
+		cp_error("Only set type name for struct or union\n");
+	prefix_len = sizeof(prefix);
 
 	if (len + prefix_len > MAX_TYPE_NAME_LEN)
 		return -1;
 
 	memset(dst, 0, MAX_TYPE_NAME_LEN);
-	strcpy(dst, "struct ");
+	strcpy(dst, prefix);
 	strncat(dst, src, len);
 
 	return 0;
@@ -556,7 +565,7 @@ static int parse_record(struct parser *P, struct cp_ctype *ct)
 		struct cp_ctype *lct;
 
 		memset(cur_type_name, 0, MAX_TYPE_NAME_LEN);
-		set_struct_type_name(cur_type_name, tok.str, tok.size);
+		set_type_name(cur_type_name, ct->type, tok.str, tok.size);
 ;
 		/* lookup the name to see if we've seen this type before */
 		lct = ctype_lookup_type(cur_type_name);
@@ -594,7 +603,8 @@ static int parse_record(struct parser *P, struct cp_ctype *ct)
 		put_back(P);
 
 		/* build symbol for vm */
-		ct->ffi_base_cs_id = cp_symbol_build_fake_struct(cur_type_name);
+		ct->ffi_base_cs_id =
+			cp_symbol_build_fake_record(cur_type_name, ct->type);
 		ct->ffi_cs_id = ct->ffi_base_cs_id;
 		return 0;
 	}
@@ -616,7 +626,7 @@ static int parse_record(struct parser *P, struct cp_ctype *ct)
 		parse_struct(P, ct);
 		cp_set_defined(ct);
 		/* build symbol for vm */
-		ct->ffi_base_cs_id = cp_symbol_build_struct(cur_type_name);
+		ct->ffi_base_cs_id = cp_symbol_build_record(cur_type_name, ct->type);
 		ct->ffi_cs_id = ct->ffi_base_cs_id;
 		/* save cp_ctype for parser */
 		cp_ctype_reg_type(cur_type_name, ct);

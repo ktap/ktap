@@ -309,6 +309,7 @@ static int load_csymbols(struct load_state *S)
 			load_csymbol_func(S, cs);
 			break;
 		case FFI_STRUCT:
+		case FFI_UNION:
 			load_csymbol_struct(S, cs);
 			break;
 		default:

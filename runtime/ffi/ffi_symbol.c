@@ -134,6 +134,7 @@ static int setup_ffi_symbol_table(ktap_state *ks)
 			kp_verbose_printf(ks, "%s loaded\n", csym_name(cs));
 			break;
 		case FFI_STRUCT:
+		case FFI_UNION:
 			break;
 		default:
 			break;
@@ -161,6 +162,7 @@ void ffi_free_symbols(ktap_state *ks)
 				kp_free(ks, arg_ids);
 			break;
 		case FFI_STRUCT:
+		case FFI_UNION:
 			/*@TODO finish this  20.11 2013 (houqp)*/
 			break;
 		default:

@@ -23,6 +23,12 @@ ffi.cdef[[
 		struct ffi_struct_loop *next;
 	};
 	int ffi_test_struct_loop(struct ffi_struct_loop *s);
+	union ffi_union {
+		int val;
+		int val2;
+		int val3;
+	};
+	int ffi_test_union(union ffi_union *s);
 ]]
 
 
@@ -82,3 +88,16 @@ if (ret != 10) {
 	failed("ffi_test_struct_loop should return 10")
 }
 ffi.free(struct_p2)
+
+union_p = ffi.new("union ffi_union[1]")
+union_p[0].val = 20
+ret = ffi.C.ffi_test_union(union_p)
+if (ret != 20) {
+	failed("ffi_test_union should return 20")
+}
+union_p[0].val2 = 10
+ret = ffi.C.ffi_test_union(union_p)
+if (ret != 10) {
+	failed("ffi_test_union should return 10")
+}
+ffi.free(union_p)

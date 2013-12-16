@@ -47,5 +47,6 @@ const ffi_mode ffi_type_modes[NUM_FFI_TYPE+1] = {
 	CTYPE_MODE(pointer),
 	{0, 1, "function"},
 	{0, 1, "struct"},
+	{0, 1, "union"},
 	{0, 1, "unknown"},
 };
