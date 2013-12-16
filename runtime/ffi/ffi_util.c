@@ -32,6 +32,11 @@ static void init_csym_struct(ktap_state *ks, csymbol_struct *csst)
 	int i, var_len;
 	size_t var_size, var_align;
 
+	if (csymst_mb_nr(csst) < 0) {
+		kp_error(ks, "Find size of undefined struct");
+		return;
+	}
+
 	for (i = 0; i < nr; i++) {
 		csymbol *var_cs = csymst_mb_csym(ks, csst, i);
 		var_len = csymst_mb_len(csst, i);
@@ -58,6 +63,11 @@ static void init_csym_union(ktap_state *ks, csymbol_struct *csst)
 	size_t align = 1;
 	int i, var_len;
 	size_t var_size, var_align;
+
+	if (csymst_mb_nr(csst) < 0) {
+		kp_error(ks, "Find size of undefined struct");
+		return;
+	}
 
 	for (i = 0; i < nr; i++) {
 		csymbol *var_cs = csymst_mb_csym(ks, csst, i);
@@ -121,6 +131,11 @@ size_t csym_record_mb_offset_by_name(ktap_state *ks,
 	int i, var_len;
 	size_t var_size, var_align;
 
+	if (nr < 0) {
+		kp_error(ks, "Find size of undefined struct");
+		return 0;
+	}
+
 	for (i = 0; i < nr; i++) {
 		csymbol *var_cs = csymst_mb_csym(ks, csst, i);
 		var_len = csymst_mb_len(csst, i);
@@ -161,6 +176,11 @@ struct_member *csymst_mb_by_name(ktap_state *ks,
 	int i;
 	struct_member *memb;
 	csymbol *cs = NULL;
+
+	if (nr < 0) {
+		kp_error(ks, "Find size of undefined struct");
+		return NULL;
+	}
 
 	for (i = 0; i < nr; i++) {
 		if (!strcmp(name, csymst_mb_name(csst, i)))

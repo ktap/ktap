@@ -278,8 +278,10 @@ static void load_csymbol_struct(struct load_state *S, csymbol *cs)
 	csymbol_struct *csst = csym_struct(cs);
 	int mb_nr = csymst_mb_nr(csst);
 
-	csst->members = NEW_VECTOR(S, mb_nr*sizeof(struct_member));
-	READ_VECTOR(S, csst->members, mb_nr*sizeof(struct_member));
+	if (mb_nr >= 0) {
+		csst->members = NEW_VECTOR(S, mb_nr*sizeof(struct_member));
+		READ_VECTOR(S, csst->members, mb_nr*sizeof(struct_member));
+	}
 }
 
 static int load_csymbols(struct load_state *S)

@@ -186,7 +186,8 @@ static void DumpCSymbolStruct(csymbol *cs, DumpState *D)
 
 	DumpBlock(cs, sizeof(csymbol), D);
 	/* dump csymbol index for argument types */
-	DumpBlock(csst->members, csst->memb_nr*sizeof(struct_member), D);
+	if (csst->memb_nr >= 0)
+		DumpBlock(csst->members, csst->memb_nr*sizeof(struct_member), D);
 }
 
 static void DumpCSymbols(DumpState *D)

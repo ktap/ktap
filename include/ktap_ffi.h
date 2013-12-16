@@ -139,7 +139,8 @@ inline csymbol *ffi_get_csym_by_id(ktap_state *ks, csymbol_id id);
  */
 #define csymst_mb_nr(csst) ((csst)->memb_nr)
 #define csym_struct(cs) (&(cs)->u.st)
-#define csym_struct_mb(cs) (csymst_mb(csym_struct(cs), n))
+#define csym_struct_mb(cs, n) (csymst_mb(csym_struct(cs), n))
+#define csym_struct_mb_nr(cs) (csymst_mb_nr(csym_struct(cs)))
 /* following macro gets csymbol address for the nth struct member */
 #define csymst_mb(csst, n) (&(csst)->members[n])
 #define csymst_mb_name(csst, n) ((csst)->members[n].name)
