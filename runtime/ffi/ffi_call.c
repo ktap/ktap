@@ -289,7 +289,7 @@ static int ffi_set_return(ktap_state *ks, void *rvalue, csymbol_id ret_id)
 		set_number(ks->top, (ktap_number)rvalue);
 		break;
 	case FFI_PTR:
-		cd = kp_cdata_new_ptr(ks, rvalue, 0, ret_id);
+		cd = kp_cdata_new_ptr(ks, rvalue, -1, ret_id, 0);
 		set_cdata(ks->top, cd);
 		break;
 	case FFI_STRUCT:

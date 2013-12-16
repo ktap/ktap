@@ -34,27 +34,29 @@ ktap_cdata *kp_cdata_new(ktap_state *ks, csymbol_id id)
 	return cd;
 }
 
-/* argument len here indicates the length of array that is pointed to */
+/* argument nmemb here indicates the length of array that is pointed to,
+ * -1 for unknown */
 ktap_cdata *kp_cdata_new_ptr(ktap_state *ks, void *addr,
-		int len, csymbol_id id)
+				int nmemb, csymbol_id id, int to_allocate)
 {
 	ktap_cdata *cd;
-	size_t size;
+	size_t memb_size;
 	csymbol_id deref_id;
 
 	cd = kp_cdata_new(ks, id);
 
-	/* if len > 0, allocate new empty space */
-	if (len > 0) {
+	if (to_allocate) {
+		/* allocate new empty space */
 		/* TODO: free the space when exit the program unihorn(08.12.2013) */
 		deref_id = csym_ptr_deref_id(id_to_csym(ks, id));
-		size = csym_size(ks, id_to_csym(ks, deref_id));
-		cd_ptr(cd) = kp_zalloc(ks, size * len);
+		memb_size = csym_size(ks, id_to_csym(ks, deref_id));
+		cd_ptr(cd) = kp_zalloc(ks, memb_size * nmemb);
 		cd_ptr_allocated(cd) = 1;
 	} else {
 		cd_ptr(cd) = addr;
 		cd_ptr_allocated(cd) = 0;
 	}
+	cd_ptr_nmemb(cd) = nmemb;
 
 	return cd;
 }
@@ -234,13 +236,14 @@ void kp_cdata_pack(ktap_state *ks, ktap_value *val, char *src, csymbol *cs)
 }
 
 /* Init its cdata type, but not its actual value */
-void kp_cdata_init(ktap_state *ks, ktap_value *val, void *addr, csymbol_id id)
+void kp_cdata_init(ktap_state *ks, ktap_value *val, void *addr,
+		int len, csymbol_id id)
 {
 	ffi_type type = csym_type(id_to_csym(ks, id));
 
 	switch (type) {
 	case FFI_PTR:
-		set_cdata(val, kp_cdata_new_ptr(ks, addr, 0, id));
+		set_cdata(val, kp_cdata_new_ptr(ks, addr, len, id, 0));
 		break;
 	case FFI_STRUCT:
 	case FFI_UNION:
@@ -266,9 +269,11 @@ void kp_cdata_ptr_set(ktap_state *ks, ktap_cdata *cd,
 		return;
 	}
 	idx = nvalue(key);
-	/* TODO: add check on index later
-	 * This is important because I don't want to crash the kernel
-	 * unihorn(09.12.2013) */
+	if (unlikely(idx < 0 || (cd_ptr_nmemb(cd) >= 0
+					&& idx >= cd_ptr_nmemb(cd)))) {
+		kp_error(ks, "array index out of bound\n");
+		return;
+	}
 
 	cs = csym_ptr_deref(ks, cd_csym(ks, cd));
 	if (kp_cdata_type_match(ks, cs, val)) {
@@ -297,9 +302,11 @@ void kp_cdata_ptr_get(ktap_state *ks, ktap_cdata *cd,
 		return;
 	}
 	idx = nvalue(key);
-	/* TODO: add check on index later
-	 * This is important because I don't want to crash the kernel
-	 * unihorn(09.12.2013) */
+	if (unlikely(idx < 0 || (cd_ptr_nmemb(cd) >= 0
+					&& idx >= cd_ptr_nmemb(cd)))) {
+		kp_error(ks, "array index out of bound\n");
+		return;
+	}
 
 	cs_id = csym_ptr_deref_id(cd_csym(ks, cd));
 	cs = id_to_csym(ks, cs_id);
@@ -307,7 +314,7 @@ void kp_cdata_ptr_get(ktap_state *ks, ktap_cdata *cd,
 	addr = cd_ptr(cd);
 	addr += size * idx;
 
-	kp_cdata_init(ks, val, addr, cs_id);
+	kp_cdata_init(ks, val, addr, -1, cs_id);
 	kp_cdata_pack(ks, val, addr, cs);
 }
 
@@ -374,7 +381,7 @@ void kp_cdata_record_get(ktap_state *ks, ktap_cdata *cd,
 	addr = cd_struct(cd);
 	addr += csym_record_mb_offset_by_name(ks, cs, mb_name);
 
-	kp_cdata_init(ks, val, addr, mb_cs_id);
+	kp_cdata_init(ks, val, addr, mb->len, mb_cs_id);
 	if (mb->len < 0)
 		kp_cdata_pack(ks, val, addr, mb_cs);
 }

@@ -12,7 +12,7 @@ typedef char u8;
 #endif
 
 /*
- * The first argument type of kdebug.probe_by_id() 
+ * The first argument type of kdebug.probe_by_id()
  * The value is a userspace memory pointer.
  * Maybe embed it info trunk file in future.
  */
@@ -276,9 +276,10 @@ typedef struct ktap_cdata {
 		uint64_t i;
 		struct {
 			void *addr;
+			int nmemb;	/* number of memory block */
 			int allocated;
-		} p;	/* pointer data */
-		void *st;	/* struct member data */
+		} p;			/* pointer data */
+		void *st;		/* struct member data */
 	} u;
 } ktap_cdata;
 #endif

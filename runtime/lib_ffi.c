@@ -51,7 +51,7 @@ static int kplib_ffi_new(ktap_state *ks)
 	kp_verbose_printf(ks, "ffi.new symbol %s with length %d\n",
 			id_to_csym(ks, cs_id)->name, array_size);
 
-	cd = kp_cdata_new_ptr(ks, NULL, array_size, cs_id);
+	cd = kp_cdata_new_ptr(ks, NULL, array_size, cs_id, 1);
 	set_cdata(ks->top, cd);
 	incr_top(ks);
 
