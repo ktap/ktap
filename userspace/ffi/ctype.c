@@ -90,9 +90,14 @@ int ctype_stack_free_space()
 	return cts.size - cts.top;
 }
 
-void ctype_stack_reset()
+int ctype_stack_top()
 {
-	cts.top = 0;
+	return cts.top;
+}
+
+void ctype_stack_reset(int top)
+{
+	cts.top = top;
 }
 
 /* This function should be called before you would fetch
@@ -238,7 +243,7 @@ void cp_symbol_dump_struct(int id)
 	__cp_symbol_dump_struct(cp_id_to_csym(id));
 }
 
-int cp_symbol_build_record(const char *stname, int type)
+int cp_symbol_build_record(const char *stname, int type, int start_top)
 {
 	int i, id, memb_size;
 	cp_ctype_entry *cte;
@@ -247,7 +252,7 @@ int cp_symbol_build_record(const char *stname, int type)
 	csymbol_struct *stcs;
 	struct cp_ctype *ct;
 
-	if (cts.top <= 0 || !stname ||
+	if (cts.top <= start_top || !stname ||
 			(type != STRUCT_TYPE && type != UNION_TYPE)) {
 		cp_error("invalid struct/union definition.\n");
 	}
@@ -259,7 +264,7 @@ int cp_symbol_build_record(const char *stname, int type)
 		assert(csym_struct(cp_id_to_csym(id))->memb_nr == -1);
 	}
 
-	memb_size = cts.top;
+	memb_size = cts.top - start_top;
 	st_membs = malloc(memb_size*sizeof(struct_member));
 	if (!st_membs)
 		cp_error("failed to allocate memory for struct members.\n");
@@ -277,11 +282,10 @@ int cp_symbol_build_record(const char *stname, int type)
 	stcs->members = st_membs;
 
 	for (i = 0; i < memb_size; i++) {
-		assert(i < cts.top);
-		cte = ct_stack(i);
+		cte = ct_stack(i + start_top);
 		if (cte->name)
 			strcpy(st_membs[i].name, cte->name);
-		ct = ct_stack_ct(i);
+		ct = ct_stack_ct(i + start_top);
 		st_membs[i].id = ct->ffi_cs_id;
 		if (!ct->is_array)
 			st_membs[i].len = -1;
@@ -294,7 +298,7 @@ int cp_symbol_build_record(const char *stname, int type)
 	else
 		cs_arr[id] = nst;
 
-	ctype_stack_reset();
+	ctype_stack_reset(start_top);
 
 	return id;
 }
@@ -425,7 +429,7 @@ int cp_symbol_build_func(struct cp_ctype *type, const char *fname, int fn_size)
 	id = cp_ctype_reg_csymbol(&nfcs);
 
 	/* clear stack since we have consumed all the ctypes */
-	ctype_stack_reset();
+	ctype_stack_reset(0);
 
 	return id;
 }

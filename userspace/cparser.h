@@ -156,6 +156,7 @@ csymbol *cp_id_to_csym(int id);
 #define ct_ffi_cs(ct) (cp_id_to_csym((ct)->ffi_cs_id))
 
 size_t ctype_size(const struct cp_ctype* ct);
+int ctype_stack_top();
 int cp_ctype_init();
 int cp_ctype_free();
 struct cp_ctype *ctype_lookup_type(char *name);
@@ -169,7 +170,7 @@ void cp_push_ctype(struct cp_ctype *ct);
 void cp_set_defined(struct cp_ctype *ct);
 
 int cp_symbol_build_func(struct cp_ctype *type, const char *fname, int fn_size);
-int cp_symbol_build_record(const char *stname, int type);
+int cp_symbol_build_record(const char *stname, int type, int start_top);
 int cp_symbol_build_fake_record(const char *stname, int type);
 int cp_symbol_build_pointer(struct cp_ctype *ct);
 

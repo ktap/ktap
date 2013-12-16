@@ -623,6 +623,7 @@ static int parse_record(struct parser *P, struct cp_ctype *ct)
 		parse_enum(P, ct);
 		cp_set_defined(ct);
 	} else {
+		int start_top = ctype_stack_top();
 		/* we do a two stage parse, where we parse the content first
 		 * and build up the temp user table. We then iterate over that
 		 * to calculate the offsets and fill out ct_usr. This is so we
@@ -631,7 +632,8 @@ static int parse_record(struct parser *P, struct cp_ctype *ct)
 		parse_struct(P, ct);
 		cp_set_defined(ct);
 		/* build symbol for vm */
-		ct->ffi_base_cs_id = cp_symbol_build_record(cur_type_name, ct->type);
+		ct->ffi_base_cs_id = cp_symbol_build_record(
+				cur_type_name, ct->type, start_top);
 		ct->ffi_cs_id = ct->ffi_base_cs_id;
 		/* save cp_ctype for parser */
 		cp_ctype_reg_type(cur_type_name, ct);
