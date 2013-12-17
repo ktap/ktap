@@ -1,6 +1,6 @@
 #!/usr/bin/env ktap
 
-function failed() {
+local function failed() {
 	printf("failed\n");
 	exit(-1);
 }
@@ -15,8 +15,8 @@ if (200 < 100) {
 	failed()
 }
 
-a = 4
-b = 5
+local a = 4
+local b = 5
 
 if ((a + b) != 9) {
 	failed()

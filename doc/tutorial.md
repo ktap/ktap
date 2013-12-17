@@ -566,7 +566,7 @@ For more release info, please look at RELEASES.txt in project root directory.
 
 5. syscall tracing in histogram style
 
-        s = {}
+        local s = {}
 
         trace syscalls:sys_enter_* {
                 s[argname] += 1

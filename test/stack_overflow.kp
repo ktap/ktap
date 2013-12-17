@@ -2,7 +2,7 @@
 
 #this script check overflow in ktap
 
-function f(a) {
+local function f(a) {
 	return 1 + f(a+1)
 }
 

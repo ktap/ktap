@@ -1,13 +1,13 @@
 #!/usr/bin/env ktap
 
-function failed() {
+local function failed() {
 	printf("failed\n");
 	exit(-1);
 }
 
 #-----------------------------------------#
 
-t = {}
+local t = {}
 t[1] = 101
 t[2] = 102
 t[3] = 103
@@ -47,23 +47,23 @@ if (n != len(t)) {
 
 #-------------------------------------------------#
 
-s = {}
+local s = {}
 s[1] = 12
 s[2] = 2
 s[3] = 3
 s["124"] = 100
 s["125"] = -1
 
-ordered = {}
+local ordered = {}
 
-number = 0
+local number = 0
 
-function cmp(v1, v2) {
+local function cmp(v1, v2) {
 	return (v1 > v2)
 }
 
 for (k, v in sort_pairs(s, cmp)) {
-	number += 1
+	number = number + 1
 	ordered[number] = v
 }
 
@@ -82,3 +82,4 @@ if (ordered[4] != 2) {
 if (ordered[5] != -1) {
 	failed()
 }
+

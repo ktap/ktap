@@ -73,7 +73,7 @@ More information can be found at [ktap homepage][homepage].
 
 5. syscall tracing in histogram style
 
-        s = {}
+        local s = {}
 
         trace syscalls:sys_enter_* {
                 s[argname] += 1

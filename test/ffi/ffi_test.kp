@@ -1,4 +1,4 @@
-function failed(msg) {
+local function failed(msg) {
 	printf("failed: " .. msg);
 	printf("\n")
 	exit(-1);

@@ -1,6 +1,6 @@
 #!/usr/bin/env ktap
 
-function failed() {
+local function failed() {
 	printf("failed\n");
 	exit(-1);
 }

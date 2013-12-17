@@ -1,14 +1,14 @@
 #!/usr/bin/env ktap
 
-function failed() {
+local function failed() {
 	printf("failed\n");
 	exit(-1);
 }
 
 #-----------------------------------------#
 
-a = `generic_file_buffered_write`
-b = `generic_file_mmap`
+local a = `generic_file_buffered_write`
+local b = `generic_file_mmap`
 
 printf("generic_file_buffered_write: 0x%x\n", a);
 printf("generic_file_mmap: 0x%x\n", b);
