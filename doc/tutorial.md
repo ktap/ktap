@@ -619,13 +619,13 @@ For more release info, please look at RELEASES.txt in project root directory.
                 printf("time fired on every cpu\n");
         }
 
-10. FFI (Call kernel function from ktap script, need compile with FFI=1)
+10. FFI (Call kernel function from ktap script, need to compile with FFI=1)
 
-        cdef[[
+        ffi.cdef[[
                 int printk(char *fmt, ...);
         ]]
 
-        C.printk("This message is called from ktap ffi\n")
+        ffi.C.printk("This message is called from ktap ffi\n")
 
 More examples can be found at [samples][samples_dir] directory.
 
