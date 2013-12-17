@@ -149,9 +149,34 @@ static ktap_upval *findupval(ktap_state *ks, StkId level)
 	return uv;
 }
 
-/* todo: implement this*/
-static void function_close (ktap_state *ks, StkId level)
+static void unlinkupval(ktap_upval *uv)
 {
+	uv->u.l.next->u.l.prev = uv->u.l.prev;  /* remove from `uvhead' list */
+	uv->u.l.prev->u.l.next = uv->u.l.next;
+}
+
+void kp_freeupval(ktap_state *ks, ktap_upval *uv)
+{
+	if (uv->v != &uv->u.value)  /* is it open? */
+		unlinkupval(uv);  /* remove from open list */
+	kp_free(ks, uv);  /* free upvalue */
+}
+
+/* close upvals */
+static void function_close(ktap_state *ks, StkId level)
+{
+	ktap_upval *uv;
+	ktap_global_state *g = G(ks);
+	while (ks->openupval != NULL &&
+		(uv = gco2uv(ks->openupval))->v >= level) {
+		ktap_gcobject *o = obj2gco(uv);
+		ks->openupval = uv->next;  /* remove from `open' list */
+		unlinkupval(uv);  /* remove upvalue from 'uvhead' list */
+		set_obj(&uv->u.value, uv->v);  /* move value to upvalue slot */
+		uv->v = &uv->u.value;  /* now current value lives here */
+		gch(o)->next = g->allgc;  /* link upvalue into 'allgc' list */
+		g->allgc = o;
+	}
 }
 
 /* create a new closure */
@@ -161,19 +186,19 @@ static void pushclosure(ktap_state *ks, ktap_proto *p, ktap_upval **encup,
 	int nup = p->sizeupvalues;
 	ktap_upvaldesc *uv = p->upvalues;
 	int i;
-	ktap_closure *ncl = kp_obj_newclosure(ks, nup);
+	ktap_closure *cl = kp_obj_newclosure(ks, nup);
 
-	ncl->p = p;
-	set_closure(ra, ncl);  /* anchor new closure in stack */
+	cl->p = p;
+	set_closure(ra, cl);  /* anchor new closure in stack */
 
 	/* fill in its upvalues */
 	for (i = 0; i < nup; i++) {
 		if (uv[i].instack) {
 			/* upvalue refers to local variable? */
-			ncl->upvals[i] = findupval(ks, base + uv[i].idx);
+			cl->upvals[i] = findupval(ks, base + uv[i].idx);
 		} else {
 			/* get upvalue from enclosing function */
-			ncl->upvals[i] = encup[uv[i].idx];
+			cl->upvals[i] = encup[uv[i].idx];
 		}
 	}
 	//p->cache = ncl;  /* save it on cache for reuse */
@@ -1217,7 +1242,10 @@ static void free_all_ci(ktap_state *ks)
 void kp_thread_exit(ktap_state *ks)
 {
 	/* free local allocation objects, like annotate strings */
-	kp_obj_free_gclist(ks, ks->gclist);
+	if (ks->gclist)
+		kp_obj_free_gclist(ks, ks->gclist);
+	if (ks->openupval)
+		kp_obj_free_gclist(ks, ks->openupval);
 }
 
 ktap_state *kp_thread_new(ktap_state *mainthread)
@@ -1462,9 +1490,11 @@ ktap_state *kp_newstate(ktap_parm *parm, struct dentry *dir)
 	G(ks)->task = current;
 	G(ks)->parm = parm;
 	G(ks)->str_lock = (arch_spinlock_t)__ARCH_SPIN_LOCK_UNLOCKED;
+	G(ks)->uvhead.u.l.prev = &G(ks)->uvhead;
+	G(ks)->uvhead.u.l.next = &G(ks)->uvhead;
+	G(ks)->exit = 0;
 	INIT_LIST_HEAD(&(G(ks)->timers));
 	INIT_LIST_HEAD(&(G(ks)->probe_events_head));
-	G(ks)->exit = 0;
 
 	if (init_stats(ks))
 		goto out;

@@ -149,7 +149,6 @@ typedef struct ktap_closure {
 	u8 nupvalues;
 	struct ktap_proto *p;
 	struct ktap_upval *upvals[1];  /* list of upvalues */
-	ktap_gcobject *gclist;
 } ktap_closure;
 
 typedef struct ktap_proto {

@@ -49,6 +49,7 @@ void kp_perf_event_register(ktap_state *ks, struct perf_event_attr *attr,
 void kp_event_getarg(ktap_state *ks, ktap_value *ra, int n);
 void kp_event_tostring(ktap_state *ks, struct trace_seq *seq);
 void kp_exit_timers(ktap_state *ks);
+void kp_freeupval(ktap_state *ks, ktap_upval *uv);
 
 extern int kp_max_exec_count;
 

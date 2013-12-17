@@ -358,8 +358,9 @@ void kp_obj_clone(ktap_state *ks, const ktap_value *o, ktap_value *newo,
 ktap_closure *kp_obj_newclosure(ktap_state *ks, int n)
 {
 	ktap_closure *cl;
+	int size = sizeof(ktap_closure) + sizeof(ktap_upval *) * (n - 1);
 
-	cl = (ktap_closure *)kp_obj_newobject(ks, KTAP_TCLOSURE, sizeof(*cl), NULL);
+	cl = (ktap_closure *)kp_obj_newobject(ks, KTAP_TCLOSURE, size, NULL);
 	cl->p = NULL;
 	cl->nupvalues = n;
 	while (n--)
@@ -417,6 +418,9 @@ void kp_obj_free_gclist(ktap_state *ks, ktap_gcobject *o)
 			break;
 		case KTAP_TPROTO:
 			free_proto(ks, (ktap_proto *)o);
+			break;
+		case KTAP_TUPVAL:
+			kp_freeupval(ks, (ktap_upval *)o);
 			break;
 		case KTAP_TPTABLE:
 			kp_ptab_free(ks, (ktap_ptab *)o);
