@@ -2,5 +2,5 @@ ffi.cdef[[
 	unsigned long long sched_clock();
 ]]
 
-ret = ffi.C.sched_clock()
+local ret = ffi.C.sched_clock()
 print("C.sched_clock returned, value: ", ret)

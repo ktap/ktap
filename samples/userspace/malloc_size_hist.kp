@@ -10,7 +10,7 @@
 # ktap malloc_size_hist.kp
 # ktap malloc_size_hist.kp -- ls
 
-m = {}
+local m = {}
 
 trace probe:/lib64/libc.so.6:malloc size=%di {
 	#arg2 is argument "size" of malloc function

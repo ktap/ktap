@@ -1,7 +1,7 @@
 #!/usr/bin/env ktap
 
-soft_disabled = 1
-this_cpu = 0
+local soft_disabled = 1
+local this_cpu = 0
 
 trace syscalls:sys_enter_open {
 	print(argevent)

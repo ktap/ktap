@@ -1,6 +1,6 @@
 #!/usr/bin/env ktap
 
-kmalloc_stack = {}
+local kmalloc_stack = {}
 
 trace kmem:kmalloc {
 	kmalloc_stack[backtrace()] += 1

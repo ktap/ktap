@@ -8,20 +8,20 @@
 #sometime you will found there have sleep time for command "ls", the reason
 #is that sleep time is belong to parent process bash, so clear on this.
 
-RUNNING = 0
-QUEUED = 1
-SLEEPING = 2
-DEAD = 64
+local RUNNING = 0
+local QUEUED = 1
+local SLEEPING = 2
+local DEAD = 64
 
-run_time = {}
-queued_time = {}
-sleep_time = {}
-io_wait_time = {}
+local run_time = {}
+local queued_time = {}
+local sleep_time = {}
+local io_wait_time = {}
 
-pid_state = {}
-pid_names = {}
-prev_timestamp = {}
-io_wait = {}
+local pid_state = {}
+local pid_names = {}
+local prev_timestamp = {}
+local io_wait = {}
 
 trace sched:sched_switch {
 	local prev_comm = arg1

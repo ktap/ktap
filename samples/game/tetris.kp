@@ -33,7 +33,7 @@
 # utils
 #
  
-function rand(max) {
+local function rand(max) {
 	r = gettimeofday_us()
 	if (r < 0) {
 		r = r * -1
@@ -41,7 +41,9 @@ function rand(max) {
 	return r % max
 }
 
-function update_display() {
+local display_buffer = {}
+
+local function update_display() {
 	for (i = 0, 239, 1) {
 		if ((i % 12 - 11) != 0) {
 			tmp = ""
@@ -70,25 +72,24 @@ function update_display() {
 # global value
 #
 
-empty = -1
+local empty = -1
 
-key_code = 0
-point = 0
-block_number = 0
-height = 0
-height_update = 0
+local key_code = 0
+local point = 0
+local block_number = 0
+local height = 0
+local height_update = 0
+
+local destination_position = {}
  
-destination_position = {}
-display_buffer = {}
- 
-block_data0 = {}
-block_data1 = {}
-block_data2 = {}
-block_data3 = {}
-block_data4 = {}
-block_data5 = {}
-block_data6 = {}
-block_table = {}
+local block_data0 = {}
+local block_data1 = {}
+local block_data2 = {}
+local block_data3 = {}
+local block_data4 = {}
+local block_data5 = {}
+local block_data6 = {}
+local block_table = {}
  
 #
 # Initialize

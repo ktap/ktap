@@ -1,6 +1,6 @@
 #! /usr/bin/env ktap
 
-s = {}
+local s = {}
 
 trace syscalls:sys_enter_* {
 	s[argname] += 1

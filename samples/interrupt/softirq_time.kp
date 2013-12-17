@@ -1,8 +1,8 @@
 #!/usr/bin/env ktap
 
 #this script output each average consumimg time of each softirq line
-s = ptable()
-map = {}
+local s = ptable()
+local map = {}
 
 trace irq:softirq_entry {
 	map[cpu()] = gettimeofday_us()

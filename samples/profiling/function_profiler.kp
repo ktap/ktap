@@ -4,7 +4,7 @@
 #You can use this script to know what function is called frequently,
 #without enable CONFIG_FUNCTION_PROFILER in kernel.
 
-s = ptable()
+local s = ptable()
 
 trace ftrace:function {
 	s[arg1] <<< 1

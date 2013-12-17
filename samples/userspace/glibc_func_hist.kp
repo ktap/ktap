@@ -5,7 +5,7 @@
 #only tested in x86-64 system,
 #if you run this script in x86_32, change the libc path.
 
-s = {}
+local s = {}
 
 trace probe:/lib64/libc.so.6:* {
 	s[argname] += 1

@@ -2,9 +2,9 @@
 
 # Based on systemtap traceio.stp
 
-reads = ptable()
-writes = ptable()
-total_io = ptable()
+local reads = ptable()
+local writes = ptable()
+local total_io = ptable()
 
 trace syscalls:sys_exit_read {
 	reads[execname()] <<< arg2
@@ -16,7 +16,7 @@ trace syscalls:sys_exit_write {
 	total_io[execname()] <<< arg2
 }
 
-function humanread_digit(bytes) {
+local function humanread_digit(bytes) {
 	if (bytes > 1024*1024*1024) {
 		return bytes/1024/1024/1024
 	} elseif (bytes > 1024*1024) {
@@ -28,7 +28,7 @@ function humanread_digit(bytes) {
 	}
 }
 
-function humanread_x(bytes) {
+local function humanread_x(bytes) {
 	if (bytes > 1024*1024*1024) {
 		return " GiB"
 	} elseif (bytes > 1024*1024) {
