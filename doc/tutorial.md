@@ -194,7 +194,6 @@ gdb vmlinux
 **print_backtrace ()**  
 print current task stack info
 
-
 ## Librarys
 
 ### Kdebug Library
@@ -232,6 +231,26 @@ User don't have to use kdebug library directly, use trace/trace_end keyword.
 
 **table.new (narr, nrec)**  
 pre-allocate table with narr array entries and nrec records.
+
+### FFI Library
+
+To use FFI library, you need to first build ktap with FFI support: `make FFI=1`.
+
+All the C code are parsed when generating VM bytecodes, so the parsing process introduces no overhead to runtime. However, it might slow down the compiling, i.e. startup process.
+
+**ffi.cdef [[s]]**
+
+This is a special keyword that accepts a string, which defines C types and functions just like a C header file does. Each defined C function can be accessed in ffi.C table. So if you definied a function foo in ffi.cdef, you can call the function with ffi.C.foo().
+
+**ffi.new (s)**
+
+Parses a C type string and creates a ktap cdata object accordingly.
+
+NOTE: currently, there is no GC in ktap, so you need to free this cdata object manually by calling ffi.free, see below.
+
+**ffi.free (cd)**
+
+Frees an cdata object allocated by ffi.new.
 
 # Linux tracing basics
 
