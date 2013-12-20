@@ -29,8 +29,16 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <string.h>
+#include <linux/limits.h>
 
 #include <libelf.h>
+
+#include "../include/ktap_types.h"
+#include "ktapc.h"
+#include "symbol.h"
+
+const char *dbg_link_name = ".gnu_debuglink";
+const char *dbg_bin_dir = "/usr/lib/debug";
 
 static Elf_Scn *elf_section_by_name(Elf *elf, GElf_Ehdr *ep,
 				    GElf_Shdr *shp, const char *name)
@@ -259,6 +267,62 @@ static int dso_sdt_notes(Elf *elf, symbol_actor actor, void *arg)
 	return symbols_count;
 }
 
+int dso_follow_debuglink(Elf *elf,
+			 const char *orig_exec,
+			 int type,
+			 symbol_actor actor,
+			 void *arg)
+{
+	GElf_Ehdr ehdr;
+	size_t shstrndx, orig_exec_dir_len;
+	GElf_Shdr shdr;
+	Elf_Scn *dbg_link_scn;
+	Elf_Data *dbg_link_scn_data;
+	char *dbg_link, *dbg_bin, *last_slash;
+	int symbols_count;
+
+	/* First try to find the .gnu_debuglink section in the binary. */
+	if (gelf_getehdr(elf, &ehdr) == NULL)
+		return 0;
+	if (elf_getshdrstrndx(elf, &shstrndx) != 0)
+		return 0;
+
+	dbg_link_scn = elf_section_by_name(elf, &ehdr, &shdr, dbg_link_name);
+	if (dbg_link_scn == NULL)
+		return 0;
+
+	/* Debug link section found, read of the content (only get the first
+	   string, no checksum checking atm). This is debug binary file name. */
+	dbg_link_scn_data = elf_getdata(dbg_link_scn, NULL);
+	if (dbg_link_scn_data == NULL ||
+	    dbg_link_scn_data->d_size <= 0 ||
+	    dbg_link_scn_data->d_buf == NULL)
+		return 0;
+
+	/* Now compose debug executable name */
+	dbg_link = (char *)(dbg_link_scn_data->d_buf);
+	dbg_bin = malloc(strlen(dbg_bin_dir) + 1 +
+			 strlen(orig_exec) + 1 +
+			 strlen(dbg_link) + 1);
+	if (!dbg_bin)
+		return 0;
+
+	orig_exec_dir_len = PATH_MAX;
+	last_slash = strrchr(orig_exec, '/');
+	if (last_slash != NULL)
+		orig_exec_dir_len = last_slash - orig_exec;
+
+	sprintf(dbg_bin, "%s/%.*s/%s",
+		dbg_bin_dir, (int)orig_exec_dir_len, orig_exec, dbg_link);
+
+	/* Retry symbol seach with the debug binary */
+	symbols_count = parse_dso_symbols(dbg_bin, type, actor, arg);
+
+	free(dbg_bin);
+
+	return symbols_count;
+}
+
 int parse_dso_symbols(const char *exec, int type, symbol_actor actor, void *arg)
 {
 	int symbols_count = 0;
@@ -277,6 +341,14 @@ int parse_dso_symbols(const char *exec, int type, symbol_actor actor, void *arg)
 		switch (type) {
 		case FIND_SYMBOL:
 			symbols_count = dso_symbols(elf, actor, arg);
+			if (symbols_count != 0)
+				break;
+			/* If no symbols found, try in the debuglink binary. */
+			symbols_count = dso_follow_debuglink(elf,
+							     exec,
+							     type,
+							     actor,
+							     arg);
 			break;
 		case FIND_STAPSDT_NOTE:
 			symbols_count = dso_sdt_notes(elf, actor, arg);
