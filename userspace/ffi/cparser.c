@@ -1759,7 +1759,7 @@ void cp_init_parser(struct parser *P, const char *s)
 	P->align_mask = DEFAULT_ALIGN_MASK;
 }
 
-/* used for cdef keyword */
+/* used for ffi.cdef */
 int ffi_parse_cdef(const char *s)
 {
 	struct parser P;
@@ -1773,7 +1773,7 @@ int ffi_parse_cdef(const char *s)
 	return 0;
 }
 
-/* used for cnew keyword */
+/* used for ffi.new */
 void ffi_parse_new(const char *s, struct cp_ctype *ct)
 {
 	struct parser P;

@@ -3,4 +3,4 @@ ffi.cdef[[
 ]]
 
 local ret = ffi.C.sched_clock()
-print("C.sched_clock returned, value: ", ret)
+print("ffi.C.sched_clock returned, value: ", ret)

@@ -26,7 +26,8 @@ config KTAP_FFI
 	default n
 	help
 	  This option brings FFI support to ktap. With FFI enabled ktap,
-	  users can call into native kernel C function directly in ktap
-	  script. Except for a new cdef keyword, this option also adds
-	  a ffi module which exports helper functions like ffi.new and
-	  ffi.sizeof.
+	  users can call into native kernel C functions directly in ktap
+	  script.
+
+	  ktap FFI module adds new API to ktap script such as ffi.cdef,
+	  ffi.new, ffi.free, etc.
