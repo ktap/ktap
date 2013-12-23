@@ -9,6 +9,8 @@ trace probe:schedule {
 trace probe:schedule {
 }
 
+# test event filter
+trace probe:do_sys_open dfd=%di filename=%si flags=%dx mode=%cx /dfd==1/ { }
 
 tick-1s {
 	if (n == 0) {
