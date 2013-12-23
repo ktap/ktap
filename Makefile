@@ -114,37 +114,37 @@ endif
 
 UDIR = userspace
 
-$(UDIR)/lex.o: $(UDIR)/lex.c $(INC)/* KTAP-FLAGS
+$(UDIR)/lex.o: $(UDIR)/lex.c $(INC)/* KTAP-CFLAGS
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
-$(UDIR)/parser.o: $(UDIR)/parser.c $(INC)/* KTAP-FLAGS
+$(UDIR)/parser.o: $(UDIR)/parser.c $(INC)/* KTAP-CFLAGS
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
-$(UDIR)/code.o: $(UDIR)/code.c $(INC)/* KTAP-FLAGS
+$(UDIR)/code.o: $(UDIR)/code.c $(INC)/* KTAP-CFLAGS
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
-$(UDIR)/dump.o: $(UDIR)/dump.c $(INC)/* KTAP-FLAGS
+$(UDIR)/dump.o: $(UDIR)/dump.c $(INC)/* KTAP-CFLAGS
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
-$(UDIR)/main.o: $(UDIR)/main.c $(INC)/* KTAP-FLAGS
+$(UDIR)/main.o: $(UDIR)/main.c $(INC)/* KTAP-CFLAGS
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
-$(UDIR)/util.o: $(UDIR)/util.c $(INC)/* KTAP-FLAGS
+$(UDIR)/util.o: $(UDIR)/util.c $(INC)/* KTAP-CFLAGS
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
-$(UDIR)/ktap_io.o: $(UDIR)/ktap_io.c $(INC)/* KTAP-FLAGS
+$(UDIR)/ktap_io.o: $(UDIR)/ktap_io.c $(INC)/* KTAP-CFLAGS
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
-$(UDIR)/parse_events.o: $(UDIR)/parse_events.c $(INC)/* KTAP-FLAGS
+$(UDIR)/parse_events.o: $(UDIR)/parse_events.c $(INC)/* KTAP-CFLAGS
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
-$(UDIR)/ktapc_util.o: $(UDIR)/ktapc_util.c $(INC)/* KTAP-FLAGS
+$(UDIR)/ktapc_util.o: $(UDIR)/ktapc_util.c $(INC)/* KTAP-CFLAGS
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
-$(UDIR)/ktapc_opcode.o: $(UDIR)/ktapc_opcode.c $(INC)/* KTAP-FLAGS
+$(UDIR)/ktapc_opcode.o: $(UDIR)/ktapc_opcode.c $(INC)/* KTAP-CFLAGS
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
 ifndef NO_LIBELF
-$(UDIR)/symbol.o: $(UDIR)/symbol.c KTAP-FLAGS
+$(UDIR)/symbol.o: $(UDIR)/symbol.c KTAP-CFLAGS
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
 endif
 ifdef FFI
 KTAPC_CFLAGS += -DCONFIG_KTAP_FFI
-$(UDIR)/ffi_type.o: $(RUNTIME)/ffi/ffi_type.c $(INC)/* KTAP-FLAGS
+$(UDIR)/ffi_type.o: $(RUNTIME)/ffi/ffi_type.c $(INC)/* KTAP-CFLAGS
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
-$(UDIR)/ffi/cparser.o: $(UDIR)/ffi/cparser.c $(INC)/* KTAP-FLAGS
+$(UDIR)/ffi/cparser.o: $(UDIR)/ffi/cparser.c $(INC)/* KTAP-CFLAGS
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
-$(UDIR)/ffi/ctype.o: $(UDIR)/ffi/ctype.c $(INC)/* KTAP-FLAGS
+$(UDIR)/ffi/ctype.o: $(UDIR)/ffi/ctype.c $(INC)/* KTAP-CFLAGS
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
 endif
 
@@ -169,7 +169,7 @@ KTAPOBJS += $(UDIR)/ffi/cparser.o
 KTAPOBJS += $(UDIR)/ffi/ctype.o
 endif
 
-ktap: $(KTAPOBJS) KTAP-FLAGS
+ktap: $(KTAPOBJS) KTAP-CFLAGS
 	$(QUIET_LINK)$(CC) $(KTAPC_CFLAGS) -o $@ $(KTAPOBJS) $(KTAP_LIBS)
 
 KMISC := /lib/modules/$(KVERSION)/ktapvm/
@@ -190,7 +190,7 @@ test: FORCE
 
 clean:
 	$(MAKE) -C $(KERNEL_SRC) M=$(PWD) clean
-	$(RM) ktap KTAP-FLAGS
+	$(RM) ktap KTAP-CFLAGS
 
 
 PHONY += FORCE
@@ -207,8 +207,8 @@ ifdef NO_LIBELF
 TRACK_FLAGS += NO_LIBELF
 endif
 
-KTAP-FLAGS: FORCE
+KTAP-CFLAGS: FORCE
 	@FLAGS='$(TRACK_FLAGS)'; \
-	if test x"$$FLAGS" != x"`cat KTAP-FLAGS 2>/dev/null`" ; then \
-		echo "$$FLAGS" >KTAP-FLAGS; \
+	if test x"$$FLAGS" != x"`cat KTAP-CFLAGS 2>/dev/null`" ; then \
+		echo "$$FLAGS" >KTAP-CFLAGS; \
 	fi
