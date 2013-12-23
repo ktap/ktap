@@ -175,9 +175,12 @@ ktap: $(KTAPOBJS) KTAP-CFLAGS
 KMISC := /lib/modules/$(KVERSION)/ktapvm/
 
 install: mod ktap
-	install -d $(KMISC)
-	install -m 644 -c *.ko /lib/modules/$(KVERSION)/ktapvm/
-	/sbin/depmod -a
+	make modules_install ktapvm.ko
+	install -c ktap /usr/bin/
+	mkdir -p ~/.vim/ftdetect
+	mkdir -p ~/.vim/syntax
+	cp vim/ftdetect/ktap.vim ~/.vim/ftdetect/
+	cp vim/syntax/ktap.vim ~/.vim/syntax/
 
 load:
 	insmod ktapvm.ko
