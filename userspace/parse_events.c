@@ -719,12 +719,12 @@ static int get_sys_event_filter_str(char *start,
 		if (filter_start == end)
 			return -1;
 
-		ptr = malloc(end - filter_start + 2);
+		ptr = malloc(end - filter_start);
 		if (!ptr)
 			return -1;
 
-		memcpy(ptr, filter_start, end - filter_start + 1);
-		ptr[end - filter_start + 1] = '\0';
+		memcpy(ptr, filter_start + 1, end - filter_start - 1);
+		ptr[end - filter_start - 1] = '\0';
 
 		*filter = ptr;
 
