@@ -1,0 +1,23 @@
+#!/usr/bin/env ktap
+
+# This script collect kernel memcpy/memset size histgoram output.
+
+local h_memcpy = {}
+local h_memset = {}
+
+trace probe:memcpy size=%dx {
+	h_memcpy[arg2] += 1
+}
+
+trace probe:memset size=%dx {
+	h_memset[arg2] += 1
+}
+
+trace_end {
+	print("memcpy size hist:")
+	histogram(h_memcpy)
+
+	print()
+	print("memset size hist:")
+	histogram(h_memset)
+}
