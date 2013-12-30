@@ -35,12 +35,12 @@ static int kplib_table_new(ktap_state *ks)
 	int narr = 0, nrec = 0;
 
 	if (kp_arg_nr(ks) >= 1) {
-		kp_arg_check(ks, 1, KTAP_TNUMBER);
+		kp_arg_check(ks, 1, KTAP_TYPE_NUMBER);
 		narr = nvalue(kp_arg(ks, 1));
 	}
 
 	if (kp_arg_nr(ks) >= 2) {
-		kp_arg_check(ks, 2, KTAP_TNUMBER);
+		kp_arg_check(ks, 2, KTAP_TYPE_NUMBER);
 		nrec = nvalue(kp_arg(ks, 2));
 	}
 

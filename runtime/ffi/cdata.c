@@ -28,7 +28,7 @@ ktap_cdata *kp_cdata_new(ktap_state *ks, csymbol_id id)
 {
 	ktap_cdata *cd;
 
-	cd = &kp_obj_newobject(ks, KTAP_TCDATA, sizeof(ktap_cdata), NULL)->cd;
+	cd = &kp_obj_newobject(ks, KTAP_TYPE_CDATA, sizeof(ktap_cdata), NULL)->cd;
 	cd_set_csym_id(cd, id);
 
 	return cd;
@@ -121,22 +121,22 @@ int kp_cdata_type_match(ktap_state *ks, csymbol *cs, ktap_value *val)
 		goto error;
 
 	switch (ttypenv(val)) {
-	case KTAP_TLIGHTUSERDATA:
+	case KTAP_TYPE_LIGHTUSERDATA:
 		if (type != FFI_PTR) goto error;
 		break;
-	case KTAP_TBOOLEAN:
-	case KTAP_TNUMBER:
+	case KTAP_TYPE_BOOLEAN:
+	case KTAP_TYPE_NUMBER:
 		if (type != FFI_UINT8 && type != FFI_INT8
 		&& type != FFI_UINT16 && type != FFI_INT16
 		&& type != FFI_UINT32 && type != FFI_INT32
 		&& type != FFI_UINT64 && type != FFI_INT64)
 			goto error;
 		break;
-	case KTAP_TSTRING:
+	case KTAP_TYPE_STRING:
 		if (type != FFI_PTR && type != FFI_UINT8 && type != FFI_INT8)
 			goto error;
 		break;
-	case KTAP_TCDATA:
+	case KTAP_TYPE_CDATA:
 		if (cs != cd_csym(ks, cdvalue(val)))
 			goto error;
 		break;
@@ -157,19 +157,19 @@ static void kp_cdata_value(ktap_state *ks,
 	ffi_type type;
 
 	switch (ttypenv(val)) {
-	case KTAP_TBOOLEAN:
+	case KTAP_TYPE_BOOLEAN:
 		*out_addr = &bvalue(val);
 		*out_size = sizeof(int);
 		return;
-	case KTAP_TLIGHTUSERDATA:
+	case KTAP_TYPE_LIGHTUSERDATA:
 		*out_addr = pvalue(val);
 		*out_size = sizeof(void *);
 		return;
-	case KTAP_TNUMBER:
+	case KTAP_TYPE_NUMBER:
 		*out_addr = &nvalue(val);
 		*out_size = sizeof(ktap_number);
 		return;
-	case KTAP_TSTRING:
+	case KTAP_TYPE_STRING:
 		*temp = (void *)svalue(val);
 		*out_addr = temp;
 		*out_size = sizeof(void *);

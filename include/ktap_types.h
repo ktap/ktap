@@ -401,31 +401,29 @@ union ktap_gcobject {
 
 
 /* predefined values in the registry */
-#define KTAP_RIDX_MAINTHREAD     1
-#define KTAP_RIDX_GLOBALS        2
-#define KTAP_RIDX_LAST           KTAP_RIDX_GLOBALS
+#define KTAP_RIDX_MAINTHREAD	1
+#define KTAP_RIDX_GLOBALS	2
+#define KTAP_RIDX_LAST		KTAP_RIDX_GLOBALS
 
-#define KTAP_TNONE		(-1)
-
-#define KTAP_TNIL		0
-#define KTAP_TBOOLEAN		1
-#define KTAP_TLIGHTUSERDATA	2
-#define KTAP_TNUMBER		3
-#define KTAP_TSTRING		4
-#define KTAP_TSHRSTR		(KTAP_TSTRING | (0 << 4))  /* short strings */
-#define KTAP_TLNGSTR		(KTAP_TSTRING | (1 << 4))  /* long strings */
-#define KTAP_TTABLE		5
-#define KTAP_TFUNCTION		6
-#define KTAP_TCLOSURE		(KTAP_TFUNCTION | (0 << 4))  /* closure */
-#define KTAP_TCFUNCTION		(KTAP_TFUNCTION | (1 << 4))  /* light C function */
-#define KTAP_TTHREAD		7
-#define KTAP_TPROTO		8
-#define KTAP_TUPVAL		9
-#define KTAP_TEVENT		10
-#define KTAP_TBTRACE		11
-#define KTAP_TPTABLE		12
-#define KTAP_TSTATDATA		13
-#define KTAP_TCDATA		14
+#define KTAP_TYPE_NIL		0
+#define KTAP_TYPE_BOOLEAN	1
+#define KTAP_TYPE_LIGHTUSERDATA	2
+#define KTAP_TYPE_NUMBER	3
+#define KTAP_TYPE_STRING	4
+#define KTAP_TYPE_SHRSTR	(KTAP_TYPE_STRING | (0 << 4))/* short strings */
+#define KTAP_TYPE_LNGSTR	(KTAP_TYPE_STRING | (1 << 4))/* long strings */
+#define KTAP_TYPE_TABLE		5
+#define KTAP_TYPE_FUNCTION	6
+#define KTAP_TYPE_CLOSURE	(KTAP_TYPE_FUNCTION | (0 << 4))  /* closure */
+#define KTAP_TYPE_CFUNCTION	(KTAP_TYPE_FUNCTION | (1 << 4))  /* light C function */
+#define KTAP_TYPE_THREAD	7
+#define KTAP_TYPE_PROTO		8
+#define KTAP_TYPE_UPVAL		9
+#define KTAP_TYPE_EVENT		10
+#define KTAP_TYPE_BTRACE	11
+#define KTAP_TYPE_PTABLE	12
+#define KTAP_TYPE_STATDATA	13
+#define KTAP_TYPE_CDATA		14
 /*
  * type number is ok so far, but it may collide later between
  * 16+ and | (1 << 4), so be careful on this.
@@ -464,35 +462,35 @@ union ktap_gcobject {
 #define btvalue(o)		(&val_(o).gc->bt)
 #define cdvalue(o)		(&val_(o).gc->cd)
 
-#define is_nil(o)		((o)->type == KTAP_TNIL)
-#define is_boolean(o)		((o)->type == KTAP_TBOOLEAN)
+#define is_nil(o)		((o)->type == KTAP_TYPE_NIL)
+#define is_boolean(o)		((o)->type == KTAP_TYPE_BOOLEAN)
 #define is_false(o)		(is_nil(o) || (is_boolean(o) && bvalue(o) == 0))
-#define is_shrstring(o)		((o)->type == KTAP_TSHRSTR)
-#define is_string(o)		(((o)->type & 0x0F) == KTAP_TSTRING)
-#define is_number(o)		((o)->type == KTAP_TNUMBER)
-#define is_table(o)		((o)->type == KTAP_TTABLE)
-#define is_ptable(o)		((o)->type == KTAP_TPTABLE)
-#define is_statdata(o)		((o)->type == KTAP_TSTATDATA)
-#define is_event(o)		((o)->type == KTAP_TEVENT)
-#define is_btrace(o)		((o)->type == KTAP_TBTRACE)
+#define is_shrstring(o)		((o)->type == KTAP_TYPE_SHRSTR)
+#define is_string(o)		(((o)->type & 0x0F) == KTAP_TYPE_STRING)
+#define is_number(o)		((o)->type == KTAP_TYPE_NUMBER)
+#define is_table(o)		((o)->type == KTAP_TYPE_TABLE)
+#define is_ptable(o)		((o)->type == KTAP_TYPE_PTABLE)
+#define is_statdata(o)		((o)->type == KTAP_TYPE_STATDATA)
+#define is_event(o)		((o)->type == KTAP_TYPE_EVENT)
+#define is_btrace(o)		((o)->type == KTAP_TYPE_BTRACE)
 #define is_needclone(o)		is_btrace(o)
 #ifdef CONFIG_KTAP_FFI
-#define is_cdata(o)		((o)->type == KTAP_TCDATA)
+#define is_cdata(o)		((o)->type == KTAP_TYPE_CDATA)
 #endif
 
 
 #define set_nil(obj) \
-	{ ktap_value *io = (obj); io->val.n = 0; settype(io, KTAP_TNIL); }
+	{ ktap_value *io = (obj); io->val.n = 0; settype(io, KTAP_TYPE_NIL); }
 
 #define set_boolean(obj, x) \
-	{ ktap_value *io = (obj); io->val.b = (x); settype(io, KTAP_TBOOLEAN); }
+	{ ktap_value *io = (obj); io->val.b = (x); settype(io, KTAP_TYPE_BOOLEAN); }
 
 #define set_number(obj, x) \
-	{ ktap_value *io = (obj); io->val.n = (x); settype(io, KTAP_TNUMBER); }
+	{ ktap_value *io = (obj); io->val.n = (x); settype(io, KTAP_TYPE_NUMBER); }
 
 #define set_statdata(obj, x) \
 	{ ktap_value *io = (obj); \
-	  io->val.p = (x); settype(io, KTAP_TSTATDATA); }
+	  io->val.p = (x); settype(io, KTAP_TYPE_STATDATA); }
 
 #define set_string(obj, x) \
 	{ ktap_value *io = (obj); \
@@ -501,34 +499,34 @@ union ktap_gcobject {
 
 #define set_closure(obj, x) \
 	{ ktap_value *io = (obj); \
-	  io->val.gc = (ktap_gcobject *)x; settype(io, KTAP_TCLOSURE); }
+	  io->val.gc = (ktap_gcobject *)x; settype(io, KTAP_TYPE_CLOSURE); }
 
 #define set_cfunction(obj, x) \
-	{ ktap_value *io = (obj); val_(io).f = (x); settype(io, KTAP_TCFUNCTION); }
+	{ ktap_value *io = (obj); val_(io).f = (x); settype(io, KTAP_TYPE_CFUNCTION); }
 
 #define set_table(obj, x) \
 	{ ktap_value *io = (obj); \
-	  val_(io).gc = (ktap_gcobject *)(x); settype(io, KTAP_TTABLE); }
+	  val_(io).gc = (ktap_gcobject *)(x); settype(io, KTAP_TYPE_TABLE); }
 
 #define set_ptable(obj, x) \
 	{ ktap_value *io = (obj); \
-	  val_(io).gc = (ktap_gcobject *)(x); settype(io, KTAP_TPTABLE); }
+	  val_(io).gc = (ktap_gcobject *)(x); settype(io, KTAP_TYPE_PTABLE); }
 
 #define set_thread(obj, x) \
 	{ ktap_value *io = (obj); \
-	  val_(io).gc = (ktap_gcobject *)(x); settype(io, KTAP_TTHREAD); }
+	  val_(io).gc = (ktap_gcobject *)(x); settype(io, KTAP_TYPE_THREAD); }
 
 #define set_event(obj, x) \
-	{ ktap_value *io = (obj); val_(io).p = (x); settype(io, KTAP_TEVENT); }
+	{ ktap_value *io = (obj); val_(io).p = (x); settype(io, KTAP_TYPE_EVENT); }
 
 #define set_btrace(obj, x) \
 	{ ktap_value *io = (obj); \
-	  val_(io).gc = (ktap_gcobject *)(x); settype(io, KTAP_TBTRACE); }
+	  val_(io).gc = (ktap_gcobject *)(x); settype(io, KTAP_TYPE_BTRACE); }
 
 #ifdef CONFIG_KTAP_FFI
 #define set_cdata(obj, x) \
 	{ ktap_value *io=(obj); \
-	  val_(io).gc = (ktap_gcobject *)(x); settype(io, KTAP_TCDATA); }
+	  val_(io).gc = (ktap_gcobject *)(x); settype(io, KTAP_TYPE_CDATA); }
 #endif
 
 #define set_obj(obj1, obj2) \

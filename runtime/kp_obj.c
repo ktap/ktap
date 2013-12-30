@@ -133,26 +133,26 @@ void *kp_zalloc(ktap_state *ks, int size)
 void kp_obj_dump(ktap_state *ks, const ktap_value *v)
 {
 	switch (ttype(v)) {
-	case KTAP_TNIL:
+	case KTAP_TYPE_NIL:
 		kp_puts(ks, "NIL");
 		break;
-	case KTAP_TNUMBER:
+	case KTAP_TYPE_NUMBER:
 		kp_printf(ks, "NUMBER %ld", nvalue(v));
 		break;
-	case KTAP_TBOOLEAN:
+	case KTAP_TYPE_BOOLEAN:
 		kp_printf(ks, "BOOLEAN %d", bvalue(v));
 		break;
-	case KTAP_TLIGHTUSERDATA:
+	case KTAP_TYPE_LIGHTUSERDATA:
 		kp_printf(ks, "LIGHTUSERDATA 0x%lx", (unsigned long)pvalue(v));
 		break;
-	case KTAP_TCFUNCTION:
+	case KTAP_TYPE_CFUNCTION:
 		kp_printf(ks, "LIGHTCFCUNTION 0x%lx", (unsigned long)fvalue(v));
 		break;
-	case KTAP_TSHRSTR:
-	case KTAP_TLNGSTR:
+	case KTAP_TYPE_SHRSTR:
+	case KTAP_TYPE_LNGSTR:
 		kp_printf(ks, "SHRSTR #%s", svalue(v));
 		break;
-	case KTAP_TTABLE:
+	case KTAP_TYPE_TABLE:
 		kp_printf(ks, "TABLE 0x%lx", (unsigned long)hvalue(v));
 		break;
         default:
@@ -202,43 +202,43 @@ static int btrace_equal(ktap_btrace *bt1, ktap_btrace *bt2)
 void kp_obj_show(ktap_state *ks, const ktap_value *v)
 {
 	switch (ttype(v)) {
-	case KTAP_TNIL:
+	case KTAP_TYPE_NIL:
 		kp_puts(ks, "nil");
 		break;
-	case KTAP_TNUMBER:
+	case KTAP_TYPE_NUMBER:
 		kp_printf(ks, "%ld", nvalue(v));
 		break;
-	case KTAP_TBOOLEAN:
+	case KTAP_TYPE_BOOLEAN:
 		kp_puts(ks, (bvalue(v) == 1) ? "true" : "false");
 		break;
-	case KTAP_TLIGHTUSERDATA:
+	case KTAP_TYPE_LIGHTUSERDATA:
 		kp_printf(ks, "0x%lx", (unsigned long)pvalue(v));
 		break;
-	case KTAP_TCFUNCTION:
+	case KTAP_TYPE_CFUNCTION:
 		kp_printf(ks, "0x%lx", (unsigned long)fvalue(v));
 		break;
-	case KTAP_TSHRSTR:
-	case KTAP_TLNGSTR:
+	case KTAP_TYPE_SHRSTR:
+	case KTAP_TYPE_LNGSTR:
 		kp_puts(ks, svalue(v));
 		break;
-	case KTAP_TTABLE:
+	case KTAP_TYPE_TABLE:
 		kp_tab_dump(ks, hvalue(v));
 		break;
 #ifdef CONFIG_KTAP_FFI
-	case KTAP_TCDATA:
+	case KTAP_TYPE_CDATA:
 		kp_cdata_dump(ks, cdvalue(v));
 		break;
 #endif
-	case KTAP_TEVENT:
+	case KTAP_TYPE_EVENT:
 		kp_transport_event_write(ks, evalue(v));
 		break;
-	case KTAP_TBTRACE:
+	case KTAP_TYPE_BTRACE:
 		btrace_dump(ks, btvalue(v));
 		break;
-	case KTAP_TPTABLE:
+	case KTAP_TYPE_PTABLE:
 		kp_ptab_dump(ks, phvalue(v));
 		break;
-	case KTAP_TSTATDATA:
+	case KTAP_TYPE_STATDATA:
 		kp_statdata_dump(ks, sdvalue(v));
 		break;
         default:
@@ -254,26 +254,26 @@ void kp_obj_show(ktap_state *ks, const ktap_value *v)
 int kp_obj_equal(ktap_state *ks, const ktap_value *t1, const ktap_value *t2)
 {
 	switch (ttype(t1)) {
-	case KTAP_TNIL:
+	case KTAP_TYPE_NIL:
 		return 1;
-	case KTAP_TNUMBER:
+	case KTAP_TYPE_NUMBER:
 		return nvalue(t1) == nvalue(t2);
-	case KTAP_TBOOLEAN:
+	case KTAP_TYPE_BOOLEAN:
 		return bvalue(t1) == bvalue(t2);  /* true must be 1 !! */
-	case KTAP_TLIGHTUSERDATA:
+	case KTAP_TYPE_LIGHTUSERDATA:
 		return pvalue(t1) == pvalue(t2);
-	case KTAP_TCFUNCTION:
+	case KTAP_TYPE_CFUNCTION:
 		return fvalue(t1) == fvalue(t2);
-	case KTAP_TSHRSTR:
+	case KTAP_TYPE_SHRSTR:
 		return eqshrstr(rawtsvalue(t1), rawtsvalue(t2));
-	case KTAP_TLNGSTR:
+	case KTAP_TYPE_LNGSTR:
 		return kp_str_eqlng(rawtsvalue(t1), rawtsvalue(t2));
-	case KTAP_TTABLE:
+	case KTAP_TYPE_TABLE:
 		if (hvalue(t1) == hvalue(t2))
 			return 1;
 		else if (ks == NULL)
 			return 0;
-	case KTAP_TBTRACE:
+	case KTAP_TYPE_BTRACE:
 		return btrace_equal(btvalue(t1), btvalue(t2));
 	default:
 		return gcvalue(t1) == gcvalue(t2);
@@ -289,9 +289,9 @@ int kp_obj_equal(ktap_state *ks, const ktap_value *t1, const ktap_value *t2)
 int kp_obj_len(ktap_state *ks, const ktap_value *v)
 {
 	switch(v->type) {
-	case KTAP_TTABLE:
+	case KTAP_TYPE_TABLE:
 		return kp_tab_length(ks, hvalue(v));
-	case KTAP_TSTRING:
+	case KTAP_TYPE_STRING:
 		return rawtsvalue(v)->tsv.len;
 	default:
 		kp_printf(ks, "cannot get length of type %d\n", v->type);
@@ -321,7 +321,7 @@ ktap_upval *kp_obj_newupval(ktap_state *ks)
 {
 	ktap_upval *uv;
 
-	uv = &kp_obj_newobject(ks, KTAP_TUPVAL, sizeof(ktap_upval), NULL)->uv;
+	uv = &kp_obj_newobject(ks, KTAP_TYPE_UPVAL, sizeof(ktap_upval), NULL)->uv;
 	uv->v = &uv->u.value;
 	set_nil(uv->v);
 	return uv;
@@ -333,7 +333,7 @@ static ktap_btrace *kp_obj_newbacktrace(ktap_state *ks, int nr_entries,
 	ktap_btrace *bt;
 	int size = sizeof(ktap_btrace) + nr_entries * sizeof(unsigned long);
 
-	bt = &kp_obj_newobject(ks, KTAP_TBTRACE, size, list)->bt;
+	bt = &kp_obj_newobject(ks, KTAP_TYPE_BTRACE, size, list)->bt;
 	bt->nr_entries = nr_entries;
 	return bt;
 }
@@ -360,7 +360,7 @@ ktap_closure *kp_obj_newclosure(ktap_state *ks, int n)
 	ktap_closure *cl;
 	int size = sizeof(ktap_closure) + sizeof(ktap_upval *) * (n - 1);
 
-	cl = (ktap_closure *)kp_obj_newobject(ks, KTAP_TCLOSURE, size, NULL);
+	cl = (ktap_closure *)kp_obj_newobject(ks, KTAP_TYPE_CLOSURE, size, NULL);
 	cl->p = NULL;
 	cl->nupvalues = n;
 	while (n--)
@@ -383,7 +383,7 @@ static void free_proto(ktap_state *ks, ktap_proto *f)
 ktap_proto *kp_obj_newproto(ktap_state *ks)
 {
 	ktap_proto *f;
-	f = (ktap_proto *)kp_obj_newobject(ks, KTAP_TPROTO, sizeof(*f), NULL);
+	f = (ktap_proto *)kp_obj_newobject(ks, KTAP_TYPE_PROTO, sizeof(*f), NULL);
 	f->k = NULL;
  	f->sizek = 0;
 	f->p = NULL;
@@ -413,16 +413,16 @@ void kp_obj_free_gclist(ktap_state *ks, ktap_gcobject *o)
 
 		next = gch(o)->next;
 		switch (gch(o)->tt) {
-		case KTAP_TTABLE:
+		case KTAP_TYPE_TABLE:
 			kp_tab_free(ks, (ktap_tab *)o);
 			break;
-		case KTAP_TPROTO:
+		case KTAP_TYPE_PROTO:
 			free_proto(ks, (ktap_proto *)o);
 			break;
-		case KTAP_TUPVAL:
+		case KTAP_TYPE_UPVAL:
 			kp_freeupval(ks, (ktap_upval *)o);
 			break;
-		case KTAP_TPTABLE:
+		case KTAP_TYPE_PTABLE:
 			kp_ptab_free(ks, (ktap_ptab *)o);
 			break;
 		default:

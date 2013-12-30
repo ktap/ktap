@@ -118,25 +118,25 @@ static int load_constants(struct load_state *S, ktap_proto *f)
 	for (i = 0; i < n; i++)
 		set_nil(&f->k[i]);
 
-	for (i=0; i < n; i++) {
+	for (i = 0; i < n; i++) {
 		ktap_value *o = &f->k[i];
 
 		int t = READ_CHAR(S);
 		switch (t) {
-		case KTAP_TNIL:
+		case KTAP_TYPE_NIL:
 			set_nil(o);
 			break;
-		case KTAP_TBOOLEAN:
+		case KTAP_TYPE_BOOLEAN:
 			set_boolean(o, READ_CHAR(S));
 			break;
-		case KTAP_TNUMBER:
+		case KTAP_TYPE_NUMBER:
 			/*
 			 * todo: kernel not support fp, check double when
 			 * loading
 			 */
 			set_number(o, READ_NUMBER(S));
 			break;
-		case KTAP_TSTRING:
+		case KTAP_TYPE_STRING:
 			set_string(o, READ_STRING(S));
 			break;
 		default:

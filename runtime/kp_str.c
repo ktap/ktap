@@ -86,7 +86,7 @@ int kp_str_eqlng(ktap_string *a, ktap_string *b)
 int kp_str_equal(ktap_string *a, ktap_string *b)
 {
 	return (a->tsv.tt == b->tsv.tt) &&
-	       (a->tsv.tt == KTAP_TSHRSTR ? eqshrstr(a, b) :
+	       (a->tsv.tt == KTAP_TYPE_SHRSTR ? eqshrstr(a, b) :
 				kp_str_eqlng(a, b));
 }
 
@@ -177,7 +177,7 @@ static ktap_string *newshrstr(ktap_state *ks, const char *str, size_t l,
 		kp_strtab_resize(ks, tb->size * 2);  /* too crowded */
 
 	list = &tb->hash[lmod(h, tb->size)];
-	s = createstrobj(ks, str, l, KTAP_TSHRSTR, h, list);
+	s = createstrobj(ks, str, l, KTAP_TYPE_SHRSTR, h, list);
 	tb->nuse++;
 	return s;
 }
@@ -223,13 +223,13 @@ ktap_string *kp_str_newlstr(ktap_state *ks, const char *str, size_t l)
 	if (l <= STRING_MAXSHORTLEN)
 		return internshrstr(ks, str, l);
 	else
-		return createstrobj(ks, str, l, KTAP_TLNGSTR, G(ks)->seed,
+		return createstrobj(ks, str, l, KTAP_TYPE_LNGSTR, G(ks)->seed,
 				    NULL);
 }
 
 ktap_string *kp_str_newlstr_local(ktap_state *ks, const char *str, size_t l)
 {
-	return createstrobj(ks, str, l, KTAP_TLNGSTR, G(ks)->seed,
+	return createstrobj(ks, str, l, KTAP_TYPE_LNGSTR, G(ks)->seed,
 			    &ks->gclist);
 }
 
@@ -243,7 +243,7 @@ ktap_string *kp_str_new(ktap_state *ks, const char *str)
 
 ktap_string *kp_str_new_local(ktap_state *ks, const char *str)
 {
-	return createstrobj(ks, str, strlen(str), KTAP_TLNGSTR, G(ks)->seed,
+	return createstrobj(ks, str, strlen(str), KTAP_TYPE_LNGSTR, G(ks)->seed,
 			    &ks->gclist);
 }
 

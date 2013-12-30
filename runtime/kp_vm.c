@@ -140,7 +140,7 @@ static ktap_upval *findupval(ktap_state *ks, StkId level)
 	}
 
 	/* not found: create a new one */
-	uv = &kp_obj_newobject(ks, KTAP_TUPVAL, sizeof(ktap_upval), pp)->uv;
+	uv = &kp_obj_newobject(ks, KTAP_TYPE_UPVAL, sizeof(ktap_upval), pp)->uv;
 	uv->v = level;  /* current value lives in the stack */
 	uv->u.l.prev = &g->uvhead;  /* double link it in `uvhead' list */
 	uv->u.l.next = g->uvhead.u.l.next;
@@ -361,7 +361,7 @@ static int precall(ktap_state *ks, StkId func, int nresults)
 	int n;
 
 	switch (ttype(func)) {
-	case KTAP_TCFUNCTION: /* light C function */
+	case KTAP_TYPE_CFUNCTION: /* light C function */
 		f = fvalue(func);
 
 		if (checkstack(ks, KTAP_MIN_RESERVED_STACK_SIZE))
@@ -375,7 +375,7 @@ static int precall(ktap_state *ks, StkId func, int nresults)
 		n = (*f)(ks);
 		poscall(ks, ks->top - n);
 		return 1;
-	case KTAP_TCLOSURE:
+	case KTAP_TYPE_CLOSURE:
 		p = clvalue(func)->p;
 
 		if (checkstack(ks, p->maxstacksize))
@@ -399,7 +399,7 @@ static int precall(ktap_state *ks, StkId func, int nresults)
 		ks->top = ci->top;
 		return 0;
 #ifdef CONFIG_KTAP_FFI
-	case KTAP_TCDATA:
+	case KTAP_TYPE_CDATA:
 		cd = cdvalue(func);
 
 		if (checkstack(ks, KTAP_MIN_RESERVED_STACK_SIZE))
@@ -948,7 +948,7 @@ void kp_optimize_code(ktap_state *ks, int level, ktap_proto *f)
 		if (GET_OPCODE(instr) == OP_GETTABUP) {
 			if ((GETARG_B(instr) == 0) && ISK(GETARG_C(instr))) {
 				ktap_value *field = k + INDEXK(GETARG_C(instr));
-				if (ttype(field) == KTAP_TSTRING) {
+				if (ttype(field) == KTAP_TYPE_STRING) {
 					int index = cfunction_cache_getindex(ks,
 									field);
 					if (index == -1)

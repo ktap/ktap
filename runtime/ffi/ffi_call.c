@@ -57,12 +57,12 @@ static csymbol *ffi_get_arg_csym(ktap_state *ks, csymbol_func *csf, int idx)
 	arg = kp_arg(ks, idx + 1);
 	cs = id_to_csym(ks, ffi_get_csym_id(ks, "void *"));
 	switch (ttypenv(arg)) {
-	case KTAP_TLIGHTUSERDATA:
-	case KTAP_TBOOLEAN:
-	case KTAP_TNUMBER:
-	case KTAP_TSTRING:
+	case KTAP_TYPE_LIGHTUSERDATA:
+	case KTAP_TYPE_BOOLEAN:
+	case KTAP_TYPE_NUMBER:
+	case KTAP_TYPE_STRING:
 		return cs;
-	case KTAP_TCDATA:
+	case KTAP_TYPE_CDATA:
 		return cd_csym(ks, cdvalue(arg));
 	default:
 		kp_error(ks, "Error: Cannot get type for arg %d\n", idx);

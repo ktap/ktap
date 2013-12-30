@@ -105,7 +105,7 @@ static void add_ffi_func_to_ctable(ktap_state *ks, csymbol_id id)
 	csymbol *cs;
 
 	/* push cdata to ctable */
-	set_cdata(&fv, kp_obj_newobject(ks, KTAP_TCDATA, sizeof(ktap_cdata),
+	set_cdata(&fv, kp_obj_newobject(ks, KTAP_TYPE_CDATA, sizeof(ktap_cdata),
 					NULL));
 	cd = cdvalue(&fv);
 	cd_set_csym_id(cd, id);

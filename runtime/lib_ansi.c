@@ -51,7 +51,7 @@ static int kplib_ansi_set_color(ktap_state *ks)
 {
 	int fg;
 
-	kp_arg_check(ks, 1, KTAP_TNUMBER);
+	kp_arg_check(ks, 1, KTAP_TYPE_NUMBER);
 
 	fg = nvalue(kp_arg(ks, 1));
 	kp_printf(ks, "\033[%dm", fg);
@@ -73,8 +73,8 @@ static int kplib_ansi_set_color2(ktap_state *ks)
 {
 	int fg, bg;
 	
-	kp_arg_check(ks, 1, KTAP_TNUMBER);
-	kp_arg_check(ks, 2, KTAP_TNUMBER);
+	kp_arg_check(ks, 1, KTAP_TYPE_NUMBER);
+	kp_arg_check(ks, 2, KTAP_TYPE_NUMBER);
 
 	fg = nvalue(kp_arg(ks, 1));
 	bg = nvalue(kp_arg(ks, 2));
@@ -100,9 +100,9 @@ static int kplib_ansi_set_color3(ktap_state *ks)
 {
 	int fg, bg, attr;
 
-	kp_arg_check(ks, 1, KTAP_TNUMBER);
-	kp_arg_check(ks, 2, KTAP_TNUMBER);
-	kp_arg_check(ks, 3, KTAP_TNUMBER);
+	kp_arg_check(ks, 1, KTAP_TYPE_NUMBER);
+	kp_arg_check(ks, 2, KTAP_TYPE_NUMBER);
+	kp_arg_check(ks, 3, KTAP_TYPE_NUMBER);
 
 	fg = nvalue(kp_arg(ks, 1));
 	bg = nvalue(kp_arg(ks, 2));

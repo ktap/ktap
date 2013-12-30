@@ -95,15 +95,15 @@ static void DumpConstants(const ktap_proto *f, DumpState *D)
 		const ktap_value* o=&f->k[i];
 		DumpChar(ttypenv(o), D);
 		switch (ttypenv(o)) {
-		case KTAP_TNIL:
+		case KTAP_TYPE_NIL:
 			break;
-		case KTAP_TBOOLEAN:
+		case KTAP_TYPE_BOOLEAN:
 			DumpChar(bvalue(o), D);
 			break;
-		case KTAP_TNUMBER:
+		case KTAP_TYPE_NUMBER:
 			DumpNumber(nvalue(o), D);
 			break;
-		case KTAP_TSTRING:
+		case KTAP_TYPE_STRING:
 			DumpString(rawtsvalue(o), D);
 			break;
 		default:
@@ -454,19 +454,19 @@ void ktapc_dump_function(int level, ktap_proto *f)
 	printf("sizek: %d\n", f->sizek);
 	for (i = 0; i < f->sizek; i++) {
 		switch(f->k[i].type) {
-		case KTAP_TNIL:
+		case KTAP_TYPE_NIL:
 			printf("\tNIL\n");
 			break;
-		case KTAP_TBOOLEAN:
+		case KTAP_TYPE_BOOLEAN:
 			printf("\tBOOLEAN: ");
 			printf("%d\n", f->k[i].val.b);
 			break;
-		case KTAP_TNUMBER:
+		case KTAP_TYPE_NUMBER:
 			printf("\tTNUMBER: ");
 			printf("%ld\n", f->k[i].val.n);
 			break;
-		case KTAP_TSHRSTR:
-		case KTAP_TLNGSTR:
+		case KTAP_TYPE_SHRSTR:
+		case KTAP_TYPE_LNGSTR:
 			printf("\tTSTRING: ");
 			printf("%s\n", svalue(&(f->k[i])));
 			break;

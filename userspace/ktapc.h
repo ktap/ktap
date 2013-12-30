@@ -47,7 +47,7 @@ typedef int bool;
 #define islalpha(c)   (isalpha(c) || (c) == '_')
 #define islalnum(c)   (isalnum(c) || (c) == '_')
 
-#define isreserved(s) ((s)->tsv.tt == KTAP_TSHRSTR && (s)->tsv.extra > 0)
+#define isreserved(s) ((s)->tsv.tt == KTAP_TYPE_SHRSTR && (s)->tsv.extra > 0)
 
 #define ktap_numeq(a,b)		((a)==(b))
 #define ktap_numisnan(L,a)	(!ktap_numeq((a), (a)))

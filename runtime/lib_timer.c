@@ -112,8 +112,8 @@ static int do_tick_profile(ktap_state *ks, int is_tick)
 	int n, i = 0;
 	int factor;
 
-	kp_arg_check(ks, 1, KTAP_TSTRING);
-	kp_arg_check(ks, 2, KTAP_TFUNCTION);
+	kp_arg_check(ks, 1, KTAP_TYPE_STRING);
+	kp_arg_check(ks, 2, KTAP_TYPE_FUNCTION);
 
 	str = svalue(kp_arg(ks, 1));
 	tmp = str;

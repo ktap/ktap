@@ -295,8 +295,8 @@ static int kplib_kdebug_probe_by_id(ktap_state *ks)
 	int ret, i;
 
 	/* the number is userspace address refer to ktap_eventdef_info */
-	kp_arg_check(ks, 1, KTAP_TNUMBER);
-	kp_arg_check(ks, 2, KTAP_TFUNCTION);
+	kp_arg_check(ks, 1, KTAP_TYPE_NUMBER);
+	kp_arg_check(ks, 2, KTAP_TYPE_FUNCTION);
 
 	ret = copy_from_user(&evdef_info, (void *)nvalue(kp_arg(ks, 1)),
 			     sizeof(evdef_info));
@@ -358,7 +358,7 @@ static int kplib_kdebug_probe_by_id(ktap_state *ks)
 
 static int kplib_kdebug_probe_end(ktap_state *ks)
 {
-	kp_arg_check(ks, 1, KTAP_TFUNCTION);
+	kp_arg_check(ks, 1, KTAP_TYPE_FUNCTION);
 
 	G(ks)->trace_end_closure = clvalue(kp_arg(ks, 1));
 	return 0;

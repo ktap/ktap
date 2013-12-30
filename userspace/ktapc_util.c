@@ -51,7 +51,7 @@ ktap_closure *ktapc_newclosure(int n)
 {
 	ktap_closure *cl;
 
-	cl = (ktap_closure *)newobject(KTAP_TCLOSURE, sizeof(*cl));
+	cl = (ktap_closure *)newobject(KTAP_TYPE_CLOSURE, sizeof(*cl));
 	cl->p = NULL;
 	cl->nupvalues = n;
 	while (n--)
@@ -63,7 +63,7 @@ ktap_closure *ktapc_newclosure(int n)
 ktap_proto *ktapc_newproto()
 {
 	ktap_proto *f;
-	f = (ktap_proto *)newobject(KTAP_TPROTO, sizeof(*f));
+	f = (ktap_proto *)newobject(KTAP_TYPE_PROTO, sizeof(*f));
 	f->k = NULL;
  	f->sizek = 0;
 	f->p = NULL;
@@ -86,7 +86,7 @@ ktap_proto *ktapc_newproto()
 	return f;
 }
 
-#define NILCONSTANT     {NULL}, KTAP_TNIL
+#define NILCONSTANT     {NULL}, KTAP_TYPE_NIL
 static const struct ktap_value ktap_nilobjectv = {NILCONSTANT};
 #define ktap_nilobject  (&ktap_nilobjectv)
 
@@ -100,16 +100,16 @@ const ktap_value *ktapc_tab_get(ktap_tab *t, const ktap_value *key)
 	int i;
 
 	switch (ttype(key)) {
-	case KTAP_TNIL:
+	case KTAP_TYPE_NIL:
 		return ktap_nilobject;
-	case KTAP_TNUMBER:
+	case KTAP_TYPE_NUMBER:
 		for (i = 0; i < table_node_nr; i++) {
 			ktap_value *v = gkey(gnode(t, i));
 			if (is_number(v) && nvalue(key) == nvalue(v))
 				return gval(gnode(t, i));
 		}
 		break;
-	case KTAP_TSHRSTR:
+	case KTAP_TYPE_SHRSTR:
 		for (i = 0; i < table_node_nr; i++) {
 			ktap_value *v = gkey(gnode(t, i));
 			if (is_string(v) &&
@@ -152,7 +152,7 @@ void ktapc_tab_setvalue(ktap_tab *t, const ktap_value *key, ktap_value *val)
 
 ktap_tab *ktapc_tab_new(void)
 {
-	ktap_tab *t = &newobject(KTAP_TTABLE, sizeof(ktap_tab))->h;
+	ktap_tab *t = &newobject(KTAP_TYPE_TABLE, sizeof(ktap_tab))->h;
 	t->lsizenode = 100;
 	t->node = (ktap_tnode *)malloc(t->lsizenode * sizeof(ktap_tnode));
 	memset(t->node, 0, t->lsizenode * sizeof(ktap_tnode));
@@ -219,7 +219,7 @@ static ktap_string *createstrobj(const char *str, size_t l)
 	size_t totalsize;  /* total size of TString object */
 
 	totalsize = sizeof(ktap_string) + ((l + 1) * sizeof(char));
-	ts = &newobject(KTAP_TSHRSTR, totalsize)->ts;
+	ts = &newobject(KTAP_TYPE_SHRSTR, totalsize)->ts;
 	ts->tsv.len = l;
 	ts->tsv.extra = 0;
 	memcpy(ts + 1, str, l * sizeof(char));
@@ -306,17 +306,17 @@ void *ktapc_growaux(void *block, int *size, size_t size_elems, int limit,
 int ktapc_equalobj(const ktap_value *t1, const ktap_value *t2)
 {
 	switch (ttype(t1)) {
-	case KTAP_TNIL:
+	case KTAP_TYPE_NIL:
 		return 1;
-	case KTAP_TNUMBER:
+	case KTAP_TYPE_NUMBER:
 		return nvalue(t1) == nvalue(t2);
-	case KTAP_TBOOLEAN:
+	case KTAP_TYPE_BOOLEAN:
 		return bvalue(t1) == bvalue(t2);  /* true must be 1 !! */
-	case KTAP_TLIGHTUSERDATA:
+	case KTAP_TYPE_LIGHTUSERDATA:
 		return pvalue(t1) == pvalue(t2);
-	case KTAP_TCFUNCTION:
+	case KTAP_TYPE_CFUNCTION:
 		return fvalue(t1) == fvalue(t2);
-	case KTAP_TSHRSTR:
+	case KTAP_TYPE_SHRSTR:
 		return eqshrstr(rawtsvalue(t1), rawtsvalue(t2));
 	default:
 		return gcvalue(t1) == gcvalue(t2);
@@ -328,26 +328,26 @@ int ktapc_equalobj(const ktap_value *t1, const ktap_value *t2)
 void ktapc_showobj(const ktap_value *v)
 {
 	switch (ttype(v)) {
-	case KTAP_TNIL:
+	case KTAP_TYPE_NIL:
 		printf("nil");
 		break;
-	case KTAP_TNUMBER:
+	case KTAP_TYPE_NUMBER:
 		printf("%ld", nvalue(v));
 		break;
-	case KTAP_TBOOLEAN:
+	case KTAP_TYPE_BOOLEAN:
 		printf((bvalue(v) == 1) ? "true" : "false");
 		break;
-	case KTAP_TLIGHTUSERDATA:
+	case KTAP_TYPE_LIGHTUSERDATA:
 		printf("0x%lx", (unsigned long)pvalue(v));
 		break;
-	case KTAP_TCFUNCTION:
+	case KTAP_TYPE_CFUNCTION:
 		printf("0x%lx", (unsigned long)fvalue(v));
 		break;
-	case KTAP_TSHRSTR:
-	case KTAP_TLNGSTR:
+	case KTAP_TYPE_SHRSTR:
+	case KTAP_TYPE_LNGSTR:
 		printf("%s", svalue(v));
 		break;
-	case KTAP_TTABLE:
+	case KTAP_TYPE_TABLE:
 		ktapc_tab_dump(hvalue(v));
 		break;
         default:

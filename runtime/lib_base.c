@@ -111,7 +111,7 @@ static int kplib_sort_pairs(ktap_state *ks)
 	}
 
 	if (kp_arg_nr(ks) > 1) {
-		kp_arg_check(ks, 2, KTAP_TFUNCTION);
+		kp_arg_check(ks, 2, KTAP_TYPE_FUNCTION);
 		cmp_func = clvalue(kp_arg(ks, 2));
 	}
 
@@ -179,11 +179,11 @@ static int kplib_print_backtrace(ktap_state *ks)
 	int n = kp_arg_nr(ks);
 
 	if (n >= 1) {
-		kp_arg_check(ks, 1, KTAP_TNUMBER);
+		kp_arg_check(ks, 1, KTAP_TYPE_NUMBER);
 		skip = nvalue(kp_arg(ks, 1));
 	}
 	if (n >= 2) {
-		kp_arg_check(ks, 2, KTAP_TNUMBER);
+		kp_arg_check(ks, 2, KTAP_TYPE_NUMBER);
 		max_entries = nvalue(kp_arg(ks, 2));
 		max_entries = min(max_entries, KTAP_MAX_STACK_ENTRIES);
 	}
@@ -208,11 +208,11 @@ static int kplib_backtrace(ktap_state *ks)
 	ktap_btrace *bt;
 
 	if (n >= 1) {
-		kp_arg_check(ks, 1, KTAP_TNUMBER);
+		kp_arg_check(ks, 1, KTAP_TYPE_NUMBER);
 		skip = nvalue(kp_arg(ks, 1));
 	}
 	if (n >= 2) {
-		kp_arg_check(ks, 2, KTAP_TNUMBER);
+		kp_arg_check(ks, 2, KTAP_TYPE_NUMBER);
 		max_entries = nvalue(kp_arg(ks, 2));
 		max_entries = min(max_entries, KTAP_MAX_STACK_ENTRIES);
 	}
@@ -337,7 +337,7 @@ static int kplib_kernel_string(ktap_state *ks)
 	char str[256] = {0};
 	char *ret;
 
-	kp_arg_check(ks, 1, KTAP_TNUMBER);
+	kp_arg_check(ks, 1, KTAP_TYPE_NUMBER);
 
 	addr = nvalue(kp_arg(ks, 1));
 
@@ -357,7 +357,7 @@ static int kplib_user_string(ktap_state *ks)
 	char str[256] = {0};
 	int ret;
 
-	kp_arg_check(ks, 1, KTAP_TNUMBER);
+	kp_arg_check(ks, 1, KTAP_TYPE_NUMBER);
 
 	addr = nvalue(kp_arg(ks, 1));
 
@@ -390,12 +390,12 @@ static int kplib_ptable(ktap_state *ks)
 	int narr = 0, nrec = 0;
 
 	if (kp_arg_nr(ks) >= 1) {
-		kp_arg_check(ks, 1, KTAP_TNUMBER);
+		kp_arg_check(ks, 1, KTAP_TYPE_NUMBER);
 		narr = nvalue(kp_arg(ks, 1));
 	}
 
 	if (kp_arg_nr(ks) >= 2) {
-		kp_arg_check(ks, 2, KTAP_TNUMBER);
+		kp_arg_check(ks, 2, KTAP_TYPE_NUMBER);
 		nrec = nvalue(kp_arg(ks, 2));
 	}
 
@@ -416,7 +416,7 @@ static int kplib_count(ktap_state *ks)
 		return 1;	
 	}
 
-	kp_arg_check(ks, 1, KTAP_TSTATDATA);
+	kp_arg_check(ks, 1, KTAP_TYPE_STATDATA);
 	sd = sdvalue(v);
 
 	set_number(ks->top, sd->count);
@@ -435,7 +435,7 @@ static int kplib_max(ktap_state *ks)
 		return 1;	
 	}
 
-	kp_arg_check(ks, 1, KTAP_TSTATDATA);
+	kp_arg_check(ks, 1, KTAP_TYPE_STATDATA);
 	sd = sdvalue(v);
 
 	set_number(ks->top, sd->max);
@@ -454,7 +454,7 @@ static int kplib_min(ktap_state *ks)
 		return 1;	
 	}
 
-	kp_arg_check(ks, 1, KTAP_TSTATDATA);
+	kp_arg_check(ks, 1, KTAP_TYPE_STATDATA);
 	sd = sdvalue(v);
 
 	set_number(ks->top, sd->min);
@@ -473,7 +473,7 @@ static int kplib_sum(ktap_state *ks)
 		return 1;	
 	}
 
-	kp_arg_check(ks, 1, KTAP_TSTATDATA);
+	kp_arg_check(ks, 1, KTAP_TYPE_STATDATA);
 	sd = sdvalue(v);
 
 	set_number(ks->top, sd->sum);
@@ -492,7 +492,7 @@ static int kplib_avg(ktap_state *ks)
 		return 1;	
 	}
 
-	kp_arg_check(ks, 1, KTAP_TSTATDATA);
+	kp_arg_check(ks, 1, KTAP_TYPE_STATDATA);
 	sd = sdvalue(v);
 
 	set_number(ks->top, sd->sum / sd->count);
@@ -502,7 +502,7 @@ static int kplib_avg(ktap_state *ks)
 
 static int kplib_delete(ktap_state *ks)
 {
-	kp_arg_check(ks, 1, KTAP_TTABLE);
+	kp_arg_check(ks, 1, KTAP_TYPE_TABLE);
 
 	kp_tab_clear(ks, hvalue(kp_arg(ks, 1)));
 	return 0;
@@ -527,14 +527,14 @@ static int kplib_curr_taskinfo(ktap_state *ks)
 	int offset;
 	int fetch_bytes;
 
-	kp_arg_check(ks, 1, KTAP_TNUMBER);
+	kp_arg_check(ks, 1, KTAP_TYPE_NUMBER);
 
 	offset = nvalue(kp_arg(ks, 1));
 	
 	if (kp_arg_nr(ks) == 1)
 		fetch_bytes = 4; /* default fetch 4 bytes*/
 	else {
-		kp_arg_check(ks, 2, KTAP_TNUMBER);
+		kp_arg_check(ks, 2, KTAP_TYPE_NUMBER);
 		fetch_bytes = nvalue(kp_arg(ks, 2));
 	}
 

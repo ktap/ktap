@@ -53,7 +53,7 @@
 #define MAXASIZE        (1 << MAXBITS)
 
 
-#define NILCONSTANT     {NULL}, KTAP_TNIL
+#define NILCONSTANT     {NULL}, KTAP_TYPE_NIL
 const struct ktap_value ktap_nilobjectv = {NILCONSTANT};
 #define ktap_nilobject	(&ktap_nilobjectv)
 
@@ -218,7 +218,7 @@ ktap_tab *tab_new_withstat(ktap_state *ks, int narr, int nrec, int with_stat)
 {
 	int size;
 
-	ktap_tab *t = &kp_obj_newobject(ks, KTAP_TTABLE, sizeof(ktap_tab),
+	ktap_tab *t = &kp_obj_newobject(ks, KTAP_TYPE_TABLE, sizeof(ktap_tab),
 				      NULL)->h;
 	t->array = NULL;
 	t->sizearray = 0;
@@ -302,9 +302,9 @@ const ktap_value *kp_tab_getint(ktap_tab *t, int key)
 static ktap_tnode *mainposition (const ktap_tab *t, const ktap_value *key)
 {
 	switch (ttype(key)) {
-	case KTAP_TNUMBER:
+	case KTAP_TYPE_NUMBER:
 		return hashnum(t, nvalue(key));
-	case KTAP_TLNGSTR: {
+	case KTAP_TYPE_LNGSTR: {
 		ktap_string *s = rawtsvalue(key);
 		if (s->tsv.extra == 0) {  /* no hash? */
 			s->tsv.hash = kp_str_hash(getstr(s), s->tsv.len,
@@ -313,15 +313,15 @@ static ktap_tnode *mainposition (const ktap_tab *t, const ktap_value *key)
 		}
 		return hashstr(t, rawtsvalue(key));
 		}
-	case KTAP_TSHRSTR:
+	case KTAP_TYPE_SHRSTR:
 		return hashstr(t, rawtsvalue(key));
-	case KTAP_TBOOLEAN:
+	case KTAP_TYPE_BOOLEAN:
 		return hashboolean(t, bvalue(key));
-	case KTAP_TLIGHTUSERDATA:
+	case KTAP_TYPE_LIGHTUSERDATA:
 		return hashpointer(t, pvalue(key));
-	case KTAP_TCFUNCTION:
+	case KTAP_TYPE_CFUNCTION:
 		return hashpointer(t, fvalue(key));
-	case KTAP_TBTRACE: {
+	case KTAP_TYPE_BTRACE: {
 		/* use first entry as hash key, cannot use gcvalue as key */
 		unsigned long *entries = (unsigned long *)(btvalue(key) + 1);
 		return hashpointer(t, entries[0]);
@@ -643,11 +643,11 @@ static const ktap_value *table_getstr(ktap_tab *t, ktap_string *key)
 static const ktap_value *table_get(ktap_tab *t, const ktap_value *key)
 {
 	switch (ttype(key)) {
-	case KTAP_TNIL:
+	case KTAP_TYPE_NIL:
 		return ktap_nilobject;
-	case KTAP_TSHRSTR:
+	case KTAP_TYPE_SHRSTR:
 		return table_getstr(t, rawtsvalue(key));
-	case KTAP_TNUMBER: {
+	case KTAP_TYPE_NUMBER: {
 		ktap_number n = nvalue(key);
 		int k = (int)n;
 		if ((ktap_number)k == nvalue(key)) /* index is int? */
@@ -1044,7 +1044,7 @@ ktap_ptab *kp_ptab_new(ktap_state *ks, int narr, int nrec)
 	ktap_ptab *ph;
 	int cpu;
 
-	ph = &kp_obj_newobject(ks, KTAP_TPTABLE, sizeof(ktap_ptab),
+	ph = &kp_obj_newobject(ks, KTAP_TYPE_PTABLE, sizeof(ktap_ptab),
 			NULL)->ph;
 	ph->tbl = alloc_percpu(ktap_tab *);
 

@@ -39,8 +39,8 @@ static int kplib_ffi_new(ktap_state *ks)
 		return 1;
 	}
 
-	kp_arg_check(ks, 1, KTAP_TNUMBER);
-	kp_arg_check(ks, 2, KTAP_TNUMBER);
+	kp_arg_check(ks, 1, KTAP_TYPE_NUMBER);
+	kp_arg_check(ks, 2, KTAP_TYPE_NUMBER);
 
 	cs_id = nvalue(kp_arg(ks, 1));
 	array_size = nvalue(kp_arg(ks, 2));
@@ -69,7 +69,7 @@ static int kplib_ffi_free(ktap_state *ks)
 		return 1;
 	}
 
-	kp_arg_check(ks, 1, KTAP_TCDATA);
+	kp_arg_check(ks, 1, KTAP_TYPE_CDATA);
 
 	cd = cdvalue(kp_arg(ks, 1));
 
