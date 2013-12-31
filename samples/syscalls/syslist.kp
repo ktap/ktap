@@ -4,9 +4,9 @@
 #
 # 10-Nov-2013   Brendan Gregg   Created this
 
-local self = {}
-local lats = {}
-local order = {}  # a workaround for key sorting
+var self = {}
+var lats = {}
+var order = {}  # a workaround for key sorting
 
 trace syscalls:sys_enter_* {
     self[tid()] = gettimeofday_us()
@@ -22,7 +22,7 @@ trace syscalls:sys_exit_* {
 
 trace_end {
     printf("   %8s %8s\n", "LAT(us)", "COUNT");
-    local function cmp(v1, v2) {
+    function cmp(v1, v2) {
         return (v1 < v2)
     }
     for (lat, dummy in sort_pairs(order, cmp)) {

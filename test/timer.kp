@@ -1,14 +1,14 @@
 #!/usr/bin/env ktap
 
-local function failed() {
+function failed() {
 	printf("failed\n");
 	exit(-1);
 }
 
 #---------------------------------------#
 
-local n1 = 0
-local n2 = 0
+var n1 = 0
+var n2 = 0
 
 tick-1s {
 	n1 = n1 + 1

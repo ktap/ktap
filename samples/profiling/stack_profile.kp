@@ -6,7 +6,7 @@
 # Flame Graphs:
 # http://dtrace.org/blogs/brendan/2012/03/17/linux-kernel-performance-flame-graphs/
 
-local s = ptable(0, 20000) #pre-allocate 20000 record entries
+var s = ptable(0, 20000) #pre-allocate 20000 record entries
 
 profile-10us {
 	#skip 12 stack entries, and dump all remain entries.
@@ -18,7 +18,7 @@ tick-60s {
 }
 
 trace_end {
-	local function cmp(v1, v2) {
+	function cmp(v1, v2) {
 		return (count(v1) < count(v2))
 	}
 	for (k, v in sort_pairs(s, cmp)) {

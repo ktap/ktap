@@ -1,9 +1,8 @@
-local function failed(msg) {
+function failed(msg) {
 	printf("failed: " .. msg);
 	printf("\n")
 	exit(-1);
 }
-
 
 ffi.cdef[[
 	void ffi_test_void();
@@ -43,7 +42,7 @@ ffi.cdef[[
 ]]
 
 
-ret = ffi.C.ffi_test_void()
+var ret = ffi.C.ffi_test_void()
 if (ret != nil) {
 	failed("ffi_test_void should return nil")
 }

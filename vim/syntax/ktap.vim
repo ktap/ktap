@@ -17,7 +17,7 @@ setlocal iskeyword=@,48-57,_,$
 syn keyword ktapStatement contained break continue return containedin=ktapBlock
 syn keyword ktapRepeat contained while for in containedin=ktapBlock
 syn keyword ktapConditional contained if else elseif containedin=ktapBlock
-syn keyword ktapDeclaration trace trace_end function
+syn keyword ktapDeclaration trace trace_end function var
 
 syn region ktapTraceDec start="\<trace\>"lc=5 end="{"me=s-1 contains=ktapString,ktapNumber
 syn region ktapTraceDec start="\<trace_end\>"lc=9 end="{"me=s-1 contains=ktapString,ktapNumber

@@ -4,7 +4,7 @@
 #
 # 23-Nov-2013	Brendan Gregg	Created this
 
-local path = {}
+var path = {}
 
 printf("%5s %6s %-12s %3s %3s %s\n", "UID", "PID", "COMM", "FD", "ERR", "PATH");
 
@@ -13,8 +13,8 @@ trace syscalls:sys_enter_open {
 }
 
 trace syscalls:sys_exit_open {
-	local fd
-	local errno
+	var fd
+	var errno
 
 	if (arg2 < 0) {
 		fd = 0

@@ -1,19 +1,19 @@
 #!/usr/bin/env ktap
 
-local function failed() {
+function failed() {
 	printf("failed\n");
 	exit(-1);
 }
 
 #-----------------------------------------#
 
-local a = "123456789"
+var a = "123456789"
 
 if (len(a) != 9) {
 	failed()
 }
 
-local b = {}
+var b = {}
 b[0] = 0
 b[1] = 1
 b["keys"] = "values"

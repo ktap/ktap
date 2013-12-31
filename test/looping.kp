@@ -1,12 +1,12 @@
 #!/usr/bin/env ktap
 
-local function failed() {
+function failed() {
 	printf("failed\n");
 	exit(-1);
 }
 
 ### basic while-loop testing
-local a = 1
+var a = 1
 while (a < 1000) {
 	a = a + 1
 }
@@ -17,7 +17,7 @@ if (a != 1000) {
 
 ### break testing
 ### Note that ktap don't have continue keyword
-local a = 1
+var a = 1
 while (a < 1000) {
 	if (a == 10) {
 		break
@@ -30,7 +30,7 @@ if (a != 10) {
 }
 
 ### for-loop testing
-local b = 0
+var b = 0
 for (c = 0, 1000, 1) {
 	b = b + 1
 }

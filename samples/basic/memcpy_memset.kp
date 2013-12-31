@@ -2,8 +2,8 @@
 
 # This script collect kernel memcpy/memset size histgoram output.
 
-local h_memcpy = {}
-local h_memset = {}
+var h_memcpy = {}
+var h_memset = {}
 
 trace probe:memcpy size=%dx {
 	h_memcpy[arg2] += 1

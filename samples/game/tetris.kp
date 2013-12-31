@@ -33,7 +33,7 @@
 # utils
 #
  
-local function rand(max) {
+function rand(max) {
 	r = gettimeofday_us()
 	if (r < 0) {
 		r = r * -1
@@ -41,9 +41,9 @@ local function rand(max) {
 	return r % max
 }
 
-local display_buffer = {}
+var display_buffer = {}
 
-local function update_display() {
+function update_display() {
 	for (i = 0, 239, 1) {
 		if ((i % 12 - 11) != 0) {
 			tmp = ""
@@ -72,24 +72,24 @@ local function update_display() {
 # global value
 #
 
-local empty = -1
+var empty = -1
 
-local key_code = 0
-local point = 0
-local block_number = 0
-local height = 0
-local height_update = 0
+var key_code = 0
+var point = 0
+var block_number = 0
+var height = 0
+var height_update = 0
 
-local destination_position = {}
+var destination_position = {}
  
-local block_data0 = {}
-local block_data1 = {}
-local block_data2 = {}
-local block_data3 = {}
-local block_data4 = {}
-local block_data5 = {}
-local block_data6 = {}
-local block_table = {}
+var block_data0 = {}
+var block_data1 = {}
+var block_data2 = {}
+var block_data3 = {}
+var block_data4 = {}
+var block_data5 = {}
+var block_data6 = {}
+var block_table = {}
  
 #
 # Initialize
@@ -157,8 +157,8 @@ trace probe:kbd_event handle=%di event_type=%si event_code=%dx value=%cx {
 	#	%rsi	2 argument
 	#	%rdi	1 argument
  
-	local event_code = arg4
-	local value = arg5
+	var event_code = arg4
+	var value = arg5
  
 	if (value != 0) {
 		if ((event_code - 4) != 0) {

@@ -6,11 +6,11 @@
 #but not aware on the recursion problem, user need to aware this limitation,
 #so don't use this script to trace function which could be called recursive.
 
-local self = {}
-local count_max = 0
-local count_min = 0
-local count_num = 0
-local total_time = 0
+var self = {}
+var count_max = 0
+var count_min = 0
+var count_num = 0
+var total_time = 0
 
 printf("measure time(us) of function vfs_read\n");
 
@@ -31,11 +31,11 @@ trace probe:vfs_read%return {
 		return
 	}
 
-	local durtion = gettimeofday_us() - self[tid()]
+	var durtion = gettimeofday_us() - self[tid()]
 	if (durtion > count_max) {
 		count_max = durtion
 	}
-	local min = count_min
+	var min = count_min
 	if (min == 0 || durtion < min) {
 		count_min = durtion
 	}

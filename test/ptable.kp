@@ -1,13 +1,13 @@
 #!/usr/bin/env ktap
 
-local function failed() {
+function failed() {
 	printf("failed\n");
 	exit(-1);
 }
 
 #---------------------------------#
 
-local s = ptable()
+var s = ptable()
 
 for (i = 1, 100, 1) {
 	s["k"] <<< i
@@ -26,7 +26,7 @@ if (min(s["k"]) != 1) {
 	failed()
 }
 
-local s2 = ptable(10000, 0)
+var s2 = ptable(10000, 0)
 
 for (i = 1, 10000, 1) {
 	s2[i] <<< i

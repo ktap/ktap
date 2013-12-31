@@ -1,7 +1,7 @@
 #!/usr/bin/env ktap
 
 #errdesc get from include/uapi/asm-generic/errno*.h
-local errdesc = {
+var errdesc = {
 	[1] = "Operation not permitted",		#EPERM
 	[2] = "No such file or directory",		#ENOENT
 	[3] = "No such process",			#ESRCH
@@ -138,7 +138,7 @@ local errdesc = {
 
 trace syscalls:sys_exit_* {
 	if (arg2 < 0) {
-		local errno = -arg2
+		var errno = -arg2
 		printf("%-15s%-20s\t%d\t%-30s\n",
 			execname(), argname, errno, errdesc[errno])
 	}

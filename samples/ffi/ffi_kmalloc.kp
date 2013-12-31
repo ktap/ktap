@@ -7,13 +7,13 @@ ffi.cdef[[
 	void kfree(const void *objp);
 ]]
 
-local t1 = gettimeofday_us()
+var t1 = gettimeofday_us()
 
 for (i = 1, 1000, 1) {
-	local object = ffi.C.__kmalloc(128, 208) #GFP_KERNEL is 208
+	var object = ffi.C.__kmalloc(128, 208) #GFP_KERNEL is 208
 	ffi.C.kfree(object)
 }
 
-local t2 = gettimeofday_us()
+var t2 = gettimeofday_us()
 
 printf("execution time: %d us\n", t2 - t1)

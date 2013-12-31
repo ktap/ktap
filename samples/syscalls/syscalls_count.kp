@@ -1,6 +1,6 @@
 #!/usr/bin/env ktap
 
-local s = ptable()
+var s = ptable()
 
 trace syscalls:sys_enter_* {
 	s[argname] <<< 1

@@ -1,13 +1,13 @@
 #!/usr/bin/env ktap
 
-local function failed() {
+function failed() {
 	printf("failed\n");
 	exit(-1);
 }
 
 #----------------------------------------#
 
-local n = 0
+var n = 0
 
 trace sched:* {
 	n = n + 1

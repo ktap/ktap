@@ -1,6 +1,6 @@
 #!/usr/bin/env ktap
 
-local function failed() {
+function failed() {
 	printf("failed\n");
 	exit(-1);
 }
@@ -9,7 +9,7 @@ local function failed() {
 
 
 #regular recursive fibonacci
-local function fib(n) {
+function fib(n) {
 	if (n < 2) {
 		return n
 	}
@@ -21,7 +21,7 @@ if (fib(20) != 6765) {
 }
 
 #tail recursive fibonacci
-local function fib(n) {
+function fib(n) {
 	f = function (iter, res, next) {
 		if (iter == 0) {
 			return res;

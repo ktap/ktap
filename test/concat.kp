@@ -1,14 +1,14 @@
 #!/usr/bin/env ktap
 
-local function failed() {
+function failed() {
 	printf("failed\n");
 	exit(-1);
 }
 
 #----------------------------------------#
 
-local a = "123"
-local b = "456"
+var a = "123"
+var b = "456"
 
 if (a..b != "123456") {
 	failed()

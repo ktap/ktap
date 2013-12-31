@@ -1034,25 +1034,31 @@ static void ffiexp(ktap_lexstate *ls, ktap_expdesc *v)
 	const char *field_name;
 
 	check(ls, TK_FFI);
-	/* fake to be TK_NAME to reuse functions */
+	/* fake to be TK_NAME to reuse primaryexp functions */
 	ls->t.token = TK_NAME;
 	primaryexp(ls, v);
 
 	check(ls, '.');
+	lex_next(ls);  /* skip the dot or colon */
 	/* fieldsel */
 	/* TODO: ffi.cdef should generate no additional code at all,
 	 * but it does now because we cannot look ahead on token.
 	 * Improve it later. 12.12.2013(unihorn) */
-	codegen_exp2anyregup(fs, v);
-	lex_next(ls);  /* skip the dot or colon */
 	field_name = getstr(ls->t.seminfo.ts);
 	checkname(ls, &key);
+	if (!strcmp(field_name, "cdef")) {
+		parsecdef(ls);
+
+		/* see VVOID check in function exprstat */
+		v->k = VVOID;
+		return;
+	}
+
+	codegen_exp2anyregup(fs, v);
 	codegen_indexed(fs, v, &key);
 
 	if (!strcmp(field_name, "new"))
 		parsenew(ls, v, line);
-	else if (!strcmp(field_name, "cdef"))
-		parsecdef(ls);
 	else if (!strcmp(field_name, "free"))
 		parse_arglist(ls, v, line);
 	else if (!strcmp(field_name, "C"))
@@ -1720,6 +1726,7 @@ static void localstat(ktap_lexstate *ls)
 	adjustlocalvars(ls, nvars);
 }
 
+#if 0
 static int funcname(ktap_lexstate *ls, ktap_expdesc *v)
 {
 	/* funcname -> NAME {fieldsel} [`:' NAME] */
@@ -1734,18 +1741,19 @@ static int funcname(ktap_lexstate *ls, ktap_expdesc *v)
 	}
 	return ismethod;
 }
+#endif
 
-static void funcstat(ktap_lexstate *ls, int line)
+static void funcstat(ktap_lexstate *ls)
 {
 	/* funcstat -> FUNCTION funcname body */
-	int ismethod;
-	ktap_expdesc v, b;
-
 	lex_next(ls);  /* skip FUNCTION */
+	localfunc(ls);
+#if 0
 	ismethod = funcname(ls, &v);
 	body(ls, &b, ismethod, line);
 	codegen_storevar(ls->fs, &v, &b);
 	codegen_fixline(ls->fs, line);  /* definition `happens' in the first line */
+#endif
 }
 
 static void exprstat(ktap_lexstate *ls)
@@ -1764,6 +1772,8 @@ static void exprstat(ktap_lexstate *ls)
 		/* ffi.cdef is a fake function call now */
 		// check_condition(ls, v.v.k == VCALL, "syntax error");
 		SETARG_C(getcode(fs, &v.v), 1);  /* call statement uses no results */
+	} else if(v.v.k != VVOID) { /* ffi.cdef generate VVOID */
+		lex_syntaxerror(ls, "unexpected symbol");
 	}
 }
 
@@ -1969,15 +1979,18 @@ static void statement(ktap_lexstate *ls)
 		break;
 	}
 	case TK_FUNCTION: {  /* stat -> funcstat */
-		funcstat(ls, line);
+		funcstat(ls);
 		break;
 	}
-	case TK_LOCAL: {  /* stat -> localstat */
+	case TK_VAR: {  /* stat -> localstat */
 		lex_next(ls);  /* skip LOCAL */
+		localstat(ls);
+#if 0
 		if (testnext(ls, TK_FUNCTION))  /* local function? */
 			localfunc(ls);
 		else
 			localstat(ls);
+#endif
 		break;
 	}
 	case TK_DBCOLON: {  /* stat -> label */

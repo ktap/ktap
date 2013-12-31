@@ -2,7 +2,7 @@
 
 # showing all tracepoints in histogram style
 
-local s = ptable()
+var s = ptable()
 
 trace *:* {
 	s[argname] <<< 1

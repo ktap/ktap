@@ -4,11 +4,11 @@
 #
 # 10-Nov-2013	Brendan Gregg	Created this
 
-local step = 10	# number of ms per step
+var step = 10	# number of ms per step
 
-local self = {}
-local lats = {}
-local max = 0
+var self = {}
+var lats = {}
+var max = 0
 
 trace syscalls:sys_enter_* {
 	self[tid()] = gettimeofday_us()

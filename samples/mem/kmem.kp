@@ -1,21 +1,21 @@
 #!/usr/bin/env ktap
 
-local count1 = 0
+var count1 = 0
 trace kmem:kmalloc {
 	count1 = count1 + 1
 }
 
-local count2 = 0
+var count2 = 0
 trace kmem:kfree {
 	count2 = count2 + 1
 }
 
-local count3 = 0
+var count3 = 0
 trace kmem:mm_page_alloc {
 	count3 = count3 + 1
 }
 
-local count4 = 0
+var count4 = 0
 trace kmem:mm_page_free {
 	count4 = count4 + 1
 }

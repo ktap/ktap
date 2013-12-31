@@ -44,7 +44,7 @@ static const char *const ktap_tokens [] = {
 	"profile", "tick", "<<<",
 	"and", "break", "do", "else", "elseif",
 	"end", "false", "for", "function", "goto", "if",
-	"in", "local", "nil", "not", "or", "repeat",
+	"in", "var", "nil", "not", "or", "repeat",
 	"return", "then", "true", "until", "while",
 	"..", "...", "==", ">=", "<=", "!=", "+=", "::", "<eof>",
 	"<number>", "<name>", "<string>", "<symbol>"

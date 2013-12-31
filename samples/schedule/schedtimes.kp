@@ -8,28 +8,28 @@
 #sometime you will found there have sleep time for command "ls", the reason
 #is that sleep time is belong to parent process bash, so clear on this.
 
-local RUNNING = 0
-local QUEUED = 1
-local SLEEPING = 2
-local DEAD = 64
+var RUNNING = 0
+var QUEUED = 1
+var SLEEPING = 2
+var DEAD = 64
 
-local run_time = {}
-local queued_time = {}
-local sleep_time = {}
-local io_wait_time = {}
+var run_time = {}
+var queued_time = {}
+var sleep_time = {}
+var io_wait_time = {}
 
-local pid_state = {}
-local pid_names = {}
-local prev_timestamp = {}
-local io_wait = {}
+var pid_state = {}
+var pid_names = {}
+var prev_timestamp = {}
+var io_wait = {}
 
 trace sched:sched_switch {
-	local prev_comm = arg1
-	local prev_pid = arg2
-	local prev_state = arg4
-	local next_comm = arg5
-	local next_pid = arg6
-	local t = gettimeofday_us()
+	var prev_comm = arg1
+	var prev_pid = arg2
+	var prev_state = arg4
+	var next_comm = arg5
+	var next_pid = arg6
+	var t = gettimeofday_us()
 
 	if (pid_state[prev_pid] == nil) {
 		#do nothing
@@ -68,15 +68,15 @@ trace sched:sched_switch {
 }
 
 trace sched:sched_wakeup, sched:sched_wakeup_new {
-	local comm = arg1
-	local wakeup_pid = arg2
-	local success = arg4
-	local t = gettimeofday_us()
+	var comm = arg1
+	var wakeup_pid = arg2
+	var success = arg4
+	var t = gettimeofday_us()
 
 	if (pid_state[wakeup_pid] == nil) {
 		#do nothing
 	} elseif (pid_state[wakeup_pid] == SLEEPING) {
-		local durtion = t - prev_timestamp[wakeup_pid]
+		var durtion = t - prev_timestamp[wakeup_pid]
 
 		sleep_time[wakeup_pid] += durtion
 		if (io_wait[wakeup_pid] == 1) {
@@ -93,10 +93,10 @@ trace sched:sched_wakeup, sched:sched_wakeup_new {
 }
 
 trace_end {
-	local t = gettimeofday_us()
+	var t = gettimeofday_us()
 	
 	for (pid, state in pairs(pid_state)) {
-		local durtion = t - prev_timestamp[pid]
+		var durtion = t - prev_timestamp[pid]
 		if (state == SLEEPING) {
 			sleep_time[pid] += durtion
 		} elseif (state == QUEUED) {
