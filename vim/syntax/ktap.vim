@@ -14,51 +14,54 @@ endif
 
 setlocal iskeyword=@,48-57,_,$
 
-syn keyword ktapStatement contained break continue return containedin=ktapBlock
-syn keyword ktapRepeat contained while for in containedin=ktapBlock
-syn keyword ktapConditional contained if else elseif containedin=ktapBlock
-syn keyword ktapDeclaration trace trace_end function var
+syn keyword ktapStatement break continue return
+syn keyword ktapRepeat while for in
+syn keyword ktapConditional if else elseif
+syn keyword ktapDeclaration trace trace_end
+syn keyword ktapIdentifier var
+syn keyword ktapFunction function
+syn match   ktapBraces "[{}\[\]]"
+syn match   ktapParens "[()]"
+syn keyword ktapReserved argevent argname arg1 arg2 arg3 arg4 arg5 arg6 arg7 arg8 arg9
+
 
 syn region ktapTraceDec start="\<trace\>"lc=5 end="{"me=s-1 contains=ktapString,ktapNumber
 syn region ktapTraceDec start="\<trace_end\>"lc=9 end="{"me=s-1 contains=ktapString,ktapNumber
 syn match ktapTrace contained "\<\w\+\>" containedin=ktapTraceDec
 
 syn region ktapFuncDec start="\<function\>"lc=8 end=":\|("me=s-1 contains=ktapString,ktapNumber
-syn match ktapFuncCall contained "\<\w\+\ze\(\s\|\n\)*(" containedin=ktapBlock
+syn match ktapFuncCall contained "\<\w\+\ze\(\s\|\n\)*("
 syn match ktapFunc contained "\<\w\+\>" containedin=ktapFuncDec,ktapFuncCall
 
-syn match ktapStat contained "@\<\w\+\ze\(\s\|\n\)*(" containedin=ktapBlock
+syn match ktapStat contained "@\<\w\+\ze\(\s\|\n\)*("
 
 " decimal number
-syn match ktapNumber "\<\d\+\>" containedin=ktapBlock
+syn match ktapNumber "\<\d\+\>"
 " octal number
-syn match ktapNumber "\<0\o\+\>" contains=ktapOctalZero containedin=ktapBlock
+syn match ktapNumber "\<0\o\+\>" contains=ktapOctalZero
 " Flag the first zero of an octal number as something special
 syn match ktapOctalZero contained "\<0"
 " flag an octal number with wrong digits
-syn match ktapOctalError "\<0\o*[89]\d*" containedin=ktapBlock
+syn match ktapOctalError "\<0\o*[89]\d*"
 " hex number
-syn match ktapNumber "\<0x\x\+\>" containedin=ktapBlock
+syn match ktapNumber "\<0x\x\+\>"
 " numeric arguments
-syn match ktapNumber "\<\$\d\+\>" containedin=ktapBlock
-syn match ktapNumber "\<\$#" containedin=ktapBlock
+syn match ktapNumber "\<\$\d\+\>"
+syn match ktapNumber "\<\$#"
 
-syn region ktapString oneline start=+"+ skip=+\\"+ end=+"+ containedin=ktapBlock
+syn region ktapString oneline start=+"+ skip=+\\"+ end=+"+ 
 " string arguments
-syn match ktapString "@\d\+\>" containedin=ktapBlock
-syn match ktapString "@#" containedin=ktapBlock
+syn match ktapString "@\d\+\>"
+syn match ktapString "@#"
 syn region ktapString2 matchgroup=ktapString start="\[\z(=*\)\[" end="\]\z1\]" contains=@Spell
-
-syn region ktapBlock fold matchgroup=ktapBlockEnds start="{"rs=e end="}"re=s containedin=ktapBlock
 
 " syn keyword ktapTodo contained TODO FIXME XXX
 
-syn match ktapComment "#.*" containedin=ktapBlock
+syn match ktapComment "#.*"
 
 " treat ^#! as special
 syn match ktapSharpBang "^#!.*"
 
-syn keyword ktapArgs argevent argname arg1 arg2 arg3 arg4 arg5 arg6 arg7 arg8 arg9
 
 syn keyword ktapFunc printf print
 syn keyword ktapFunc gettimeofday_us
@@ -96,8 +99,11 @@ if version >= 508 || !exists("did_lua_syntax_inits")
   HiLink ktapTrace		Function
   HiLink ktapFunc		Function
   HiLink ktapStat		Function
+  HiLink ktapFunction		Function
+  HiLink ktapBraces		Function
   HiLink ktapDeclaration	Typedef
-  HiLink ktapArgs		Identifier
+  HiLink ktapIdentifier		Identifier
+  HiLink ktapReserved		Keyword
 
   delcommand HiLink
 endif
