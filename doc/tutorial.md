@@ -566,7 +566,7 @@ For more release info, please look at RELEASES.txt in project root directory.
 
 5. syscall tracing in histogram style
 
-        local s = {}
+        var s = {}
 
         trace syscalls:sys_enter_* {
                 s[argname] += 1
@@ -649,8 +649,8 @@ Here is the complete syntax of ktap in extended BNF.
                  for Name '=' exp ',' exp [',' exp] { block } | 
                  for namelist in explist { block } | 
                  function funcname funcbody | 
-                 local function Name funcbody | 
-                 local namelist ['=' explist] 
+                 function Name funcbody | 
+                 var namelist ['=' explist] 
 
         laststat ::= return [explist] | break
 
