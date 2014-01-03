@@ -215,3 +215,21 @@ KTAP-CFLAGS: FORCE
 	if test x"$$FLAGS" != x"`cat KTAP-CFLAGS 2>/dev/null`" ; then \
 		echo "$$FLAGS" >KTAP-CFLAGS; \
 	fi
+
+#generate tags/etags/cscope index for editor.
+define all_sources
+        (find . -name '*.[ch]' -print)
+endef
+
+.PHONY: tags
+tags:
+	$(all_sources) | xargs ctags
+
+.PHONY: etags
+etags:
+	$(all_sources) | xargs etags
+
+.PHONY: cscope
+cscope:
+	$(all_sources) > cscope.files
+	cscope -k -b
