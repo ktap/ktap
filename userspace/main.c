@@ -32,6 +32,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <math.h>
+#include <linux/errno.h>
 
 #include "../include/ktap_types.h"
 #include "ktapc.h"
@@ -148,6 +149,12 @@ static int run_ktapvm()
 	}
 
 	ret = ioctl(ktap_fd, KTAP_CMD_IOC_RUN, &uparm);
+	switch (ret) {
+	case -EPERM:
+	case -EACCES:
+		fprintf(stderr, "You may not have permission to run ktap\n");
+		break;
+	}
 
 	close(ktap_fd);
 	close(ktapvm_fd);

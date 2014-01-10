@@ -131,6 +131,15 @@ static long ktap_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		print_version();
 		return 0;
 	case KTAP_CMD_IOC_RUN:
+		/*
+		 * must be root to run ktap script (at least for now)
+		 *
+		 * TODO: check perf_paranoid sysctl and allow non-root user
+		 * to use ktap for tracing process(like uprobe) ?
+		 */
+		if (!capable(CAP_SYS_ADMIN))
+			return -EACCES;
+
 		ret = copy_from_user(&parm, (void __user *)arg,
 				     sizeof(ktap_parm));
 		if (ret < 0)
