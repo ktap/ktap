@@ -135,27 +135,27 @@ void ktapc_tab_setvalue(ktap_tab *t, const ktap_value *key, ktap_value *val)
 	if (v != ktap_nilobject) {
 		set_obj((ktap_value *)v, val);
 	} else {
-		if (t->lastfree == t->node + t->lsizenode) {
-			t->node = realloc(t->node, t->lsizenode * 2);
-			memset(t->node + t->lsizenode, 0,
-				t->lsizenode * sizeof(ktap_tnode));
-			t->lsizenode *= 2;
-			t->lastfree = t->node + t->lsizenode;
+		if (t->lastfree == t->node + t->sizearray) {
+			int size = t->sizearray * sizeof(ktap_tnode);
+			t->node = realloc(t->node, size * 2);
+			memset(t->node + t->sizearray, 0, size);
+			t->lastfree = t->node + t->sizearray;
+			t->sizearray *= 2;
 		}
 
 		ktap_tnode *n = t->lastfree;
 		set_obj(gkey(n), key);
 		set_obj(gval(n), val);
 		t->lastfree++;
-	}	
+	}
 }
 
 ktap_tab *ktapc_tab_new(void)
 {
 	ktap_tab *t = &newobject(KTAP_TYPE_TABLE, sizeof(ktap_tab))->h;
-	t->lsizenode = 100;
-	t->node = (ktap_tnode *)malloc(t->lsizenode * sizeof(ktap_tnode));
-	memset(t->node, 0, t->lsizenode * sizeof(ktap_tnode));
+	t->sizearray = 100;
+	t->node = (ktap_tnode *)malloc(t->sizearray * sizeof(ktap_tnode));
+	memset(t->node, 0, t->sizearray * sizeof(ktap_tnode));
 	t->lastfree = &t->node[0];
 	return t;
 }
@@ -181,12 +181,15 @@ static int ktapc_strtab_nr;
 
 void ktapc_init_stringtable(void)
 {
-	ktapc_strtab = malloc(sizeof(ktap_string *) * ktapc_strtab_size);
+	int size = ktapc_strtab_size * sizeof(ktap_string *);
+
+	ktapc_strtab = malloc(size);
 	if (!ktapc_strtab) {
 		fprintf(stderr, "cannot allocate ktapc_stringtable\n");
 		exit(-1);
 	}
 
+	memset(ktapc_strtab, 0, size);
 	ktapc_strtab_nr = 0;
 }
 
@@ -206,9 +209,9 @@ static void stringtable_insert(ktap_string *ts)
 	ktapc_strtab[ktapc_strtab_nr++] = ts;
 
 	if (ktapc_strtab_nr == ktapc_strtab_size) {
-		ktapc_strtab = realloc(ktapc_strtab, ktapc_strtab_size * 2);
-		memset(ktapc_strtab + ktapc_strtab_size, 0,
-			ktapc_strtab_size * sizeof(ktap_string *));
+		int size = ktapc_strtab_size * sizeof(ktap_string *);
+		ktapc_strtab = realloc(ktapc_strtab, size * 2);
+		memset(ktapc_strtab + ktapc_strtab_size, 0, size);
 		ktapc_strtab_size *= 2;
 	}
 }
