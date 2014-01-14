@@ -1,7 +1,7 @@
 #ifndef __KTAP_VM_H__
 #define __KTAP_VM_H__
 
-int gettimeofday_us(void); /* common helper function */
+long gettimeofday_us(void); /* common helper function */
 ktap_state *kp_newstate(struct ktap_parm *parm, struct dentry *dir);
 void kp_prepare_to_exit(ktap_state *ks);
 void kp_init_exit_instruction(void);

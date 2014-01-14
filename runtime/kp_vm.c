@@ -49,7 +49,7 @@
 
 
 /* common helper function */
-int gettimeofday_us(void)
+long gettimeofday_us(void)
 {
 	struct timeval tv;
 
