@@ -69,9 +69,9 @@ ktap_cdata *kp_cdata_new_record(ktap_state *ks, void *val, csymbol_id id)
 	/* if val == NULL, allocate new empty space */
 	if (val == NULL) {
 		size = csym_size(ks, id_to_csym(ks, id));
-		cd_struct(cd) = kp_rawobj_alloc(ks, size);
+		cd_record(cd) = kp_rawobj_alloc(ks, size);
 	} else
-		cd_struct(cd) = val;
+		cd_record(cd) = val;
 
 	return cd;
 }
@@ -93,6 +93,12 @@ void kp_cdata_dump(ktap_state *ks, ktap_cdata *cd)
 		break;
 	case FFI_PTR:
 		kp_printf(ks, "c pointer(0x%p)", cd_ptr(cd));
+		break;
+	case FFI_STRUCT:
+		kp_printf(ks, "c struct(0x%p)", cd_struct(cd));
+		break;
+	case FFI_UNION:
+		kp_printf(ks, "c union(0x%p)", cd_union(cd));
 		break;
 	default:
 		kp_printf(ks, "unsupported cdata type %d!\n", cd_type(ks, cd));
@@ -188,7 +194,7 @@ static void kp_cdata_value(ktap_state *ks, ktap_value *val, void **out_addr,
 		return;
 	case FFI_STRUCT:
 	case FFI_UNION:
-		*out_addr = cd_struct(cd);
+		*out_addr = cd_record(cd);
 		return;
 	case FFI_FUNC:
 	case FFI_UNKNOWN:
@@ -344,7 +350,7 @@ void kp_cdata_record_set(ktap_state *ks, ktap_cdata *cd,
 		return;
 	}
 
-	addr = cd_struct(cd);
+	addr = cd_record(cd);
 	addr += csym_record_mb_offset_by_name(ks, cs, mb_name);
 	kp_cdata_unpack(ks, addr, mb_cs, val);
 }
@@ -375,7 +381,7 @@ void kp_cdata_record_get(ktap_state *ks, ktap_cdata *cd,
 
 	mb_cs_id = mb->id;
 	mb_cs = id_to_csym(ks, mb_cs_id);
-	addr = cd_struct(cd);
+	addr = cd_record(cd);
 	addr += csym_record_mb_offset_by_name(ks, cs, mb_name);
 
 	kp_cdata_init(ks, val, addr, mb->len, mb_cs_id);
