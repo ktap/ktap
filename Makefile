@@ -188,6 +188,9 @@ load:
 unload:
 	rmmod ktapvm
 
+reload:
+	make unload; make load
+
 test: FORCE
 	cd test; sh ./run_test.sh; cd -
 
