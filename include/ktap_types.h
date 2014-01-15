@@ -258,6 +258,7 @@ typedef struct ktap_stringtable {
 
 #ifdef CONFIG_KTAP_FFI
 typedef int csymbol_id;
+typedef uint64_t cdata_number;
 typedef struct csymbol csymbol;
 
 /* global ffi state maintained in each ktap vm instance */
@@ -272,7 +273,7 @@ typedef struct ktap_cdata {
 	CommonHeader;
 	csymbol_id id;
 	union {
-		uint64_t i;
+		cdata_number i;
 		struct {
 			void *addr;
 			int nmemb;	/* number of memory block */

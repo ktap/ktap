@@ -986,21 +986,23 @@ static void parse_ffi_new(ktap_lexstate *ls, ktap_expdesc *f, int line)
 	}
 	}
 
-	if (!ct.is_array)
-		lex_syntaxerror(ls, "ffi.new only accepts array declaration.");
-
 	v = &args;
 	/* generate arguments for ffi.new */
 	init_exp(v, VKNUM, 0);
 	v->u.nval = ct.ffi_cs_id;
 	codegen_exp2nextreg(ls->fs, v);
+
 	init_exp(v, VKNUM, 0);
-	v->u.nval = ct.array_size;
+	v->u.nval = ct.is_array ? ct.array_size : 1;
+	codegen_exp2nextreg(ls->fs, v);
+
+	init_exp(v, VKNUM, 0);
+	v->u.nval = ct.is_array;
 	codegen_exp2nextreg(ls->fs, v);
 
 	base = f->u.info;  /* base register for call */
-	/* ffi.new takes two arguments and return 1 */
-	init_exp(f, VCALL, codegen_codeABC(ls->fs, OP_CALL, base, 3, 2));
+	/* ffi.new takes three arguments and return one */
+	init_exp(f, VCALL, codegen_codeABC(ls->fs, OP_CALL, base, 4, 2));
 }
 
 static void parse_ffi_arglist(ktap_lexstate *ls, ktap_expdesc *v, int line)
@@ -1047,7 +1049,7 @@ static void parse_ffi_cast(ktap_lexstate *ls, ktap_expdesc *f, int line)
 	check_match(ls, ')', '(', line);
 
 	base = f->u.info;  /* base register for call */
-	/* ffi.new takes two arguments and return 1 */
+	/* ffi.new takes two arguments and return one */
 	init_exp(f, VCALL, codegen_codeABC(ls->fs, OP_CALL, base, 3, 2));
 
 }
