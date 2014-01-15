@@ -6,10 +6,10 @@ A New Scripting Dynamic Tracing Tool For Linux
 ktap is a new scripting dynamic tracing tool for Linux,
 it uses a scripting language and lets users trace the Linux kernel dynamically.
 ktap is designed to give operational insights with interoperability
-that allows users to tune, troubleshoot and extend kernel and application.
-It's similar with Linux Systemtap and Solaris Dtrace.
+that allows users to tune, troubleshoot and extend the kernel and applications.
+It's similar to Linux Systemtap and Solaris Dtrace.
 
-ktap have different design principles from Linux mainstream dynamic tracing
+ktap has different design principles from Linux mainstream dynamic tracing
 language in that it's based on bytecode, so it doesn't depend upon GCC,
 doesn't require compiling kernel module for each script, safe to use in
 production environment, fulfilling the embedded ecosystem's tracing needs.
@@ -23,11 +23,11 @@ More information can be found at [ktap homepage][homepage].
   * simple but powerful scripting language
   * register based interpreter (heavily optimized) in Linux kernel
   * small and lightweight (6KLOC of interpreter)
-  * not depend on gcc for each script running
-  * easy to use in embedded environment without debugging info
+  * not depend on gcc for each script run
+  * easy to use in embedded environments without debugging info
   * support for tracepoint, kprobe, uprobe, function trace, timer, and more
   * supported in x86, arm, ppc, mips
-  * safety in sandbox
+  * safety in a sandbox
 
 ## Building & Running
 
@@ -126,7 +126,7 @@ More information can be found at [ktap homepage][homepage].
                 printf("time fired on every cpu\n");
         }
 
-10. FFI (Call kernel function from ktap script, need compile with FFI=1)
+10. FFI (Call kernel function from ktap script, need to compile with FFI=1)
 
         cdef[[
                 int printk(char *fmt, ...);
