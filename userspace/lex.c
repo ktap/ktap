@@ -112,7 +112,7 @@ static void lexerror(ktap_lexstate *ls, const char *msg, int token)
 				ls->linenumber, msg);
 	if (token)
 		newmsg = ktapc_sprintf("%s near %s", newmsg, txtToken(ls, token));
-	printf("lexerror: %s\n", newmsg);
+	fprintf(stderr, "lexerror: %s\n", newmsg);
 	exit(EXIT_FAILURE);
 }
 
