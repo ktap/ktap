@@ -67,7 +67,7 @@ static void *reader_thread(void *data)
 			return NULL;
 		}
 	} else
-		out_fd = 2;
+		out_fd = 1;
 
 	sprintf(filename, "/sys/kernel/debug/ktap/trace_pipe_%d", getpid());
 
