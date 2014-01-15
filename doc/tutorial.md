@@ -6,60 +6,58 @@ ktap is a new script-based dynamic tracing tool for linux
 http://www.ktap.org
 
 ktap is a new script-based dynamic tracing tool for Linux,
-it uses a scripting language and lets users trace the Linux kernel dynamically.
+it uses a scripting language and lets the user trace the Linux kernel dynamically.
 ktap is designed to give operational insights with interoperability
 that allows users to tune, troubleshoot and extend kernel and application.
 It's similar with Linux Systemtap and Solaris Dtrace.
 
-ktap have different design principles from Linux mainstream dynamic tracing
+ktap has different design principles from Linux mainstream dynamic tracing
 language in that it's based on bytecode, so it doesn't depend upon GCC,
 doesn't require compiling kernel module for each script, safe to use in
 production environment, fulfilling the embedded ecosystem's tracing needs.
 
 Highlights features:
 
-* simple but powerful scripting language
+* a simple but powerful scripting language
 * register based interpreter (heavily optimized) in Linux kernel
 * small and lightweight
-* not depend on gcc for each script running
-* easy to use in embedded environment without debugging info
+* not depend on the gcc toolchain for each script run
+* easy to use in embedded environments without debugging info
 * support for tracepoint, kprobe, uprobe, function trace, timer, and more
 * supported in x86, arm, ppc, mips
 * safety in sandbox
-
 
 # Getting started
 
 Requirements
 
-* Linux 3.1 or later(Need some kernel patches for kernel earlier than 3.1)
-* CONFIG_EVENT_TRACING enabled
-* CONFIG_PERF_EVENTS enabled
-* CONFIG_DEBUG_FS enabled  
-     make sure debugfs mounted before insmod ktapvm  
-     mount debugfs: mount -t debugfs none /sys/kernel/debug/
+* Linux 3.1 or later (requiring some kernel patches for kernel earlier than 3.1)
+* `CONFIG_EVENT_TRACING` enabled
+* `CONFIG_PERF_EVENTS` enabled
+* `CONFIG_DEBUG_FS` enabled
+
+     make sure debugfs mounted before `insmod ktapvm`
+
+     mount debugfs: `mount -t debugfs none /sys/kernel/debug/`
 * libelf (optional)
      Install elfutils-libelf-devel on RHEL-based distros, or libelf-dev on
      Debian-based distros.
      Use `make NO_LIBELF=1` to build without libelf support.
-     libelf is required for resolving symbols to addresses in DSO, and for sdt.
+     libelf is required for resolving symbols to addresses in DSO, and for SDT.
 
-Note that those configuration is always enabled in Linux distribution,
+Note that those configurations should always be enabled in Linux distribution,
 like REHL, Fedora, Ubuntu, etc.
 
 1. Clone ktap from github
 
         $ git clone http://github.com/ktap/ktap.git
-
 2. Compiling ktap
 
         $ cd ktap
         $ make       #generate ktapvm kernel module and ktap binary
-
 3. Load ktapvm kernel module(make sure debugfs mounted)
 
         $ make load  #need to be root or have sudo access
-
 4. Running ktap
 
         $ ./ktap scripts/helloworld.kp
@@ -69,55 +67,54 @@ like REHL, Fedora, Ubuntu, etc.
 
 ## Syntax basics
 
-ktap's syntax is design on the mind of C language syntax friendly,
-to make it easy scripting by kernel developer.
+ktap's syntax is designed with the C language syntax in mind. Thi is for lowering the entry barrier for those C programmers who are working on kernel and other systems software.
 
-1. Variable declaration
-The biggest syntax differences with C is that ktap is a dynamic typed
+* Variable declarations
+
+    The biggest syntax differences with C is that ktap is a dynamic typed
 language, so you won't need add any variable type declaration, just
 use the variable.
+* Functions
 
-2. function
-All functions in ktap should use keyword "function" declaration
+    All functions in ktap should use keyword "function" declaration
+* Comments
 
-3. comments
-The comments of ktap is starting from '#', long comments doesn't support now.
+    The comments of ktap is starting from `#`, long comments are not supported right now.
+* Others
 
-4. others
-Don't need place any ';' at the ending of statement in ktap.
-ktap use free syntax style, so you can choose to use the ';' or not.
+    It is not required to place any semicolons (`;`) at the end of each statement in ktap. ktap uses a free-syntax style, so you are free to use the ';' or not.
 
-ktap use nil as NULL, the result of any number operate on nil is nil.
+ktap uses `nil` as `NULL`, the result of any arithmatic operations on `nil` is also `nil`.
 
-ktap don't have array structure, also don't have any pointer operation.
+ktap does not have array structures, and it does not have any pointer operations.
 
 ## Control structures
 
-ktap if/else is same as C language.
+ktap's `if`/`else` statement is the same as the C language.
 
-There have two method of for-loop in ktap:
+There are three kinds of for-loop in ktap:
+
+1. a kinda Lua-ish style:
 
     for (i = init, limit, step) { body }
-
-this is same as below in C:
+2. the same form as in C:
 
     for (i = init; i < limit; i += step) { body }
+3. Lua's table iterating style:
 
-The next for-loop method is:
+    for (k, v in pairs(t)) { body } # looping all elements of table
 
-    for (k, v in pairs(t)) { body }   # looping all elements of table
-
-Note that ktap don't have "continue" keyword, but C does.
+Note that ktap does not have the `continue` keyword, but C does.
 
 ## Date structures
 
-Associative array is heavily used in ktap, it's also called by table.
+Associative arrays are heavily used in ktap, it is also called "tables".
 
-table declaration:
+Table declarations:
 
     t = {}
 
-how to use table:  
+How to use tables:
 
     t[1] = 1
     t[1] = "xxx"
@@ -126,119 +123,137 @@ how to use table:
 
     for (k, v in pairs(t)) { body }   # looping all elements of table
 
+# Built-in functions and librarys
 
-# Built in functions and librarys
+## Built-in functions
 
-## Built in functions
+**print (...)**
 
-**print (...)**  
-Receives any number of arguments, and prints their values,
+Receives any number of arguments, and prints their values.
 print is not intended for formatted output, but only as a
-quick way to show a value, typically for debugging.
-For formatted output, use printf.
+quick way to show values, typically for debugging.
 
-**printf (fmt, ...)**  
-Similar with C printf, use for format string output.
+For formatted output, use `printf` instead.
 
-**pairs (t)**  
+**printf (fmt, ...)**
+
+Similar to C's `printf`, for formatted string output.
+
+**pairs (t)**
+
 Returns three values: the next function, the table t, and nil,
 so that the construction
-for (k,v in pairs(t)) { body }
-will iterate over all key-value pairs of table t.
 
-**len (t) /len (s)**  
-If the argument is string, return length of string,
-if the argument is table, return counts of table pairs.
+    for (k, v in pairs(t)) { body }
 
-**in_interrupt ()**  
-checking is context is interrupt context
-  
-**exit ()**  
-quit ktap executing, similar with exit syscall
+will iterate through all the key-value pairs in the table `t`.
 
-**pid ()**  
-return current process pid
+**len (t) /len (s)**
 
-**tid ()**  
-return current thread id
+If the argument is a string, returns the length of the string.
 
-**uid ()**  
-return current process uid
+If the argument is a table, returns the number of table pairs.
 
-**execname ()**  
-return current process exec name string
+**in_interrupt ()**
 
-**cpu ()**  
-return current cpu id
+Checks if it is in the context of interrupts.
 
-**arch ()**  
-return machine architecture, like x86, arm, etc.
+**exit ()**
 
-**kernel_v ()**  
-return Linux kernel version string, like 3.9, etc.
+quits ktap programs, similar to the `exit` syscall.
 
-**user_string (addr)**  
-Receive userspace address, read string from userspace, return string.
+**pid ()**
 
-**histogram (t)**  
-Receive table, output table histogram to user.
+returns current process pid.
 
-**curr_task_info (offset, fetch_bytes)**  
-fetch value in field offset of task_struct structure, argument fetch_bytes
-could be 4 or 8, if fetch_bytes is not given, default is 4.
+**tid ()**
 
-user may need to get field offset by gdb, for example:
-gdb vmlinux
-(gdb)p &(((struct task_struct *)0).prio)
+returns the current thread id.
 
-**print_backtrace ()**  
-print current task stack info
+**uid ()**
 
+returns the current process's uid.
 
-## Librarys
+**execname ()**
+
+returns the current process executable's name in a string.
+
+**cpu ()**
+
+returns the current CPU id.
+
+**arch ()**
+
+returns machine architecture, like `x86`, `arm`, and etc.
+
+**kernel_v ()**
+
+returns Linux kernel version string, like `3.9` and etc.
+
+**user_string (addr)**
+
+accepts a userspace address, reads the string data from userspace, and returns the ktap string value.
+
+**histogram (t)**
+
+accepts a table and outputs the table histogram to the user.
+
+**curr_task_info (offset, fetch_bytes)**
+
+fetches the value in the field offset of `task_struct` structure. The argument `fetch_bytes`
+could be 4 or 8. If `fetch_bytes` is not given, default to 4.
+
+The user may need to get the field offset by other debugging tools like gdb, for example:
+
+    gdb vmlinux
+    (gdb)p &(((struct task_struct *)0).prio)
+
+**print_backtrace ()**
+
+prints the current task's kernel stack backtrace.
+
+## Libraries
 
 ### Kdebug Library
 
 **kdebug.probe_by_id (eventdef_info, eventfun)**
 
-This function is underly representation of high level tracing primitive.  
-Note that eventdef_info is just a userspace memory pointer refer to real
-eventdef_info structure, the structure defintion is:  
+This function is the underlying interface for the higher level tracing primitives.
 
-        struct ktap_eventdef_info {
-            int nr; /* the number to id */
-            int *id_arr; /* id array */
-            char *filter;
-        };
+Note that the `eventdef_info` argument is just a C pointer value pointing to a userspace memory block holding the real
+`eventdef_info` structure. The structure defintion is as follows:
 
-Those id is read from /sys/kernel/debug/tracing/events/$SYS/$EVENT/id
+    struct ktap_eventdef_info {
+	int nr; /* the number to id */
+	int *id_arr; /* id array */
+	char *filter;
+    };
 
-The second argument in above examples is a function:  
-function eventfun () { action }
+Those `id`s are read from `/sys/kernel/debug/tracing/events/$SYS/$EVENT/id`.
 
+The second argument in above example is a ktap function object:
 
-**kdebug.probe_end (endfunc)**  
+    function eventfun () { action }
 
-This function is used for invoking a function when tracing end, it will wait
-until user press CTRL+C to stop tracing, then ktap will call endfunc function, 
-user could show tracing results in that function, or do other things.
+**kdebug.probe_end (endfunc)**
 
-User don't have to use kdebug library directly, use trace/trace_end keyword.
+This function is used for invoking a function when tracing ends, it will wait
+until the user presses `CTRL-C` to stop tracing, then ktap will call the argument, the `endfunc` function. The
+user could output tracing results in that function, or do other things.
+
+User usually do not need to use the `kdebug` library directly and just use the `trace`/`trace_end` keywords provided by the language.
 
 ### Timer Library
 
-
 ### Table Library
 
-**table.new (narr, nrec)**  
-pre-allocate table with narr array entries and nrec records.
+**table.new (narr, nrec)**
+
+pre-allocates a table with `narr` array entries and `nrec` records.
 
 # Linux tracing basics
 
-tracepoints, probe, timer  
-filters  
-above explaintion  
-Ring buffer
+tracepoints, probe, timer, filters, ring buffer
 
 # Tracing semantics in ktap
 
@@ -246,14 +261,13 @@ Ring buffer
 
 **trace EVENTDEF /FILTER/ { ACTION }**
 
-This is the basic tracing block for ktap, you need to use a specific EVENTDEF
-string, and own event function.
+This is the basic tracing block in ktap. You need to use a specific `EVENTDEF` string, and your own event function.
 
-There have four type of EVENTDEF, tracepoint, kprobe, uprobe, sdt. 
+There are four types of `EVENTDEF`: tracepoints, kprobes, uprobes, SDT probes.
 
-- tracepoint:  
+- tracepoint:
 
-	EventDef               Description 
+	EventDef               Description
 	--------------------   -------------------------------
 	syscalls:*             trace all syscalls events
 	syscalls:sys_enter_*   trace all syscalls entry events
@@ -262,12 +276,13 @@ There have four type of EVENTDEF, tracepoint, kprobe, uprobe, sdt.
 	sched:sched_switch     trace sched_switch tracepoint
 	\*:\*                  trace all tracepoints in system
 
-	All tracepoint events are based on:  
-	          /sys/kernel/debug/tracing/events/$SYS/$EVENT
+	All tracepoint events are based on
+	
+	    /sys/kernel/debug/tracing/events/$SYS/$EVENT
 
-- ftrace(kernel newer than 3.3, and must compiled with CONFIG_FUNCTION_TRACER)
+- ftrace (kernel 3.3+, and must be compiled with `CONFIG_FUNCTION_TRACER`)
 
-	EventDef               Description 
+	EventDef               Description
 	--------------------   -------------------------------
 	ftrace:function        trace kernel functions based on ftrace
 
@@ -287,7 +302,7 @@ There have four type of EVENTDEF, tracepoint, kprobe, uprobe, sdt.
 >     ftrace, perf: Add support to use function tracepoint in perf 
 >
 
-- kprobe:  
+- kprobe:
 
 	EventDef               Description
 	--------------------   -----------------------------------
@@ -323,16 +338,19 @@ There have four type of EVENTDEF, tracepoint, kprobe, uprobe, sdt.
 
 ## Tracing built-in variables
 
-**argevent**  
-event object, you can print it by: print(argevent), it will print events
-into human readable string, the result is mostly same as each entry of
-/sys/kernel/debug/tracing/trace
+**argevent**
 
-**argname**  
-event name, each event have a name associated with it.
+Event object. You can print it by `print(argevent)`, turning the event
+into a human readable string. The result is mostly the same as each entry in
+`/sys/kernel/debug/tracing/trace`
 
-**arg1..9**  
-get argument 1..9 of event object.
+**argname**
+
+Event name. Each event has a name associated with it.
+
+**arg1..9**
+
+Evalutes to argument 1 to 9 of the event object.
 
 > ***Note*** of arg offset
 >
@@ -350,91 +368,103 @@ get argument 1..9 of event object.
 >         field:pid_t next_pid;             <- arg6
 >         field:int next_prio;              <- arg7
 >
-> As shown, tracepoint event sched:sched_switch have 7 arguments, from arg1 to
-> arg7.
+> As shown above, the tracepoint event `sched:sched_switch` takes 7 arguments, from `arg1` to
+> `arg7`.
 >
-> Need to note that arg1 of syscall event is syscall number, not first argument
-> of syscall function. Use arg2 as first argument of syscall function.
+> Note that `arg1` of the syscall event is the syscall number, not the first argument
+> of the syscall function. Use `arg2` as the first argument of the syscall function.
 > For example:
 >
 >     SYSCALL_DEFINE3(read, unsigned int, fd, char __user *, buf, size_t, count)
 >                                         <arg2>             <arg3>       <arg4>
 >
-> This is similar with kprobe and uprobe, the arg1 of kprobe/uprobe event
-> always is _probe_ip, not the first argument given by user, for example:
-> 
+> This is similar to kprobe and uprobe, the `arg1` of kprobe/uprobe events
+>  is always `_probe_ip`, not the first argument given by the user, for example:
+>
 >     # ktap -e 'trace probe:/lib64/libc.so.6:malloc size=%di'
 >
 >     # cat /sys/kernel/debug/tracing/events/ktap_uprobes_3796/malloc/format
 >         field:unsigned long __probe_ip;   <- arg1
 >         field:u64 size;                   <- arg2
 
-
 ## Timer syntax
 
-**tick-Ns        { ACTION }**  
-**tick-Nsec      { ACTION }**  
-**tick-Nms       { ACTION }**  
-**tick-Nmsec     { ACTION }**  
-**tick-Nus       { ACTION }**  
+**tick-Ns        { ACTION }**
+
+**tick-Nsec      { ACTION }**
+
+**tick-Nms       { ACTION }**
+
+**tick-Nmsec     { ACTION }**
+
+**tick-Nus       { ACTION }**
+
 **tick-Nusec     { ACTION }**
 
-**profile-Ns     { ACTION }**  
-**profile-Nsec   { ACTION }**  
-**profile-Nms    { ACTION }**  
-**profile-Nmsec  { ACTION }**  
-**profile-Nus    { ACTION }**  
-**profile-Nusec  { ACTION }**  
+**profile-Ns     { ACTION }**
 
-architecture overview picture reference(pnp format)  
-one-liners  
+**profile-Nsec   { ACTION }**
+
+**profile-Nms    { ACTION }**
+
+**profile-Nmsec  { ACTION }**
+
+**profile-Nus    { ACTION }**
+
+**profile-Nusec  { ACTION }**
+
+architecture overview picture reference(pnp format)
+
+one-liners
+
 simple event tracing
 
 # Advanced tracing pattern
 
-Aggregation/Histogram  
-thread local  
-flame graph
+* Aggregations/histograms
+* Thread locals
+* Flame graphs
 
 # Overhead/Performance
 
-ktap have more fast boot time thant Systemtap(try the helloword script)  
-ktap have little memory usage than Systemtap  
-and some scripts show that ktap have a little overhead than Systemtap
-(we choosed two scripts to compare, function profile, stack profile.
+* ktap has a much shorter startup time than systemtap (try the helloword script).
+* ktap has a smaller memory footprint than systemtap
+* Some scripts show that ktap has a little lower overhead than systemtap
+(we chose two scripts to compare, function profile, stack profile.
 this is not means all scripts in Systemtap have big overhead than ktap)
-
 
 # FAQ
 
-**Q: Why use bytecode design?**  
+**Q: Why use bytecode design?**
+
 A: Using bytecode would be a clean and lightweight solution,
-   you don't need gcc toolchain to compile every scripts, all you
-   need is a ktapvm kernel modules and userspace tool called ktap.
-   Since its language virtual machine design, it have great portability,
-   suppose you are working at a multi-arch cluster, if you want to run
-   a tracing script on each board, you won't need cross-compile tracing
-   script onto all board, what you really need to do is use ktap tool
-   to run script just in time.
+   you do not need the gcc toolchain to compile every scripts; all you
+   need is a ktapvm kernel module and the userspace tool called "ktap".
+   Since its language's virtual machine design, it has a great portability.
+   Suppose you are working on a multi-arch cluster, if you want to run
+   a tracing script on each board, you will not need cross-compile your tracing
+   scripts for all the boards. You can just use the `ktap` tool
+   to run scripts right away.
 
-   Bytecode based design also will make executing more safer, than native code
-   generation.
+   The bytecode-based design also makes execution safer than the native code
+   generation approach.
 
-   Reality already showing that SystemTap is not widely used in embedded Linux,
-   caused by problem of SystemTap's architecture design choice, it's a natural
-   design for Redhat and IBM, because Redhat/IBM is focusing on server area,
+   It is already oberved that SystemTap is not widely used in embedded Linux systems.
+   This is mainly caused by the problem of SystemTap's design decisions in its architecture design. It is a natural
+   design for Redhat and IBM, because Redhat/IBM is focusing on the server area,
    not embedded area.
 
-**Q: What's the differences with SystemTap and Dtrace?**  
-A: For SystemTap, the answer is already mentioned at above question,
-   SystemTap use translator design, for trade-off on performance with usability,
-   based on GCC, that's what ktap want to solve.
+**Q: What's the differences with SystemTap and Dtrace?**
 
-   For Dtrace, one common design with Dtrace is also use bytecode, so basically
-   Dtrace and ktap is on the same road. There have some projects aim to porting
-   Dtrace from Solaris to Linux, but the process is still on the road, Dtrace
-   is rooted in Solaris, and there have many huge differences between Solaris
-   tracing infrastructure with Linux's.
+A: For SystemTap, the answer is already mentioned at above question,
+   SystemTap chooses the translator design, sacrificing usability for runtime performance.
+   The dependency on the GCC chain when running scripts is the problem that ktap wants to solve.
+
+   Dtrace shares the same design decision of using bytecode, so basically
+   Dtrace and ktap are more alike. There have been some projects aimed at porting
+   Dtrace from Solaris to Linux, but these efforts are still under way and are relatively slow in progress. Dtrace
+   has its root in Solaris, and there are many huge differences between Solaris
+   tracing infrastructure and Linux's.
 
    Dtrace is based on D language, a language subset of C, it's a restricted
    language, like without for-looping, for safty use in production system.
@@ -447,7 +477,8 @@ A: For SystemTap, the answer is already mentioned at above question,
    On the license part, Dtrace is released as CDDL, which is incompatible with
    GPL(this is why it's impossible to upstream Dtrace into mainline).
 
-**Q: Why use dynamically typed language? but not statically typed language?**  
+**Q: Why use dynamically typed language? but not statically typed language?**
+
 A: It's hard to say which one is more better than other, dynamically typed
    language bring efficiency and fast prototype production, but loosing type
    check at compiling phase, and easy to make mistake in runtime, also it's
@@ -458,58 +489,61 @@ A: It's hard to say which one is more better than other, dynamically typed
 
    ktap choose dynamically typed language as initial implementation.
 
-**Q: Why we need ktap for event tracing? There already have a built-in ftrace**  
-A: This also is a common question for all dynamic tracing tool, not only ktap.
-   ktap provide more flexibility than built-in tracing infrastructure. Suppose
-   you need print a global variable when tracepoint hit, or you want print
-   backtrace, even more, you want to store some info into associative array, and
-   display it in histogram style when tracing end, in these case, some of them
-   ftrace can take it, some of them ftrace can not.
-   Overall, ktap provide you with great flexibility to scripting your own trace
-   need.
+**Q: Why do we need ktap for event tracing? There is already a built-in ftrace**
 
-**Q: How about the performance? Is ktap slow?**  
-A: ktap is not slow, the bytecode is very high-level, based on lua, the language
-   virtual machine is register-based(compare with stack-based), with little
-   instruction, the table data structure is heavily optimized in ktapvm.
-   ktap use per-cpu allocation in many place, without global locking scheme,
-   it's very fast when executing tracepoint callback.
-   Performance benchmark showing that the overhead of ktap running is nearly
-   10%(store event name into associative array), compare with full speed
-   running without any tracepoint enabled.
+A: This is also a common question for all dynamic tracing tools, not only ktap.
+   ktap provides more flexibility than built-in the tracing infrastructure. Suppose
+   you need to print a global variable at a tracepoint hit, or you want to print
+   a backtrace. Furthermore, you want to store some info into an associative array, and
+   display it as a histogram when tracing ends. `ftrace` cannot handle all these requirements.
+   Overall, ktap provides you with great flexibility to scripting your own trace
+   needs.
 
-   ktap will optimize overhead all the time, hopefully the overhead will
-   decrease to little than 5%, even more.
+**Q: How about the performance? Is ktap slow?**
 
-**Q: Why not porting a high level language implementation into kernel directly?
-   Like python/JVM?**  
-A: I take serious on the size of vm and memory footprint. Python vm is large,
-   it's not suit to embed into kernel, and python have some functionality
-   which we don't need.
+A: ktap is not slow. The bytecode is very high-level, based on Lua. The language's
+   virtual machine is register-based (compare to stack-based found in JVM and CLR), with a small number of
+   instructions. The table data structure is heavily optimized in ktapvm.
+   ktap uses per-cpu allocation in many places, without the global locking scheme.
+   It is very fast when executing tracepoint callbacks.
+   Performance benchmarks are showing that the overhead of ktap runtime is nearly
+   10% (storing event name into associative array), compared to the full speed
+   running time without any tracepoints enabled.
 
-   The bytecode of other high level language is also big, ktap only have 32
-   bytecodes, python/java/erlang have nearly two hundred bytecodes.
-   There also have some problems when porting those language into kernel,
-   userspace programming have many differences with kernel programming,
-   like float numbers, handle sleeping code carefully in kernel, deadloop is
-   not allowed in kernel, multi-thread management, etc.., so it's impossible
-   to porting language implementation into kernel with little adaption work.
+   ktap will keep optimizing unfailingly. Hopefully the overhead will
+   decrease to little more than 5%, or even less.
 
-**Q: What's the status of ktap now?**  
+**Q: Why not port a higher level language implementation into kernel directly?
+   Like Python and Java?**
+
+A: I am serious on the size of VM and the memory footprint. The Python VM is too large
+   for embedding into the kernel, and Python has many advanced functionalities
+   which we do not really need.
+
+   The number of bytecode opcodes of other higher level languages is also big. ktap only have 32
+   bytecode opcodes, whereas Python/Java/Erlang all have nearly two hundred bytecodes.
+   There are also some problems when porting those language into the kernel.
+   Kernel programming is very different from userspace programming,
+   like lack of floating-point numbers, handling sleeping code, deadloop is
+   not allowed in kernel, multi-thread management, and etc. So it is impossible
+   to port large language implementations over to the kernel environment with trivial efforts.
+
+**Q: What is the status of ktap now?**
+
 A: Basically it works on x86-32, x86-64, powerpc, arm, it also could work for
-   other hardware architecture, but not proven yet(I don't have enough hardware
-   to test)
-   If you found some bug, fix it on you own programming skill, or report to me.
+   other hardware architectures, but not tested yet (I don't have enough hardware to test)
+   If you find any bugs, fix it on you own programming skills, or just report to me.
 
-**Q: How to hack ktap? I want to write some extensions onto ktap.**  
-A: welcome hacking.  
-   You can write your own library to fulfill your specific need,
-   you can write any script as you want.
+**Q: How to hack on ktap? I want to write some extensions for ktap.**
 
-**Q: What's the plan of ktap? any roadmap?**  
-A: the current plan is deliver stable ktapvm kernel modules, more ktap script,
-   and bugfix.
+A: Patches welcome! Volunteers welcome!
+   You can write your own libraries to fulfill your specific needs,
+   or write scripts for fun.
 
+**Q: What's the plan of ktap? any roadmap?**
+
+A: The current plan is to deliver stable ktapvm kernel modules, more ktap scripts,
+   and more bugfixes.
 
 # References
 
@@ -533,7 +567,7 @@ A: the current plan is deliver stable ktapvm kernel modules, more ktap script,
 
 # History
 
-* ktap was invented at 2002
+* ktap was invented at 2012
 * First RFC sent to LKML at 2012.12.31
 * The code was released in github at 2013.01.18
 * ktap released v0.1 at 2013.05.21
@@ -547,23 +581,19 @@ For more release info, please look at RELEASES.txt in project root directory.
 1. simplest one-liner command to enable all tracepoints
 
         ktap -e "trace *:* { print(argevent) }"
-
 2. syscall tracing on target process
 
         ktap -e "trace syscalls:* { print(argevent) }" -- ls
-
 3. ftrace(kernel newer than 3.3, and must compiled with CONFIG_FUNCTION_TRACER)
 
         ktap -e "trace ftrace:function { print(argevent) }"
 
         ktap -e "trace ftrace:function /ip==mutex*/ { print(argevent) }"
-
 4. simple syscall tracing
 
         trace syscalls:* {
                 print(cpu(), pid(), execname(), argevent)
         }
-
 5. syscall tracing in histogram style
 
         var s = {}
@@ -575,7 +605,6 @@ For more release info, please look at RELEASES.txt in project root directory.
         trace_end {
                 histogram(s)
         }
-
 6. kprobe tracing
 
         trace probe:do_sys_open dfd=%di fname=%dx flags=%cx mode=+4($stack) {
@@ -585,7 +614,6 @@ For more release info, please look at RELEASES.txt in project root directory.
         trace probe:do_sys_open%return fd=$retval {
                 print("exit:", execname(), argevent)
         }
-
 7. uprobe tracing
 
         trace probe:/lib/libc.so.6:malloc {
@@ -595,7 +623,6 @@ For more release info, please look at RELEASES.txt in project root directory.
         trace probe:/lib/libc.so.6:malloc%return {
                 print("exit:", execname(), argevent)
         }
-
 8. stapsdt tracing (userspace static marker)
 
         trace sdt:/lib64/libc.so.6:lll_futex_wake {
@@ -608,7 +635,6 @@ For more release info, please look at RELEASES.txt in project root directory.
         trace sdt:/lib64/libc.so.6:* {
                 print(execname(), argevent)
         }
-
 9. timer
 
         tick-1ms {
@@ -618,7 +644,6 @@ For more release info, please look at RELEASES.txt in project root directory.
         profile-2s {
                 printf("time fired on every cpu\n");
         }
-
 10. FFI (Call kernel function from ktap script, need compile with FFI=1)
 
         cdef[[
