@@ -1,0 +1,69 @@
+This directory contains the test suite for ktap.
+
+Prerequisites
+-------------
+
+One needs to install perl and CPAN modules Test::Base and IPC::Run3
+before running the tests. After perl is installed, the "cpan" utility
+can be used to install the CPAN modules required:
+
+    cpan Test::Base IPC::Run3
+
+Alternatively you can just install the pre-built binary packages
+provided by your Linux distribution vendor. For example, on Fedora, you
+just need to run
+
+    yum install perl-Test-Base perl-IPC-Run3
+
+Running tests
+-------------
+
+You are required to run the tests from the root directory of this project.
+
+You can run the whole test suite like this:
+
+    prove -r test/
+
+To utilize multiple CPU cores while running the tests, it is also
+supported to spawn multiple processes to run the test files in parallel,
+as in
+
+    prove -j4 -r test/
+
+Then 4 processes will be spawned to run the tests at the same time.
+
+To run individual .t test files, just specify their file paths
+explicitly:
+
+    prove test/cli-args.t test/one-liner.t
+
+If you just want to run an individual test case in a particular .t
+file, then just add the line
+
+    --- ONLY
+
+to the end of the test block you want to run and run that .t file
+normally with the "prove" utility.
+
+Similarly, if you want to skip a particular test block, add the line
+
+    --- SKIP
+
+to that test block.
+
+Test file formatting
+--------------------
+
+We do have a "reindex" tool to automatically re-format
+the .t test files, so that you do not have to manually get the test
+serial numbers exactly right, like "TEST 1: ", "TEST 2: " and etc,
+nor manually keep 3 blank lines between adjacent test blocks. For
+example,
+
+    ./test/util/reindex test/cli-arg.t
+
+or re-format all the .t files:
+
+    ./test/util/reindex test/*.t
+
+Always run this tool before committing your newly editted tests.
