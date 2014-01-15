@@ -180,10 +180,7 @@ ktap_cdata *kp_cdata_new_ptr(ktap_state *ks, void *addr,
 ktap_cdata *kp_cdata_new_record(ktap_state *ks, void *val, csymbol_id id);
 void kp_cdata_dump(ktap_state *ks, ktap_cdata *cd);
 int kp_cdata_type_match(ktap_state *ks, csymbol *cs, ktap_value *val);
-void kp_cdata_init(ktap_state *ks, ktap_value *val,
-		void *addr, int len, csymbol_id id);
 void kp_cdata_unpack(ktap_state *ks, char *dst, csymbol *cs, ktap_value *val);
-void kp_cdata_pack(ktap_state *ks, ktap_value *val, char *src, csymbol *cs);
 void kp_cdata_ptr_set(ktap_state *ks, ktap_cdata *cd,
 		ktap_value *key, ktap_value *val);
 void kp_cdata_ptr_get(ktap_state *ks, ktap_cdata *cd,

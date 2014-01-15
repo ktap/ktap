@@ -6,6 +6,8 @@ void kp_free(ktap_state *ks, void *addr);
 void *kp_reallocv(ktap_state *ks, void *addr, int oldsize, int newsize);
 void *kp_zalloc(ktap_state *ks, int size);
 
+void *kp_rawobj_alloc(ktap_state *ks, int size);
+
 void kp_obj_dump(ktap_state *ks, const ktap_value *v);
 void kp_obj_show(ktap_state *ks, const ktap_value *v);
 int kp_obj_len(ktap_state *ks, const ktap_value *rb);

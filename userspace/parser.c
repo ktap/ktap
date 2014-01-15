@@ -948,7 +948,7 @@ static void primaryexp(ktap_lexstate *ls, ktap_expdesc *v)
 }
 
 #ifdef CONFIG_KTAP_FFI
-static void parsecdef(ktap_lexstate *ls)
+static void parse_ffi_cdef(ktap_lexstate *ls)
 {
 	check(ls, TK_STRING);
 	ffi_parse_cdef(getstr(ls->t.seminfo.ts));
@@ -957,7 +957,7 @@ static void parsecdef(ktap_lexstate *ls)
 	lex_next(ls);
 }
 
-static void parsenew(ktap_lexstate *ls, ktap_expdesc *f, int line)
+static void parse_ffi_new(ktap_lexstate *ls, ktap_expdesc *f, int line)
 {
 	int base;
 	struct cp_ctype ct;
@@ -1003,7 +1003,7 @@ static void parsenew(ktap_lexstate *ls, ktap_expdesc *f, int line)
 	init_exp(f, VCALL, codegen_codeABC(ls->fs, OP_CALL, base, 3, 2));
 }
 
-static void parse_arglist(ktap_lexstate *ls, ktap_expdesc *v, int line)
+static void parse_ffi_arglist(ktap_lexstate *ls, ktap_expdesc *v, int line)
 {
 	ktap_funcstate *fs = ls->fs;
 
@@ -1012,7 +1012,7 @@ static void parse_arglist(ktap_lexstate *ls, ktap_expdesc *v, int line)
 	funcargs(ls, v, line);
 }
 
-static void parse_func(ktap_lexstate *ls, ktap_expdesc *v, int line)
+static void parse_ffi_func(ktap_lexstate *ls, ktap_expdesc *v, int line)
 {
 	ktap_funcstate *fs = ls->fs;
 
@@ -1023,6 +1023,34 @@ static void parse_func(ktap_lexstate *ls, ktap_expdesc *v, int line)
 	funcargs(ls, v, line);
 }
 
+static void parse_ffi_cast(ktap_lexstate *ls, ktap_expdesc *f, int line)
+{
+	int base;
+	ktap_expdesc args, *v = &args;
+	int csymbol_id;
+
+	codegen_exp2nextreg(ls->fs, f);
+
+	checknext(ls, '('); /* skip ( */
+	lex_next(ls); /* read cdef string */
+
+	csymbol_id = ffi_lookup_csymbol_id_by_name(getstr(ls->t.seminfo.ts));
+	init_exp(v, VKNUM, 0);
+	v->u.nval = csymbol_id;
+	codegen_exp2nextreg(ls->fs, v);
+
+	checknext(ls, ',');
+
+	expr(ls, v);
+	codegen_exp2nextreg(ls->fs, v);
+
+	check_match(ls, ')', '(', line);
+
+	base = f->u.info;  /* base register for call */
+	/* ffi.new takes two arguments and return 1 */
+	init_exp(f, VCALL, codegen_codeABC(ls->fs, OP_CALL, base, 3, 2));
+
+}
 
 static void ffiexp(ktap_lexstate *ls, ktap_expdesc *v)
 {
@@ -1047,7 +1075,7 @@ static void ffiexp(ktap_lexstate *ls, ktap_expdesc *v)
 	field_name = getstr(ls->t.seminfo.ts);
 	checkname(ls, &key);
 	if (!strcmp(field_name, "cdef")) {
-		parsecdef(ls);
+		parse_ffi_cdef(ls);
 
 		/* see VVOID check in function exprstat */
 		v->k = VVOID;
@@ -1058,11 +1086,13 @@ static void ffiexp(ktap_lexstate *ls, ktap_expdesc *v)
 	codegen_indexed(fs, v, &key);
 
 	if (!strcmp(field_name, "new"))
-		parsenew(ls, v, line);
+		parse_ffi_new(ls, v, line);
 	else if (!strcmp(field_name, "free"))
-		parse_arglist(ls, v, line);
+		parse_ffi_arglist(ls, v, line);
 	else if (!strcmp(field_name, "C"))
-		parse_func(ls, v, line);
+		parse_ffi_func(ls, v, line);
+	else if (!strcmp(field_name, "cast"))
+		parse_ffi_cast(ls, v, line);
 	else
 		lex_syntaxerror(ls, "unexpected ffi function");
 }

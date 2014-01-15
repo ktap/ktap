@@ -176,6 +176,7 @@ int cp_symbol_build_pointer(struct cp_ctype *ct);
 
 int ffi_parse_cdef(const char *s);
 void ffi_parse_new(const char *s, struct cp_ctype *ct);
+int ffi_lookup_csymbol_id_by_name(const char *s);
 
 void ffi_cparser_init(void);
 void ffi_cparser_free(void);

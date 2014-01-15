@@ -37,7 +37,7 @@ ktap_cdata *kp_cdata_new(ktap_state *ks, csymbol_id id)
 /* argument nmemb here indicates the length of array that is pointed to,
  * -1 for unknown */
 ktap_cdata *kp_cdata_new_ptr(ktap_state *ks, void *addr,
-				int nmemb, csymbol_id id, int to_allocate)
+			     int nmemb, csymbol_id id, int to_allocate)
 {
 	ktap_cdata *cd;
 	size_t memb_size;
@@ -47,26 +47,16 @@ ktap_cdata *kp_cdata_new_ptr(ktap_state *ks, void *addr,
 
 	if (to_allocate) {
 		/* allocate new empty space */
-		/* TODO: free the space when exit the program unihorn(08.12.2013) */
 		deref_id = csym_ptr_deref_id(id_to_csym(ks, id));
 		memb_size = csym_size(ks, id_to_csym(ks, deref_id));
-		cd_ptr(cd) = kp_zalloc(ks, memb_size * nmemb);
-		cd_ptr_allocated(cd) = 1;
+		cd_ptr(cd) = kp_rawobj_alloc(ks, memb_size * nmemb);
 	} else {
 		cd_ptr(cd) = addr;
-		cd_ptr_allocated(cd) = 0;
 	}
+
 	cd_ptr_nmemb(cd) = nmemb;
 
 	return cd;
-}
-
-void kp_cdata_free_ptr(ktap_state *ks, ktap_cdata *cd)
-{
-	if (cd_ptr_allocated(cd))
-		kp_free(ks, cd_ptr(cd));
-	cd_ptr(cd) = NULL;
-	cd_ptr_allocated(cd) = 0;
 }
 
 ktap_cdata *kp_cdata_new_record(ktap_state *ks, void *val, csymbol_id id)
@@ -78,9 +68,8 @@ ktap_cdata *kp_cdata_new_record(ktap_state *ks, void *val, csymbol_id id)
 
 	/* if val == NULL, allocate new empty space */
 	if (val == NULL) {
-		/* TODO: free the space when exit the program unihorn(08.12.2013) */
 		size = csym_size(ks, id_to_csym(ks, id));
-		cd_struct(cd) = kp_zalloc(ks, size);
+		cd_struct(cd) = kp_rawobj_alloc(ks, size);
 	} else
 		cd_struct(cd) = val;
 
@@ -149,8 +138,8 @@ error:
 	return -1;
 }
 
-static void kp_cdata_value(ktap_state *ks,
-		ktap_value *val, void **out_addr, size_t *out_size, void **temp)
+static void kp_cdata_value(ktap_state *ks, ktap_value *val, void **out_addr,
+			   size_t *out_size, void **temp)
 {
 	struct ktap_cdata *cd;
 	csymbol *cs;
@@ -236,8 +225,8 @@ void kp_cdata_pack(ktap_state *ks, ktap_value *val, char *src, csymbol *cs)
 }
 
 /* Init its cdata type, but not its actual value */
-void kp_cdata_init(ktap_state *ks, ktap_value *val, void *addr,
-		int len, csymbol_id id)
+static void kp_cdata_init(ktap_state *ks, ktap_value *val, void *addr, int len,
+			  csymbol_id id)
 {
 	ffi_type type = csym_type(id_to_csym(ks, id));
 
@@ -249,6 +238,17 @@ void kp_cdata_init(ktap_state *ks, ktap_value *val, void *addr,
 	case FFI_UNION:
 		set_cdata(val, kp_cdata_new_record(ks, addr, id));
 		break;
+	case FFI_UINT8:
+	case FFI_INT8:
+	case FFI_UINT16:
+	case FFI_INT16:
+	case FFI_UINT32:
+	case FFI_INT32:
+	case FFI_UINT64:
+	case FFI_INT64:
+		/* set all these value into ktap_number(long) */
+		set_number(val, 0);
+		break;
 	default:
 		set_cdata(val, kp_cdata_new(ks, id));
 		break;
@@ -256,7 +256,7 @@ void kp_cdata_init(ktap_state *ks, ktap_value *val, void *addr,
 }
 
 void kp_cdata_ptr_set(ktap_state *ks, ktap_cdata *cd,
-				 ktap_value *key, ktap_value *val)
+		      ktap_value *key, ktap_value *val)
 {
 	ktap_number idx;
 	csymbol *cs;
@@ -264,8 +264,7 @@ void kp_cdata_ptr_set(ktap_state *ks, ktap_cdata *cd,
 	char *addr;
 
 	if (!is_number(key)) {
-		kp_printf(ks, "array index should be number\n");
-		kp_prepare_to_exit(ks);
+		kp_error(ks, "array index should be number\n");
 		return;
 	}
 	idx = nvalue(key);
@@ -277,8 +276,7 @@ void kp_cdata_ptr_set(ktap_state *ks, ktap_cdata *cd,
 
 	cs = csym_ptr_deref(ks, cd_csym(ks, cd));
 	if (kp_cdata_type_match(ks, cs, val)) {
-		kp_printf(ks, "array member should be %s type\n", csym_name(cs));
-		kp_prepare_to_exit(ks);
+		kp_error(ks, "array member should be %s type\n", csym_name(cs));
 		return;
 	}
 	size = csym_size(ks, cs);
@@ -288,7 +286,7 @@ void kp_cdata_ptr_set(ktap_state *ks, ktap_cdata *cd,
 }
 
 void kp_cdata_ptr_get(ktap_state *ks, ktap_cdata *cd,
-				 ktap_value *key, ktap_value *val)
+		      ktap_value *key, ktap_value *val)
 {
 	ktap_number idx;
 	csymbol *cs;
@@ -297,8 +295,7 @@ void kp_cdata_ptr_get(ktap_state *ks, ktap_cdata *cd,
 	csymbol_id cs_id;
 
 	if (!is_number(key)) {
-		kp_printf(ks, "array index should be number\n");
-		kp_prepare_to_exit(ks);
+		kp_error(ks, "array index should be number\n");
 		return;
 	}
 	idx = nvalue(key);
@@ -319,7 +316,7 @@ void kp_cdata_ptr_get(ktap_state *ks, ktap_cdata *cd,
 }
 
 void kp_cdata_record_set(ktap_state *ks, ktap_cdata *cd,
-				 ktap_value *key, ktap_value *val)
+			 ktap_value *key, ktap_value *val)
 {
 	const char *mb_name;
 	csymbol *cs, *mb_cs;
@@ -328,8 +325,7 @@ void kp_cdata_record_set(ktap_state *ks, ktap_cdata *cd,
 	char *addr;
 
 	if (!is_shrstring(key)) {
-		kp_printf(ks, "struct member name should be string\n");
-		kp_prepare_to_exit(ks);
+		kp_error(ks, "struct member name should be string\n");
 		return;
 	}
 	mb_name = svalue(key);
@@ -337,23 +333,24 @@ void kp_cdata_record_set(ktap_state *ks, ktap_cdata *cd,
 	csst = csym_struct(cs);
 	mb = csymst_mb_by_name(ks, csst, mb_name);
 	if (mb == NULL) {
-		kp_printf(ks, "struct member %s doesn't exist\n", mb_name);
-		kp_prepare_to_exit(ks);
+		kp_error(ks, "struct member %s doesn't exist\n", mb_name);
 		return;
 	}
+
 	mb_cs = id_to_csym(ks, mb->id);
 	if (kp_cdata_type_match(ks, mb_cs, val)) {
-		kp_printf(ks, "struct member should be %s type\n", csym_name(mb_cs));
-		kp_prepare_to_exit(ks);
+		kp_error(ks, "struct member should be %s type\n",
+			     csym_name(mb_cs));
 		return;
 	}
+
 	addr = cd_struct(cd);
 	addr += csym_record_mb_offset_by_name(ks, cs, mb_name);
 	kp_cdata_unpack(ks, addr, mb_cs, val);
 }
 
 void kp_cdata_record_get(ktap_state *ks, ktap_cdata *cd,
-				 ktap_value *key, ktap_value *val)
+			 ktap_value *key, ktap_value *val)
 {
 	const char *mb_name;
 	csymbol *cs, *mb_cs;
@@ -363,19 +360,19 @@ void kp_cdata_record_get(ktap_state *ks, ktap_cdata *cd,
 	csymbol_id mb_cs_id;
 
 	if (!is_shrstring(key)) {
-		kp_printf(ks, "struct member name should be string\n");
-		kp_prepare_to_exit(ks);
+		kp_error(ks, "struct member name should be string\n");
 		return;
 	}
+
 	mb_name = svalue(key);
 	cs = cd_csym(ks, cd);
 	csst = csym_struct(cs);
 	mb = csymst_mb_by_name(ks, csst, mb_name);
 	if (mb == NULL) {
-		kp_printf(ks, "struct member %s doesn't exist\n", mb_name);
-		kp_prepare_to_exit(ks);
+		kp_error(ks, "struct member %s doesn't exist\n", mb_name);
 		return;
 	}
+
 	mb_cs_id = mb->id;
 	mb_cs = id_to_csym(ks, mb_cs_id);
 	addr = cd_struct(cd);
@@ -385,3 +382,4 @@ void kp_cdata_record_get(ktap_state *ks, ktap_cdata *cd,
 	if (mb->len < 0)
 		kp_cdata_pack(ks, val, addr, mb_cs);
 }
+

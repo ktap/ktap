@@ -79,7 +79,6 @@ ret = ffi.C.ffi_test_array(arr, 8)
 if (ret != 10) {
 	failed("ffi_test_array should return 10")
 }
-ffi.free(arr)
 
 struct_p = ffi.new("struct ffi_struct[1]")
 struct_p[0].val = 20
@@ -88,7 +87,6 @@ ret = ffi.C.ffi_test_struct(struct_p)
 if (ret != 20) {
 	failed("ffi_test_struct should return 20")
 }
-ffi.free(struct_p)
 
 struct_p2 = ffi.new("struct ffi_struct_loop[1]")
 struct_p2[0].val = 10
@@ -97,7 +95,6 @@ ret = ffi.C.ffi_test_struct_loop(struct_p2)
 if (ret != 10) {
 	failed("ffi_test_struct_loop should return 10")
 }
-ffi.free(struct_p2)
 
 union_p = ffi.new("union ffi_union[1]")
 union_p[0].val = 20
@@ -110,7 +107,6 @@ ret = ffi.C.ffi_test_union(union_p)
 if (ret != 10) {
 	failed("ffi_test_union should return 10")
 }
-ffi.free(union_p)
 
 struct_p3 = ffi.new("struct ffi_struct_array[1]")
 struct_p3[0].val[4] = 20
@@ -121,7 +117,6 @@ ret = ffi.C.ffi_test_struct_array(struct_p3)
 if (ret != 200) {
 	failed("ffi_test_struct_array should return 200")
 }
-ffi.free(struct_p3)
 
 struct_p4 = ffi.new("struct ffi_struct_noname[1]")
 struct_p4[0].val = 20
@@ -129,4 +124,4 @@ ret = ffi.C.ffi_test_struct_noname(struct_p4)
 if (ret != 20) {
 	failed("ffi_test_struct_noname should return 20")
 }
-ffi.free(struct_p4)
+

@@ -367,6 +367,11 @@ typedef struct ktap_state {
 
 #define G(ks)   (ks->g)
 
+typedef struct ktap_rawobj {
+	CommonHeader;
+	void *v;
+} ktap_rawobj;
+
 typedef struct gcheader {
 	CommonHeader;
 } gcheader;
@@ -384,6 +389,7 @@ union ktap_gcobject {
 	struct ktap_upval uv;
 	struct ktap_state th;  /* thread */
  	struct ktap_btrace bt;  /* backtrace object */
+	struct ktap_rawobj rawobj;
 #ifdef CONFIG_KTAP_FFI
 	struct ktap_cdata cd;
 #endif
@@ -424,6 +430,7 @@ union ktap_gcobject {
 #define KTAP_TYPE_PTABLE	12
 #define KTAP_TYPE_STATDATA	13
 #define KTAP_TYPE_CDATA		14
+#define KTAP_TYPE_RAW		15
 /*
  * type number is ok so far, but it may collide later between
  * 16+ and | (1 << 4), so be careful on this.

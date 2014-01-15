@@ -130,6 +130,35 @@ void *kp_zalloc(ktap_state *ks, int size)
 	return addr;
 }
 
+/*
+ * allocate raw object with size.
+ * The raw object allocated will be free when ktap thread exit,
+ * so user don't have to free it.
+ */
+void *kp_rawobj_alloc(ktap_state *ks, int size)
+{
+	ktap_rawobj *obj;
+	void *addr;
+	
+	addr = kp_zalloc(ks, size);
+	if (unlikely(!addr)) {
+		kp_error(ks, "alloc raw object size %d failed\n", size);
+		return NULL;
+	}
+
+	obj = &kp_obj_newobject(ks, KTAP_TYPE_RAW, sizeof(ktap_rawobj), NULL)->rawobj;
+	if (unlikely(!obj)) {
+		kp_free(ks, addr);
+		kp_error(ks, "alloc raw object failed\n");
+		return NULL;
+	}
+
+	obj->v = addr;
+
+	/* return address of allocated memory, not raw object */
+	return addr;
+}
+
 void kp_obj_dump(ktap_state *ks, const ktap_value *v)
 {
 	switch (ttype(v)) {
@@ -424,6 +453,9 @@ void kp_obj_free_gclist(ktap_state *ks, ktap_gcobject *o)
 			break;
 		case KTAP_TYPE_PTABLE:
 			kp_ptab_free(ks, (ktap_ptab *)o);
+			break;
+		case KTAP_TYPE_RAW:
+			kp_free(ks, ((ktap_rawobj *)o)->v);
 			break;
 		default:
 			kp_free(ks, o);

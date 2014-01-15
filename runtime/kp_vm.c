@@ -1016,10 +1016,9 @@ static int init_cfunction_cache(ktap_state *ks)
 int kp_register_lib(ktap_state *ks, const char *libname, const ktap_Reg *funcs)
 {
 	const ktap_value *gt = kp_tab_getint(hvalue(&G(ks)->registry),
-					       KTAP_RIDX_GLOBALS);
+					     KTAP_RIDX_GLOBALS);
 	ktap_tab *target_tbl;
 	int i;
-
 
 	/* lib is null when register baselib function */
 	if (libname == NULL)
@@ -1031,7 +1030,7 @@ int kp_register_lib(ktap_state *ks, const char *libname, const ktap_Reg *funcs)
 		for (i = 0; funcs[i].name != NULL; i++) {
 		}
 
-		target_tbl = kp_tab_new(ks, 0, i);
+		target_tbl = kp_tab_new(ks, 0, i + 1);
 		if (!target_tbl)
 			return -1;
 
