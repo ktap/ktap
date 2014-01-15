@@ -371,25 +371,40 @@ int kp_str_fmt(ktap_state *ks, struct trace_seq *seq)
 			strfrmt = scanformat(ks, strfrmt, form);
 			switch (*strfrmt++) {
 			case 'c':
+				kp_arg_check(ks, arg, KTAP_TYPE_NUMBER);
+
 				trace_seq_printf(seq, form,
 						 nvalue(kp_arg(ks, arg)));
 				break;
 			case 'd':  case 'i': {
-				ktap_number n = nvalue(kp_arg(ks, arg));
-				INTFRM_T ni = (INTFRM_T)n;
+				ktap_number n;
+				INTFRM_T ni;
+
+				kp_arg_check(ks, arg, KTAP_TYPE_NUMBER);
+
+				n = nvalue(kp_arg(ks, arg));
+				ni = (INTFRM_T)n;
 				addlenmod(form, INTFRMLEN);
 				trace_seq_printf(seq, form, ni);
 				break;
 			}
 			case 'p': {
 				char str[KSYM_SYMBOL_LEN];
+
+				kp_arg_check(ks, arg, KTAP_TYPE_NUMBER);
+
 				SPRINT_SYMBOL(str, nvalue(kp_arg(ks, arg)));
 				_trace_seq_puts(seq, str);
 				break;
 			}
 			case 'o':  case 'u':  case 'x':  case 'X': {
-				ktap_number n = nvalue(kp_arg(ks, arg));
-				unsigned INTFRM_T ni = (unsigned INTFRM_T)n;
+				ktap_number n;
+				unsigned INTFRM_T ni;
+
+				kp_arg_check(ks, arg, KTAP_TYPE_NUMBER);
+
+				n = nvalue(kp_arg(ks, arg));
+				ni = (unsigned INTFRM_T)n;
 				addlenmod(form, INTFRMLEN);
 				trace_seq_printf(seq, form, ni);
 				break;
@@ -408,6 +423,8 @@ int kp_str_fmt(ktap_state *ks, struct trace_seq *seq)
 					kp_event_tostring(ks, seq);
 					return 0;
 				}
+
+				kp_arg_check(ks, arg, KTAP_TYPE_STRING);
 
 				s = svalue(v);
 				l = rawtsvalue(v)->tsv.len;
