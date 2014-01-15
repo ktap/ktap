@@ -276,7 +276,6 @@ typedef struct ktap_cdata {
 		struct {
 			void *addr;
 			int nmemb;	/* number of memory block */
-			int allocated;
 		} p;			/* pointer data */
 		void *st;		/* struct member data */
 	} u;
