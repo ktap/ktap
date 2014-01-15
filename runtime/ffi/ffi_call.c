@@ -40,7 +40,7 @@ static int ffi_type_check(ktap_state *ks, csymbol_func *csf, int idx)
 	if (!kp_cdata_type_match(ks, cs, arg))
 		return 0;
 	else {
-		kp_error(ks, "Error: Cannot convert to csymbol %s for arg %d\n",
+		kp_error(ks, "Cannot convert to csymbol %s for arg %d\n",
 				csym_name(cs), idx);
 		return -1;
 	}

@@ -34,6 +34,16 @@ ktap_cdata *kp_cdata_new(ktap_state *ks, csymbol_id id)
 	return cd;
 }
 
+ktap_cdata *kp_cdata_new_number(ktap_state *ks, void *val, csymbol_id id)
+{
+	ktap_cdata *cd;
+
+	cd = kp_cdata_new(ks, id);
+	cd_int(cd) = (cdata_number)val;
+
+	return cd;
+}
+
 /* argument nmemb here indicates the length of array that is pointed to,
  * -1 for unknown */
 ktap_cdata *kp_cdata_new_ptr(ktap_state *ks, void *addr,
@@ -74,6 +84,38 @@ ktap_cdata *kp_cdata_new_record(ktap_state *ks, void *val, csymbol_id id)
 		cd_record(cd) = val;
 
 	return cd;
+}
+
+ktap_cdata *kp_cdata_new_by_id(ktap_state *ks, void *val, csymbol_id id)
+{
+	csymbol *cs = id_to_csym(ks, id);
+
+	switch (csym_type(cs)) {
+	case FFI_VOID:
+		kp_error(ks, "Error: Cannot new a void type\n");
+		return NULL;
+	case FFI_UINT8:
+	case FFI_INT8:
+	case FFI_UINT16:
+	case FFI_INT16:
+	case FFI_UINT32:
+	case FFI_INT32:
+	case FFI_UINT64:
+	case FFI_INT64:
+		return kp_cdata_new_number(ks, val, id);
+	case FFI_PTR:
+		return kp_cdata_new_ptr(ks, val, 0, id, 0);
+	case FFI_STRUCT:
+	case FFI_UNION:
+		return kp_cdata_new_record(ks, val, id);
+	case FFI_FUNC:
+		kp_error(ks, "Error: Cannot new a function type\n");
+		return NULL;
+	case FFI_UNKNOWN:
+	default:
+		kp_error(ks, "Error: unknown csymbol type %s\n", csym_name(cs));
+		return NULL;
+	}
 }
 
 void kp_cdata_dump(ktap_state *ks, ktap_cdata *cd)
