@@ -80,18 +80,34 @@ if (ret != 10) {
 	failed("ffi_test_array should return 10")
 }
 
-struct_p = ffi.new("struct ffi_struct[1]")
-struct_p[0].val = 20
-struct_p[0].val = struct_p[0].val
-ret = ffi.C.ffi_test_struct(struct_p)
+newint = ffi.new("int")
+newint = 1024
+if (newint != 1024) {
+	failed("newint should be 1024")
+}
+
+struct = ffi.new("struct ffi_struct")
+struct.val = 20
+if (struct.val != 20) {
+	failed("struct.val should be 20")
+}
+struct.val = newint
+if (struct.val != 1024) {
+	failed("struct.val should be the same as newint")
+}
+
+struct_arr = ffi.new("struct ffi_struct[1]")
+struct_arr[0].val = 20
+struct_arr[0].val = struct_arr[0].val
+ret = ffi.C.ffi_test_struct(struct_arr)
 if (ret != 20) {
 	failed("ffi_test_struct should return 20")
 }
 
-struct_p2 = ffi.new("struct ffi_struct_loop[1]")
-struct_p2[0].val = 10
-struct_p2[0].next = struct_p2
-ret = ffi.C.ffi_test_struct_loop(struct_p2)
+struct_arr2 = ffi.new("struct ffi_struct_loop[1]")
+struct_arr2[0].val = 10
+struct_arr2[0].next = struct_arr2
+ret = ffi.C.ffi_test_struct_loop(struct_arr2)
 if (ret != 10) {
 	failed("ffi_test_struct_loop should return 10")
 }
