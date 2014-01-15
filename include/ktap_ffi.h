@@ -160,7 +160,9 @@ inline csymbol *ffi_get_csym_by_id(ktap_state *ks, csymbol_id id);
 #define cd_int(cd) ((cd)->u.i)
 #define cd_ptr(cd) ((cd)->u.p.addr)
 #define cd_ptr_nmemb(cd) ((cd)->u.p.nmemb)
-#define cd_struct(cd) ((cd)->u.st)
+#define cd_record(cd) ((cd)->u.rec)
+#define cd_struct(cd) cd_record(cd)
+#define cd_union(cd) cd_record(cd)
 
 #ifdef __KERNEL__
 size_t csym_size(ktap_state *ks, csymbol *sym);

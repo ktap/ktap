@@ -277,7 +277,7 @@ typedef struct ktap_cdata {
 			void *addr;
 			int nmemb;	/* number of memory block */
 		} p;			/* pointer data */
-		void *st;		/* struct member data */
+		void *rec;		/* struct member or union data */
 	} u;
 } ktap_cdata;
 #endif
