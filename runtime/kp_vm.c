@@ -49,12 +49,12 @@
 
 
 /* common helper function */
-long gettimeofday_us(void)
+long gettimeofday_ns(void)
 {
-	struct timeval tv;
+	struct timespec now;
 
-	do_gettimeofday(&tv);
-	return tv.tv_sec * USEC_PER_SEC + tv.tv_usec;
+	getnstimeofday(&now);
+	return now.tv_sec * NSEC_PER_SEC + now.tv_nsec;
 }
 
 

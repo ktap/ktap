@@ -82,10 +82,10 @@ static int ktap_main(struct file *file, ktap_parm *parm)
 	unsigned long *buff = NULL;
 	ktap_state *ks;
 	ktap_closure *cl;
-	int start_time, delta_time;
+	long start_time, delta_time;
 	int ret;
 
-	start_time = gettimeofday_us();
+	start_time = gettimeofday_ns();
 
 	ks = kp_newstate(parm, kp_dir_dentry);
 	if (unlikely(!ks))
@@ -107,7 +107,7 @@ static int ktap_main(struct file *file, ktap_parm *parm)
 		/* optimize bytecode before excuting */
 		kp_optimize_code(ks, 0, cl->p);
 
-		delta_time = gettimeofday_us() - start_time;
+		delta_time = (gettimeofday_ns() - start_time) / NSEC_PER_USEC;
 		kp_verbose_printf(ks, "booting time: %d (us)\n", delta_time);
 		kp_call(ks, ks->top - 1, 0);
 	}

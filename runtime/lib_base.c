@@ -508,9 +508,33 @@ static int kplib_delete(ktap_state *ks)
 	return 0;
 }
 
+static int kplib_gettimeofday_ns(ktap_state *ks)
+{
+	set_number(ks->top, gettimeofday_ns());
+	incr_top(ks);
+
+	return 1;
+}
+
 static int kplib_gettimeofday_us(ktap_state *ks)
 {
-	set_number(ks->top, gettimeofday_us());
+	set_number(ks->top, gettimeofday_ns() / NSEC_PER_USEC);
+	incr_top(ks);
+
+	return 1;
+}
+
+static int kplib_gettimeofday_ms(ktap_state *ks)
+{
+	set_number(ks->top, gettimeofday_ns() / NSEC_PER_MSEC);
+	incr_top(ks);
+
+	return 1;
+}
+
+static int kplib_gettimeofday_s(ktap_state *ks)
+{
+	set_number(ks->top, gettimeofday_ns() / NSEC_PER_SEC);
 	incr_top(ks);
 
 	return 1;
@@ -606,7 +630,10 @@ static const ktap_Reg base_funcs[] = {
 	{"avg", kplib_avg},
 
 	{"delete", kplib_delete},
+	{"gettimeofday_ns", kplib_gettimeofday_ns},
 	{"gettimeofday_us", kplib_gettimeofday_us},
+	{"gettimeofday_ms", kplib_gettimeofday_ms},
+	{"gettimeofday_s", kplib_gettimeofday_s},
 	{"curr_taskinfo", kplib_curr_taskinfo},
 	{"in_iowait", kplib_in_iowait},
 	{NULL}
