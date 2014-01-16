@@ -60,7 +60,7 @@ like REHL, Fedora, Ubuntu, etc.
         $ make load  #need to be root or have sudo access
 4. Running ktap
 
-        $ ./ktap scripts/helloworld.kp
+        $ ./ktap samples/helloworld.kp
 
 
 # Language basics
