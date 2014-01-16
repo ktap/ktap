@@ -192,7 +192,10 @@ reload:
 	make unload; make load
 
 test: FORCE
-	cd test; sh ./run_test.sh; cd -
+	#start testing
+	prove -r test/
+	cd test/ffi && make --quiet --no-print-directory test && cd -
+	rmmod ktapvm
 
 clean:
 	$(MAKE) -C $(KERNEL_SRC) M=$(PWD) clean

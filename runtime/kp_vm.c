@@ -486,6 +486,10 @@ static void ktap_execute(ktap_state *ks)
 		}
 
 		cond_resched();
+
+		if (G(ks)->exit)
+			return;
+
 		if (signal_pending(current)) {
 			flush_signals(current);
 			return;

@@ -1,27 +1,27 @@
-#!/usr/bin/env ktap
+# vi: ft= et tw=4 sw=4
 
-function failed() {
-	printf("failed\n");
-	exit(-1);
-}
+use lib 'test/lib';
+use Test::ktap 'no_plan';
 
+run_tests();
+
+__DATA__
+
+=== TEST 1: function
+--- src
 ### basic function call ###
 function f1(a, b) {
 	return a + b
 }
 
-if (f1(2, 3) != 5) {
-	failed();
-}
+print(f1(2, 3))
 
 ### return string ###
 function f2() {
 	return "function return"
 }
 
-if (f2() != "function return") {
-	failed();
-}
+print(f2())
 
 ### mutli-value return ###
 function f3(a, b) {
@@ -29,10 +29,7 @@ function f3(a, b) {
 }
 
 var c, d = f3(2, 3);
-if(c != 5 || d != -1) {
-	failed();
-}
-
+print(c, d)
 
 ### closure testing ### 
 function f4() {
@@ -43,9 +40,7 @@ function f4() {
 }
 
 var f = f4()
-if (f(9, 9) != 81) {
-	failed();
-}
+print(f(9, 9))
 
 ### closure with lexcial variable ### 
 var i = 1
@@ -58,14 +53,10 @@ function f6() {
 }
 
 f = f6()
-if (f(9, 9) != 81 + i) {
-	failed();
-}
+print(f(9, 9))
 
 i = 6
-if (f(9, 9) != 81 + i) {
-	failed();
-}
+print(f(9, 9))
 
 ### tail call
 ### stack should not overflow in tail call mechanism
@@ -80,8 +71,17 @@ function f8(i) {
 }
 
 f8(0)
-if (a != 1000000) {
-	failed();
-}
+print(a)
+
+--- out
+5
+function return
+5	-1
+81
+86
+87
+1000000
+
+--- err
 
 

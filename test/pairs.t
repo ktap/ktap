@@ -1,11 +1,14 @@
-#!/usr/bin/env ktap
+# vi: ft= et tw=4 sw=4
 
-function failed() {
-	printf("failed\n");
-	exit(-1);
-}
+use lib 'test/lib';
+use Test::ktap 'no_plan';
 
-#-----------------------------------------#
+run_tests();
+
+__DATA__
+
+=== TEST 1: looping
+--- src
 
 var t = {}
 t[1] = 101
@@ -21,27 +24,27 @@ for (k, v in pairs(t)) {
 	n = n + 1
 
 	if (k == 1 && v != 101) {
-		failed()
+		print("failed")
 	}
 	if (k == 2 && v != 102) {
-		failed()
+		print("failed")
 	}
 	if (k == 3 && v != 103) {
-		failed()
+		print("failed")
 	}
 	if (k == "key_1" && v != "value_1") {
-		failed()
+		print("failed")
 	}
 	if (k == "key_2" && v != "value_2") {
-		failed()
+		print("failed")
 	}
 	if (k == "key_3" && v != "value_3") {
-		failed()
+		print("failed")
 	}
 }
 
 if (n != len(t)) {
-	failed()
+	print("failed")
 }
 
 
@@ -68,18 +71,21 @@ for (k, v in sort_pairs(s, cmp)) {
 }
 
 if (ordered[1] != 100) {
-	failed()
+	print("failed")
 }
 if (ordered[2] != 12) {
-	failed()
+	print("failed")
 }
 if (ordered[3] != 3) {
-	failed()
+	print("failed")
 }
 if (ordered[4] != 2) {
-	failed()
+	print("failed")
 }
 if (ordered[5] != -1) {
-	failed()
+	print("failed")
 }
+
+--- out
+--- err
 
