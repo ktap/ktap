@@ -20,30 +20,28 @@ More information can be found at [ktap homepage][homepage].
 
 ## Highlights
 
-  * simple but powerful scripting language
-  * register based interpreter (heavily optimized) in Linux kernel
-  * small and lightweight (6KLOC of interpreter)
-  * not depend on gcc for each script run
-  * easy to use in embedded environments without debugging info
-  * support for tracepoint, kprobe, uprobe, function trace, timer, and more
-  * supported in x86, arm, ppc, mips
-  * safety in a sandbox
+* a simple but powerful scripting language
+* register based interpreter (heavily optimized) in Linux kernel
+* small and lightweight
+* not depend on the gcc toolchain for each script run
+* easy to use in embedded environments without debugging info
+* support for tracepoint, kprobe, uprobe, function trace, timer, and more
+* supported in x86, arm, ppc, mips
+* safety in sandbox
+
 
 ## Building & Running
 
 1. Clone ktap from github
 
         $ git clone http://github.com/ktap/ktap.git
-
 2. Compiling ktap
 
         $ cd ktap
         $ make       #generate ktapvm kernel module and ktap binary
-
 3. Load ktapvm kernel module(make sure debugfs mounted)
 
         $ make load  #need to be root or have sudo access
-
 4. Running ktap
 
         $ ./ktap samples/helloworld.kp
@@ -54,23 +52,19 @@ More information can be found at [ktap homepage][homepage].
 1. simplest one-liner command to enable all tracepoints
 
         ktap -e "trace *:* { print(argevent) }"
-
 2. syscall tracing on target process
 
         ktap -e "trace syscalls:* { print(argevent) }" -- ls
-
 3. ftrace(kernel newer than 3.3, and must compiled with CONFIG_FUNCTION_TRACER)
 
         ktap -e "trace ftrace:function { print(argevent) }"
 
         ktap -e "trace ftrace:function /ip==mutex*/ { print(argevent) }"
-
 4. simple syscall tracing
 
         trace syscalls:* {
                 print(cpu(), pid(), execname(), argevent)
         }
-
 5. syscall tracing in histogram style
 
         var s = {}
@@ -82,7 +76,6 @@ More information can be found at [ktap homepage][homepage].
         trace_end {
                 histogram(s)
         }
-
 6. kprobe tracing
 
         trace probe:do_sys_open dfd=%di fname=%dx flags=%cx mode=+4($stack) {
@@ -92,7 +85,6 @@ More information can be found at [ktap homepage][homepage].
         trace probe:do_sys_open%return fd=$retval {
                 print("exit:", execname(), argevent)
         }
-
 7. uprobe tracing
 
         trace probe:/lib/libc.so.6:malloc {
@@ -102,7 +94,6 @@ More information can be found at [ktap homepage][homepage].
         trace probe:/lib/libc.so.6:malloc%return {
                 print("exit:", execname(), argevent)
         }
-
 8. stapsdt tracing (userspace static marker)
 
         trace sdt:/lib64/libc.so.6:lll_futex_wake {
@@ -115,7 +106,6 @@ More information can be found at [ktap homepage][homepage].
         trace sdt:/lib64/libc.so.6:* {
                 print(execname(), argevent)
         }
-
 9. timer
 
         tick-1ms {
@@ -125,14 +115,13 @@ More information can be found at [ktap homepage][homepage].
         profile-2s {
                 printf("time fired on every cpu\n");
         }
-
 10. FFI (Call kernel function from ktap script, need to compile with FFI=1)
 
-        cdef[[
+        ffi.cdef[[
                 int printk(char *fmt, ...);
         ]]
 
-        C.printk("This message is called from ktap ffi\n")
+        ffi.C.printk("This message is called from ktap ffi\n")
 
 More examples can be found at [samples][samples_dir] directory.
 
