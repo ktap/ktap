@@ -936,13 +936,12 @@ static void table_histdump(ktap_state *ks, ktap_tab *t, int shownums)
 		kp_printf(ks, "%32s |\n", "...");
 }
 
-#define HISTOGRAM_DEFAULT_TOP_NUM	20
 
 #define DISTRIBUTION_STR "------------- Distribution -------------"
-void kp_tab_histogram(ktap_state *ks, ktap_tab *t)
+void kp_tab_histogram(ktap_state *ks, ktap_tab *t, int n)
 {
 	kp_printf(ks, "%32s%s%s\n", "value ", DISTRIBUTION_STR, " count");
-	table_histdump(ks, t, HISTOGRAM_DEFAULT_TOP_NUM);
+	table_histdump(ks, t, n);
 }
 
 /*
@@ -1154,8 +1153,8 @@ void kp_ptab_get(ktap_state *ks, ktap_ptab *ph,
 	kp_tab_unlock(ph->agg);
 }
 
-void kp_ptab_histogram(ktap_state *ks, ktap_ptab *ph)
+void kp_ptab_histogram(ktap_state *ks, ktap_ptab *ph, int n)
 {
-	kp_tab_histogram(ks, kp_ptab_synthesis(ks, ph));
+	kp_tab_histogram(ks, kp_ptab_synthesis(ks, ph), n);
 }
 

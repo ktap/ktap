@@ -11,7 +11,7 @@ void kp_tab_free(ktap_state *ks, ktap_tab *t);
 int kp_tab_length(ktap_state *ks, ktap_tab *t);
 void kp_tab_dump(ktap_state *ks, ktap_tab *t);
 void kp_tab_clear(ktap_state *ks, ktap_tab *t);
-void kp_tab_histogram(ktap_state *ks, ktap_tab *t);
+void kp_tab_histogram(ktap_state *ks, ktap_tab *t, int n);
 int kp_tab_next(ktap_state *ks, ktap_tab *t, StkId key);
 int kp_tab_sort_next(ktap_state *ks, ktap_tab *t, StkId key);
 void kp_tab_sort(ktap_state *ks, ktap_tab *t, ktap_closure *cmp_func);
@@ -25,6 +25,6 @@ void kp_ptab_set(ktap_state *ks, ktap_ptab *ph,
 			ktap_value *key, ktap_value *val);
 void kp_ptab_get(ktap_state *ks, ktap_ptab *ph,
 			ktap_value *key, ktap_value *val);
-void kp_ptab_histogram(ktap_state *ks, ktap_ptab *ph);
+void kp_ptab_histogram(ktap_state *ks, ktap_ptab *ph, int n);
 
 #endif /* __KTAP_TAB_H__ */

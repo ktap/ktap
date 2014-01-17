@@ -372,14 +372,26 @@ static int kplib_user_string(ktap_state *ks)
 	return 1;
 }
 
+#define HISTOGRAM_DEFAULT_TOP_NUM	20
+
 static int kplib_histogram(ktap_state *ks)
 {
 	ktap_value *v = kp_arg(ks, 1);
+	int n = HISTOGRAM_DEFAULT_TOP_NUM;
+
+	if (kp_arg_nr(ks) >= 2) {
+		kp_arg_check(ks, 2, KTAP_TYPE_NUMBER);
+		n = nvalue(kp_arg(ks, 2));
+		if (n > 1000)
+			n = 1000;
+	}
+
+	n = max(n, HISTOGRAM_DEFAULT_TOP_NUM);
 
 	if (is_table(v))
-		kp_tab_histogram(ks, hvalue(v));
+		kp_tab_histogram(ks, hvalue(v), n);
 	else if (is_ptable(v))
-		kp_ptab_histogram(ks, phvalue(v));
+		kp_ptab_histogram(ks, phvalue(v), n);
 
 	return 0;
 }
