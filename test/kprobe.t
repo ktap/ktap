@@ -1,4 +1,4 @@
-# vi: ft= et tw=4 sw=4
+# vi: ft= et ts=4
 
 use lib 'test/lib';
 use Test::ktap 'no_plan';
@@ -8,7 +8,7 @@ run_tests();
 __DATA__
 
 === TEST 1: kprobe
---- option: -q
+--- opts: -q
 --- src
 
 var n = 0
@@ -31,8 +31,10 @@ tick-1s {
 false
 --- err
 
+
+
 === TEST 2: kretprobe
---- option: -q
+--- opts: -q
 --- src
 var n = 0
 trace probe:__schedule%return {

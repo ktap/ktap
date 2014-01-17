@@ -4,7 +4,7 @@ package Test::ktap;
 
 use Test::Base -Base;
 use POSIX ();
-use IPC::Run3 ();
+use IPC::Run ();
 
 our @EXPORT = qw( run_tests );
 
@@ -18,28 +18,48 @@ sub bail_out (@) {
     Test::More::BAIL_OUT(@_);
 }
 
+sub parse_cmd ($) {
+    my $cmd = shift;
+    my @cmd;
+    while (1) {
+        if ($cmd =~ /\G\s*"(.*?)"/gmsc) {
+            push @cmd, $1;
+
+        } elsif ($cmd =~ /\G\s*'(.*?)'/gmsc) {
+            push @cmd, $1;
+
+        } elsif ($cmd =~ /\G\s*(\S+)/gmsc) {
+            push @cmd, $1;
+
+        } else {
+            last;
+        }
+    }
+    return @cmd;
+}
+
 sub run_test ($) {
     my $block = shift;
     my $name = $block->name;
 
     my $timeout = $block->timeout() || 10;
-    my $option = $block->option;
+    my $opts = $block->opts;
     my $args = $block->args;
 
     my $cmd = "./ktap";
 
-    if (defined $option) {
-        $cmd .= " $option";
+    if (defined $opts) {
+        $cmd .= " $opts";
     }
 
     my $kpfile;
     if (defined $block->src) {
-	$kpfile = POSIX::tmpnam() . ".kp";
-	open my $out, ">$kpfile" or
-	    bail_out("cannot open $kpfile for writing: $!");
-	print $out ($block->src);
-	close $out;
-	$cmd .= " $kpfile"
+        $kpfile = POSIX::tmpnam() . ".kp";
+        open my $out, ">$kpfile" or
+            bail_out("cannot open $kpfile for writing: $!");
+        print $out ($block->src);
+        close $out;
+        $cmd .= " $kpfile"
     }
 
     if (defined $args) {
@@ -48,12 +68,29 @@ sub run_test ($) {
 
     #warn "CMD: $cmd\n";
 
+    my @cmd = parse_cmd($cmd);
+
     my ($out, $err);
-    IPC::Run3::run3($cmd, undef, \$out, \$err);
+
+    eval {
+        IPC::Run::run(\@cmd, \undef, \$out, \$err,
+                      IPC::Run::timeout($timeout));
+    };
+    if ($@) {
+        # timed out
+        if ($@ =~ /timeout/) {
+            if (!defined $block->expect_timeout) {
+                fail("$name: ktap process timed out");
+            }
+	} else {
+            fail("$name: failed to run command [$cmd]: $@");
+        }
+    }
+
     my $ret = ($? >> 8);
 
     if (defined $kpfile) {
-	unlink $kpfile;
+        unlink $kpfile;
     }
 
     if (defined $block->out) {
@@ -88,3 +125,4 @@ sub run_test ($) {
 }
 
 1;
+# vi: et

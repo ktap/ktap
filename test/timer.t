@@ -8,7 +8,7 @@ run_tests();
 __DATA__
 
 === TEST 1: timer
---- option: -q
+--- opts: -q
 --- src
 
 var n1 = 0

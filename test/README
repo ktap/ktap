@@ -3,17 +3,17 @@ This directory contains the test suite for ktap.
 Prerequisites
 -------------
 
-One needs to install perl and CPAN modules Test::Base and IPC::Run3
+One needs to install perl and CPAN modules Test::Base and IPC::Run
 before running the tests. After perl is installed, the "cpan" utility
 can be used to install the CPAN modules required:
 
-    cpan Test::Base IPC::Run3
+    cpan Test::Base IPC::Run
 
 Alternatively you can just install the pre-built binary packages
 provided by your Linux distribution vendor. For example, on Fedora, you
 just need to run
 
-    yum install perl-Test-Base perl-IPC-Run3
+    yum install perl-Test-Base perl-IPC-Run
 
 Running tests
 -------------
