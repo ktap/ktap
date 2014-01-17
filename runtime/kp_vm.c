@@ -1401,7 +1401,7 @@ void kp_init_exit_instruction(void)
 static void exit_stats(ktap_state *ks)
 {
 	ktap_stats __percpu *stats = G(ks)->stats;
-	int mem_allocated = 0, nr_mem_allocate = 0, nr_mem_free = 0;
+	int mem_allocated = 0, nr_mem_allocate = 0;
 	int events_hits = 0, events_missed = 0;
 	int cpu;
 
@@ -1409,7 +1409,6 @@ static void exit_stats(ktap_state *ks)
 		ktap_stats *per_stats = per_cpu_ptr(stats, cpu);
 		mem_allocated += per_stats->mem_allocated;
 		nr_mem_allocate += per_stats->nr_mem_allocate;
-		nr_mem_free += per_stats->nr_mem_free;
 		events_hits += per_stats->events_hits;
 		events_missed += per_stats->events_missed;
 	}
@@ -1417,7 +1416,6 @@ static void exit_stats(ktap_state *ks)
 	kp_verbose_printf(ks, "ktap stats:\n");
 	kp_verbose_printf(ks, "memory allocated size: %d\n", mem_allocated);
 	kp_verbose_printf(ks, "memory allocate num: %d\n", nr_mem_allocate);
-	kp_verbose_printf(ks, "memory free num: %d\n", nr_mem_free);
 	kp_verbose_printf(ks, "events_hits: %d\n", events_hits);
 	kp_verbose_printf(ks, "events_missed: %d\n", events_missed);
 

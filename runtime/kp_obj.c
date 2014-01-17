@@ -79,7 +79,6 @@ void *kp_malloc(ktap_state *ks, int size)
 void kp_free(ktap_state *ks, void *addr)
 {
 	preempt_disable();
-	KTAP_STATS(ks)->nr_mem_free += 1;
 	preempt_enable();
 
 	kfree(addr);

@@ -286,7 +286,6 @@ typedef struct ktap_cdata {
 typedef struct ktap_stats {
 	int mem_allocated;
 	int nr_mem_allocate;
-	int nr_mem_free;
 	int events_hits;
 	int events_missed;
 } ktap_stats;
