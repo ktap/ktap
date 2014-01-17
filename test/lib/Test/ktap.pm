@@ -34,12 +34,12 @@ sub run_test ($) {
 
     my $kpfile;
     if (defined $block->src) {
-	$kpfile = POSIX::tmpnam() . ".kp";
-	open my $out, ">$kpfile" or
-	    bail_out("cannot open $kpfile for writing: $!");
-	print $out ($block->src);
-	close $out;
-	$cmd .= " $kpfile"
+        $kpfile = POSIX::tmpnam() . ".kp";
+        open my $out, ">$kpfile" or
+            bail_out("cannot open $kpfile for writing: $!");
+        print $out ($block->src);
+        close $out;
+        $cmd .= " $kpfile"
     }
 
     if (defined $args) {
@@ -53,7 +53,7 @@ sub run_test ($) {
     my $ret = ($? >> 8);
 
     if (defined $kpfile) {
-	unlink $kpfile;
+        unlink $kpfile;
     }
 
     if (defined $block->out) {
@@ -88,3 +88,4 @@ sub run_test ($) {
 }
 
 1;
+# vi: et
