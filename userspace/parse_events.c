@@ -233,25 +233,32 @@ static struct probe_list *probe_list_head; /* for cleanup resources */
 /*
  * Some symbol format cannot write to uprobe_events in debugfs, like:
  * symbol "check_one_fd.part.0" in glibc.
- * For those symbols, we change the format, get rid of invalid chars,
- * "check_one_fd.part.0" -> "check_one_fd"
- *
- * This function copy is_good_name function in linux/kernel/trace/trace_probe.h
+ * For those symbols, we change the format to:
+ * "check_one_fd.part.0" -> "check_one_fd_0"
  */
 static char *format_symbol_name(const char *old_symbol)
 {
 	char *new_name = strdup(old_symbol);
 	char *name = new_name;
+	int changed = 0;
 
-        if (!isalpha(*name) && *name != '_')
-		*name = '\0';
+        if (!isalpha(*name) && *name != '_') {
+		*name = '_';
+		changed = 1;
+	}
 
         while (*++name != '\0') {
                 if (!isalpha(*name) && !isdigit(*name) && *name != '_') {
-			*name = '\0';
-			break;
+			*name = '_';
+			changed = 1;
+			continue;
 		}
         }
+
+	if (changed)
+		fprintf(stderr,
+			"Warning: symbol \"%s\" transformed to event \"%s\"\n",
+			old_symbol, new_name);
 
 	/* this is a good name */
         return new_name;
