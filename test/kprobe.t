@@ -31,6 +31,8 @@ tick-1s {
 false
 --- err
 
+
+
 === TEST 2: kretprobe
 --- option: -q
 --- src
