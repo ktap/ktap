@@ -1,4 +1,4 @@
-# vi: ft= et tw=4 sw=4
+# vi: ft= et ts=4
 
 use lib 'test/lib';
 use Test::ktap 'no_plan';
@@ -20,4 +20,14 @@ tick-3s {
 while (1) {}
 --- out
 --- err
+
+
+
+=== TEST 2: dead loop killed by signal
+--- src
+while (1) {}
+--- out
+--- err
+--- expect_timeout
+--- timeout: 1
 

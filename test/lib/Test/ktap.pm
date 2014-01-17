@@ -4,7 +4,7 @@ package Test::ktap;
 
 use Test::Base -Base;
 use POSIX ();
-use IPC::Run3 ();
+use IPC::Run ();
 
 our @EXPORT = qw( run_tests );
 
@@ -16,6 +16,26 @@ sub run_tests () {
 
 sub bail_out (@) {
     Test::More::BAIL_OUT(@_);
+}
+
+sub parse_cmd ($) {
+    my $cmd = shift;
+    my @cmd;
+    while (1) {
+        if ($cmd =~ /\G\s*"(.*?)"/gmsc) {
+            push @cmd, $1;
+
+        } elsif ($cmd =~ /\G\s*'(.*?)'/gmsc) {
+            push @cmd, $1;
+
+        } elsif ($cmd =~ /\G\s*(\S+)/gmsc) {
+            push @cmd, $1;
+
+        } else {
+            last;
+        }
+    }
+    return @cmd;
 }
 
 sub run_test ($) {
@@ -48,8 +68,25 @@ sub run_test ($) {
 
     #warn "CMD: $cmd\n";
 
+    my @cmd = parse_cmd($cmd);
+
     my ($out, $err);
-    IPC::Run3::run3($cmd, undef, \$out, \$err);
+
+    eval {
+        IPC::Run::run(\@cmd, \undef, \$out, \$err,
+                      IPC::Run::timeout($timeout));
+    };
+    if ($@) {
+        # timed out
+        if ($@ =~ /timeout/) {
+            if (!defined $block->expect_timeout) {
+                fail("$name: ktap process timed out");
+            }
+	} else {
+            fail("$name: failed to run command [$cmd]: $@");
+        }
+    }
+
     my $ret = ($? >> 8);
 
     if (defined $kpfile) {
