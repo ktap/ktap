@@ -43,13 +43,13 @@ sub run_test ($) {
     my $name = $block->name;
 
     my $timeout = $block->timeout() || 10;
-    my $option = $block->option;
+    my $opts = $block->opts;
     my $args = $block->args;
 
     my $cmd = "./ktap";
 
-    if (defined $option) {
-        $cmd .= " $option";
+    if (defined $opts) {
+        $cmd .= " $opts";
     }
 
     my $kpfile;
