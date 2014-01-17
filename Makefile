@@ -193,7 +193,7 @@ reload:
 
 test: FORCE
 	#start testing
-	prove -r test/
+	prove -j4 -r test/
 	cd test/ffi && make --quiet --no-print-directory test && cd -
 
 clean:
