@@ -195,7 +195,6 @@ test: FORCE
 	#start testing
 	prove -r test/
 	cd test/ffi && make --quiet --no-print-directory test && cd -
-	rmmod ktapvm
 
 clean:
 	$(MAKE) -C $(KERNEL_SRC) M=$(PWD) clean
