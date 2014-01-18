@@ -866,6 +866,9 @@ static void table_histdump(ktap_state *ks, ktap_tab *t, int shownums)
 	int total = 0, is_kernel_address = 0;
 	char dist_str[40];
 	ktap_tnode *node;
+	long start_time, delta_time;
+
+	start_time = gettimeofday_ns();
 
 	kp_tab_sort(ks, t, NULL);
 
@@ -934,6 +937,10 @@ static void table_histdump(ktap_state *ks, ktap_tab *t, int shownums)
 
 	if (!shownums && node)
 		kp_printf(ks, "%32s |\n", "...");
+
+	delta_time = (gettimeofday_ns() - start_time) / NSEC_PER_USEC;
+	kp_verbose_printf(ks, "table_histdump time: %d (us)\n", delta_time);
+	
 }
 
 
@@ -1018,7 +1025,10 @@ static void merge_table(ktap_state *ks, ktap_tab *t1, ktap_tab *t2)
 ktap_tab *kp_ptab_synthesis(ktap_state *ks, ktap_ptab *ph)
 {
 	ktap_tab *agg;
+	long start_time, delta_time;
 	int cpu;
+
+	start_time = gettimeofday_ns();
 
 	agg = ph->agg;
 
@@ -1027,8 +1037,14 @@ ktap_tab *kp_ptab_synthesis(ktap_state *ks, ktap_ptab *ph)
 
 	for_each_possible_cpu(cpu) {
 		ktap_tab **t = per_cpu_ptr(ph->tbl, cpu);
+
+		/* give a chance to reschedule */
+		cond_resched();
 		merge_table(ks, *t, agg);
 	}
+
+	delta_time = (gettimeofday_ns() - start_time) / NSEC_PER_USEC;
+	kp_verbose_printf(ks, "ptab_synthesis time: %d (us)\n", delta_time);
 
 	return agg;
 }

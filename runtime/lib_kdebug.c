@@ -339,6 +339,15 @@ static int kplib_kdebug_probe_by_id(ktap_state *ks)
 	for (i = 0; i < evdef_info.nr; i++) {
 		struct perf_event_attr attr;
 
+		cond_resched();
+
+		if (signal_pending(current)) {
+			flush_signals(current);
+			kfree(filter);
+			kfree(id_arr);
+			return -1;
+		}
+
 		memset(&attr, 0, sizeof(attr));
 		attr.type = PERF_TYPE_TRACEPOINT;	
 		attr.config = id_arr[i];
