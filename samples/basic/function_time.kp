@@ -47,11 +47,16 @@ trace probe:vfs_read%return {
 }
 
 trace_end {
+	var avg
+	if (count_num == 0) {
+		avg = 0
+	} else {
+		avg = total_time/count_num
+	}
+
 	printf("avg\tmax\tmin\n");
 	printf("-------------------\n")
-
-	printf("%d\t%d\t%d\n", total_time/count_num,
-		count_max, count_min)
+	printf("%d\t%d\t%d\n", avg, count_max, count_min)
 }
 
 
