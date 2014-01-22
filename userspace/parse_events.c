@@ -75,6 +75,9 @@ static void idmap_set(int id)
 
 static void idmap_clear(int id)
 {
+	if (!idmap_is_set(id))
+		return;
+
 	id_nr--;
 	idmap[id / 8] = idmap[id / 8] & ~ (1 << (id % 8));
 }
