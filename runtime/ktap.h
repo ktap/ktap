@@ -42,9 +42,9 @@ int kp_init_ffilib(ktap_state *ks);
 int kp_probe_init(ktap_state *ks);
 void kp_probe_exit(ktap_state *ks);
 
-void kp_perf_event_register(ktap_state *ks, struct perf_event_attr *attr,
-			    struct task_struct *task, char *filter,
-			    ktap_closure *cl);
+int kp_perf_event_register(ktap_state *ks, struct perf_event_attr *attr,
+			   struct task_struct *task, char *filter,
+			   ktap_closure *cl);
 
 void kp_event_getarg(ktap_state *ks, ktap_value *ra, int n);
 void kp_event_tostring(ktap_state *ks, struct trace_seq *seq);

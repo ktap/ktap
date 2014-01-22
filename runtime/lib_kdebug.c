@@ -198,9 +198,9 @@ static int (*kp_ftrace_profile_set_filter)(struct perf_event *event,
  * Generic perf event register function
  * used by tracepoints/kprobe/uprobe/profile-timer/hw_breakpoint.
  */
-void kp_perf_event_register(ktap_state *ks, struct perf_event_attr *attr,
-			    struct task_struct *task, char *filter,
-			    ktap_closure *cl)
+int kp_perf_event_register(ktap_state *ks, struct perf_event_attr *attr,
+			   struct task_struct *task, char *filter,
+			   ktap_closure *cl)
 {
 	struct ktap_probe_event *ktap_pevent;
 	struct kmem_cache *pevent_cache = G(ks)->pevent_cache;
@@ -226,7 +226,7 @@ void kp_perf_event_register(ktap_state *ks, struct perf_event_attr *attr,
 	for_each_cpu(cpu, G(ks)->cpumask) {
 		ktap_pevent = kmem_cache_zalloc(pevent_cache, GFP_KERNEL);
 		if (!ktap_pevent)
-			return;
+			return -ENOMEM;
 
 		ktap_pevent->ks = ks;
 		ktap_pevent->cl = cl;
@@ -238,7 +238,7 @@ void kp_perf_event_register(ktap_state *ks, struct perf_event_attr *attr,
 			kp_error(ks, "unable register perf event %d on cpu %d, "
 				     "err: %d\n", attr->config, cpu, err);
 			kp_free(ks, ktap_pevent);
-			return;
+			return err;
 		}
 
 		ktap_pevent->perf = event;
@@ -255,9 +255,11 @@ void kp_perf_event_register(ktap_state *ks, struct perf_event_attr *attr,
 			perf_destructor(ktap_pevent);
 			list_del(&ktap_pevent->list);
 			kp_free(ks, ktap_pevent);
-			return;
+			return ret;
 		}
 	}
+
+	return 0;
 }
 
 static void end_probes(struct ktap_state *ks)
@@ -357,7 +359,9 @@ static int kplib_kdebug_probe_by_id(ktap_state *ks)
 		attr.size = sizeof(attr);
 		attr.disabled = 0;
 
-		kp_perf_event_register(ks, &attr, task, filter, cl);
+		ret = kp_perf_event_register(ks, &attr, task, filter, cl);
+		if (ret < 0)
+			break;
 	}
 
 	kfree(filter);
