@@ -115,8 +115,13 @@ trace_end {
 			sleep_time[pid] = 0
 		}
 		if (queued_time[pid] == nil) {
-			queue_time[pid] = 0
+			queued_time[pid] = 0
 		}
+
+		if (io_wait_time[pid] == nil) {
+			io_wait_time[pid] = 0
+		}
+
 		printf("%16s: %6d %10d %10d %10d %10d %10d\n",
 			pid_names[pid], pid, run_time[pid], sleep_time[pid],
 			io_wait_time[pid], queued_time[pid],
