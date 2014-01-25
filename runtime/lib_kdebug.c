@@ -178,7 +178,7 @@ static void overflow_callback(struct perf_event *event,
 		e.entry = data->raw->data;
 		e.entry_size = data->raw->size;
 	}
-	e.pevent = ktap_pevent;
+
 	e.regs = regs;
 
 	call_probe_closure(ks, ktap_pevent->cl, &e);

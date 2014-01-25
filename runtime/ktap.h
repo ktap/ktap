@@ -19,7 +19,6 @@ struct ktap_probe_event {
 
 /* this structure allocate on stack */
 struct ktap_event {
-	struct ktap_probe_event *pevent;
 	struct ftrace_event_call *call;
 	struct trace_entry *entry;
 	int entry_size;
