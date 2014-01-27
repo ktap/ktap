@@ -133,91 +133,19 @@ static int add_event(char *evtid_path)
 	return 0;
 }
 
-static int add_tracepoint(char *sys_name, char *evt_name)
+static int add_tracepoint(const char *sys_name, const char *evt_name)
 {
 	char evtid_path[PATH_MAX] = {0};
-
 
 	snprintf(evtid_path, PATH_MAX, "%s/%s/%s/id", TRACING_EVENTS_DIR,
 					sys_name, evt_name);
 	return add_event(evtid_path);
 }
 
-static int add_tracepoint_multi_event(char *sys_name, char *evt_name)
-{
-	char evt_path[PATH_MAX];
-	struct dirent *evt_ent;
-	DIR *evt_dir;
-	int ret = 0;
-
-	snprintf(evt_path, PATH_MAX, "%s/%s", TRACING_EVENTS_DIR, sys_name);
-	evt_dir = opendir(evt_path);
-	if (!evt_dir) {
-		perror("Can't open event dir");
-		return -1;
-	}
-
-	while (!ret && (evt_ent = readdir(evt_dir))) {
-		if (!strcmp(evt_ent->d_name, ".")
-		    || !strcmp(evt_ent->d_name, "..")
-		    || !strcmp(evt_ent->d_name, "enable")
-		    || !strcmp(evt_ent->d_name, "filter"))
-			continue;
-
-		if (!strglobmatch(evt_ent->d_name, evt_name))
-			continue;
-
-		ret = add_tracepoint(sys_name, evt_ent->d_name);
-	}
-
-	closedir(evt_dir);
-	return ret;
-}
-
-static int add_tracepoint_event(char *sys_name, char *evt_name)
-{
-	return strpbrk(evt_name, "*?") ?
-	       add_tracepoint_multi_event(sys_name, evt_name) :
-	       add_tracepoint(sys_name, evt_name);
-}
-
-static int add_tracepoint_multi_sys(char *sys_name, char *evt_name)
-{
-	struct dirent *events_ent;
-	DIR *events_dir;
-	int ret = 0;
-
-	events_dir = opendir(TRACING_EVENTS_DIR);
-	if (!events_dir) {
-		perror("Can't open event dir");
-		return -1;
-	}
-
-	while (!ret && (events_ent = readdir(events_dir))) {
-		if (!strcmp(events_ent->d_name, ".")
-		    || !strcmp(events_ent->d_name, "..")
-		    || !strcmp(events_ent->d_name, "enable")
-		    || !strcmp(events_ent->d_name, "header_event")
-		    || !strcmp(events_ent->d_name, "header_page"))
-			continue;
-
-		if (!strglobmatch(events_ent->d_name, sys_name))
-			continue;
-
-		ret = add_tracepoint_event(events_ent->d_name,
-					   evt_name);
-	}
-
-	closedir(events_dir);
-	return ret;
-}
-
 static int parse_events_add_tracepoint(char *sys, char *event)
 {
-	if (strpbrk(sys, "*?"))
-		return add_tracepoint_multi_sys(sys, event);
-	else
-		return add_tracepoint_event(sys, event);
+	process_available_tracepoints(sys, event, add_tracepoint);
+	return 0;
 }
 
 enum {
@@ -237,7 +165,7 @@ static struct probe_list *probe_list_head; /* for cleanup resources */
  * Some symbol format cannot write to uprobe_events in debugfs, like:
  * symbol "check_one_fd.part.0" in glibc.
  * For those symbols, we change the format to:
- * "check_one_fd.part.0" -> "check_one_fd_0"
+ * "check_one_fd.part.0" -> "check_one_fd_part_0"
  */
 static char *format_symbol_name(const char *old_symbol)
 {

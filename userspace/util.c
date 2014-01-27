@@ -261,12 +261,57 @@ void list_available_events(const char *match)
 		handle_error("open " AVAILABLE_EVENTS_PATH " failed");
 
 	while (!feof(file)) {
+		int line_len;
 		size_t n;
 
-		getline(&line, &n, file);
+		line_len = getline(&line, &n, file);
+		if (line_len < 0 || !line)
+			break;
 
 		if (!match || strglobmatch(line, match))
 			printf("%s", line);
+	}
+
+	free(line);
+	fclose(file);
+}
+
+void process_available_tracepoints(const char *sys, const char *event,
+				   int (*process)(const char *sys,
+						  const char *event))
+{
+	char *line = NULL;
+	FILE *file;
+	char str[128] = {0};
+
+	/* add '\n' into tail */
+	snprintf(str, 64, "%s:%s\n", sys, event);
+
+	file = fopen(AVAILABLE_EVENTS_PATH, "r");
+	if (file == NULL)
+		handle_error("open " AVAILABLE_EVENTS_PATH " failed");
+
+	while (!feof(file)) {
+		int line_len;
+		size_t n;
+
+		line_len = getline(&line, &n, file);
+		if (line_len < 0 || !line)
+			break;
+
+		if (strglobmatch(line, str)) {
+			char match_sys[64] = {0};
+			char match_event[64] = {0};
+			char *sep;
+
+			sep = strchr(line, ':');
+			memcpy(match_sys, line, sep - line);
+			memcpy(match_event, sep + 1,
+					    line_len - (sep - line) - 2);
+
+			if (process(match_sys, match_event))
+				break;
+		}
 	}
 
 	free(line);

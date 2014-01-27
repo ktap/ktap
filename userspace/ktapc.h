@@ -378,7 +378,9 @@ int kallsyms_parse(void *arg,
 
 unsigned long find_kernel_symbol(const char *symbol);
 void list_available_events(const char *match);
-
+void process_available_tracepoints(const char *sys, const char *event,
+				   int (*process)(const char *sys,
+						  const char *event));
 
 #ifdef CONFIG_KTAP_FFI
 #include "../include/ktap_ffi.h"
