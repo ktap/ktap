@@ -194,7 +194,6 @@ reload:
 test: FORCE
 	#start testing
 	prove -j4 -r test/
-	cd test/ffi && make --quiet --no-print-directory test && cd -
 
 clean:
 	$(MAKE) -C $(KERNEL_SRC) M=$(PWD) clean
