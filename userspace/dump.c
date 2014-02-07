@@ -76,7 +76,7 @@ static void DumpString(const ktap_string *s, DumpState *D)
 		int size = 0;
 		DumpVar(size, D);
 	} else {
-		int size = s->tsv.len + 1; /* include trailing '\0' */
+		int size = s->len + 1; /* include trailing '\0' */
 		DumpVar(size, D);
 		DumpBlock(getstr(s), size * sizeof(char), D);
 	}

@@ -320,7 +320,7 @@ int kp_obj_len(ktap_state *ks, const ktap_value *v)
 	case KTAP_TYPE_TABLE:
 		return kp_tab_length(ks, hvalue(v));
 	case KTAP_TYPE_STRING:
-		return rawtsvalue(v)->tsv.len;
+		return rawtsvalue(v)->len;
 	default:
 		kp_printf(ks, "cannot get length of type %d\n", v->type);
 		return -1;

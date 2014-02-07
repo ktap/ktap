@@ -62,7 +62,7 @@ static void anchor_token(ktap_lexstate *ls)
 	ktap_assert((int)(ls->fs != NULL) || ls->t.token == TK_EOS);
 	if (ls->t.token == TK_NAME || ls->t.token == TK_STRING) {
 		ktap_string *ts = ls->t.seminfo.ts;
-		lex_newstring(ls, getstr(ts), ts->tsv.len);
+		lex_newstring(ls, getstr(ts), ts->len);
 	}
 }
 

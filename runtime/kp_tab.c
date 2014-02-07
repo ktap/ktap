@@ -74,7 +74,7 @@ static const ktap_tnode dummynode_ = {
 
 #define hashmod(t,n)		(gnode(t, ((n) % ((sizenode(t)-1)|1))))
 
-#define hashstr(t,str)          hashpow2(t, (str)->tsv.hash)
+#define hashstr(t,str)          hashpow2(t, (str)->hash)
 #define hashboolean(t,p)        hashpow2(t, p)
 #define hashnum(t, n)		hashmod(t, (unsigned int)n)
 #define hashpointer(t,p)	hashmod(t, (unsigned long)(p))
@@ -306,10 +306,10 @@ static ktap_tnode *mainposition (const ktap_tab *t, const ktap_value *key)
 		return hashnum(t, nvalue(key));
 	case KTAP_TYPE_LNGSTR: {
 		ktap_string *s = rawtsvalue(key);
-		if (s->tsv.extra == 0) {  /* no hash? */
-			s->tsv.hash = kp_str_hash(getstr(s), s->tsv.len,
-						     s->tsv.hash);
-			s->tsv.extra = 1;  /* now it has its hash */
+		if (s->extra == 0) {  /* no hash? */
+			s->hash = kp_str_hash(getstr(s), s->len,
+						     s->hash);
+			s->extra = 1;  /* now it has its hash */
 		}
 		return hashstr(t, rawtsvalue(key));
 		}

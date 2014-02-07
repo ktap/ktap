@@ -39,9 +39,9 @@
 int kp_str_cmp(const ktap_string *ls, const ktap_string *rs)
 {
 	const char *l = getstr(ls);
-	size_t ll = ls->tsv.len;
+	size_t ll = ls->len;
 	const char *r = getstr(rs);
-	size_t lr = rs->tsv.len;
+	size_t lr = rs->len;
 
 	for (;;) {
 		int temp = strcmp(l, r);
@@ -74,9 +74,9 @@ int kp_str_cmp(const ktap_string *ls, const ktap_string *rs)
  */
 int kp_str_eqlng(ktap_string *a, ktap_string *b)
 {
-	size_t len = a->tsv.len;
+	size_t len = a->len;
 
-	return (a == b) || ((len == b->tsv.len) &&
+	return (a == b) || ((len == b->len) &&
 		(memcmp(getstr(a), getstr(b), len) == 0));
 }
 
@@ -85,8 +85,8 @@ int kp_str_eqlng(ktap_string *a, ktap_string *b)
  */
 int kp_str_equal(ktap_string *a, ktap_string *b)
 {
-	return (a->tsv.tt == b->tsv.tt) &&
-	       (a->tsv.tt == KTAP_TYPE_SHRSTR ? eqshrstr(a, b) :
+	return (a->tt == b->tt) &&
+	       (a->tt == KTAP_TYPE_SHRSTR ? eqshrstr(a, b) :
 				kp_str_eqlng(a, b));
 }
 
@@ -155,9 +155,9 @@ static ktap_string *createstrobj(ktap_state *ks, const char *str, size_t l,
 
 	totalsize = sizeof(ktap_string) + ((l + 1) * sizeof(char));
 	ts = &kp_obj_newobject(ks, tag, totalsize, list)->ts;
-	ts->tsv.len = l;
-	ts->tsv.hash = h;
-	ts->tsv.extra = 0;
+	ts->len = l;
+	ts->hash = h;
+	ts->extra = 0;
 	memcpy(ts + 1, str, l * sizeof(char));
 	((char *)(ts + 1))[l] = '\0';  /* ending 0 */
 	return ts;
@@ -198,9 +198,9 @@ static ktap_string *internshrstr(ktap_state *ks, const char *str, size_t l)
 
 	for (o = g->strt.hash[lmod(h, g->strt.size)]; o != NULL;
 	     o = gch(o)->next) {
-		ts = rawgco2ts(o);
+		ts = gco2ts(o);
 
-		if (h == ts->tsv.hash && ts->tsv.len == l &&
+		if (h == ts->hash && ts->len == l &&
 		   (memcmp(str, getstr(ts), l * sizeof(char)) == 0))
 			goto out;
 	}
@@ -352,7 +352,7 @@ int kp_str_fmt(ktap_state *ks, struct trace_seq *seq)
 	const char *strfrmt, *strfrmt_end;
 
 	strfrmt = svalue(arg_fmt);
-	sfl = rawtsvalue(arg_fmt)->tsv.len;
+	sfl = rawtsvalue(arg_fmt)->len;
 	strfrmt_end = strfrmt + sfl;
 
 	while (strfrmt < strfrmt_end) {
@@ -427,7 +427,7 @@ int kp_str_fmt(ktap_state *ks, struct trace_seq *seq)
 				kp_arg_check(ks, arg, KTAP_TYPE_STRING);
 
 				s = svalue(v);
-				l = rawtsvalue(v)->tsv.len;
+				l = rawtsvalue(v)->len;
 				if (!strchr(form, '.') && l >= 100) {
 					/*
 					 * no precision and string is too long

@@ -72,7 +72,7 @@ void lex_init()
 	int i;
 	for (i = 0; i < NUM_RESERVED; i++) {
 		ktap_string *ts = ktapc_ts_new(ktap_tokens[i]);
-		ts->tsv.extra = (u8)(i+1);  /* reserved word */
+		ts->extra = (u8)(i+1);  /* reserved word */
 	}
 }
 
@@ -581,7 +581,7 @@ static int llex(ktap_lexstate *ls, ktap_seminfo *seminfo)
 							mbuff_len(ls->buff));
 				seminfo->ts = ts;
 				if (isreserved(ts))  /* reserved word? */
-					return ts->tsv.extra - 1 +
+					return ts->extra - 1 +
 						FIRST_RESERVED;
 				else {
 					return TK_NAME;

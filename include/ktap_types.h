@@ -74,15 +74,11 @@ typedef union ktap_gcobject ktap_gcobject;
 
 #define CommonHeader ktap_gcobject *next; u8 tt;
 
-typedef union ktap_string {
-	int dummy;  /* ensures maximum alignment for strings */
-	struct {
-		CommonHeader;
-		u8 extra;  /* reserved words for short strings; "has hash" for longs */
-		unsigned int hash;
-		size_t len;  /* number of characters in string */
-	} tsv;
-	/* short string is stored here, just after tsv */
+typedef struct ktap_string {
+	CommonHeader;
+	u8 extra;  /* reserved words for short strings; "has hash" for longs */
+	unsigned int hash;
+	size_t len;  /* number of characters in string */
 } ktap_string;
 
 
@@ -380,7 +376,7 @@ typedef struct gcheader {
  */
 union ktap_gcobject {
 	gcheader gch;  /* common header */
-	union ktap_string ts;
+	struct ktap_string ts;
 	struct ktap_closure cl;
 	struct ktap_tab h;
 	struct ktap_ptab ph;
@@ -397,9 +393,7 @@ union ktap_gcobject {
 #define gch(o)			(&(o)->gch)
 
 /* macros to convert a GCObject into a specific value */
-#define rawgco2ts(o)		(&((o)->ts))
-
-#define gco2ts(o)		(&rawgco2ts(o)->tsv)
+#define gco2ts(o)		(&((o)->ts))
 #define gco2uv(o)		(&((o)->uv))
 #define obj2gco(v)		((ktap_gcobject *)(v))
 #define check_exp(c, e)		(e)
@@ -501,7 +495,7 @@ union ktap_gcobject {
 #define set_string(obj, x) \
 	{ ktap_value *io = (obj); \
 	  ktap_string *x_ = (x); \
-	  io->val.gc = (ktap_gcobject *)x_; settype(io, x_->tsv.tt); }
+	  io->val.gc = (ktap_gcobject *)x_; settype(io, x_->tt); }
 
 #define set_closure(obj, x) \
 	{ ktap_value *io = (obj); \

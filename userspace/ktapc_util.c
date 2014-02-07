@@ -223,8 +223,8 @@ static ktap_string *createstrobj(const char *str, size_t l)
 
 	totalsize = sizeof(ktap_string) + ((l + 1) * sizeof(char));
 	ts = &newobject(KTAP_TYPE_SHRSTR, totalsize)->ts;
-	ts->tsv.len = l;
-	ts->tsv.extra = 0;
+	ts->len = l;
+	ts->extra = 0;
 	memcpy(ts + 1, str, l * sizeof(char));
 	((char *)(ts + 1))[l] = '\0';  /* ending 0 */
 	return ts;
@@ -249,9 +249,9 @@ ktap_string *ktapc_ts_new(const char *str)
 
 int ktapc_ts_eqstr(ktap_string *a, ktap_string *b)
 {
-	return (a->tsv.tt == b->tsv.tt) &&
-		((a == b) || ((a->tsv.len == b->tsv.len) &&
-		!memcmp(getstr(a), getstr(b), a->tsv.len)));
+	return (a->tt == b->tt) &&
+		((a == b) || ((a->len == b->len) &&
+		!memcmp(getstr(a), getstr(b), a->len)));
 }
 
 static void ktapc_runerror(const char *err_msg_fmt, ...)

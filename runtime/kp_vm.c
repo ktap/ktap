@@ -72,7 +72,7 @@ static void ktap_concat(ktap_state *ks, int start, int end)
 			return;
 		}
 
-		len += rawtsvalue(top + i)->tsv.len;
+		len += rawtsvalue(top + i)->len;
 	}
 
 	if (len >= KTAP_PERCPU_BUFFER_SIZE) {
@@ -86,7 +86,7 @@ static void ktap_concat(ktap_state *ks, int start, int end)
 	ptr = buffer;
 
 	for (i = start; i <= end; i++) {
-		int len = rawtsvalue(top + i)->tsv.len;
+		int len = rawtsvalue(top + i)->len;
 		strncpy(ptr, svalue(top + i), len);
 		ptr += len;
 	}
