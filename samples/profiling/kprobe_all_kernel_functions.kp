@@ -1,0 +1,13 @@
+#!/usr/bin/env ktap
+
+#enable kprobe on all available kernel functios in /proc/kallsyms.
+#
+#This script is very dangerous, it will softlockup your system. 
+#and make your system extremely slow, but the reason is not
+#caused by ktap.
+#
+#DON'T use this script, at least for now.
+
+trace probe:* {
+	print(argevent)
+}
