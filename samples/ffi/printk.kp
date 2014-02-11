@@ -1,5 +1,5 @@
 ffi.cdef[[
-	int printk(char *fmt, ...);
+	int printk(const char *fmt, ...);
 ]]
 
 

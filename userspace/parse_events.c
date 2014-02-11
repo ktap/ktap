@@ -202,7 +202,8 @@ static char *format_symbol_name(const char *old_symbol)
  * @return 0 on success, otherwise -1
  */
 static int
-write_kprobe_event(int fd, int ret_probe, const char *symbol, char *fetch_args)
+write_kprobe_event(int fd, int ret_probe, const char *symbol,
+		   unsigned long start, char *fetch_args)
 {
 	char probe_event[128] = {0};
 	char event[64] = {0};
@@ -220,13 +221,14 @@ write_kprobe_event(int fd, int ret_probe, const char *symbol, char *fetch_args)
 	if (ret_probe) {
 		snprintf(event, 64, "ktap_kprobes_%d/ret_%s",
 			 getpid(), symbol_name);
+		/* Return probe point must be a symbol */
 		snprintf(probe_event, 128, "r:%s %s %s",
 			 event, symbol, fetch_args);
 	} else {
 		snprintf(event, 64, "ktap_kprobes_%d/%s",
 			 getpid(), symbol_name);
-		snprintf(probe_event, 128, "p:%s %s %s",
-			 event, symbol, fetch_args);
+		snprintf(probe_event, 128, "p:%s 0x%lx %s",
+			 event, start, fetch_args);
 	}
 
 	sprintf(event_id_path, "/sys/kernel/debug/tracing/events/%s/id", event);
@@ -321,16 +323,19 @@ static int kprobe_symbol_actor(void *arg, const char *name, char type,
 
 	/* only can probe text function */
 	if (type != 't' && type != 'T')
-		return 0;
+		return -1;
 
 	if (!strglobmatch(name, base->symbol))
-		return 0;
+		return -1;
 
 	if (check_kprobe_addr_prohibited(start))
-		return 0;
+		return -1;
 
-	return write_kprobe_event(base->fd, base->ret_probe, name,
-				  base->fetch_args);
+	/* ignore reture code of write debugfs */
+	write_kprobe_event(base->fd, base->ret_probe, name, start,
+			   base->fetch_args);
+
+	return 0; /* success */
 }
 
 static int parse_events_add_kprobe(char *event)
@@ -359,8 +364,12 @@ static int parse_events_add_kprobe(char *event)
 	init_kprobe_prohibited_area();
 
 	ret = kallsyms_parse(&base, kprobe_symbol_actor);
-	if (ret < 0)
+	if (ret <= 0) {
 		fprintf(stderr, "cannot parse symbol \"%s\"\n", symbol);
+		ret = -1;
+	} else {
+		ret = 0;
+	}
 
 	free(symbol);
 	close(fd);

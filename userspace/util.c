@@ -174,9 +174,10 @@ int kallsyms_parse(void *arg,
 		   int(*process_symbol)(void *arg, const char *name,
 		   char type, unsigned long start))
 {
-	int ret = 0;
 	FILE *file;
 	char *line = NULL;
+	int ret = 0;
+	int found = 0;
 
 	file = fopen(KALLSYMS_PATH, "r");
 	if (file == NULL)
@@ -202,14 +203,14 @@ int kallsyms_parse(void *arg,
 		symbol_name = strtok(NULL, " \t");
 
 		ret = process_symbol(arg, symbol_name, symbol_type, start);
-		if (ret)
-			break;
+		if (!ret)
+			found = 1;
 	}
 
 	free(line);
 	fclose(file);
 
-	return ret;
+	return found;
 }
 
 struct ksym_addr_t {
