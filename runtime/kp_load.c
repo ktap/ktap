@@ -227,7 +227,7 @@ static int load_function(struct load_state *S, ktap_proto *f)
 }
 
 
-#define error(S, why) \
+#define kp_load_error(S, why) \
 	kp_error(S->ks, "load failed: %s precompiled chunk\n", why)
 
 #define N0	KTAPC_HEADERSIZE
@@ -246,16 +246,18 @@ static int load_header(struct load_state *S)
 	if (memcmp(h, s, N0) == 0)
 		return 0;
 	if (memcmp(h, s, N1) != 0)
-		error(S, "not a");
+		kp_load_error(S, "not a");
 	else if (memcmp(h, s, N2) != 0)
-		error(S, "version mismatch in");
+		kp_load_error(S, "version mismatch in");
 	else if (memcmp(h, s, N3) != 0)
-		error(S, "incompatible");
+		kp_load_error(S, "incompatible");
 	else
-		error(S,"corrupted");
+		kp_load_error(S,"corrupted");
 
 	return -1;
 }
+#undef kp_load_error
+
 
 #ifdef CONFIG_KTAP_FFI
 int ffi_set_csym_arr(ktap_state *ks, int cs_nr, csymbol *new_arr);

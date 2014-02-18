@@ -1566,6 +1566,9 @@ ktap_state *kp_newstate(ktap_parm *parm, struct dentry *dir)
 	if (kp_init_tablelib(ks))
 		goto out;
 
+	if (kp_init_netlib(ks))
+		goto out;
+
 	if (init_percpu_data(ks))
 		goto out;
 	if (kp_probe_init(ks))

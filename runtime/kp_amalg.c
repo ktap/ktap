@@ -19,7 +19,6 @@
  * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-
 #include "ktap.c"
 #include "kp_obj.c"
 #include "kp_load.c"
@@ -32,6 +31,7 @@
 #include "lib_kdebug.c"
 #include "lib_timer.c"
 #include "lib_table.c"
+#include "lib_net.c"
 
 #ifdef CONFIG_KTAP_FFI
 #include "ffi/ffi_call.c"

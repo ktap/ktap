@@ -3,7 +3,7 @@
 
 void *kp_malloc(ktap_state *ks, int size);
 void kp_free(ktap_state *ks, void *addr);
-void *kp_reallocv(ktap_state *ks, void *addr, int oldsize, int newsize);
+void *kp_realloc(ktap_state *ks, void *addr, int newsize);
 void *kp_zalloc(ktap_state *ks, int size);
 
 void *kp_rawobj_alloc(ktap_state *ks, int size);

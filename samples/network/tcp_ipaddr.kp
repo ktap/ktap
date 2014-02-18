@@ -1,0 +1,20 @@
+#!/usr/bin/env ktap
+
+#This script print source and destination IP address of received tcp message
+#
+#Tested in x86_64
+#
+#function tcp_recvmsg prototype:
+#int tcp_recvmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
+#                size_t len, int nonblock, int flags, int *addr_len)
+#
+
+var ip_sock_saddr = net.ip_sock_saddr
+var ip_sock_daddr = net.ip_sock_daddr
+var format_ip_addr = net.format_ip_addr
+
+trace probe:tcp_recvmsg sock=%si {
+	var saddr = format_ip_addr(ip_sock_saddr(arg2))
+	var daddr = format_ip_addr(ip_sock_daddr(arg2))
+	printf("%s -> %s\n", daddr, saddr)
+}
