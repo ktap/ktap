@@ -14,7 +14,7 @@ typedef char u8;
 /*
  * The first argument type of kdebug.probe_by_id()
  * The value is a userspace memory pointer.
- * Maybe embed it info trunk file in future.
+ * Maybe embed it into the trunk file in future.
  */
 typedef struct ktap_eventdef_info {
 	int nr;  /* the number of events id */
