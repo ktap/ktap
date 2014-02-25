@@ -2,36 +2,36 @@
 
 # Introduction
 
-ktap is a new script-based dynamic tracing tool for linux
+ktap is a new script-based dynamic tracing tool for Linux
 http://www.ktap.org
 
-ktap is a new script-based dynamic tracing tool for Linux,
-it uses a scripting language and lets the user trace the Linux kernel dynamically.
+ktap is a new script-based dynamic tracing tool for Linux.
+It uses a scripting language and lets the user trace the Linux kernel dynamically.
 ktap is designed to give operational insights with interoperability
 that allows users to tune, troubleshoot and extend kernel and application.
-It's similar with Linux Systemtap and Solaris Dtrace.
+It's similar to Linux SystemTap and Solaris DTrace.
 
 ktap has different design principles from Linux mainstream dynamic tracing
 language in that it's based on bytecode, so it doesn't depend upon GCC,
-doesn't require compiling kernel module for each script, safe to use in
+doesn't require compiling a kernel module for each script, safe to use in
 production environment, fulfilling the embedded ecosystem's tracing needs.
 
 Highlights features:
 
 * a simple but powerful scripting language
-* register based interpreter (heavily optimized) in Linux kernel
+* register-based interpreter (heavily optimized) in Linux kernel
 * small and lightweight
-* not depend on the gcc toolchain for each script run
+* not depend on the GCC toolchain for each script run
 * easy to use in embedded environments without debugging info
 * support for tracepoint, kprobe, uprobe, function trace, timer, and more
-* supported in x86, arm, ppc, mips
+* supported in x86, ARM, PowerPC, MIPS
 * safety in sandbox
 
 # Getting started
 
 Requirements
 
-* Linux 3.1 or later (requiring some kernel patches for kernel earlier than 3.1)
+* Linux 3.1 or later (patches are required for earlier versions)
 * `CONFIG_EVENT_TRACING` enabled
 * `CONFIG_PERF_EVENTS` enabled
 * `CONFIG_DEBUG_FS` enabled
@@ -46,19 +46,19 @@ Requirements
      libelf is required for resolving symbols to addresses in DSO, and for SDT.
 
 Note that those configurations should always be enabled in Linux distribution,
-like REHL, Fedora, Ubuntu, etc.
+like RHEL, Fedora, Ubuntu, etc.
 
-1. Clone ktap from github
+1. Clone ktap from GitHub
 
         $ git clone http://github.com/ktap/ktap.git
-2. Compiling ktap
+2. Compile ktap
 
         $ cd ktap
         $ make       #generate ktapvm kernel module and ktap binary
 3. Load ktapvm kernel module(make sure debugfs mounted)
 
         $ make load  #need to be root or have sudo access
-4. Running ktap
+4. Run ktap
 
         $ ./ktap samples/helloworld.kp
 
@@ -67,11 +67,11 @@ like REHL, Fedora, Ubuntu, etc.
 
 ## Syntax basics
 
-ktap's syntax is designed with the C language syntax in mind. Thi is for lowering the entry barrier for those C programmers who are working on kernel and other systems software.
+ktap's syntax is designed with the C language syntax in mind. This is for lowering the entry barrier for C programmers who are working on the kernel or other systems software.
 
 * Variable declarations
 
-    The biggest syntax differences with C is that ktap is a dynamic typed
+    The biggest syntax differences with C is that ktap is a dynamically-typed
 language, so you won't need add any variable type declaration, just
 use the variable.
 * Functions
@@ -79,18 +79,18 @@ use the variable.
     All functions in ktap should use keyword "function" declaration
 * Comments
 
-    The comments of ktap is starting from `#`, long comments are not supported right now.
+    Comments in ktap start with `#`. Long comments are not supported right now.
 * Others
 
-    It is not required to place any semicolons (`;`) at the end of each statement in ktap. ktap uses a free-syntax style, so you are free to use the ';' or not.
+    Semicolons (`;`) are not required at the end of statements in ktap. ktap uses a free-syntax style, so you are free to use ';' or not.
 
-ktap uses `nil` as `NULL`, the result of any arithmatic operations on `nil` is also `nil`.
+ktap uses `nil` as `NULL`. The result of an arithmetic operation on `nil` is also `nil`.
 
 ktap does not have array structures, and it does not have any pointer operations.
 
 ## Control structures
 
-ktap's `if`/`else` statement is the same as the C language.
+ktap's `if`/`else` statement is the same as the C language's.
 
 There are three kinds of for-loop in ktap:
 
@@ -106,9 +106,9 @@ There are three kinds of for-loop in ktap:
 
 Note that ktap does not have the `continue` keyword, but C does.
 
-## Date structures
+## Data structures
 
-Associative arrays are heavily used in ktap, it is also called "tables".
+Associative arrays are heavily used in ktap; they are also called "tables".
 
 Table declarations:
 
@@ -123,7 +123,7 @@ How to use tables:
 
     for (k, v in pairs(t)) { body }   # looping all elements of table
 
-# Built-in functions and librarys
+# Built-in functions and libraries
 
 ## Built-in functions
 
@@ -221,7 +221,7 @@ prints the current task's kernel stack backtrace.
 This function is the underlying interface for the higher level tracing primitives.
 
 Note that the `eventdef_info` argument is just a C pointer value pointing to a userspace memory block holding the real
-`eventdef_info` structure. The structure defintion is as follows:
+`eventdef_info` structure. The structure definition is as follows:
 
     struct ktap_eventdef_info {
 	int nr; /* the number to id */
@@ -286,12 +286,12 @@ There are four types of `EVENTDEF`: tracepoints, kprobes, uprobes, SDT probes.
 	--------------------   -------------------------------
 	ftrace:function        trace kernel functions based on ftrace
 
-	User need to use filter (/ip==*/) to trace specfic functions.
+	User need to use filter (/ip==*/) to trace specific functions.
 	Function must be listed in /sys/kernel/debug/tracing/available_filter_functions
 
 > ***Note*** of function event
 > 
-> perf support ftrace:function tracepoint since Linux 3.3(see below commit),
+> perf support ftrace:function tracepoint since Linux 3.3 (see below commit),
 > ktap is based on perf callback, so it means kernel must be newer than 3.3
 > then can use this feature.
 > 
@@ -350,7 +350,7 @@ Event name. Each event has a name associated with it.
 
 **arg1..9**
 
-Evalutes to argument 1 to 9 of the event object.
+Evaluates to argument 1 to 9 of the event object.
 
 > ***Note*** of arg offset
 >
@@ -427,21 +427,21 @@ simple event tracing
 
 # Overhead/Performance
 
-* ktap has a much shorter startup time than systemtap (try the helloword script).
-* ktap has a smaller memory footprint than systemtap
-* Some scripts show that ktap has a little lower overhead than systemtap
+* ktap has a much shorter startup time than SystemTap (try the helloword script).
+* ktap has a smaller memory footprint than SystemTap
+* Some scripts show that ktap has a little lower overhead than SystemTap
 (we chose two scripts to compare, function profile, stack profile.
-this is not means all scripts in Systemtap have big overhead than ktap)
+this is not means all scripts in SystemTap have big overhead than ktap)
 
 # FAQ
 
-**Q: Why use bytecode design?**
+**Q: Why use a bytecode design?**
 
-A: Using bytecode would be a clean and lightweight solution,
-   you do not need the gcc toolchain to compile every scripts; all you
+A: Using bytecode is a clean and lightweight solution,
+   you do not need the GCC toolchain to compile every script; all you
    need is a ktapvm kernel module and the userspace tool called "ktap".
-   Since its language's virtual machine design, it has a great portability.
-   Suppose you are working on a multi-arch cluster, if you want to run
+   Since its language uses a virtual machine design, it has a great portability.
+   Suppose you are working on a multi-arch cluster; if you want to run
    a tracing script on each board, you will not need cross-compile your tracing
    scripts for all the boards. You can just use the `ktap` tool
    to run scripts right away.
@@ -449,98 +449,97 @@ A: Using bytecode would be a clean and lightweight solution,
    The bytecode-based design also makes execution safer than the native code
    generation approach.
 
-   It is already oberved that SystemTap is not widely used in embedded Linux systems.
+   It is already observed that SystemTap is not widely used in embedded Linux systems.
    This is mainly caused by the problem of SystemTap's design decisions in its architecture design. It is a natural
-   design for Redhat and IBM, because Redhat/IBM is focusing on the server area,
+   design for Red Hat and IBM, because Red Hat/IBM is focusing on the server area,
    not embedded area.
 
-**Q: What's the differences with SystemTap and Dtrace?**
+**Q: What's the differences with SystemTap and DTrace?**
 
-A: For SystemTap, the answer is already mentioned at above question,
+A: For SystemTap, the answer is already mentioned in the above question,
    SystemTap chooses the translator design, sacrificing usability for runtime performance.
    The dependency on the GCC chain when running scripts is the problem that ktap wants to solve.
 
-   Dtrace shares the same design decision of using bytecode, so basically
-   Dtrace and ktap are more alike. There have been some projects aimed at porting
-   Dtrace from Solaris to Linux, but these efforts are still under way and are relatively slow in progress. Dtrace
-   has its root in Solaris, and there are many huge differences between Solaris
+   DTrace shares the same design decision of using bytecode, so basically
+   DTrace and ktap are more alike. There have been some projects aimed at porting
+   DTrace from Solaris to Linux, but these efforts are still under way and are relatively slow in progress. DTrace
+   has its root in Solaris, and there are many huge differences between Solaris's
    tracing infrastructure and Linux's.
 
-   Dtrace is based on D language, a language subset of C, it's a restricted
-   language, like without for-looping, for safty use in production system.
-   It seems that Dtrace for Linux only support x86 architecture, not work on
-   powerpc and arm/mips, obviously it's not suit for embedded Linux currently.
+   DTrace is based on D language, a language subset of C. It's a restricted
+   language, like without for-looping, for safe use in production systems.
+   It seems that DTrace for Linux only supports x86 architecture, doesn't work on
+   PowerPC and ARM/MIPS. Obviously it's not suited for embedded Linux currently.
 
-   Dtrace use ctf as input for debuginfo handing, compare with vmlinux for
+   DTrace uses ctf as input for debuginfo handing, compared to vmlinux for
    SystemTap.
 
-   On the license part, Dtrace is released as CDDL, which is incompatible with
-   GPL(this is why it's impossible to upstream Dtrace into mainline).
+   On the license part, DTrace is released as CDDL, which is incompatible with
+   GPL. (This is why it's impossible to upstream DTrace into mainline.)
 
-**Q: Why use dynamically typed language? but not statically typed language?**
+**Q: Why use a dynamically-typed language instead of a statically-typed language?**
 
-A: It's hard to say which one is more better than other, dynamically typed
-   language bring efficiency and fast prototype production, but loosing type
-   check at compiling phase, and easy to make mistake in runtime, also it's
-   need many runtime checking, In contrast, statically typed language win on
-   programing safety, and performance. Statically language would suit for
-   interoperate with kernel, as kernel is wrote mainly in C, Need to note that
-   SystemTap and Dtrace both is statically language.
+A: It's hard to say which one is better than the other. Dynamically-typed
+   languages bring efficiency and fast prototype production, but lose type
+   checking at the compile phase, and it's easy to make mistake in runtime. It also
+   needs many runtime checks. In contrast, statically-typed languages win on
+   programming safety and performance. Statically-typed languages would suit for
+   interoperation with the kernel, as the kernel is written mainly in C. Note that
+   SystemTap and DTrace both use statically-typed languages.
 
-   ktap choose dynamically typed language as initial implementation.
+   ktap chooses a dynamically-typed language for its initial implementation.
 
 **Q: Why do we need ktap for event tracing? There is already a built-in ftrace**
 
 A: This is also a common question for all dynamic tracing tools, not only ktap.
-   ktap provides more flexibility than built-in the tracing infrastructure. Suppose
+   ktap provides more flexibility than the built-in tracing infrastructure. Suppose
    you need to print a global variable at a tracepoint hit, or you want to print
    a backtrace. Furthermore, you want to store some info into an associative array, and
    display it as a histogram when tracing ends. `ftrace` cannot handle all these requirements.
-   Overall, ktap provides you with great flexibility to scripting your own trace
+   Overall, ktap provides you with great flexibility to script your own trace
    needs.
 
 **Q: How about the performance? Is ktap slow?**
 
 A: ktap is not slow. The bytecode is very high-level, based on Lua. The language's
-   virtual machine is register-based (compare to stack-based found in JVM and CLR), with a small number of
+   virtual machine is register-based (compared to the stack-based JVM and CLR), with a small number of
    instructions. The table data structure is heavily optimized in ktapvm.
    ktap uses per-cpu allocation in many places, without the global locking scheme.
    It is very fast when executing tracepoint callbacks.
-   Performance benchmarks are showing that the overhead of ktap runtime is nearly
+   Performance benchmarks show that the overhead of ktap runtime is nearly
    10% (storing event name into associative array), compared to the full speed
    running time without any tracepoints enabled.
 
    ktap will keep optimizing unfailingly. Hopefully the overhead will
    decrease to little more than 5%, or even less.
 
-**Q: Why not port a higher level language implementation into kernel directly?
-   Like Python and Java?**
+**Q: Why not port a higher-level language, like Python or Java, directly into the kernel?**
 
 A: I am serious on the size of VM and the memory footprint. The Python VM is too large
    for embedding into the kernel, and Python has many advanced functionalities
    which we do not really need.
 
-   The number of bytecode opcodes of other higher level languages is also big. ktap only have 32
-   bytecode opcodes, whereas Python/Java/Erlang all have nearly two hundred bytecodes.
-   There are also some problems when porting those language into the kernel.
+   The number of bytecode opcodes of other higher level languages is also big. ktap only has 32
+   bytecode opcodes, whereas Python/Java/Erlang all have nearly two hundred opcodes.
+   There are also some problems when porting those languages into the kernel.
    Kernel programming is very different from userspace programming,
    like lack of floating-point numbers, handling sleeping code, deadloop is
-   not allowed in kernel, multi-thread management, and etc. So it is impossible
+   not allowed in the kernel, multi-thread management, etc. So it is impossible
    to port large language implementations over to the kernel environment with trivial efforts.
 
 **Q: What is the status of ktap now?**
 
-A: Basically it works on x86-32, x86-64, powerpc, arm, it also could work for
-   other hardware architectures, but not tested yet (I don't have enough hardware to test)
-   If you find any bugs, fix it on you own programming skills, or just report to me.
+A: Basically it works on x86-32, x86-64, PowerPC, ARM. It also could work for
+   other hardware architectures, but is not tested yet. (I don't have enough hardware to test.)
+   If you find any bugs, fix it with your own programming skills, or just report to me.
 
-**Q: How to hack on ktap? I want to write some extensions for ktap.**
+**Q: How can I hack on ktap? I want to write some extensions for ktap.**
 
 A: Patches welcome! Volunteers welcome!
    You can write your own libraries to fulfill your specific needs,
    or write scripts for fun.
 
-**Q: What's the plan of ktap? any roadmap?**
+**Q: What's the plan for ktap? Is there a roadmap?**
 
 A: The current plan is to deliver stable ktapvm kernel modules, more ktap scripts,
    and more bugfixes.
@@ -548,8 +547,8 @@ A: The current plan is to deliver stable ktapvm kernel modules, more ktap script
 # References
 
 * [Linux Performance Analysis and Tools][LPAT]
-* [Dtrace Blog][dtraceblog]
-* [Dtrace User Guide][dug]
+* [DTrace Blog][dtraceblog]
+* [DTrace User Guide][dug]
 * [LWN: ktap -- yet another kernel tracer][lwn1]
 * [LWN: Ktap almost gets into 3.13][lwn2]
 * [staging: ktap: add to the kernel tree][ktap_commit]
@@ -569,7 +568,7 @@ A: The current plan is to deliver stable ktapvm kernel modules, more ktap script
 
 * ktap was invented at 2012
 * First RFC sent to LKML at 2012.12.31
-* The code was released in github at 2013.01.18
+* The code was released in GitHub at 2013.01.18
 * ktap released v0.1 at 2013.05.21
 * ktap released v0.2 at 2013.07.31
 * ktap released v0.3 at 2013.10.29
@@ -659,7 +658,7 @@ More examples can be found at [samples][samples_dir] directory.
 # Appendix
 
 Here is the complete syntax of ktap in extended BNF.
-(based on lua syntax: http://www.lua.org/manual/5.1/manual.html#5.1)
+(based on Lua syntax: http://www.lua.org/manual/5.1/manual.html#5.1)
 
         chunk ::= {stat [';']} [laststat [';']
 
