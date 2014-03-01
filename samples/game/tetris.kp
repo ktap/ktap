@@ -28,6 +28,32 @@
 #     $ sudo ./ktap samples/game/tetris.kp
 #
  
+
+#
+# global value
+#
+
+var empty = -1
+
+var key_code = 0
+var point = 0
+var block_number = 0
+var height = 0
+var height_update = 0
+
+var destination_position = {}
+ 
+var block_data0 = {}
+var block_data1 = {}
+var block_data2 = {}
+var block_data3 = {}
+var block_data4 = {}
+var block_data5 = {}
+var block_data6 = {}
+var block_table = {}
+
+var display_buffer = {}
+
  
 #
 # utils
@@ -41,7 +67,6 @@ function rand(max) {
 	return r % max
 }
 
-var display_buffer = {}
 
 function update_display() {
 	for (i = 0, 239, 1) {
@@ -67,29 +92,6 @@ function update_display() {
 	printf("%d\n",point)
 }
 
- 
-#
-# global value
-#
-
-var empty = -1
-
-var key_code = 0
-var point = 0
-var block_number = 0
-var height = 0
-var height_update = 0
-
-var destination_position = {}
- 
-var block_data0 = {}
-var block_data1 = {}
-var block_data2 = {}
-var block_data3 = {}
-var block_data4 = {}
-var block_data5 = {}
-var block_data6 = {}
-var block_table = {}
  
 #
 # Initialize
