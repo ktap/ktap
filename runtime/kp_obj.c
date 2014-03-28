@@ -45,12 +45,6 @@ const char *kp_err_allmsg =
 #define KTAP_ALLOC_FLAGS ((GFP_KERNEL | __GFP_NORETRY | __GFP_NOWARN) \
 			 & ~__GFP_WAIT)
 
-/*
- * TODO: It's not safe to call into facilities in the kernel at-large,
- * so we may need to use ktap own memory pool, not kmalloc.
- */
-
-
 void *kp_malloc(ktap_state_t *ks, int size)
 {
 	void *addr;
@@ -259,7 +253,7 @@ ktap_str_t *kp_obj_kstack2str(ktap_state_t *ks, uint16_t depth, uint16_t skip)
 	return kp_str_new(ks, btstr, p - btstr);
 }
 
-void kp_obj_free_gclist(ktap_state_t *ks, ktap_obj_t *o)
+static void free_gclist(ktap_state_t *ks, ktap_obj_t *o)
 {
 	while (o) {
 		ktap_obj_t *next;
@@ -281,7 +275,7 @@ void kp_obj_free_gclist(ktap_state_t *ks, ktap_obj_t *o)
 
 void kp_obj_freeall(ktap_state_t *ks)
 {
-	kp_obj_free_gclist(ks, G(ks)->allgc);
+	free_gclist(ks, G(ks)->allgc);
 	G(ks)->allgc = NULL;
 }
 

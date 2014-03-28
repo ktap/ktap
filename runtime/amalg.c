@@ -1,5 +1,5 @@
 /*
- * kp_amalg.c - ktapvm kernel module amalgamation.
+ * amalg.c - ktapvm kernel module amalgamation.
  *
  * This file is part of ktap by Jovi Zhangwei.
  *

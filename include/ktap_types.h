@@ -220,8 +220,6 @@ typedef struct ktap_tab {
 	uint32_t hmask;		/* log2 of size of `node' array */
 
 	uint32_t hnum;		/* number of all nodes */
-
-	ktap_obj_t *gclist;
 } ktap_tab_t;
 
 typedef struct ktap_stats {
@@ -310,11 +308,6 @@ typedef struct ktap_state {
 
 #define G(ks)   (ks->g)
 
-typedef struct ktap_rawobj {
-	GCHeader;
-	void *v;
-} ktap_rawobj;
-
 /*
  * Union of all collectable objects
  */
@@ -326,7 +319,6 @@ union ktap_obj {
 	struct ktap_proto pt;
 	struct ktap_upval uv;
 	struct ktap_state th;  /* thread */
-	struct ktap_rawobj rawobj;
 };
 
 #define gch(o)			(&(o)->gch)
@@ -348,22 +340,21 @@ union ktap_obj {
 #define KTAP_TLIGHTUD		(~4u)
 #define KTAP_TSTR		(~5u)
 #define KTAP_TUPVAL		(~6u)
-#define KTAP_TTHREAD		(~7u)
-#define KTAP_TPROTO		(~8u)
-#define KTAP_TFUNC		(~9u)
-#define KTAP_TCFUNC		(~10u)
-#define KTAP_TCDATA		(~11u)
-#define KTAP_TTAB		(~12u)
-#define KTAP_TUDATA		(~13u)
+#define KTAP_TPROTO		(~7u)
+#define KTAP_TFUNC		(~8u)
+#define KTAP_TCFUNC		(~9u)
+#define KTAP_TCDATA		(~10u)
+#define KTAP_TTAB		(~11u)
+#define KTAP_TUDATA		(~12u)
 
 /* Specfic types */
-#define KTAP_TEVENTSTR		(~14u) /* argstr */
-#define KTAP_TKSTACK		(~15u) /* stack(), not intern to string yet */
-#define KTAP_TKIP		(~16u) /* kernel function ip addres */
-#define KTAP_TUIP		(~17u) /* userspace function ip addres */
+#define KTAP_TEVENTSTR		(~13u) /* argstr */
+#define KTAP_TKSTACK		(~14u) /* stack(), not intern to string yet */
+#define KTAP_TKIP		(~15u) /* kernel function ip addres */
+#define KTAP_TUIP		(~16u) /* userspace function ip addres */
 
 /* This is just the canonical number type used in some places. */
-#define KTAP_TNUMX		(~18u)
+#define KTAP_TNUMX		(~17u)
 
 
 #define itype(o)		((o)->type)
@@ -398,7 +389,6 @@ union ktap_obj {
 #define is_cfunc(o)		(itype(o) == KTAP_TCFUNC)
 #define is_eventstr(o)		(itype(o) == KTAP_TEVENTSTR)
 #define is_kip(o)		(itype(o) == KTAP_TKIP)
-#define is_btrace(o)		(itype(o) == KTAP_TBTRACE)
 
 #define set_nil(o)		((o)->type = KTAP_TNIL)
 #define set_bool(o, x)		((o)->type = KTAP_TFALSE-(uint32_t)(x))

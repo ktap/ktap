@@ -36,39 +36,6 @@
 #include "kp_vm.h"
 #include "kp_events.h"
 
-int kp_str_cmp(const ktap_str_t *ls, const ktap_str_t *rs)
-{
-	const char *l = getstr(ls);
-	size_t ll = ls->len;
-	const char *r = getstr(rs);
-	size_t lr = rs->len;
-
-	for (;;) {
-		int temp = strcmp(l, r);
-		if (temp != 0)
-			return temp;
-		else {
-			/* strings are equal up to a `\0' */
-
-			/* index of first `\0' in both strings */
-			size_t len = strlen(l);
-
-			/* r is finished? */
-			if (len == lr)
-				return (len == ll) ? 0 : 1;
-			else if (len == ll)  /* l is finished? */
-				return -1;
-
-			/*
-			 * both strings longer than `len';
-			 * go on comparing (after the `\0')
-			 */
-			len++;
-			l += len; ll -= len; r += len; lr -= len;
-		}
-	}
-}
-
 /* Fast string data comparison. Caveat: unaligned access to 1st string! */
 static __always_inline int str_fastcmp(const char *a, const char *b, int len)
 {
@@ -129,7 +96,7 @@ int kp_str_resize(ktap_state_t *ks, int newmask)
 /*
  * Intern a string and return string object.
  */
-ktap_str_t * kp_str_new(ktap_state_t *ks, const char *str, size_t len)
+ktap_str_t *kp_str_new(ktap_state_t *ks, const char *str, size_t len)
 {
 	ktap_global_state_t *g = G(ks);
 	ktap_str_t *s;
