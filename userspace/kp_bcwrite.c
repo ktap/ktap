@@ -28,7 +28,6 @@
 #include <string.h>
 
 #include "../include/ktap_types.h"
-#include "cparser.h"
 #include "kp_util.h"
 
 /* Context for bytecode writer. */

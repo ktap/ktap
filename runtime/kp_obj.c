@@ -28,7 +28,6 @@
 #include <linux/kallsyms.h>
 #include <linux/slab.h>
 #include "../include/ktap_types.h"
-#include "../include/ktap_ffi.h"
 #include "kp_obj.h"
 #include "kp_str.h"
 #include "kp_tab.h"
@@ -142,11 +141,6 @@ void kp_obj_show(ktap_state_t *ks, const ktap_val_t *v)
 	case KTAP_TTAB:
 		kp_printf(ks, "table 0x%lx", (unsigned long)hvalue(v));
 		break;
-#ifdef CONFIG_KTAP_FFI
-	case KTAP_TCDATA:
-		kp_cdata_dump(ks, cdvalue(v));
-		break;
-#endif
 	case KTAP_TEVENTSTR:
 		/* check event context */
 		if (!ks->current_event) {

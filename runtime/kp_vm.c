@@ -30,7 +30,6 @@
 #include <linux/uaccess.h>
 #include "../include/ktap_types.h"
 #include "../include/ktap_bc.h"
-#include "../include/ktap_ffi.h"
 #include "ktap.h"
 #include "kp_obj.h"
 #include "kp_str.h"
@@ -1626,9 +1625,6 @@ void kp_vm_exit(ktap_state_t *ks)
 	kp_events_exit(ks);
 
 	/* free all resources got by ktap */
-#ifdef CONFIG_KTAP_FFI
-	ffi_free_symbols(ks);
-#endif
 	kp_str_freeall(ks);
 	kp_mempool_destroy(ks);
 
@@ -1741,10 +1737,6 @@ ktap_state_t *kp_vm_new_state(ktap_option_t *parm, struct dentry *dir)
 		goto out;
 	if (kp_lib_init_ansi(ks))
 		goto out;
-#ifdef CONFIG_KTAP_FFI
-	if (kp_lib_init_ffi(ks))
-		goto out;
-#endif
 	if (kp_lib_init_table(ks))
 		goto out;
 

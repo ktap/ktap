@@ -103,20 +103,6 @@ int kallsyms_parse(void *arg,
                    int(*process_symbol)(void *arg, const char *name,
                    char type, unsigned long start));
 
-
-#ifdef CONFIG_KTAP_FFI
-#include "../include/ktap_ffi.h"
-
-typedef struct cp_csymbol_state {
-	int cs_nr; /* number of c symbols */
-	int cs_arr_size; /* size of current symbol arrays */
-	csymbol *cs_arr;
-} cp_csymbol_state;
-
-cp_csymbol_state *ctype_get_csym_state(void);
-void kp_dump_csymbols();
-#endif
-
 ktap_eventdesc_t *kp_parse_events(const char *eventdef);
 void cleanup_event_resources(void);
 

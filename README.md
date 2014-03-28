@@ -115,13 +115,6 @@ More information can be found at [ktap homepage][homepage].
         profile-2s {
                 printf("time fired on every cpu\n");
         }
-10. FFI (Call kernel function from ktap script, need to compile with FFI=1)
-
-        ffi.cdef[[
-                int printk(char *fmt, ...);
-        ]]
-
-        ffi.C.printk("This message is called from ktap ffi\n")
 
 More examples can be found at [samples][samples_dir] directory.
 

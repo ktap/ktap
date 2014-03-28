@@ -3,9 +3,6 @@
 # Define NO_LIBELF if you do not want libelf dependency (e.g. cross-builds)
 # (this will also disable resolve resolving symbols in DSO functionality)
 #
-# Define FFI if you want to compile ktap with FFI support. By default This
-# toggle is off.
-#
 # Define amalg to enable amalgamation build, This compiles the ktapvm as
 # one huge C file and allows GCC to generate faster and shorter code. Alas,
 # this requires lots of memory during the build.
@@ -23,7 +20,6 @@ all: mod ktap
 INC = include
 RUNTIME = runtime
 
-FFIDIR = $(RUNTIME)/ffi
 KTAP_LIBS = -lpthread
 
 LIB_OBJS += $(RUNTIME)/lib_base.o $(RUNTIME)/lib_kdebug.o \
@@ -31,32 +27,12 @@ LIB_OBJS += $(RUNTIME)/lib_base.o $(RUNTIME)/lib_kdebug.o \
 		$(RUNTIME)/lib_table.o $(RUNTIME)/lib_net.o
 
 ifndef amalg
-ifdef FFI
-FFI_OBJS += $(FFIDIR)/ffi_call.o $(FFIDIR)/ffi_type.o $(FFIDIR)/ffi_symbol.o \
-    $(FFIDIR)/cdata.o $(FFIDIR)/ffi_util.o
-RUNTIME_OBJS += $(FFI_OBJS)
-LIB_OBJS += $(RUNTIME)/lib_ffi.o
-endif
 RUNTIME_OBJS += $(RUNTIME)/ktap.o $(RUNTIME)/kp_bcread.o $(RUNTIME)/kp_obj.o \
 		$(RUNTIME)/kp_str.o $(RUNTIME)/kp_mempool.o \
 		$(RUNTIME)/kp_tab.o $(RUNTIME)/kp_vm.o \
 		$(RUNTIME)/kp_transport.o $(RUNTIME)/kp_events.o $(LIB_OBJS)
 else
 RUNTIME_OBJS += $(RUNTIME)/amalg.o
-endif
-
-ifdef FFI
-ifeq ($(KBUILD_MODULES), 1)
-ifdef CONFIG_X86_64
-# call_x86_64.o is compiled from call_x86_64.S
-RUNTIME_OBJS += $(FFIDIR)/call_x86_64.o
-else
-$(error ktap FFI only supports x86_64 for now!)
-endif
-endif
-
-
-ccflags-y	+= -DCONFIG_KTAP_FFI
 endif
 
 obj-m		+= ktapvm.o
@@ -133,16 +109,6 @@ ifndef NO_LIBELF
 $(UDIR)/kp_symbol.o: $(UDIR)/kp_symbol.c KTAP-CFLAGS
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
 endif
-ifdef FFI
-KTAPC_CFLAGS += -DCONFIG_KTAP_FFI
-$(UDIR)/ffi_type.o: $(RUNTIME)/ffi/ffi_type.c $(INC)/* KTAP-CFLAGS
-	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
-$(UDIR)/ffi/cparser.o: $(UDIR)/ffi/cparser.c $(INC)/* KTAP-CFLAGS
-	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
-$(UDIR)/ffi/ctype.o: $(UDIR)/ffi/ctype.c $(INC)/* KTAP-CFLAGS
-	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
-endif
-
 
 KTAPOBJS =
 KTAPOBJS += $(UDIR)/kp_main.o
@@ -154,11 +120,6 @@ KTAPOBJS += $(UDIR)/kp_util.o
 KTAPOBJS += $(UDIR)/kp_parse_events.o
 ifndef NO_LIBELF
 KTAPOBJS += $(UDIR)/kp_symbol.o
-endif
-ifdef FFI
-KTAPOBJS += $(UDIR)/ffi_type.o
-KTAPOBJS += $(UDIR)/ffi/cparser.o
-KTAPOBJS += $(UDIR)/ffi/ctype.o
 endif
 
 ktap: $(KTAPOBJS) KTAP-CFLAGS
@@ -198,9 +159,6 @@ FORCE:
 TRACK_FLAGS = KTAP
 ifdef amalg
 TRACK_FLAGS += AMALG
-endif
-ifdef FFI
-TRACK_FLAGS += FFI
 endif
 ifdef NO_LIBELF
 TRACK_FLAGS += NO_LIBELF

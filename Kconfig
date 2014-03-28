@@ -19,14 +19,3 @@ config KTAP
 	  See ktap tutorial for more information:
 	      http://www.ktap.org/doc/tutorial.html
 
-config KTAP_FFI
-	tristate "FFI support for ktap"
-	depends on KTAP
-	depends on X86_64
-	default n
-	help
-	  This option brings FFI support to ktap. With FFI enabled ktap,
-	  users can call into native kernel C function directly in ktap
-	  script. Except for a new cdef keyword, this option also adds
-	  a ffi module which exports helper functions like ffi.new and
-	  ffi.sizeof.

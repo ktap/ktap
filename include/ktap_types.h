@@ -224,33 +224,6 @@ typedef struct ktap_tab {
 	ktap_obj_t *gclist;
 } ktap_tab_t;
 
-#ifdef CONFIG_KTAP_FFI
-typedef int csymbol_id;
-typedef uint64_t cdata_number;
-typedef struct csymbol csymbol;
-
-/* global ffi state maintained in each ktap vm instance */
-typedef struct ffi_state {
-	ktap_tab_t *ctable;
-	int csym_nr;
-	csymbol *csym_arr;
-} ffi_state;
-
-/* instance of csymbol */
-typedef struct ktap_cdata {
-	GCHeader;
-	csymbol_id id;
-	union {
-		cdata_number i;
-		struct {
-			void *addr;
-			int nmemb;	/* number of memory block */
-		} p;			/* pointer data */
-		void *rec;		/* struct member or union data */
-	} u;
-} ktap_cdata_t;
-#endif
-
 typedef struct ktap_stats {
 	int mem_allocated;
 	int nr_mem_allocate;
@@ -312,9 +285,6 @@ typedef struct ktap_global_state {
 	struct list_head events_head; /* probe event list */
 
 	ktap_func_t *trace_end_closure; /* trace_end closure */
-#ifdef CONFIG_KTAP_FFI
-	ffi_state  ffis;
-#endif
 
 	/* C function table for fast call */
 	int nr_builtin_cfunction;
@@ -357,9 +327,6 @@ union ktap_obj {
 	struct ktap_upval uv;
 	struct ktap_state th;  /* thread */
 	struct ktap_rawobj rawobj;
-#ifdef CONFIG_KTAP_FFI
-	struct ktap_cdata cd;
-#endif
 };
 
 #define gch(o)			(&(o)->gch)
@@ -418,9 +385,6 @@ union ktap_obj {
 
 #define pvalue(o)		(&val_(o).p)
 #define fvalue(o)		(val_(o).f)
-#ifdef CONFIG_KTAP_FFI
-#define cdvalue(o)		(&val_(o).gc->cd)
-#endif
 
 #define is_nil(o)		(itype(o) == KTAP_TNIL)
 #define is_false(o)		(itype(o) == KTAP_TFALSE)
@@ -435,10 +399,6 @@ union ktap_obj {
 #define is_eventstr(o)		(itype(o) == KTAP_TEVENTSTR)
 #define is_kip(o)		(itype(o) == KTAP_TKIP)
 #define is_btrace(o)		(itype(o) == KTAP_TBTRACE)
-#ifdef CONFIG_KTAP_FFI
-#define is_cdata(o)		(itype(o) == KTAP_TCDATA)
-#endif
-
 
 #define set_nil(o)		((o)->type = KTAP_TNIL)
 #define set_bool(o, x)		((o)->type = KTAP_TFALSE-(uint32_t)(x))
@@ -497,10 +457,6 @@ static inline void set_ip(ktap_val_t *o, unsigned long addr)
 	o->val.n = addr;
 }
 
-
-#ifdef CONFIG_KTAP_FFI
-#define set_cdata(o, x)		{ setitype(o, KTAP_TCDATA); (o)->val.gc = x; }
-#endif
 
 #define set_obj(o1, o2)		{ *(o1) = *(o2); }
 

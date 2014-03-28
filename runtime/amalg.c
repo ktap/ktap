@@ -35,11 +35,3 @@
 #include "lib_table.c"
 #include "lib_net.c"
 
-#ifdef CONFIG_KTAP_FFI
-#include "ffi/ffi_call.c"
-#include "ffi/ffi_type.c"
-#include "ffi/ffi_symbol.c"
-#include "ffi/cdata.c"
-#include "ffi/ffi_util.c"
-#include "lib_ffi.c"
-#endif

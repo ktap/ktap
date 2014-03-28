@@ -18,9 +18,6 @@ int kp_lib_init_timer(ktap_state_t *ks);
 int kp_lib_init_table(ktap_state_t *ks);
 int kp_lib_init_ansi(ktap_state_t *ks);
 int kp_lib_init_net(ktap_state_t *ks);
-#ifdef CONFIG_KTAP_FFI
-int kp_lib_init_ffi(ktap_state_t *ks);
-#endif
 
 void kp_exit_timers(ktap_state_t *ks);
 void kp_freeupval(ktap_state_t *ks, ktap_upval_t *uv);

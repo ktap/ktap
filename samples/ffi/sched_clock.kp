@@ -1,6 +1,0 @@
-ffi.cdef[[
-	unsigned long long sched_clock();
-]]
-
-var ret = ffi.C.sched_clock()
-print("C.sched_clock returned, value: ", ret)

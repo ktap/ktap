@@ -68,12 +68,6 @@ syn keyword ktapFunc printf print print_hist stack
 syn keyword ktapFunc gettimeofday_us
 syn keyword ktapFunc pairs
 
-syn match ktapFunc /\<ffi\.cdef\>/
-syn match ktapFunc /\<ffi\.new\>/
-syn match ktapFunc /\<ffi\.free\>/
-syn match ktapFunc /\<ffi\.C\>/
-
-
 
 " Define the default highlighting.
 " For version 5.7 and earlier: only when not done already
