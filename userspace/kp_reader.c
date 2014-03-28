@@ -1,5 +1,5 @@
 /*
- * ktapio.c - ring buffer transport in userspace
+ * reader.c - ring buffer reader in userspace
  *
  * This file is part of ktap by Jovi Zhangwei.
  *
@@ -92,7 +92,7 @@ static void *reader_thread(void *data)
 	return NULL;
 }
 
-int ktapio_create(const char *output)
+int kp_create_reader(const char *output)
 {
 	pthread_t reader;
 

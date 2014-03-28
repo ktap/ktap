@@ -6,18 +6,18 @@ var h_memcpy = {}
 var h_memset = {}
 
 trace probe:memcpy size=%dx {
-	h_memcpy[arg2] += 1
+	h_memcpy[arg1] += 1
 }
 
 trace probe:memset size=%dx {
-	h_memset[arg2] += 1
+	h_memset[arg1] += 1
 }
 
 trace_end {
 	print("memcpy size hist:")
-	histogram(h_memcpy)
+	print_hist(h_memcpy)
 
 	print()
 	print("memset size hist:")
-	histogram(h_memset)
+	print_hist(h_memset)
 }

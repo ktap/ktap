@@ -8,7 +8,7 @@
 /*
  * Types design in FFI module
  *
- * ktap_cdata is an instance of csymbol, so it's a combination of csymbol
+ * ktap_cdata_t is an instance of csymbol, so it's a combination of csymbol
  * and it's actual data in memory.
  *
  * csymbol structs are globally unique and readonly type that represent C
@@ -97,7 +97,7 @@ typedef struct csymbol {
 #define max_csym_id(ks) (G(ks)->ffis.csym_nr)
 
 /* lookup csymbol address by its id */
-inline csymbol *ffi_get_csym_by_id(ktap_state *ks, csymbol_id id);
+inline csymbol *ffi_get_csym_by_id(ktap_state_t *ks, csymbol_id id);
 #define id_to_csym(ks, id) (ffi_get_csym_by_id(ks, id))
 
 /* helper macros for struct csymbol */
@@ -150,7 +150,7 @@ inline csymbol *ffi_get_csym_by_id(ktap_state *ks, csymbol_id id);
 
 
 /*
- * helper macros for ktap_cdata type
+ * helper macros for ktap_cdata_t type
  */
 #define cd_csym_id(cd) ((cd)->id)
 #define cd_set_csym_id(cd, id) (cd_csym_id(cd) = (id))
@@ -165,33 +165,33 @@ inline csymbol *ffi_get_csym_by_id(ktap_state *ks, csymbol_id id);
 #define cd_union(cd) cd_record(cd)
 
 #ifdef __KERNEL__
-size_t csym_size(ktap_state *ks, csymbol *sym);
-size_t csym_align(ktap_state *ks, csymbol *sym);
-size_t csym_record_mb_offset_by_name(ktap_state *ks,
+size_t csym_size(ktap_state_t *ks, csymbol *sym);
+size_t csym_align(ktap_state_t *ks, csymbol *sym);
+size_t csym_record_mb_offset_by_name(ktap_state_t *ks,
 		csymbol *cs, const char *name);
-struct_member *csymst_mb_by_name(ktap_state *ks,
+struct_member *csymst_mb_by_name(ktap_state_t *ks,
 		csymbol_struct *csst, const char *name);
 
-void ffi_free_symbols(ktap_state *ks);
-csymbol_id ffi_get_csym_id(ktap_state *ks, char *name);
+void ffi_free_symbols(ktap_state_t *ks);
+csymbol_id ffi_get_csym_id(ktap_state_t *ks, char *name);
 
-ktap_cdata *kp_cdata_new(ktap_state *ks, csymbol_id id);
-ktap_cdata *kp_cdata_new_ptr(ktap_state *ks, void *addr,
+ktap_cdata_t *kp_cdata_new(ktap_state_t *ks, csymbol_id id);
+ktap_cdata_t *kp_cdata_new_ptr(ktap_state_t *ks, void *addr,
 		int nmemb, csymbol_id id, int to_allocate);
-ktap_cdata *kp_cdata_new_record(ktap_state *ks, void *val, csymbol_id id);
-void kp_cdata_dump(ktap_state *ks, ktap_cdata *cd);
-int kp_cdata_type_match(ktap_state *ks, csymbol *cs, ktap_value *val);
-void kp_cdata_unpack(ktap_state *ks, char *dst, csymbol *cs, ktap_value *val);
-void kp_cdata_ptr_set(ktap_state *ks, ktap_cdata *cd,
-		ktap_value *key, ktap_value *val);
-void kp_cdata_ptr_get(ktap_state *ks, ktap_cdata *cd,
-		ktap_value *key, ktap_value *val);
-void kp_cdata_record_set(ktap_state *ks, ktap_cdata *cd,
-		 ktap_value *key, ktap_value *val);
-void kp_cdata_record_get(ktap_state *ks, ktap_cdata *cd,
-		 ktap_value *key, ktap_value *val);
+ktap_cdata_t *kp_cdata_new_record(ktap_state_t *ks, void *val, csymbol_id id);
+void kp_cdata_dump(ktap_state_t *ks, ktap_cdata_t *cd);
+int kp_cdata_type_match(ktap_state_t *ks, csymbol *cs, ktap_val_t *val);
+void kp_cdata_unpack(ktap_state_t *ks, char *dst, csymbol *cs, ktap_val_t *val);
+void kp_cdata_ptr_set(ktap_state_t *ks, ktap_cdata_t *cd,
+		ktap_val_t *key, ktap_val_t *val);
+void kp_cdata_ptr_get(ktap_state_t *ks, ktap_cdata_t *cd,
+		ktap_val_t *key, ktap_val_t *val);
+void kp_cdata_record_set(ktap_state_t *ks, ktap_cdata_t *cd,
+		 ktap_val_t *key, ktap_val_t *val);
+void kp_cdata_record_get(ktap_state_t *ks, ktap_cdata_t *cd,
+		 ktap_val_t *key, ktap_val_t *val);
 
-int ffi_call(ktap_state *ks, csymbol_func *cf);
+int ffi_call(ktap_state_t *ks, csymbol_func *cf);
 
 #endif /* for CONFIG_FFI_KTAP */
 #endif /* for __KERNEL__ */

@@ -1,0 +1,12 @@
+#!/usr/bin/env ktap
+
+var s = {}
+
+trace kmem:kmalloc {
+	s[stack()] += 1
+}
+
+tick-60s {
+	print_hist(s)
+}
+

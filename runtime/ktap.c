@@ -21,7 +21,7 @@
 
 /*
  * this file is the first file to be compile, add CONFIG_ checking in here.
- * See Requirements in doc/introduction.txt
+ * See Requirements in doc/tutorial.md
  */
 
 #include <linux/version.h>
@@ -49,10 +49,19 @@
 #include <linux/vmalloc.h>
 #include "../include/ktap_types.h"
 #include "ktap.h"
-#include "kp_load.h"
+#include "kp_bcread.h"
 #include "kp_vm.h"
 
-static int load_trunk(struct ktap_parm *parm, unsigned long **buff)
+/* common helper function */
+long gettimeofday_ns(void)
+{
+	struct timespec now;
+
+	getnstimeofday(&now);
+	return now.tv_sec * NSEC_PER_SEC + now.tv_nsec;
+}
+
+static int load_trunk(ktap_option_t *parm, unsigned long **buff)
 {
 	int ret;
 	unsigned long *vmstart;
@@ -75,17 +84,17 @@ static int load_trunk(struct ktap_parm *parm, unsigned long **buff)
 static struct dentry *kp_dir_dentry;
 
 /* Ktap Main Entry */
-static int ktap_main(struct file *file, ktap_parm *parm)
+static int ktap_main(struct file *file, ktap_option_t *parm)
 {
 	unsigned long *buff = NULL;
-	ktap_state *ks;
-	ktap_closure *cl;
+	ktap_state_t *ks;
+	ktap_proto_t *pt;
 	long start_time, delta_time;
 	int ret;
 
 	start_time = gettimeofday_ns();
 
-	ks = kp_newstate(parm, kp_dir_dentry);
+	ks = kp_vm_new_state(parm, kp_dir_dentry);
 	if (unlikely(!ks))
 		return -ENOEXEC;
 
@@ -93,24 +102,28 @@ static int ktap_main(struct file *file, ktap_parm *parm)
 
 	ret = load_trunk(parm, &buff);
 	if (ret) {
-		pr_err("cannot load file\n");
-		return ret;
+		kp_error(ks, "cannot load file\n");
+		goto out;
 	}
 
-	cl = kp_load(ks, (unsigned char *)buff);
+	pt = kp_bcread(ks, (unsigned char *)buff, parm->trunk_len);
 
 	vfree(buff);
 
-	if (cl) {
-		/* optimize bytecode before excuting */
-		kp_optimize_code(ks, 0, cl->p);
+	if (pt) {
+		/* validate byte code */
+		if (kp_vm_validate_code(ks, pt, ks->stack))
+			goto out;
 
 		delta_time = (gettimeofday_ns() - start_time) / NSEC_PER_USEC;
 		kp_verbose_printf(ks, "booting time: %d (us)\n", delta_time);
-		kp_call(ks, ks->top - 1, 0);
+
+		/* enter vm */
+		kp_vm_call_proto(ks, pt);
 	}
 
-	kp_final_exit(ks);
+ out:
+	kp_vm_exit(ks);
 	return ret;
 }
 
@@ -121,7 +134,7 @@ static void print_version(void)
 
 static long ktap_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
-	ktap_parm parm;
+	ktap_option_t parm;
 	int ret;
 
 	switch (cmd) {
@@ -139,7 +152,7 @@ static long ktap_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 			return -EACCES;
 
 		ret = copy_from_user(&parm, (void __user *)arg,
-				     sizeof(ktap_parm));
+				     sizeof(ktap_option_t));
 		if (ret < 0)
 			return -EFAULT;
 
@@ -182,9 +195,50 @@ static const struct file_operations ktapvm_fops = {
 	.unlocked_ioctl         = ktapvm_ioctl,
 };
 
+int (*kp_ftrace_profile_set_filter)(struct perf_event *event, int event_id,
+				    const char *filter_str);
+
+struct syscall_metadata **syscalls_metadata;
+
+/*TODO: kill this function in future */
+static int __init init_dummy_kernel_functions(void)
+{
+	unsigned long *addr;
+
+	/*
+	 * ktap need symbol ftrace_profile_set_filter to set event filter, 
+	 * export it in future. 
+	 */
+#ifdef CONFIG_PPC64
+	kp_ftrace_profile_set_filter =
+		(void *)kallsyms_lookup_name(".ftrace_profile_set_filter");
+#else
+	kp_ftrace_profile_set_filter =
+		(void *)kallsyms_lookup_name("ftrace_profile_set_filter");
+#endif
+	if (!kp_ftrace_profile_set_filter) {
+		pr_err("ktap: cannot lookup ftrace_profile_set_filter "
+			"in kallsyms\n");
+		return -1;
+	}
+
+	/* use syscalls_metadata for syscall event handling */
+	addr = (void *)kallsyms_lookup_name("syscalls_metadata");
+	if (!addr) {
+		pr_err("ktap: cannot lookup syscalls_metadata in kallsyms\n");
+		return -1;
+	}
+
+	syscalls_metadata = (struct syscall_metadata **)*addr;
+	return 0;
+}
+
 static int __init init_ktap(void)
 {
 	struct dentry *ktapvm_dentry;
+
+	if (init_dummy_kernel_functions())
+		return -1;
 
 	kp_dir_dentry = debugfs_create_dir("ktap", NULL);
 	if (!kp_dir_dentry) {
@@ -201,8 +255,6 @@ static int __init init_ktap(void)
 		return -1;
 	}
 
-	kp_init_exit_instruction();
-
 	return 0;
 }
 
@@ -218,7 +270,7 @@ MODULE_AUTHOR("Jovi Zhangwei <jovi.zhangwei@gmail.com>");
 MODULE_DESCRIPTION("ktap");
 MODULE_LICENSE("GPL");
 
-int kp_max_exec_count = 10000;
-module_param_named(max_exec_count, kp_max_exec_count, int, S_IRUGO | S_IWUSR);
-MODULE_PARM_DESC(max_exec_count, "non-mainthread max instruction execution count");
+int kp_max_loop_count = 100000;
+module_param_named(max_loop_count, kp_max_loop_count, int, S_IRUGO | S_IWUSR);
+MODULE_PARM_DESC(max_loop_count, "max loop execution count");
 

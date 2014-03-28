@@ -1,18 +1,18 @@
 #!/usr/bin/env ktap
 
-var s = ptable()
+var s = {}
 
 trace syscalls:sys_enter_* {
-	s[argname] <<< 1
+	s[probename] += 1
 }
 
 trace_end {
-	histogram(s)
+	print_hist(s)
 }
 
 #Result:
 #
-#[root@jovi ktap]# ./ktap samples/syscalls_histogram.kp
+#[root@jovi ktap]# ./ktap samples/syscalls_count.kp
 #^C
 #                          value ------------- Distribution ------------- count
 #        sys_enter_rt_sigprocmask |@@@@@@                                 326

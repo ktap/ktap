@@ -11,20 +11,23 @@ var lats = {}
 var max = 0
 
 trace syscalls:sys_enter_* {
-	self[tid()] = gettimeofday_us()
+	self[tid] = gettimeofday_us()
 }
 
 trace syscalls:sys_exit_* {
-	if (self[tid()] == nil) { return }
-	delta = (gettimeofday_us() - self[tid()]) / (step * 1000)
+	if (self[tid] == nil) { return }
+	var delta = (gettimeofday_us() - self[tid]) / (step * 1000)
 	if (delta > max) { max = delta }
 	lats[delta] += 1
-	self[tid()] = nil
+	self[tid] = nil
 }
 
 trace_end {
 	printf("   %8s %8s\n", "LAT(ms)+", "COUNT");
 	for (i = 0, max, 1) {
+		if (lats[i] == nil) {
+			lats[i] = 0
+		}
 		printf("   %8d %8d\n", i * step, lats[i]);
 	}
 }

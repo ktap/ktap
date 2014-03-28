@@ -4,14 +4,14 @@
 #You can use this script to know what function is called frequently,
 #without enable CONFIG_FUNCTION_PROFILER in kernel.
 
-var s = ptable()
+var s = {}
 
 trace ftrace:function {
-	s[arg1] <<< 1
+	s[ipof(arg0)] += 1
 }
 
 trace_end {
-	histogram(s)
+	print_hist(s)
 }
 
 #sample output

@@ -2,22 +2,22 @@
 
 var count1 = 0
 trace kmem:kmalloc {
-	count1 = count1 + 1
+	count1 += 1
 }
 
 var count2 = 0
 trace kmem:kfree {
-	count2 = count2 + 1
+	count2 += 1
 }
 
 var count3 = 0
 trace kmem:mm_page_alloc {
-	count3 = count3 + 1
+	count3 += 1
 }
 
 var count4 = 0
 trace kmem:mm_page_free {
-	count4 = count4 + 1
+	count4 += 1
 }
 
 trace_end {
@@ -26,5 +26,4 @@ trace_end {
 	print("kmem:kfree:\t", count2)
 	print("kmem:mm_page_alloc:", count3)
 	print("kmem:mm_page_free:", count4)
-	print("trace ending\n")
 }

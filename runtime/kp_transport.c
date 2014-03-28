@@ -29,6 +29,7 @@
 #include <linux/kallsyms.h>
 #include "../include/ktap_types.h"
 #include "ktap.h"
+#include "kp_events.h"
 #include "kp_transport.h"
 
 struct ktap_trace_iterator {
@@ -336,7 +337,7 @@ static int tracing_wait_pipe(struct file *filp)
 {
 	struct trace_iterator *iter = filp->private_data;
 	struct ktap_trace_iterator *ktap_iter = KTAP_TRACE_ITER(iter);
-	ktap_state *ks = ktap_iter->private;
+	ktap_state_t *ks = ktap_iter->private;
 
 	while (trace_empty(iter)) {
 
@@ -441,7 +442,7 @@ out:
 static int tracing_open_pipe(struct inode *inode, struct file *filp)
 {
 	struct ktap_trace_iterator *ktap_iter;
-	ktap_state *ks = inode->i_private;
+	ktap_state_t *ks = inode->i_private;
 
 	/* create a buffer to store the information to pass to userspace */
 	ktap_iter = kzalloc(sizeof(*ktap_iter), GFP_KERNEL);
@@ -482,14 +483,14 @@ static const struct file_operations tracing_pipe_fops = {
  *
  * The implementation is similar with funtion __ftrace_trace_stack.
  */
-void kp_transport_print_backtrace(ktap_state *ks, int skip, int max_entries)
+void kp_transport_print_kstack(ktap_state_t *ks, uint16_t depth, uint16_t skip)
 {
 	struct ring_buffer *buffer = G(ks)->buffer;
 	struct ring_buffer_event *event;
 	struct trace_entry *entry;
 	int size;
 
-	size = max_entries * sizeof(unsigned long);
+	size = depth * sizeof(unsigned long);
 	event = ring_buffer_lock_reserve(buffer, sizeof(*entry) + size);
 	if (!event) {
 		KTAP_STATS(ks)->events_missed += 1;
@@ -503,7 +504,7 @@ void kp_transport_print_backtrace(ktap_state *ks, int skip, int max_entries)
 
 		trace.nr_entries = 0;
 		trace.skip = skip;
-		trace.max_entries = max_entries;
+		trace.max_entries = depth;
 		trace.entries = (unsigned long *)(entry + 1);
 		save_stack_trace(&trace);
 
@@ -511,13 +512,15 @@ void kp_transport_print_backtrace(ktap_state *ks, int skip, int max_entries)
 	}
 }
 
-void kp_transport_event_write(ktap_state *ks, struct ktap_event *e)
+void kp_transport_event_write(ktap_state_t *ks, struct ktap_event_data *e)
 {
 	struct ring_buffer *buffer = G(ks)->buffer;
 	struct ring_buffer_event *event;
+	struct trace_entry *ev_entry = e->data->raw->data;
 	struct trace_entry *entry;
+	int entry_size = e->data->raw->size;
 
-	event = ring_buffer_lock_reserve(buffer, e->entry_size +
+	event = ring_buffer_lock_reserve(buffer, entry_size +
 					 sizeof(struct ftrace_event_call *));
 	if (!event) {
 		KTAP_STATS(ks)->events_missed += 1;
@@ -525,13 +528,13 @@ void kp_transport_event_write(ktap_state *ks, struct ktap_event *e)
 	} else {
 		entry = ring_buffer_event_data(event);
 
-		memcpy(entry, e->entry, e->entry_size);
+		memcpy(entry, ev_entry, entry_size);
 
 		ring_buffer_unlock_commit(buffer, event);
 	}
 }
 
-void kp_transport_write(ktap_state *ks, const void *data, size_t length)
+void kp_transport_write(ktap_state_t *ks, const void *data, size_t length)
 {
 	struct ring_buffer *buffer = G(ks)->buffer;
 	struct ring_buffer_event *event;
@@ -556,7 +559,7 @@ void kp_transport_write(ktap_state *ks, const void *data, size_t length)
 }
 
 /* general print function */
-void kp_printf(ktap_state *ks, const char *fmt, ...)
+void kp_printf(ktap_state_t *ks, const char *fmt, ...)
 {
 	char buff[1024];
 	va_list args;
@@ -570,12 +573,12 @@ void kp_printf(ktap_state *ks, const char *fmt, ...)
 	kp_transport_write(ks, buff, len + 1);
 }
 
-void __kp_puts(ktap_state *ks, const char *str)
+void __kp_puts(ktap_state_t *ks, const char *str)
 {
 	kp_transport_write(ks, str, strlen(str) + 1);
 }
 
-void __kp_bputs(ktap_state *ks, const char *str)
+void __kp_bputs(ktap_state_t *ks, const char *str)
 {
 	struct ring_buffer *buffer = G(ks)->buffer;
 	struct ring_buffer_event *event;
@@ -599,7 +602,7 @@ void __kp_bputs(ktap_state *ks, const char *str)
 	}
 }
 
-void kp_transport_exit(ktap_state *ks)
+void kp_transport_exit(ktap_state_t *ks)
 {
 	if (G(ks)->buffer)
 		ring_buffer_free(G(ks)->buffer);
@@ -608,7 +611,7 @@ void kp_transport_exit(ktap_state *ks)
 
 #define TRACE_BUF_SIZE_DEFAULT	1441792UL /* 16384 * 88 (sizeof(entry)) */
 
-int kp_transport_init(ktap_state *ks, struct dentry *dir)
+int kp_transport_init(ktap_state_t *ks, struct dentry *dir)
 {
 	struct ring_buffer *buffer;
 	struct dentry *dentry;

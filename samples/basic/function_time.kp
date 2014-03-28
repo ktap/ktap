@@ -15,23 +15,23 @@ var total_time = 0
 printf("measure time(us) of function vfs_read\n");
 
 trace probe:vfs_read {
-	if (execname() == "ktap") {
+	if (execname == "ktap") {
 		return
 	}
 
-	self[tid()] = gettimeofday_us()
+	self[tid] = gettimeofday_us()
 }
 
 trace probe:vfs_read%return {
-	if (execname() == "ktap") {
+	if (execname == "ktap") {
 		return
 	}
 
-	if (self[tid()] == nil) {
+	if (self[tid] == nil) {
 		return
 	}
 
-	var durtion = gettimeofday_us() - self[tid()]
+	var durtion = gettimeofday_us() - self[tid]
 	if (durtion > count_max) {
 		count_max = durtion
 	}
@@ -43,7 +43,7 @@ trace probe:vfs_read%return {
 	count_num = count_num + 1
 	total_time = total_time + durtion
 
-	self[tid()] = nil
+	self[tid] = nil
 }
 
 trace_end {

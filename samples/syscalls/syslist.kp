@@ -9,23 +9,23 @@ var lats = {}
 var order = {}  # a workaround for key sorting
 
 trace syscalls:sys_enter_* {
-    self[tid()] = gettimeofday_us()
+	self[tid] = gettimeofday_us()
 }
 
 trace syscalls:sys_exit_* {
-    if (self[tid()] == nil) { return }
-    delta = gettimeofday_us() - self[tid()]
-    lats[delta] += 1
-    order[delta] = delta
-    self[tid()] = nil
+	if (self[tid] == nil) { return }
+	var delta = gettimeofday_us() - self[tid]
+	lats[delta] += 1
+	order[delta] = delta
+	self[tid] = nil
 }
 
 trace_end {
-    printf("   %8s %8s\n", "LAT(us)", "COUNT");
-    function cmp(v1, v2) {
-        return (v1 < v2)
-    }
-    for (lat, dummy in sort_pairs(order, cmp)) {
-        printf("   %8d %8d\n", lat, lats[lat]);
-    }
+	printf("   %8s %8s\n", "LAT(us)", "COUNT");
+	#TODO: use a more simple way to sort keys
+
+	#for (lat, dummy in sort_pairs(order, cmp)) {
+	#    printf("   %8d %8d\n", lat, lats[lat]);
+	#}
+	print_hist(lats)
 }

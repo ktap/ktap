@@ -47,45 +47,6 @@ if (n != len(t)) {
 	print("failed")
 }
 
-
-#-------------------------------------------------#
-
-var s = {}
-s[1] = 12
-s[2] = 2
-s[3] = 3
-s["124"] = 100
-s["125"] = -1
-
-var ordered = {}
-
-var number = 0
-
-function cmp(v1, v2) {
-	return (v1 > v2)
-}
-
-for (k, v in sort_pairs(s, cmp)) {
-	number = number + 1
-	ordered[number] = v
-}
-
-if (ordered[1] != 100) {
-	print("failed")
-}
-if (ordered[2] != 12) {
-	print("failed")
-}
-if (ordered[3] != 3) {
-	print("failed")
-}
-if (ordered[4] != 2) {
-	print("failed")
-}
-if (ordered[5] != -1) {
-	print("failed")
-}
-
 --- out
 --- err
 

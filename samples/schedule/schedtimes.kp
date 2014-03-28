@@ -24,11 +24,11 @@ var prev_timestamp = {}
 var io_wait = {}
 
 trace sched:sched_switch {
-	var prev_comm = arg1
-	var prev_pid = arg2
-	var prev_state = arg4
-	var next_comm = arg5
-	var next_pid = arg6
+	var prev_comm = arg0
+	var prev_pid = arg1
+	var prev_state = arg3
+	var next_comm = arg4
+	var next_pid = arg5
 	var t = gettimeofday_us()
 
 	if (pid_state[prev_pid] == nil) {
@@ -68,9 +68,9 @@ trace sched:sched_switch {
 }
 
 trace sched:sched_wakeup, sched:sched_wakeup_new {
-	var comm = arg1
-	var wakeup_pid = arg2
-	var success = arg4
+	var comm = arg0
+	var wakeup_pid = arg1
+	var success = arg3
 	var t = gettimeofday_us()
 
 	if (pid_state[wakeup_pid] == nil) {
@@ -95,14 +95,14 @@ trace sched:sched_wakeup, sched:sched_wakeup_new {
 trace_end {
 	var t = gettimeofday_us()
 	
-	for (pid, state in pairs(pid_state)) {
-		var durtion = t - prev_timestamp[pid]
-		if (state == SLEEPING) {
-			sleep_time[pid] += durtion
-		} elseif (state == QUEUED) {
-			queued_time[pid] += durtion
-		} elseif (state == RUNNING) {
-			run_time[pid] += durtion
+	for (_pid, _state in pairs(pid_state)) {
+		var durtion = t - prev_timestamp[_pid]
+		if (_state == SLEEPING) {
+			sleep_time[_pid] += durtion
+		} elseif (_state == QUEUED) {
+			queued_time[_pid] += durtion
+		} elseif (_state == RUNNING) {
+			run_time[_pid] += durtion
 		}
 	}
 
@@ -110,21 +110,22 @@ trace_end {
 		"execname", "pid", "run(us)", "sleep(us)", "io_wait(us)",
 		"queued(us)", "total(us)")
 
-	for (pid, time in pairs(run_time)) {
-		if (sleep_time[pid] == nil) {
-			sleep_time[pid] = 0
+	for (_pid, _time in pairs(run_time)) {
+		if (sleep_time[_pid] == nil) {
+			sleep_time[_pid] = 0
 		}
-		if (queued_time[pid] == nil) {
-			queued_time[pid] = 0
+		if (queued_time[_pid] == nil) {
+			queued_time[_pid] = 0
 		}
 
-		if (io_wait_time[pid] == nil) {
-			io_wait_time[pid] = 0
+		if (io_wait_time[_pid] == nil) {
+			io_wait_time[_pid] = 0
 		}
 
 		printf("%16s: %6d %10d %10d %10d %10d %10d\n",
-			pid_names[pid], pid, run_time[pid], sleep_time[pid],
-			io_wait_time[pid], queued_time[pid],
-			run_time[pid] + sleep_time[pid] + queued_time[pid]);
+			pid_names[_pid], _pid, run_time[_pid],
+			sleep_time[_pid], io_wait_time[_pid],
+			queued_time[_pid], run_time[_pid] + sleep_time[_pid] +
+			queued_time[_pid]);
 	}
 }

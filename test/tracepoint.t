@@ -28,3 +28,26 @@ tick-1s {
 --- err
 
 
+=== TEST 2: enable all tracepoints in dry-run mode
+--- opts: -q -d
+--- src
+
+trace *:* {}
+
+--- out
+--- err
+--- expect_timeout
+--- timeout: 10
+
+
+=== TEST 3: test kdebug.tracepoint
+--- opts: -q
+--- src
+
+kdebug.tracepoint("sys_enter_open", function () {})
+tick-1s {
+	exit()
+}
+
+--- out
+--- err

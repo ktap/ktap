@@ -29,22 +29,13 @@
 #include "kp_vm.h"
 #include "kp_tab.h"
 
-static int kplib_table_new(ktap_state *ks)
+static int kplib_table_new(ktap_state_t *ks)
 {
-	ktap_tab *h;
-	int narr = 0, nrec = 0;
+	int narr = kp_arg_checkoptnumber(ks, 1, 0);
+	int nrec = kp_arg_checkoptnumber(ks, 2, 0);
+	ktap_tab_t *h;
 
-	if (kp_arg_nr(ks) >= 1) {
-		kp_arg_check(ks, 1, KTAP_TYPE_NUMBER);
-		narr = nvalue(kp_arg(ks, 1));
-	}
-
-	if (kp_arg_nr(ks) >= 2) {
-		kp_arg_check(ks, 2, KTAP_TYPE_NUMBER);
-		nrec = nvalue(kp_arg(ks, 2));
-	}
-
-	h = kp_tab_new(ks, narr, nrec);
+	h = kp_tab_new_ah(ks, narr, nrec);
 	if (!h) {
 		set_nil(ks->top);
 	} else {
@@ -55,13 +46,13 @@ static int kplib_table_new(ktap_state *ks)
 	return 1;
 }
 
-static const ktap_Reg tablelib_funcs[] = {
+static const ktap_libfunc_t table_lib_funcs[] = {
 	{"new",	kplib_table_new},
 	{NULL}
 };
 
-int kp_init_tablelib(ktap_state *ks)
+int kp_lib_init_table(ktap_state_t *ks)
 {
-	return kp_register_lib(ks, "table", tablelib_funcs);
+	return kp_vm_register_lib(ks, "table", table_lib_funcs);
 }
 

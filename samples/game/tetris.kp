@@ -28,7 +28,6 @@
 #     $ sudo ./ktap samples/game/tetris.kp
 #
  
-
 #
 # global value
 #
@@ -51,24 +50,23 @@ var block_data4 = {}
 var block_data5 = {}
 var block_data6 = {}
 var block_table = {}
-
-var display_buffer = {}
-
  
 #
 # utils
 #
  
 function rand(max) {
-	r = gettimeofday_us()
+	var r = gettimeofday_us()
 	if (r < 0) {
 		r = r * -1
 	}
 	return r % max
 }
 
+var display_buffer = {}
 
 function update_display() {
+	var tmp
 	for (i = 0, 239, 1) {
 		if ((i % 12 - 11) != 0) {
 			tmp = ""
@@ -79,7 +77,7 @@ function update_display() {
 		if (display_buffer[240 + i] == empty) {
 			printf("  %s", tmp)
 		} else {
-			color = display_buffer[240 + i] + 40
+			var color = display_buffer[240 + i] + 40
 			ansi.set_color2(color, color)
 			printf("  %s", tmp)
 			ansi.reset_color()
@@ -93,6 +91,7 @@ function update_display() {
 }
 
  
+
 #
 # Initialize
 #
@@ -129,6 +128,7 @@ block_table[6][3] = -1 # bar is not common
 height = 17 # First block position (center)
 
 for (i = 0, 240, 1) {
+	var tmp
 	# Wall and Floor (sentinel)
 	if (((i % 12) < 2) || (i > 228)) {
 		tmp = 7 # White
@@ -177,7 +177,8 @@ trace probe:kbd_event handle=%di event_type=%si event_code=%dx value=%cx {
 tick-200ms {
 	ansi.clear_screen()
  
-	f = 0 # move/rotate flag
+	var f = 0 # move/rotate flag
+	var d
  
 	if (key_code != 0) { # if key is pressed
 		if(key_code != 103) { #move left or right
@@ -207,11 +208,11 @@ tick-200ms {
 		} else { # rotate
 			for (i = 0, 3, 1) { # check if block can be rotated
 				# each block position
-				p = block_table[block_number][i]
+				var p = block_table[block_number][i]
  
 				# destination x pos(p/12 rounded)
-				v = (p * 2 + 252) / 24 - 10
-				w = p - v * 12 # destination y pos
+				var v = (p * 2 + 252) / 24 - 10
+				var w = p - v * 12 # destination y pos
  
 				# destination position
 				destination_position[i] = w * 12 - v
@@ -238,7 +239,7 @@ tick-200ms {
 	f = 0
 	for (i = 0, 3, 1) { # drop 1 row
 		# check if destination is free
-		p = height + block_table[block_number][i]
+		var p = height + block_table[block_number][i]
 		if (display_buffer[12 + p] != empty) {
 			f = 1
 		}
@@ -268,10 +269,10 @@ tick-200ms {
 		}
 	}
  
-	k = 1
+	var k = 1
 	for (i = 18, 0, -1) { #check if line is filled
 		# search for filled line
-		j = 10
+		var j = 10
 		while ((j > 0) && 
 		       (display_buffer[i * 12 + j] != empty)) {
 			j = j - 1

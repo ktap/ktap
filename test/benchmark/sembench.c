@@ -528,7 +528,7 @@ int main(int ac, char **av) {
 		usleep(200);
 	}
 	gettimeofday(&start, NULL);
-	fprintf(stderr, "main loop going\n");
+	//fprintf(stderr, "main loop going\n");
 	while(1) {
 		ops->wake(wi, num_semids, wake_num);
 		burn_count++;
@@ -536,18 +536,18 @@ int main(int ac, char **av) {
 		if (now.tv_sec - start.tv_sec >= run_secs)
 			break;
 	}
-	fprintf(stderr, "all done\n");
+	//fprintf(stderr, "all done\n");
 	all_done = 1;
 	while(thread_count > 0) {
 		ops->wake(wi, num_semids, wake_num);
 		usleep(200);
 	}
-	printf("%d threads, waking %d at a time\n", num_threads, wake_num);
-	printf("using %s\n", ops->name);
-	printf("main thread burns: %d\n", burn_count);
-	printf("worker burn count total %lu min %lu max %lu avg %lu\n",
-	       total_burns, min_burns, max_burns, total_burns / num_threads);
-	printf("run time %d seconds %lu worker burns per second\n",
+	//printf("%d threads, waking %d at a time\n", num_threads, wake_num);
+	//printf("using %s\n", ops->name);
+	//printf("main thread burns: %d\n", burn_count);
+	//printf("worker burn count total %lu min %lu max %lu avg %lu\n",
+	//       total_burns, min_burns, max_burns, total_burns / num_threads);
+	printf("%d seconds: %lu worker burns per second\n",
 		(int)(now.tv_sec - start.tv_sec),
 		total_burns / (now.tv_sec - start.tv_sec));
 	ops->cleanup(num_semids);

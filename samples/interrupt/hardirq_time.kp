@@ -1,24 +1,25 @@
 #!/usr/bin/env ktap
 
 #this script output each average consumimg time of each hardirq
-var s = ptable()
+
+var s = {}
 var map = {}
 
 trace irq:irq_handler_entry {
-	map[cpu()] = gettimeofday_us()
+	map[cpu] = gettimeofday_us()
 }
 
 trace irq:irq_handler_exit {
-	var entry_time = map[cpu()]
+	var entry_time = map[cpu]
 	if (entry_time == nil) {
 		return;
 	}
 
-	s[arg1] <<< gettimeofday_us() - entry_time
-	map[cpu()] = nil
+	s[arg0] += gettimeofday_us() - entry_time
+	map[cpu] = nil
 }
 
 trace_end {
-	print(s)
+	print_hist(s)
 }
 

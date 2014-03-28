@@ -14,7 +14,7 @@ var ip_sock_daddr = net.ip_sock_daddr
 var format_ip_addr = net.format_ip_addr
 
 trace probe:tcp_recvmsg sock=%si {
-	var saddr = format_ip_addr(ip_sock_saddr(arg2))
-	var daddr = format_ip_addr(ip_sock_daddr(arg2))
+	var saddr = format_ip_addr(ip_sock_saddr(arg1))
+	var daddr = format_ip_addr(ip_sock_daddr(arg1))
 	printf("%s -> %s\n", daddr, saddr)
 }

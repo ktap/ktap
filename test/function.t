@@ -23,17 +23,9 @@ function f2() {
 
 print(f2())
 
-### mutli-value return ###
-function f3(a, b) {
-	return a+b, a-b;
-}
-
-var c, d = f3(2, 3);
-print(c, d)
-
 ### closure testing ### 
 function f4() {
-	f5 = function(a, b) {
+	var f5 = function(a, b) {
 		return a * b
 	}
 	return f5
@@ -46,7 +38,7 @@ print(f(9, 9))
 var i = 1
 function f6() {
 	i = 5
-	f7 = function(a, b) {
+	var f7 = function(a, b) {
 		return a * b + i
 	}
 	return f7
@@ -76,7 +68,6 @@ print(a)
 --- out
 5
 function return
-5	-1
 81
 86
 87

@@ -5,53 +5,31 @@
 #include <linux/hardirq.h>
 #include <linux/trace_seq.h>
 
-typedef struct ktap_Reg {
-        const char *name;
-        ktap_cfunction func;
-} ktap_Reg;
+/* for built-in library C function register */
+typedef struct ktap_libfunc {
+        const char *name; /* function name */
+        ktap_cfunction func; /* function pointer */
+} ktap_libfunc_t;
 
-struct ktap_probe_event {
-	struct list_head list;
-	struct perf_event *perf;
-	ktap_state *ks;
-	ktap_closure *cl;
-};
-
-/* this structure allocate on stack */
-struct ktap_event {
-	struct ftrace_event_call *call;
-	struct trace_entry *entry;
-	int entry_size;
-	struct pt_regs *regs;
-};
-
-#define KTAP_PERCPU_BUFFER_SIZE	(3 * PAGE_SIZE)
-
-int kp_init_baselib(ktap_state *ks);
-int kp_init_oslib(ktap_state *ks);
-int kp_init_kdebuglib(ktap_state *ks);
-int kp_init_timerlib(ktap_state *ks);
-int kp_init_tablelib(ktap_state *ks);
-int kp_init_ansilib(ktap_state *ks);
-int kp_init_netlib(ktap_state *ks);
+long gettimeofday_ns(void); /* common helper function */
+int kp_lib_init_base(ktap_state_t *ks);
+int kp_lib_init_kdebug(ktap_state_t *ks);
+int kp_lib_init_timer(ktap_state_t *ks);
+int kp_lib_init_table(ktap_state_t *ks);
+int kp_lib_init_ansi(ktap_state_t *ks);
+int kp_lib_init_net(ktap_state_t *ks);
 #ifdef CONFIG_KTAP_FFI
-int kp_init_ffilib(ktap_state *ks);
+int kp_lib_init_ffi(ktap_state_t *ks);
 #endif
 
+void kp_exit_timers(ktap_state_t *ks);
+void kp_freeupval(ktap_state_t *ks, ktap_upval_t *uv);
 
-int kp_probe_init(ktap_state *ks);
-void kp_probe_exit(ktap_state *ks);
+extern int (*kp_ftrace_profile_set_filter)(struct perf_event *event,
+					   int event_id,
+					   const char *filter_str);
 
-int kp_perf_event_register(ktap_state *ks, struct perf_event_attr *attr,
-			   struct task_struct *task, char *filter,
-			   ktap_closure *cl);
-
-void kp_event_getarg(ktap_state *ks, ktap_value *ra, int n);
-void kp_event_tostring(ktap_state *ks, struct trace_seq *seq);
-void kp_exit_timers(ktap_state *ks);
-void kp_freeupval(ktap_state *ks, ktap_upval *uv);
-
-extern int kp_max_exec_count;
+extern struct syscall_metadata **syscalls_metadata;
 
 /* get from kernel/trace/trace.h */
 static __always_inline int trace_get_context_bit(void)
@@ -71,7 +49,7 @@ static __always_inline int trace_get_context_bit(void)
 	return bit;
 }
 
-static __always_inline int get_recursion_context(ktap_state *ks)
+static __always_inline int get_recursion_context(ktap_state_t *ks)
 {
 	int rctx = trace_get_context_bit();
 	int *val = __this_cpu_ptr(G(ks)->recursion_context[rctx]);
@@ -80,57 +58,113 @@ static __always_inline int get_recursion_context(ktap_state *ks)
 		return -1;
 
 	*val = true;
-	barrier();
-
 	return rctx;
 }
 
-static inline void put_recursion_context(ktap_state *ks, int rctx)
+static inline void put_recursion_context(ktap_state_t *ks, int rctx)
 {
 	int *val = __this_cpu_ptr(G(ks)->recursion_context[rctx]);
-
-	barrier();
 	*val = false;
 }
 
-static inline void *kp_percpu_data(ktap_state *ks, int type)
+static inline void *kp_this_cpu_state(ktap_state_t *ks, int rctx)
 {
-	return this_cpu_ptr(G(ks)->pcpu_data[type][trace_get_context_bit()]);
+	return this_cpu_ptr(G(ks)->percpu_state[rctx]);
 }
 
+static inline void *kp_this_cpu_print_buffer(ktap_state_t *ks)
+{
+	return this_cpu_ptr(G(ks)->percpu_print_buffer[trace_get_context_bit()]);
+}
+
+static inline void *kp_this_cpu_temp_buffer(ktap_state_t *ks)
+{
+	return this_cpu_ptr(G(ks)->percpu_temp_buffer[trace_get_context_bit()]);
+}
 
 #define kp_verbose_printf(ks, ...) \
 	if (G(ks)->parm->verbose)	\
 		kp_printf(ks, "[verbose] "__VA_ARGS__);
 
-/* get argument operation macro */
-#define kp_arg(ks, n)	((ks)->ci->func + (n))
-#define kp_arg_nr(ks)	((int)(ks->top - (ks->ci->func + 1)))
+/* argument operation macro */
+#define kp_arg(ks, idx)	((ks)->func + (idx))
+#define kp_arg_nr(ks)	((int)(ks->top - (ks->func + 1)))
 
-#define kp_arg_check(ks, narg, type)				\
+#define kp_arg_check(ks, idx, type)				\
 	do {							\
-		if (unlikely(ttypenv(kp_arg(ks, narg)) != type)) {	\
-			kp_error(ks, "wrong type of argument %d\n", narg);\
+		if (unlikely(itype(kp_arg(ks, idx)) != type)) {	\
+			kp_error(ks, "wrong type of argument %d\n", idx);\
 			return -1;				\
 		}						\
 	} while (0)
 
+#define kp_arg_checkstring(ks, idx)				\
+	({							\
+		ktap_val_t *o = kp_arg(ks, idx);		\
+		if (unlikely(!is_string(o))) {			\
+			kp_error(ks, "wrong type of argument %d\n", idx); \
+			return -1;				\
+		}						\
+		svalue(o);					\
+	})
+
+#define kp_arg_checkfunction(ks, idx)				\
+	({							\
+		ktap_val_t *o = kp_arg(ks, idx);		\
+		if (unlikely(!is_function(o))) {			\
+			kp_error(ks, "wrong type of argument %d\n", idx); \
+			return -1;				\
+		}						\
+		clvalue(o);					\
+	})
+
+#define kp_arg_checknumber(ks, idx)				\
+	({							\
+		ktap_val_t *o = kp_arg(ks, idx);		\
+		if (unlikely(!is_number(o))) {			\
+			kp_error(ks, "wrong type of argument %d\n", idx); \
+			return -1;				\
+		}						\
+		nvalue(o);					\
+	})
+
+#define kp_arg_checkoptnumber(ks, idx, def)			\
+	({							\
+		ktap_number n;					\
+		if (idx > kp_arg_nr(ks)) {				\
+			n = def;				\
+		} else {					\
+			ktap_val_t *o = kp_arg(ks, idx);	\
+			if (unlikely(!is_number(o))) {		\
+				kp_error(ks, "wrong type of argument %d\n", \
+					     idx);		\
+				return -1;			\
+			}					\
+			n = nvalue(o);				\
+		}						\
+		n;						\
+	})
+
 #define kp_error(ks, args...)			\
 	do {					\
 		kp_printf(ks, "error: "args);	\
-		G(ks)->error = 1;		\
-		kp_prepare_to_exit(ks);		\
+		kp_vm_try_to_exit(ks);		\
+		G(ks)->state = KTAP_ERROR;	\
 	} while(0)
 
+
+/* TODO: this code need to cleanup */
 #if LINUX_VERSION_CODE > KERNEL_VERSION(3, 5, 0)
 #define SPRINT_SYMBOL	sprint_symbol_no_offset
 #else
 #define SPRINT_SYMBOL	sprint_symbol
 #endif
 
-void kp_printf(ktap_state *ks, const char *fmt, ...);
-void __kp_puts(ktap_state *ks, const char *str);
-void __kp_bputs(ktap_state *ks, const char *str);
+extern int kp_max_loop_count;
+
+void kp_printf(ktap_state_t *ks, const char *fmt, ...);
+void __kp_puts(ktap_state_t *ks, const char *str);
+void __kp_bputs(ktap_state_t *ks, const char *str);
 
 #define kp_puts(ks, str) ({						\
 	static const char *trace_printk_fmt				\
@@ -143,4 +177,8 @@ void __kp_bputs(ktap_state *ks, const char *str);
 		__kp_puts(ks, str);		\
 })
 
+#define err2msg(em)     (kp_err_allmsg+(int)(em))
+extern const char *kp_err_allmsg;
+
 #endif /* __KTAP_H__ */
+

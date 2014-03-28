@@ -27,7 +27,7 @@
 #include "../kp_vm.h"
 #include "../kp_obj.h"
 
-static int ffi_type_check(ktap_state *ks, csymbol_func *csf, int idx)
+static int ffi_type_check(ktap_state_t *ks, csymbol_func *csf, int idx)
 {
 	StkId arg;
 	csymbol *cs;
@@ -46,7 +46,7 @@ static int ffi_type_check(ktap_state *ks, csymbol_func *csf, int idx)
 	}
 }
 
-static csymbol *ffi_get_arg_csym(ktap_state *ks, csymbol_func *csf, int idx)
+static csymbol *ffi_get_arg_csym(ktap_state_t *ks, csymbol_func *csf, int idx)
 {
 	StkId arg;
 	csymbol *cs;
@@ -70,7 +70,7 @@ static csymbol *ffi_get_arg_csym(ktap_state *ks, csymbol_func *csf, int idx)
 	}
 }
 
-static void ffi_unpack(ktap_state *ks, char *dst, csymbol_func *csf,
+static void ffi_unpack(ktap_state_t *ks, char *dst, csymbol_func *csf,
 		int idx, int align)
 {
 	StkId arg = kp_arg(ks, idx + 1);
@@ -104,7 +104,7 @@ enum arg_status {
 extern void ffi_call_assem_x86_64(void *stack, void *temp_stack,
 					void *func_addr, void *rvalue, ffi_type rtype);
 
-static void ffi_call_x86_64(ktap_state *ks, csymbol_func *csf, void *rvalue)
+static void ffi_call_x86_64(ktap_state_t *ks, csymbol_func *csf, void *rvalue)
 {
 	int i;
 	int gpr_nr;
@@ -260,7 +260,7 @@ static void ffi_call_x86_64(ktap_state *ks, csymbol_func *csf, void *rvalue)
 
 #define ffi_call(ks, cf, rvalue) ffi_call_unsupported(ks, cf, rvalue)
 
-static void ffi_call_unsupported(ktap_state *ks,
+static void ffi_call_unsupported(ktap_state_t *ks,
 		csymbol_func *csf, void *rvalue)
 {
 	kp_error(ks, "unsupported architecture.\n");
@@ -269,9 +269,9 @@ static void ffi_call_unsupported(ktap_state *ks,
 #endif /* end for platform-specific setting */
 
 
-static int ffi_set_return(ktap_state *ks, void *rvalue, csymbol_id ret_id)
+static int ffi_set_return(ktap_state_t *ks, void *rvalue, csymbol_id ret_id)
 {
-	ktap_cdata *cd;
+	ktap_cdata_t *cd;
 	ffi_type type = csym_type(id_to_csym(ks, ret_id));
 
 	/* push return value to ktap stack */
@@ -315,11 +315,11 @@ static int ffi_set_return(ktap_state *ks, void *rvalue, csymbol_id ret_id)
  * Types between Ktap and C are converted automatically.
  * Only support x86_64 function call by now
  */
-int ffi_call(ktap_state *ks, csymbol_func *csf)
+int ffi_call(ktap_state_t *ks, csymbol_func *csf)
 {
 	int i;
 	int expected_arg_nr, arg_nr;
-	ktap_closure *cl;
+	ktap_closure_t *cl;
 	void *rvalue;
 
 	expected_arg_nr = csymf_arg_nr(csf);

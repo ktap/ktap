@@ -5,12 +5,16 @@
 #
 # Flame Graphs:
 # http://dtrace.org/blogs/brendan/2012/03/17/linux-kernel-performance-flame-graphs/
+#
+#
+# TODO: use aggregation instead of table.
 
-var s = ptable(0, 2000) #pre-allocate 2000 record entries
+#pre-allocate 2000 record entries, enlarge it if it's not enough
+var s = table.new(0, 2000)
 
 profile-10us {
 	#skip 12 stack entries, and dump all remain entries.
-	s[backtrace(12, -1)] <<< 1
+	s[stack(-1, 12)] += 1
 }
 
 tick-60s {
@@ -18,13 +22,6 @@ tick-60s {
 }
 
 trace_end {
-	function cmp(v1, v2) {
-		return (count(v1) < count(v2))
-	}
-	for (k, v in sort_pairs(s, cmp)) {
-		print(k)
-		print(count(v))
-		print()
-	}
+	print_hist(s, 100000)
 }
 

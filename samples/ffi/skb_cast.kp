@@ -100,7 +100,7 @@ struct sk_buff {
 ]]
 
 trace net:netif_receive_skb {
-	var skb = ffi.cast("struct sk_buff *", arg1)
+	var skb = ffi.cast("struct sk_buff *", arg0)
 	printf("skb len: %d, data_len: %d, iif: %d\n", skb.len, skb.data_len, skb.skb_iif)
 }
 

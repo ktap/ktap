@@ -9,23 +9,23 @@ var path = {}
 printf("%5s %6s %-12s %3s %3s %s\n", "UID", "PID", "COMM", "FD", "ERR", "PATH");
 
 trace syscalls:sys_enter_open {
-	path[tid()] = user_string(arg2)
+	path[tid] = user_string(arg1)
 }
 
 trace syscalls:sys_exit_open {
 	var fd
 	var errno
 
-	if (arg2 < 0) {
+	if (arg1 < 0) {
 		fd = 0
-		errno = -arg2
+		errno = -arg1
 	} else {
-		fd = arg2
+		fd = arg1
 		errno = 0
 	}
 
-	printf("%5d %6d %-12s %3d %3d %s\n", uid(), pid(), execname(), fd,
-	    errno, path[tid()])
+	printf("%5d %6d %-12s %3d %3d %s\n", uid, pid, execname, fd,
+	    errno, path[tid])
 
-	path[tid()] = 0
+	path[tid] = 0
 }

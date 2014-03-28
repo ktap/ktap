@@ -50,15 +50,15 @@ if (x["test"]["test"] != "this is test") {
 	print("failed")
 }
 
-var tbl = table.new(99999, 0)
+var tbl = table.new(9999, 0)
 var i = 1
-while (i < 100000) {
+while (i < 10000) {
 	tbl[i] = i	
 	i = i + 1
 }
 
 var i = 1
-while (i < 100000) {
+while (i < 10000) {
 	if (tbl[i] != i) {
 		print("failed")
 	}
@@ -78,47 +78,4 @@ if (days[2] != "Monday") {
 --- err
 
 
-
-=== TEST 2: ptable
---- src
-
-var s = ptable()
-
-for (i = 1, 100, 1) {
-	s["k"] <<< i
-}
-
-if (count(s["k"]) != 100) {
-	print("failed")
-}
-if (sum(s["k"]) != 5050) {
-	print("failed")
-}
-if (max(s["k"]) != 100) {
-	print("failed")
-}
-if (min(s["k"]) != 1) {
-	print("failed")
-}
-
-var s2 = ptable(10000, 0)
-
-for (i = 1, 10000, 1) {
-	s2[i] <<< i
-}
-
-if (min(s2[1]) != 1) {
-	print("failed")
-}
-
-if (sum(s2[10]) != 10) {
-	print("failed")
-}
-
-if (max(s2[100]) != 100) {
-	print("failed")
-}
-
---- out
---- err
 

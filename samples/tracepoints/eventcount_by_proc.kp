@@ -2,14 +2,14 @@
 
 # showing all tracepoints in histogram style
 
-var s = ptable()
+var s = {}
 
 trace *:* {
-	s[execname()] <<< 1
+	s[execname] += 1
 }
 
 trace_end {
-	histogram(s)
+	print_hist(s)
 }
 
 #Results:

@@ -9,5 +9,5 @@
 #DON'T use this script, at least for now.
 
 trace probe:* {
-	print(argevent)
+	print(argstr)
 }

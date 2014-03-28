@@ -1,6 +1,6 @@
 #!/usr/bin/env ktap
 
 trace syscalls:* {
-	print(cpu(), pid(), execname(), argevent)
+	print(cpu, pid, execname, argstr)
 }
 

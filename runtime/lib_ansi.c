@@ -32,7 +32,7 @@
  * ansi code for clearing the screen from the cursor position to the end.
  */
 
-static int kplib_ansi_clear_screen(ktap_state *ks)
+static int kplib_ansi_clear_screen(ktap_state_t *ks)
 {
 	kp_printf(ks, "\033[1;1H\033[J");
 	return 0;
@@ -47,13 +47,10 @@ static int kplib_ansi_clear_screen(ktap_state *ks)
  * Red (31), Purple (35), Brown (33), Light Gray (37).
  */
 
-static int kplib_ansi_set_color(ktap_state *ks)
+static int kplib_ansi_set_color(ktap_state_t *ks)
 {
-	int fg;
+	int fg = kp_arg_checknumber(ks, 1);
 
-	kp_arg_check(ks, 1, KTAP_TYPE_NUMBER);
-
-	fg = nvalue(kp_arg(ks, 1));
 	kp_printf(ks, "\033[%dm", fg);
 	return 0;
 }
@@ -69,15 +66,11 @@ static int kplib_ansi_set_color(ktap_state *ks)
  * background color, Black (40), Red (41), Green (42), Yellow (43),
  * Blue (44), Magenta (45), Cyan (46), White (47).
  */
-static int kplib_ansi_set_color2(ktap_state *ks)
+static int kplib_ansi_set_color2(ktap_state_t *ks)
 {
-	int fg, bg;
+	int fg = kp_arg_checknumber(ks, 1);
+	int bg = kp_arg_checknumber(ks, 2);
 	
-	kp_arg_check(ks, 1, KTAP_TYPE_NUMBER);
-	kp_arg_check(ks, 2, KTAP_TYPE_NUMBER);
-
-	fg = nvalue(kp_arg(ks, 1));
-	bg = nvalue(kp_arg(ks, 2));
 	kp_printf(ks, "\033[%d;%dm", fg, bg);
 	return 0;
 }
@@ -96,17 +89,11 @@ static int kplib_ansi_set_color2(ktap_state *ks)
  * All attributes off (0), Intensity Bold (1), Underline Single (4),
  * Blink Slow (5), Blink Rapid (6), Image Negative (7).
  */
-static int kplib_ansi_set_color3(ktap_state *ks)
+static int kplib_ansi_set_color3(ktap_state_t *ks)
 {
-	int fg, bg, attr;
-
-	kp_arg_check(ks, 1, KTAP_TYPE_NUMBER);
-	kp_arg_check(ks, 2, KTAP_TYPE_NUMBER);
-	kp_arg_check(ks, 3, KTAP_TYPE_NUMBER);
-
-	fg = nvalue(kp_arg(ks, 1));
-	bg = nvalue(kp_arg(ks, 2));
-	attr = nvalue(kp_arg(ks, 3));
+	int fg = kp_arg_checknumber(ks, 1);
+	int bg = kp_arg_checknumber(ks, 2);
+	int attr = kp_arg_checknumber(ks, 3);
 
 	if (attr)
 		kp_printf(ks, "\033[%d;%d;%dm", fg, bg, attr);
@@ -122,7 +109,7 @@ static int kplib_ansi_set_color3(ktap_state *ks)
  * Description: Sends ansi code to reset foreground, background and color
  * attribute to default values.
  */
-static int kplib_ansi_reset_color(ktap_state *ks)
+static int kplib_ansi_reset_color(ktap_state_t *ks)
 {
 	kp_printf(ks, "\033[0;0m");
 	return 0;
@@ -133,13 +120,13 @@ static int kplib_ansi_reset_color(ktap_state *ks)
  *
  * Description: Sends ansi code new line.
  */
-static int kplib_ansi_new_line (ktap_state *ks)
+static int kplib_ansi_new_line (ktap_state_t *ks)
 {
 	kp_printf(ks, "\12");
 	return 0;
 }
 
-static const ktap_Reg ansi_funcs[] = {
+static const ktap_libfunc_t ansi_lib_funcs[] = {
 	{"clear_screen", kplib_ansi_clear_screen},
 	{"set_color", kplib_ansi_set_color},
 	{"set_color2", kplib_ansi_set_color2},
@@ -149,7 +136,7 @@ static const ktap_Reg ansi_funcs[] = {
 	{NULL}
 };
 
-int kp_init_ansilib(ktap_state *ks)
+int kp_lib_init_ansi(ktap_state_t *ks)
 {
-	return kp_register_lib(ks, "ansi", ansi_funcs); 
+	return kp_vm_register_lib(ks, "ansi", ansi_lib_funcs); 
 }

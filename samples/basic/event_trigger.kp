@@ -1,23 +1,26 @@
 #!/usr/bin/env ktap
 
+#This ktap script will output all tracepoint events between
+#sys_enter_open and sys_exit_open, in one cpu.
+
 var soft_disabled = 1
 var this_cpu = 0
 
 trace syscalls:sys_enter_open {
-	print(argevent)
+	print(argstr)
 	soft_disabled = 0
-	this_cpu = cpu()
+	this_cpu = cpu
 }
 
 trace *:* {
-	if (soft_disabled == 0 && cpu() == this_cpu) {
-		print(argevent)
+	if (soft_disabled == 0 && cpu == this_cpu) {
+		print(argstr)
 	}
 }
 
 trace syscalls:sys_exit_open {
-	print(argevent)
-	if (cpu() == this_cpu) {
+	print(argstr)
+	if (cpu == this_cpu) {
 		exit()
 	}
 }

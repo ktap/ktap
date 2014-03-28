@@ -51,60 +51,60 @@ More information can be found at [ktap homepage][homepage].
 
 1. simplest one-liner command to enable all tracepoints
 
-        ktap -e "trace *:* { print(argevent) }"
+        ktap -e "trace *:* { print(argstr) }"
 2. syscall tracing on target process
 
-        ktap -e "trace syscalls:* { print(argevent) }" -- ls
+        ktap -e "trace syscalls:* { print(argstr) }" -- ls
 3. ftrace(kernel newer than 3.3, and must compiled with CONFIG_FUNCTION_TRACER)
 
-        ktap -e "trace ftrace:function { print(argevent) }"
+        ktap -e "trace ftrace:function { print(argstr) }"
 
-        ktap -e "trace ftrace:function /ip==mutex*/ { print(argevent) }"
+        ktap -e "trace ftrace:function /ip==mutex*/ { print(argstr) }"
 4. simple syscall tracing
 
         trace syscalls:* {
-                print(cpu(), pid(), execname(), argevent)
+                print(cpu, pid, execname, argstr)
         }
 5. syscall tracing in histogram style
 
         var s = {}
 
         trace syscalls:sys_enter_* {
-                s[argname] += 1
+                s[probename] += 1
         }
 
         trace_end {
-                histogram(s)
+                print_hist(s)
         }
 6. kprobe tracing
 
         trace probe:do_sys_open dfd=%di fname=%dx flags=%cx mode=+4($stack) {
-                print("entry:", execname(), argevent)
+                print("entry:", execname, argstr)
         }
 
         trace probe:do_sys_open%return fd=$retval {
-                print("exit:", execname(), argevent)
+                print("exit:", execname, argstr)
         }
 7. uprobe tracing
 
         trace probe:/lib/libc.so.6:malloc {
-                print("entry:", execname(), argevent)
+                print("entry:", execname, argstr)
         }
 
         trace probe:/lib/libc.so.6:malloc%return {
-                print("exit:", execname(), argevent)
+                print("exit:", execname, argstr)
         }
 8. stapsdt tracing (userspace static marker)
 
         trace sdt:/lib64/libc.so.6:lll_futex_wake {
-                print("lll_futex_wake", execname(), argevent)
+                print("lll_futex_wake", execname, argstr)
         }
 
         or:
 
         #trace all static mark in libc
         trace sdt:/lib64/libc.so.6:* {
-                print(execname(), argevent)
+                print(execname, argstr)
         }
 9. timer
 

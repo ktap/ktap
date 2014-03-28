@@ -10,13 +10,13 @@
 # ktap malloc_size_hist.kp
 # ktap malloc_size_hist.kp -- ls
 
-var m = {}
+var s = {}
 
 trace probe:/lib64/libc.so.6:malloc size=%di {
 	#arg2 is argument "size" of malloc function
-	m[arg2] += 1
+	s[arg1] += 1
 }
 
 trace_end {
-	histogram(m)
+	print_hist(s)
 }

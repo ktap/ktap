@@ -137,9 +137,9 @@ var errdesc = {
 }
 
 trace syscalls:sys_exit_* {
-	if (arg2 < 0) {
-		var errno = -arg2
+	if (arg1 < 0) {
+		var errno = -arg1
 		printf("%-15s%-20s\t%d\t%-30s\n",
-			execname(), argname, errno, errdesc[errno])
+			execname, probename, errno, errdesc[errno])
 	}
 }

@@ -4,5 +4,5 @@
 # Tested in x86_64
 
 trace probe:/lib64/libpthread-2.17.so:pthread_mutex_* {
-	print(execname(), argevent)
+	print(execname, argstr)
 }

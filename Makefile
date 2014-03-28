@@ -37,11 +37,12 @@ FFI_OBJS += $(FFIDIR)/ffi_call.o $(FFIDIR)/ffi_type.o $(FFIDIR)/ffi_symbol.o \
 RUNTIME_OBJS += $(FFI_OBJS)
 LIB_OBJS += $(RUNTIME)/lib_ffi.o
 endif
-RUNTIME_OBJS += $(RUNTIME)/ktap.o $(RUNTIME)/kp_load.o $(RUNTIME)/kp_obj.o \
-		$(RUNTIME)/kp_str.o $(RUNTIME)/kp_tab.o $(RUNTIME)/kp_vm.o \
-		$(RUNTIME)/kp_transport.o $(LIB_OBJS)
+RUNTIME_OBJS += $(RUNTIME)/ktap.o $(RUNTIME)/kp_bcread.o $(RUNTIME)/kp_obj.o \
+		$(RUNTIME)/kp_str.o $(RUNTIME)/kp_mempool.o \
+		$(RUNTIME)/kp_tab.o $(RUNTIME)/kp_vm.o \
+		$(RUNTIME)/kp_transport.o $(RUNTIME)/kp_events.o $(LIB_OBJS)
 else
-RUNTIME_OBJS += $(RUNTIME)/kp_amalg.o
+RUNTIME_OBJS += $(RUNTIME)/amalg.o
 endif
 
 ifdef FFI
@@ -114,28 +115,22 @@ endif
 
 UDIR = userspace
 
-$(UDIR)/lex.o: $(UDIR)/lex.c $(INC)/* KTAP-CFLAGS
+$(UDIR)/kp_main.o: $(UDIR)/kp_main.c $(INC)/* KTAP-CFLAGS
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
-$(UDIR)/parser.o: $(UDIR)/parser.c $(INC)/* KTAP-CFLAGS
+$(UDIR)/kp_lex.o: $(UDIR)/kp_lex.c $(INC)/* KTAP-CFLAGS
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
-$(UDIR)/code.o: $(UDIR)/code.c $(INC)/* KTAP-CFLAGS
+$(UDIR)/kp_parse.o: $(UDIR)/kp_parse.c $(INC)/* KTAP-CFLAGS
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
-$(UDIR)/dump.o: $(UDIR)/dump.c $(INC)/* KTAP-CFLAGS
+$(UDIR)/kp_bcwrite.o: $(UDIR)/kp_bcwrite.c $(INC)/* KTAP-CFLAGS
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
-$(UDIR)/main.o: $(UDIR)/main.c $(INC)/* KTAP-CFLAGS
+$(UDIR)/kp_reader.o: $(UDIR)/kp_reader.c $(INC)/* KTAP-CFLAGS
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
-$(UDIR)/util.o: $(UDIR)/util.c $(INC)/* KTAP-CFLAGS
+$(UDIR)/kp_util.o: $(UDIR)/kp_util.c $(INC)/* KTAP-CFLAGS
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
-$(UDIR)/ktap_io.o: $(UDIR)/ktap_io.c $(INC)/* KTAP-CFLAGS
-	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
-$(UDIR)/parse_events.o: $(UDIR)/parse_events.c $(INC)/* KTAP-CFLAGS
-	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
-$(UDIR)/ktapc_util.o: $(UDIR)/ktapc_util.c $(INC)/* KTAP-CFLAGS
-	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
-$(UDIR)/ktapc_opcode.o: $(UDIR)/ktapc_opcode.c $(INC)/* KTAP-CFLAGS
+$(UDIR)/kp_parse_events.o: $(UDIR)/kp_parse_events.c $(INC)/* KTAP-CFLAGS
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
 ifndef NO_LIBELF
-$(UDIR)/symbol.o: $(UDIR)/symbol.c KTAP-CFLAGS
+$(UDIR)/kp_symbol.o: $(UDIR)/kp_symbol.c KTAP-CFLAGS
 	$(QUIET_CC)$(CC) $(DEBUGINFO_FLAG) $(KTAPC_CFLAGS) -o $@ -c $<
 endif
 ifdef FFI
@@ -150,18 +145,15 @@ endif
 
 
 KTAPOBJS =
-KTAPOBJS += $(UDIR)/lex.o
-KTAPOBJS += $(UDIR)/parser.o
-KTAPOBJS += $(UDIR)/code.o
-KTAPOBJS += $(UDIR)/dump.o
-KTAPOBJS += $(UDIR)/main.o
-KTAPOBJS += $(UDIR)/util.o
-KTAPOBJS += $(UDIR)/ktap_io.o
-KTAPOBJS += $(UDIR)/parse_events.o
-KTAPOBJS += $(UDIR)/ktapc_util.o
-KTAPOBJS += $(UDIR)/ktapc_opcode.o
+KTAPOBJS += $(UDIR)/kp_main.o
+KTAPOBJS += $(UDIR)/kp_lex.o
+KTAPOBJS += $(UDIR)/kp_parse.o
+KTAPOBJS += $(UDIR)/kp_bcwrite.o
+KTAPOBJS += $(UDIR)/kp_reader.o
+KTAPOBJS += $(UDIR)/kp_util.o
+KTAPOBJS += $(UDIR)/kp_parse_events.o
 ifndef NO_LIBELF
-KTAPOBJS += $(UDIR)/symbol.o
+KTAPOBJS += $(UDIR)/kp_symbol.o
 endif
 ifdef FFI
 KTAPOBJS += $(UDIR)/ffi_type.o

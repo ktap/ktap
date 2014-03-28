@@ -3,11 +3,11 @@
 var s = {}
 
 trace syscalls:sys_enter_* {
-	s[argname] += 1
+	s[probename] += 1
 }
 
 tick-5s {
 	ansi.clear_screen()
-	histogram(s)
+	print_hist(s)
 	delete(s)
 }

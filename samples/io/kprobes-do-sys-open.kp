@@ -12,9 +12,9 @@
 
 trace probe:do_sys_open dfd=%di filename=%si flags=%dx mode=%cx {
 	printf("[do_sys_open entry]: (%s) open file (%s)\n",
-		execname(),  user_string(arg3))
+		execname,  user_string(arg2))
 }
 
 trace probe:do_sys_open%return fd=$retval {
-	printf("[do_sys_open exit]:  return fd (%d)\n", arg3)
+	printf("[do_sys_open exit]:  return fd (%d)\n", arg2)
 }

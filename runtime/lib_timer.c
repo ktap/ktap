@@ -27,20 +27,21 @@
 #include "ktap.h"
 #include "kp_obj.h"
 #include "kp_vm.h"
+#include "kp_events.h"
 
-struct hrtimer_ktap {
+struct ktap_hrtimer {
 	struct hrtimer timer;
-	ktap_state *ks;
-	ktap_closure *cl;
+	ktap_state_t *ks;
+	ktap_func_t *fn;
 	u64 ns;
 	struct list_head list;
 };
 
 /*
  * Currently ktap disallow tracing event in timer callback closure,
- * that will corrupt ktap_state and ktap stack, because timer closure
- * and event closure use same irq percpu ktap_state and stack.
- * We can use a different percpu ktap_state and stack for timer purpuse,
+ * that will corrupt ktap_state_t and ktap stack, because timer closure
+ * and event closure use same irq percpu ktap_state_t and stack.
+ * We can use a different percpu ktap_state_t and stack for timer purpuse,
  * but that's don't bring any big value with cost on memory consuming.
  *
  * So just simply disable tracing in timer closure,
@@ -48,20 +49,20 @@ struct hrtimer_ktap {
  */
 static enum hrtimer_restart hrtimer_ktap_fn(struct hrtimer *timer)
 {
-	struct hrtimer_ktap *t;
-	ktap_state *ks;
+	struct ktap_hrtimer *t;
+	ktap_state_t *ks;
 	int rctx;
 
 	rcu_read_lock_sched_notrace();
 
-	t = container_of(timer, struct hrtimer_ktap, timer);
+	t = container_of(timer, struct ktap_hrtimer, timer);
 	rctx = get_recursion_context(t->ks);
 
-	ks = kp_thread_new(t->ks);
-	set_closure(ks->top, t->cl);
+	ks = kp_vm_new_thread(t->ks, rctx);
+	set_func(ks->top, t->fn);
 	incr_top(ks);
-	kp_call(ks, ks->top - 1, 0);
-	kp_thread_exit(ks);
+	kp_vm_call(ks, ks->top - 1, 0);
+	kp_vm_exit_thread(ks);
 
 	hrtimer_add_expires_ns(timer, t->ns);
 
@@ -71,13 +72,15 @@ static enum hrtimer_restart hrtimer_ktap_fn(struct hrtimer *timer)
 	return HRTIMER_RESTART;
 }
 
-static void set_tick_timer(ktap_state *ks, u64 period, ktap_closure *cl)
+static int set_tick_timer(ktap_state_t *ks, u64 period, ktap_func_t *fn)
 {
-	struct hrtimer_ktap *t;
+	struct ktap_hrtimer *t;
 
 	t = kp_malloc(ks, sizeof(*t));
+	if (unlikely(!t))
+		return -ENOMEM;
 	t->ks = ks;
-	t->cl = cl;
+	t->fn = fn;
 	t->ns = period;
 
 	INIT_LIST_HEAD(&t->list);
@@ -86,9 +89,11 @@ static void set_tick_timer(ktap_state *ks, u64 period, ktap_closure *cl)
 	hrtimer_init(&t->timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 	t->timer.function = hrtimer_ktap_fn;
 	hrtimer_start(&t->timer, ns_to_ktime(period), HRTIMER_MODE_REL);
+
+	return 0;
 }
 
-static void set_profile_timer(ktap_state *ks, u64 period, ktap_closure *cl)
+static int set_profile_timer(ktap_state_t *ks, u64 period, ktap_func_t *fn)
 {
 	struct perf_event_attr attr;
 
@@ -101,21 +106,19 @@ static void set_profile_timer(ktap_state *ks, u64 period, ktap_closure *cl)
 	attr.size = sizeof(attr);
 	attr.disabled = 0;
 
-	kp_perf_event_register(ks, &attr, NULL, NULL, cl);
+	return kp_event_create(ks, &attr, NULL, NULL, fn);
 }
 
-static int do_tick_profile(ktap_state *ks, int is_tick)
+static int do_tick_profile(ktap_state_t *ks, int is_tick)
 {
-	const char *str, *tmp;
+	const char *str = kp_arg_checkstring(ks, 1);
+	ktap_func_t *fn = kp_arg_checkfunction(ks, 2);
+	const char *tmp;
 	char interval_str[32] = {0};
 	char suffix[10] = {0};
-	int n, i = 0;
+	int i = 0, ret, n;
 	int factor;
 
-	kp_arg_check(ks, 1, KTAP_TYPE_STRING);
-	kp_arg_check(ks, 2, KTAP_TYPE_FUNCTION);
-
-	str = svalue(kp_arg(ks, 1));
 	tmp = str;
 	while (isdigit(*tmp))
 		tmp++;
@@ -140,11 +143,11 @@ static int do_tick_profile(ktap_state *ks, int is_tick)
 		goto error;
 
 	if (is_tick)
-		set_tick_timer(ks, (u64)factor * n, clvalue(kp_arg(ks, 2)));
+		ret = set_tick_timer(ks, (u64)factor * n, fn);
 	else
-		set_profile_timer(ks, (u64)factor * n, clvalue(kp_arg(ks, 2)));
+		ret = set_profile_timer(ks, (u64)factor * n, fn);
 
-	return 0;
+	return ret;
 
  error:
 	kp_error(ks, "cannot parse timer interval: %s\n", str);
@@ -155,8 +158,15 @@ static int do_tick_profile(ktap_state *ks, int is_tick)
  * tick-n probes fire on only one CPU per interval.
  * valid time suffixes: sec/s, msec/ms, usec/us
  */
-static int kplib_timer_tick(ktap_state *ks)
+static int kplib_timer_tick(ktap_state_t *ks)
 {
+	/* timer.tick cannot be called in trace_end state */
+	if (G(ks)->state != KTAP_RUNNING) {
+		kp_error(ks,
+			 "timer.tick only can be called in RUNNING state\n");
+		return -1;
+	}
+
 	return do_tick_profile(ks, 1);
 }
 
@@ -164,14 +174,21 @@ static int kplib_timer_tick(ktap_state *ks)
  * A profile-n probe fires every fixed interval on every CPU
  * valid time suffixes: sec/s, msec/ms, usec/us
  */
-static int kplib_timer_profile(ktap_state *ks)
+static int kplib_timer_profile(ktap_state_t *ks)
 {
+	/* timer.profile cannot be called in trace_end state */
+	if (G(ks)->state != KTAP_RUNNING) {
+		kp_error(ks,
+			 "timer.profile only can be called in RUNNING state\n");
+		return -1;
+	}
+
 	return do_tick_profile(ks, 0);
 }
 
-void kp_exit_timers(ktap_state *ks)
+void kp_exit_timers(ktap_state_t *ks)
 {
-	struct hrtimer_ktap *t, *tmp;
+	struct ktap_hrtimer *t, *tmp;
 	struct list_head *timers_list = &(G(ks)->timers);
 
 	list_for_each_entry_safe(t, tmp, timers_list, list) {
@@ -180,14 +197,14 @@ void kp_exit_timers(ktap_state *ks)
 	}
 }
 
-static const ktap_Reg timerlib_funcs[] = {
+static const ktap_libfunc_t timer_lib_funcs[] = {
 	{"profile",	kplib_timer_profile},
 	{"tick",	kplib_timer_tick},
 	{NULL}
 };
 
-int kp_init_timerlib(ktap_state *ks)
+int kp_lib_init_timer(ktap_state_t *ks)
 {
-	return kp_register_lib(ks, "timer", timerlib_funcs);
+	return kp_vm_register_lib(ks, "timer", timer_lib_funcs);
 }
 

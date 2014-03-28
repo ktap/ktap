@@ -5,9 +5,9 @@
  *
  * Copyright (C) 2012-2013 Jovi Zhangwei <jovi.zhangwei@gmail.com>.
  *
- * Copyright (C) 1994-2013 Lua.org, PUC-Rio.
- *  - The part of code in this file is copied from lua initially.
- *  - lua's MIT license is compatible with GPL.
+ * Adapted from luajit and lua interpreter.
+ * Copyright (C) 2005-2014 Mike Pall.
+ * Copyright (C) 1994-2008 Lua.org, PUC-Rio.
  *
  * ktap is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -23,164 +23,87 @@
  * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include <linux/stacktrace.h>
+#include <linux/module.h>
+#include <linux/kallsyms.h>
+#include <linux/slab.h>
 #include "../include/ktap_types.h"
 #include "../include/ktap_ffi.h"
 #include "kp_obj.h"
 #include "kp_str.h"
 #include "kp_tab.h"
-
-#include <linux/slab.h>
 #include "ktap.h"
 #include "kp_vm.h"
 #include "kp_transport.h"
 
+/* Error message strings. */
+const char *kp_err_allmsg =
+#define ERRDEF(name, msg)       msg "\0"
+#include "../include/ktap_errmsg.h"
+;
+
+/* memory allocation flag */
 #define KTAP_ALLOC_FLAGS ((GFP_KERNEL | __GFP_NORETRY | __GFP_NOWARN) \
 			 & ~__GFP_WAIT)
 
-void *kp_malloc(ktap_state *ks, int size)
+/*
+ * TODO: It's not safe to call into facilities in the kernel at-large,
+ * so we may need to use ktap own memory pool, not kmalloc.
+ */
+
+
+void *kp_malloc(ktap_state_t *ks, int size)
 {
 	void *addr;
 
-	/*
-	 * Normally we don't want to trace under memory pressure,
-	 * so we use a simple rule to handle memory allocation failure:
-	 *
-	 * retry until allocation success, this will make caller don't need
-	 * to handle the unlikely failure case, then ktap exit.
-	 *
-	 * In this approach, if user find there have memory allocation failure,
-	 * user should re-run the ktap script, or fix the memory pressure
-	 * issue, or figure out why the script need so many memory.
-	 *
-	 * Perhaps return pre-allocated stub memory trunk when allocate failed
-	 * is a better approch?
-	 */
 	addr = kmalloc(size, KTAP_ALLOC_FLAGS);
 	if (unlikely(!addr)) {
-		kp_error(ks, "kmalloc size %d failed, retry again\n", size);
-		printk("ktap kmalloc size %d failed, retry again\n", size);
-		dump_stack();
-		while (1) {
-			addr = kmalloc(size, KTAP_ALLOC_FLAGS);
-			if (addr)
-				break;
-		}
-		kp_printf(ks, "kmalloc retry success after failed, exit\n");
+		kp_error(ks, "kmalloc failed\n");
 	}
-
-	preempt_disable();
-	KTAP_STATS(ks)->nr_mem_allocate += 1;
-	KTAP_STATS(ks)->mem_allocated += size;
-	preempt_enable();
-
 	return addr;
 }
 
-void kp_free(ktap_state *ks, void *addr)
-{
-	preempt_disable();
-	preempt_enable();
-
-	kfree(addr);
-}
-
-void *kp_realloc(ktap_state *ks, void *addr, int newsize)
-{
-	void *new_addr;
-
-	new_addr = krealloc(addr, newsize, KTAP_ALLOC_FLAGS);
-	if (unlikely(!new_addr)) {
-		kp_error(ks, "krealloc size %d failed, retry again\n", newsize);
-		printk("ktap krealloc size %d failed, retry again\n", newsize);
-		dump_stack();
-		while (1) {
-			new_addr = krealloc(addr, newsize, KTAP_ALLOC_FLAGS);
-			if (new_addr)
-				break;
-		}
-		kp_printf(ks, "krealloc retry success after failed, exit\n");
-	}
-
-	return new_addr;
-}
-
-void *kp_zalloc(ktap_state *ks, int size)
+void *kp_zalloc(ktap_state_t *ks, int size)
 {
 	void *addr;
 
 	addr = kzalloc(size, KTAP_ALLOC_FLAGS);
-	if (unlikely(!addr)) {
-		kp_error(ks, "kzalloc size %d failed, retry again\n", size);
-		printk("ktap kzalloc size %d failed, retry again\n", size);
-		dump_stack();
-		while (1) {
-			addr = kzalloc(size, KTAP_ALLOC_FLAGS);
-			if (addr)
-				break;
-		}
-		kp_printf(ks, "kzalloc retry success after failed, exit\n");
-	}
-
-	preempt_disable();
-	KTAP_STATS(ks)->nr_mem_allocate += 1;
-	KTAP_STATS(ks)->mem_allocated += size;
-	preempt_enable();
-
+	if (unlikely(!addr))
+		kp_error(ks, "kzalloc failed\n");
 	return addr;
 }
 
-/*
- * allocate raw object with size.
- * The raw object allocated will be free when ktap thread exit,
- * so user don't have to free it.
- */
-void *kp_rawobj_alloc(ktap_state *ks, int size)
+void kp_free(ktap_state_t *ks, void *addr)
 {
-	ktap_rawobj *obj;
-	void *addr;
-	
-	addr = kp_zalloc(ks, size);
-	if (unlikely(!addr)) {
-		kp_error(ks, "alloc raw object size %d failed\n", size);
-		return NULL;
-	}
-
-	obj = &kp_obj_newobject(ks, KTAP_TYPE_RAW, sizeof(ktap_rawobj), NULL)->rawobj;
-	if (unlikely(!obj)) {
-		kp_free(ks, addr);
-		kp_error(ks, "alloc raw object failed\n");
-		return NULL;
-	}
-
-	obj->v = addr;
-
-	/* return address of allocated memory, not raw object */
-	return addr;
+	kfree(addr);
 }
 
-void kp_obj_dump(ktap_state *ks, const ktap_value *v)
+
+void kp_obj_dump(ktap_state_t *ks, const ktap_val_t *v)
 {
-	switch (ttype(v)) {
-	case KTAP_TYPE_NIL:
+	switch (itype(v)) {
+	case KTAP_TNIL:
 		kp_puts(ks, "NIL");
 		break;
-	case KTAP_TYPE_NUMBER:
-		kp_printf(ks, "NUMBER %ld", nvalue(v));
+	case KTAP_TTRUE:
+		kp_printf(ks, "true");
 		break;
-	case KTAP_TYPE_BOOLEAN:
-		kp_printf(ks, "BOOLEAN %d", bvalue(v));
+	case KTAP_TFALSE:
+		kp_printf(ks, "false");
 		break;
-	case KTAP_TYPE_LIGHTUSERDATA:
-		kp_printf(ks, "LIGHTUSERDATA 0x%lx", (unsigned long)pvalue(v));
+	case KTAP_TNUM:
+		kp_printf(ks, "NUM %ld", nvalue(v));
 		break;
-	case KTAP_TYPE_CFUNCTION:
-		kp_printf(ks, "LIGHTCFCUNTION 0x%lx", (unsigned long)fvalue(v));
+	case KTAP_TLIGHTUD:
+		kp_printf(ks, "LIGHTUD 0x%lx", (unsigned long)pvalue(v));
 		break;
-	case KTAP_TYPE_SHRSTR:
-	case KTAP_TYPE_LNGSTR:
-		kp_printf(ks, "SHRSTR #%s", svalue(v));
+	case KTAP_TFUNC:
+		kp_printf(ks, "FUNCTION 0x%lx", (unsigned long)fvalue(v));
 		break;
-	case KTAP_TYPE_TABLE:
+	case KTAP_TSTR:
+		kp_printf(ks, "STR #%s", svalue(v));
+		break;
+	case KTAP_TTAB:
 		kp_printf(ks, "TABLE 0x%lx", (unsigned long)hvalue(v));
 		break;
         default:
@@ -189,120 +112,82 @@ void kp_obj_dump(ktap_state *ks, const ktap_value *v)
 	}
 }
 
-#include <linux/stacktrace.h>
-#include <linux/module.h>
-#include <linux/kallsyms.h>
-
-static void btrace_dump(ktap_state *ks, ktap_btrace *bt)
+void kp_obj_show(ktap_state_t *ks, const ktap_val_t *v)
 {
-	char str[KSYM_SYMBOL_LEN];
-	unsigned long *entries = (unsigned long *)(bt + 1);
-	int i;
-
-	for (i = 0; i < bt->nr_entries; i++) {
-		unsigned long p = entries[i];
-
-		if (p == ULONG_MAX)
-			break;
-
-		SPRINT_SYMBOL(str, p);
-		kp_printf(ks, "%s\n", str);
-	}
-}
-
-static int btrace_equal(ktap_btrace *bt1, ktap_btrace *bt2)
-{
-	unsigned long *entries1 = (unsigned long *)(bt1 + 1);
-	unsigned long *entries2 = (unsigned long *)(bt2 + 1);
-	int i;
-
-	if (bt1->nr_entries != bt2->nr_entries)
-		return 0;
-
-	for (i = 0; i < bt1->nr_entries; i++) {
-		if (entries1[i] != entries2[i])
-			return 0;
-	}
-
-	return 1;
-}
-
-void kp_obj_show(ktap_state *ks, const ktap_value *v)
-{
-	switch (ttype(v)) {
-	case KTAP_TYPE_NIL:
+	switch (itype(v)) {
+	case KTAP_TNIL:
 		kp_puts(ks, "nil");
 		break;
-	case KTAP_TYPE_NUMBER:
+	case KTAP_TTRUE:
+		kp_puts(ks, "true");
+		break;
+	case KTAP_TFALSE:
+		kp_puts(ks, "false");
+		break;
+	case KTAP_TNUM:
 		kp_printf(ks, "%ld", nvalue(v));
 		break;
-	case KTAP_TYPE_BOOLEAN:
-		kp_puts(ks, (bvalue(v) == 1) ? "true" : "false");
+	case KTAP_TLIGHTUD:
+		kp_printf(ks, "lightud 0x%lx", (unsigned long)pvalue(v));
 		break;
-	case KTAP_TYPE_LIGHTUSERDATA:
-		kp_printf(ks, "0x%lx", (unsigned long)pvalue(v));
+	case KTAP_TCFUNC:
+		kp_printf(ks, "cfunction 0x%lx", (unsigned long)fvalue(v));
 		break;
-	case KTAP_TYPE_CFUNCTION:
-		kp_printf(ks, "0x%lx", (unsigned long)fvalue(v));
+	case KTAP_TFUNC:
+		kp_printf(ks, "function 0x%lx", (unsigned long)gcvalue(v));
 		break;
-	case KTAP_TYPE_SHRSTR:
-	case KTAP_TYPE_LNGSTR:
+	case KTAP_TSTR:
 		kp_puts(ks, svalue(v));
 		break;
-	case KTAP_TYPE_TABLE:
-		kp_tab_dump(ks, hvalue(v));
+	case KTAP_TTAB:
+		kp_printf(ks, "table 0x%lx", (unsigned long)hvalue(v));
 		break;
 #ifdef CONFIG_KTAP_FFI
-	case KTAP_TYPE_CDATA:
+	case KTAP_TCDATA:
 		kp_cdata_dump(ks, cdvalue(v));
 		break;
 #endif
-	case KTAP_TYPE_EVENT:
-		kp_transport_event_write(ks, evalue(v));
+	case KTAP_TEVENTSTR:
+		/* check event context */
+		if (!ks->current_event) {
+			kp_error(ks,
+			"cannot stringify event str in invalid context\n");
+			return;
+		}
+
+		kp_transport_event_write(ks, ks->current_event);
 		break;
-	case KTAP_TYPE_BTRACE:
-		btrace_dump(ks, btvalue(v));
-		break;
-	case KTAP_TYPE_PTABLE:
-		kp_ptab_dump(ks, phvalue(v));
-		break;
-	case KTAP_TYPE_STATDATA:
-		kp_statdata_dump(ks, sdvalue(v));
+	case KTAP_TKSTACK:
+		kp_transport_print_kstack(ks, v->val.stack.depth,
+					      v->val.stack.skip);
 		break;
         default:
-		kp_error(ks, "print unknown value type: %d\n", ttype(v));
+		kp_error(ks, "print unknown value type: %d\n", itype(v));
 		break;
 	}
 }
 
 
 /*
- * equality of ktap values. ks == NULL means raw equality
+ * equality of ktap values.
  */
-int kp_obj_equal(ktap_state *ks, const ktap_value *t1, const ktap_value *t2)
+int kp_obj_rawequal(const ktap_val_t *t1, const ktap_val_t *t2)
 {
-	switch (ttype(t1)) {
-	case KTAP_TYPE_NIL:
+	switch (itype(t1)) {
+	case KTAP_TNIL:
+	case KTAP_TTRUE:
+	case KTAP_TFALSE:
 		return 1;
-	case KTAP_TYPE_NUMBER:
+	case KTAP_TNUM:
 		return nvalue(t1) == nvalue(t2);
-	case KTAP_TYPE_BOOLEAN:
-		return bvalue(t1) == bvalue(t2);  /* true must be 1 !! */
-	case KTAP_TYPE_LIGHTUSERDATA:
+	case KTAP_TLIGHTUD:
 		return pvalue(t1) == pvalue(t2);
-	case KTAP_TYPE_CFUNCTION:
+	case KTAP_TFUNC:
 		return fvalue(t1) == fvalue(t2);
-	case KTAP_TYPE_SHRSTR:
-		return eqshrstr(rawtsvalue(t1), rawtsvalue(t2));
-	case KTAP_TYPE_LNGSTR:
-		return kp_str_eqlng(rawtsvalue(t1), rawtsvalue(t2));
-	case KTAP_TYPE_TABLE:
-		if (hvalue(t1) == hvalue(t2))
-			return 1;
-		else if (ks == NULL)
-			return 0;
-	case KTAP_TYPE_BTRACE:
-		return btrace_equal(btvalue(t1), btvalue(t2));
+	case KTAP_TSTR:
+		return rawtsvalue(t1) == rawtsvalue(t2);
+	case KTAP_TTAB:
+		return hvalue(t1) == hvalue(t2);
 	default:
 		return gcvalue(t1) == gcvalue(t2);
 	}
@@ -311,15 +196,15 @@ int kp_obj_equal(ktap_state *ks, const ktap_value *t1, const ktap_value *t2)
 }
 
 /*
- * ktap will not use lua's length operator on table meaning,
+ * ktap will not use lua's length operator for table,
  * also # is not for length operator any more in ktap.
  */
-int kp_obj_len(ktap_state *ks, const ktap_value *v)
+int kp_obj_len(ktap_state_t *ks, const ktap_val_t *v)
 {
-	switch(v->type) {
-	case KTAP_TYPE_TABLE:
-		return kp_tab_length(ks, hvalue(v));
-	case KTAP_TYPE_STRING:
+	switch(itype(v)) {
+	case KTAP_TTAB:
+		return kp_tab_len(ks, hvalue(v));
+	case KTAP_TSTR:
 		return rawtsvalue(v)->len;
 	default:
 		kp_printf(ks, "cannot get length of type %d\n", v->type);
@@ -329,132 +214,69 @@ int kp_obj_len(ktap_state *ks, const ktap_value *v)
 }
 
 /* need to protect allgc field? */
-ktap_gcobject *kp_obj_newobject(ktap_state *ks, int type, size_t size,
-			    ktap_gcobject **list)
+ktap_obj_t *kp_obj_new(ktap_state_t *ks, size_t size)
 {
-	ktap_gcobject *o;
+	ktap_obj_t *o, **list;
+
+	if (ks != G(ks)->mainthread) {
+		kp_error(ks, "kp_obj_new only can be called in mainthread\n");
+		return NULL;
+	}
 
 	o = kp_malloc(ks, size);
-	if (list == NULL)
-		list = &G(ks)->allgc;
+	if (unlikely(!o))
+		return NULL;
 
-	gch(o)->tt = type;
-	gch(o)->next = *list;
+	list = &G(ks)->allgc;
+	gch(o)->nextgc = *list;
 	*list = o;
 
 	return o;
 }
 
-ktap_upval *kp_obj_newupval(ktap_state *ks)
-{
-	ktap_upval *uv;
 
-	uv = &kp_obj_newobject(ks, KTAP_TYPE_UPVAL, sizeof(ktap_upval), NULL)->uv;
-	uv->v = &uv->u.value;
-	set_nil(uv->v);
-	return uv;
+/* this function may be time consuming, move out from table set/get? */
+ktap_str_t *kp_obj_kstack2str(ktap_state_t *ks, uint16_t depth, uint16_t skip)
+{
+	struct stack_trace trace;
+	unsigned long *bt;
+	char *btstr, *p;
+	int i;
+
+	bt = kp_this_cpu_print_buffer(ks); /* use print percpu buffer */
+	trace.nr_entries = 0;
+	trace.skip = skip;
+	trace.max_entries = depth;
+	trace.entries = (unsigned long *)(bt + 1);
+	save_stack_trace(&trace);
+
+	/* convert backtrace to string */
+	p = btstr = kp_this_cpu_temp_buffer(ks);
+	for (i = 0; i < trace.nr_entries; i++) {
+		unsigned long addr = trace.entries[i];
+
+		if (addr == ULONG_MAX)
+			break;
+
+		p += sprint_symbol(p, addr);
+		*p++ = '\n';
+        }
+
+	return kp_str_new(ks, btstr, p - btstr);
 }
 
-static ktap_btrace *kp_obj_newbacktrace(ktap_state *ks, int nr_entries,
-				    ktap_gcobject **list)
-{
-	ktap_btrace *bt;
-	int size = sizeof(ktap_btrace) + nr_entries * sizeof(unsigned long);
-
-	bt = &kp_obj_newobject(ks, KTAP_TYPE_BTRACE, size, list)->bt;
-	bt->nr_entries = nr_entries;
-	return bt;
-}
-
-void kp_obj_clone(ktap_state *ks, const ktap_value *o, ktap_value *newo,
-		 ktap_gcobject **list)
-{
-	if (is_btrace(o)) {
-		int nr_entries = btvalue(o)->nr_entries;
-		ktap_btrace *bt;
-
-		bt = kp_obj_newbacktrace(ks, nr_entries, list);
-		memcpy((unsigned long *)(bt + 1), btvalue(o) + 1,
-			nr_entries * sizeof(unsigned long));
-		set_btrace(newo, bt);
-	} else {
-		kp_error(ks, "cannot clone ktap value type %d\n", ttype(o));
-		set_nil(newo);
-	}
-}
-
-ktap_closure *kp_obj_newclosure(ktap_state *ks, int n)
-{
-	ktap_closure *cl;
-	int size = sizeof(ktap_closure) + sizeof(ktap_upval *) * (n - 1);
-
-	cl = (ktap_closure *)kp_obj_newobject(ks, KTAP_TYPE_CLOSURE, size, NULL);
-	cl->p = NULL;
-	cl->nupvalues = n;
-	while (n--)
-		cl->upvals[n] = NULL;
-
-	return cl;
-}
-
-static void free_proto(ktap_state *ks, ktap_proto *f)
-{
-	kp_free(ks, f->code);
-	kp_free(ks, f->p);
-	kp_free(ks, f->k);
-	kp_free(ks, f->lineinfo);
-	kp_free(ks, f->locvars);
-	kp_free(ks, f->upvalues);
-	kp_free(ks, f);
-}
-
-ktap_proto *kp_obj_newproto(ktap_state *ks)
-{
-	ktap_proto *f;
-	f = (ktap_proto *)kp_obj_newobject(ks, KTAP_TYPE_PROTO, sizeof(*f), NULL);
-	f->k = NULL;
- 	f->sizek = 0;
-	f->p = NULL;
-	f->sizep = 0;
-	f->code = NULL;
-	f->cache = NULL;
-	f->sizecode = 0;
-	f->lineinfo = NULL;
-	f->sizelineinfo = 0;
-	f->upvalues = NULL;
-	f->sizeupvalues = 0;
-	f->numparams = 0;
-	f->is_vararg = 0;
-	f->maxstacksize = 0;
-	f->locvars = NULL;
-	f->sizelocvars = 0;
-	f->linedefined = 0;
-	f->lastlinedefined = 0;
-	f->source = NULL;
-	return f;
-}
-
-void kp_obj_free_gclist(ktap_state *ks, ktap_gcobject *o)
+void kp_obj_free_gclist(ktap_state_t *ks, ktap_obj_t *o)
 {
 	while (o) {
-		ktap_gcobject *next;
+		ktap_obj_t *next;
 
-		next = gch(o)->next;
-		switch (gch(o)->tt) {
-		case KTAP_TYPE_TABLE:
-			kp_tab_free(ks, (ktap_tab *)o);
+		next = gch(o)->nextgc;
+		switch (gch(o)->gct) {
+		case ~KTAP_TTAB:
+			kp_tab_free(ks, (ktap_tab_t *)o);
 			break;
-		case KTAP_TYPE_PROTO:
-			free_proto(ks, (ktap_proto *)o);
-			break;
-		case KTAP_TYPE_UPVAL:
-			kp_freeupval(ks, (ktap_upval *)o);
-			break;
-		case KTAP_TYPE_PTABLE:
-			kp_ptab_free(ks, (ktap_ptab *)o);
-			break;
-		case KTAP_TYPE_RAW:
-			kp_free(ks, ((ktap_rawobj *)o)->v);
+		case ~KTAP_TUPVAL:
+			kp_freeupval(ks, (ktap_upval_t *)o);
 			break;
 		default:
 			kp_free(ks, o);
@@ -463,7 +285,7 @@ void kp_obj_free_gclist(ktap_state *ks, ktap_gcobject *o)
 	}
 }
 
-void kp_obj_freeall(ktap_state *ks)
+void kp_obj_freeall(ktap_state_t *ks)
 {
 	kp_obj_free_gclist(ks, G(ks)->allgc);
 	G(ks)->allgc = NULL;

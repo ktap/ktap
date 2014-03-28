@@ -25,11 +25,13 @@
 #include "kp_vm.h"
 
 
-static int kplib_ffi_new(ktap_state *ks)
+static int kplib_ffi_new(ktap_state_t *ks)
 {
-	int n = kp_arg_nr(ks), array_size, is_array;
-	csymbol_id cs_id;
-	ktap_cdata *cd;
+	int n = kp_arg_nr(ks);
+	csymbol_id cs_id = kp_arg_checknumber(ks, 1);
+	int array_size = kp_arg_checknumber(ks, 2);
+	int is_array = kp_arg_checknumber(ks, 3);
+	ktap_cdata_t *cd;
 
 	if (unlikely(n != 3)) {
 		/* this is not likely to happen since ffi.new arguments are
@@ -38,14 +40,6 @@ static int kplib_ffi_new(ktap_state *ks)
 		kp_error(ks, "wrong number of arguments\n");
 		return 1;
 	}
-
-	kp_arg_check(ks, 1, KTAP_TYPE_NUMBER);
-	kp_arg_check(ks, 2, KTAP_TYPE_NUMBER);
-	kp_arg_check(ks, 3, KTAP_TYPE_NUMBER);
-
-	cs_id = nvalue(kp_arg(ks, 1));
-	array_size = nvalue(kp_arg(ks, 2));
-	is_array = nvalue(kp_arg(ks, 3));
 
 	if (unlikely(cs_id > max_csym_id(ks)))
 		kp_error(ks, "invalid csymbol id\n");
@@ -63,12 +57,12 @@ static int kplib_ffi_new(ktap_state *ks)
 	return 1;
 }
 
-static int kplib_ffi_cast(ktap_state *ks)
+static int kplib_ffi_cast(ktap_state_t *ks)
 {
 	int n = kp_arg_nr(ks);
-	unsigned long addr;
-	csymbol_id cs_id;
-	ktap_cdata *cd;
+	csymbol_id cs_id = kp_arg_checknumber(ks, 1);
+	unsigned long addr = kp_arg_checknumber(ks, 2);
+	ktap_cdata_t *cd;
 
 	if (unlikely(n != 2)) {
 		/* this is not likely to happen since ffi.cast arguments are
@@ -77,12 +71,6 @@ static int kplib_ffi_cast(ktap_state *ks)
 		kp_error(ks, "wrong number of arguments\n");
 		return 1;
 	}
-
-	kp_arg_check(ks, 1, KTAP_TYPE_NUMBER);
-	kp_arg_check(ks, 2, KTAP_TYPE_NUMBER);
-
-	cs_id = nvalue(kp_arg(ks, 1));
-	addr = nvalue(kp_arg(ks, 2));
 
 	if (unlikely(cs_id > max_csym_id(ks)))
 		kp_error(ks, "invalid csymbol id\n");
@@ -93,20 +81,20 @@ static int kplib_ffi_cast(ktap_state *ks)
 	return 1;
 }
 
-static int kplib_ffi_sizeof(ktap_state *ks)
+static int kplib_ffi_sizeof(ktap_state_t *ks)
 {
 	/*@TODO finish this  08.11 2013 (houqp)*/
 	return 0;
 }
 
-static const ktap_Reg ffi_funcs[] = {
+static const ktap_libfunc_t ffi_lib_funcs[] = {
 	{"sizeof", kplib_ffi_sizeof},
 	{"new", kplib_ffi_new},
 	{"cast", kplib_ffi_cast},
 	{NULL}
 };
 
-int kp_init_ffilib(ktap_state *ks)
+int kp_lib_init_ffi(ktap_state_t *ks)
 {
-	return kp_register_lib(ks, "ffi", ffi_funcs);
+	return kp_vm_register_lib(ks, "ffi", ffi_lib_funcs);
 }

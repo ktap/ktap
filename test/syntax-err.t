@@ -13,7 +13,7 @@ a =
 
 --- out
 --- err_like
-unexpected symbol near <eof>
+unexpected symbol near '<eof>'
 
---- ret: 1
+--- ret: 255
 

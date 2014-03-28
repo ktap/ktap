@@ -33,3 +33,33 @@ tick-4s {
 --- err
 
 
+=== TEST 2: cannot call timer.tick in trace_end context
+--- opts: -q
+--- src
+
+trace_end {
+	tick-1s {
+		print("error")
+	}
+}
+
+--- out
+error: timer.tick only can be called in RUNNING state
+--- err
+
+
+=== TEST 3: cannot call timer.profile in trace_end context
+--- opts: -q
+--- src
+
+trace_end {
+	profile-1s {
+		print("error")
+	}
+}
+
+--- out
+error: timer.profile only can be called in RUNNING state
+
+--- err
+

@@ -1,3 +1,11 @@
+/*
+ * ktap types definition.
+ *
+ * Copyright (C) 2012-2014 Jovi Zhangwei <jovi.zhangwei@gmail.com>.
+ * Copyright (C) 2005-2014 Mike Pall.
+ * Copyright (C) 1994-2008 Lua.org, PUC-Rio.
+ */
+
 #ifndef __KTAP_TYPES_H__
 #define __KTAP_TYPES_H__
 
@@ -9,20 +17,47 @@ typedef char u8;
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
+typedef int ptrdiff_t;
 #endif
 
+#include "../include/ktap_bc.h"
+
+/* Various VM limits. */
+#define KP_MAX_MEMPOOL_SIZE	10000	/* Max. mempool size(Kbytes). */
+#define KP_MAX_STR	512		/* Max. string length. */
+#define KP_MAX_STRNUM	9999		/* Max. string number. */
+
+#define KP_MAX_STRTAB	(1<<26)		/* Max. string table size. */
+#define KP_MAX_HBITS	26		/* Max. hash bits. */
+#define KP_MAX_ABITS	28		/* Max. bits of array key. */
+#define KP_MAX_ASIZE	((1<<(KP_MAX_ABITS-1))+1)  /* Max. array part size. */
+#define KP_MAX_COLOSIZE	16		/* Max. elems for colocated array. */
+
+#define KP_MAX_LINE	1000		/* Max. source code line number. */
+#define KP_MAX_XLEVEL	200		/* Max. syntactic nesting level. */
+#define KP_MAX_BCINS	(1<<26)		/* Max. # of bytecode instructions. */
+#define KP_MAX_SLOTS	250		/* Max. # of slots in a ktap func. */
+#define KP_MAX_LOCVAR	200		/* Max. # of local variables. */
+#define KP_MAX_UPVAL	60		/* Max. # of upvalues. */
+
+#define KP_MAX_CACHED_CFUNCTION	128	/* Max. cached global cfunction */
+
+#define KP_MAX_STACK_DEPTH	50	/* Max. stack depth */
+
 /*
- * The first argument type of kdebug.probe_by_id()
+ * The first argument type of kdebug.trace_by_id()
  * The value is a userspace memory pointer.
  * Maybe embed it into the trunk file in future.
  */
-typedef struct ktap_eventdef_info {
+typedef struct ktap_eventdesc {
 	int nr;  /* the number of events id */
 	int *id_arr; /* events id array */
 	char *filter;
-} ktap_eventdef_info;
+} ktap_eventdesc_t;
 
-typedef struct ktap_parm {
+
+/* ktap option for each script */
+typedef struct ktap_option {
 	char *trunk; /* __user */
 	int trunk_len;
 	int argc;
@@ -33,7 +68,8 @@ typedef struct ktap_parm {
 	int trace_cpu;
 	int print_timestamp;
 	int quiet;
-} ktap_parm;
+	int dry_run;
+} ktap_option_t;
 
 /*
  * Ioctls that can be done on a ktap fd:
@@ -43,214 +79,150 @@ typedef struct ktap_parm {
 #define KTAP_CMD_IOC_RUN		('$' + 1)
 #define KTAP_CMD_IOC_EXIT		('$' + 3)
 
-#define KTAP_ENV	"_ENV"
-
 #define KTAP_VERSION_MAJOR       "0"
 #define KTAP_VERSION_MINOR       "4"
 
 #define KTAP_VERSION    "ktap " KTAP_VERSION_MAJOR "." KTAP_VERSION_MINOR
 #define KTAP_AUTHOR    "Jovi Zhangwei <jovi.zhangwei@gmail.com>"
-#define KTAP_COPYRIGHT  KTAP_VERSION "  Copyright (C) 2012-2013, " KTAP_AUTHOR
+#define KTAP_COPYRIGHT  KTAP_VERSION "  Copyright (C) 2012-2014, " KTAP_AUTHOR
 
 #define MYINT(s)        (s[0] - '0')
 #define VERSION         (MYINT(KTAP_VERSION_MAJOR) * 16 + MYINT(KTAP_VERSION_MINOR))
-#define FORMAT          0 /* this is the official format */
-
-#define KTAP_SIGNATURE  "\033ktap"
-
-/* data to catch conversion errors */
-#define KTAPC_TAIL      "\x19\x93\r\n\x1a\n"
-
-/* size in bytes of header of binary files */
-#define KTAPC_HEADERSIZE	(sizeof(KTAP_SIGNATURE) - sizeof(char) + 2 + \
-				 6 + sizeof(KTAPC_TAIL) - sizeof(char))
 
 typedef long ktap_number;
-#define kp_number2int(i, n)	((i) = (int)(n))
-
-typedef int ktap_instruction;
-
-typedef union ktap_gcobject ktap_gcobject;
-
-#define CommonHeader ktap_gcobject *next; u8 tt;
-
-typedef struct ktap_string {
-	CommonHeader;
-	u8 extra;  /* reserved words for short strings; "has hash" for longs */
-	unsigned int hash;
-	size_t len;  /* number of characters in string */
-} ktap_string;
-
+typedef int ktap_instr_t;
+typedef union ktap_obj ktap_obj_t;
 
 struct ktap_state;
 typedef int (*ktap_cfunction) (struct ktap_state *ks);
 
-typedef struct ktap_value {
+/* ktap_val_t is basic value type in ktap stack, for reference all objects */
+typedef struct ktap_val {
 	union {
-		ktap_gcobject *gc;    /* collectable objects */
-		void *p;         /* light userdata */
-		int b;           /* booleans */
-		ktap_cfunction f; /* light C functions */
-		ktap_number n;         /* numbers */
+		ktap_obj_t *gc;		/* collectable objects, str/tab/... */
+		void *p;		/* light userdata */
+		ktap_cfunction f;	/* light C functions */
+		ktap_number n;		/* numbers */
+		struct {
+			uint16_t depth;	/* stack depth */
+			uint16_t skip;	/* skip stack entries */
+		} stack;
 	} val;
-	int type;
-} ktap_value;
+	union {
+		int type;		/* type for above val */
+		const unsigned int *pcr;/* Overlaps PC for ktap frames.*/
+	};
+} ktap_val_t;
 
-typedef ktap_value * StkId;
+typedef ktap_val_t *StkId;
 
+#define GCHeader ktap_obj_t *nextgc; u8 gct;
 
-/*
- * Description of an upvalue for function prototypes
- */
-typedef struct ktap_upvaldesc {
-	ktap_string *name;  /* upvalue name (for debug information) */
-	u8 instack;  /* whether it is in stack */
-	u8 idx;  /* index of upvalue (in stack or in outer function's list) */
-} ktap_upvaldesc;
-
-/*
- * Description of a local variable for function prototypes
- * (used for debug information)
- */
-typedef struct ktap_locvar {
-	ktap_string *varname;
-	int startpc;  /* first point where variable is active */
-	int endpc;    /* first point where variable is dead */
-} ktap_locvar;
-
+typedef struct ktap_str {
+	GCHeader;
+	u8 reserved;  /* Used by lexer for fast lookup of reserved words. */
+	u8 extra;
+	unsigned int hash;
+	int len;  /* number of characters in string */
+} ktap_str_t;
 
 typedef struct ktap_upval {
-	CommonHeader;
-	ktap_value *v;  /* points to stack or to its own value */
+	GCHeader;
+	uint8_t closed;	/* Set if closed (i.e. uv->v == &uv->u.value). */
+	uint8_t immutable;	/* Immutable value. */
 	union {
-		ktap_value value;  /* the value (when closed) */
-		struct {  /* double linked list (when open) */
+		ktap_val_t tv; /* If closed: the value itself. */
+		struct { /* If open: double linked list, anchored at thread. */
 			struct ktap_upval *prev;
 			struct ktap_upval *next;
-		} l;
-	} u;
-} ktap_upval;
+		};
+	};
+	ktap_val_t *v;  /* Points to stack slot (open) or above (closed). */
+} ktap_upval_t;
 
 
-#define KTAP_MAX_STACK_ENTRIES 100
-
-typedef struct ktap_btrace {
-	CommonHeader;
-	unsigned int nr_entries;
-	/* entries stored in here, after nr_entries */
-} ktap_btrace;
-
-typedef struct ktap_closure {
-	CommonHeader;
+typedef struct ktap_func {
+	GCHeader;
 	u8 nupvalues;
+	BCIns *pc;
 	struct ktap_proto *p;
 	struct ktap_upval *upvals[1];  /* list of upvalues */
-} ktap_closure;
+} ktap_func_t;
 
 typedef struct ktap_proto {
-	CommonHeader;
-	ktap_value *k;  /* constants used by the function */
-	ktap_instruction *code;
-	struct ktap_proto **p;  /* functions defined inside the function */
-	int *lineinfo;  /* map from opcodes to source lines (debug information) */
-	struct ktap_locvar *locvars;  /* information about local variables (debug information) */
-	struct ktap_upvaldesc *upvalues;  /* upvalue information */
-	ktap_closure *cache;  /* last created closure with this prototype */
-	ktap_string  *source;  /* used for debug information */
-	int sizeupvalues;  /* size of 'upvalues' */
-	int sizek;  /* size of `k' */
-	int sizecode;
-	int sizelineinfo;
-	int sizep;  /* size of `p' */
-	int sizelocvars;
-	int linedefined;
-	int lastlinedefined;
-	u8 numparams;  /* number of fixed parameters */
-	u8 is_vararg;
-	u8 maxstacksize;  /* maximum stack used by this function */
-} ktap_proto;
+	GCHeader;
+	uint8_t numparams;	/* Number of parameters. */
+	uint8_t framesize;	/* Fixed frame size. */
+	int sizebc;		/* Number of bytecode instructions. */
+	ktap_obj_t *gclist;
+	void *k;	/* Split constant array (points to the middle). */
+	void *uv;	/* Upvalue list. local slot|0x8000 or parent uv idx. */
+	int sizekgc;	/* Number of collectable constants. */
+	int sizekn;	/* Number of lua_Number constants. */
+	int sizept;	/* Total size including colocated arrays. */
+	uint8_t sizeuv;	/* Number of upvalues. */
+	uint8_t flags;	/* Miscellaneous flags (see below). */
+
+	/* --- The following fields are for debugging/tracebacks only --- */
+	ktap_str_t *chunkname;	/* Chunk name this function was defined in. */
+	BCLine firstline;	/* First line of the function definition. */
+	BCLine numline;	/* Number of lines for the function definition. */
+	void *lineinfo;	/* Compressed map from bytecode ins. to source line. */
+	void *uvinfo;	/* Upvalue names. */
+	void *varinfo;	/* Names and compressed extents of local variables. */
+} ktap_proto_t;
+
+/* Flags for prototype. */
+#define PROTO_CHILD		0x01	/* Has child prototypes. */
+#define PROTO_VARARG		0x02	/* Vararg function. */
+#define PROTO_FFI		0x04	/* Uses BC_KCDATA for FFI datatypes. */
+#define PROTO_NOJIT		0x08	/* JIT disabled for this function. */
+#define PROTO_ILOOP		0x10	/* Patched bytecode with ILOOP etc. */
+/* Only used during parsing. */
+#define PROTO_HAS_RETURN	0x20	/* Already emitted a return. */
+#define PROTO_FIXUP_RETURN	0x40	/* Need to fixup emitted returns. */
+/* Top bits used for counting created closures. */
+#define PROTO_CLCOUNT		0x20	/* Base of saturating 3 bit counter. */
+#define PROTO_CLC_BITS		3
+#define PROTO_CLC_POLY		(3*PROTO_CLCOUNT)  /* Polymorphic threshold. */
+
+#define PROTO_UV_LOCAL		0x8000	/* Upvalue for local slot. */
+#define PROTO_UV_IMMUTABLE	0x4000	/* Immutable upvalue. */
+
+#define proto_kgc(pt, idx)	(((ktap_obj_t *)(pt)->k)[idx])
+#define proto_bc(pt)		((BCIns *)((char *)(pt) + sizeof(ktap_proto_t)))
+#define proto_bcpos(pt, pc)	((BCPos)((pc) - proto_bc(pt)))
+#define proto_uv(pt)		((uint16_t *)(pt)->uv)
+
+#define proto_chunkname(pt)	((pt)->chunkname)
+#define proto_lineinfo(pt)	((const void *)(pt)->lineinfo)
+#define proto_uvinfo(pt)	((const uint8_t *)(pt)->uvinfo)
+#define proto_varinfo(pt)	((const uint8_t *)(pt)->varinfo)
 
 
-/*
- * information about a call
- */
-typedef struct ktap_callinfo {
-	StkId func;  /* function index in the stack */
-	StkId top;  /* top for this function */
-	struct ktap_callinfo *prev, *next;  /* dynamic call link */
-	short nresults;  /* expected number of results from this function */
-	u8 callstatus;
-	int extra;
-	union {
-		struct {  /* only for ktap functions */
-			StkId base;  /* base for this function */
-			const unsigned int *savedpc;
-		} l;
-		struct {  /* only for C functions */
-			int ctx;  /* context info. in case of yields */
-			u8 status;
-		} c;
-	} u;
-} ktap_callinfo;
+typedef struct ktap_node_t {
+	ktap_val_t val; /* Value object. Must be first field. */
+	ktap_val_t key; /* Key object. */
+	struct ktap_node_t *next;  /* hash chain */
+} ktap_node_t;
 
-
-/*
- * ktap_tab
- */
-typedef struct ktap_tkey {
-	struct ktap_tnode *next;  /* for chaining */
-	ktap_value tvk;
-} ktap_tkey;
-
-
-typedef struct ktap_tnode {
-	ktap_value i_val;
-	ktap_tkey i_key;
-} ktap_tnode;
-
-
-typedef struct ktap_stat_data {
-	int count;
-	int sum;
-	int min, max;
-} ktap_stat_data;
-
-
+/* ktap_tab */
 typedef struct ktap_tab {
-	CommonHeader;
+	GCHeader;
 #ifdef __KERNEL__
 	arch_spinlock_t lock;
 #endif
-	u8 lsizenode;  /* log2 of size of `node' array */
-	int sizearray;  /* size of `array' array */
-	ktap_value *array;  /* array part */
-	ktap_tnode *node;
-	ktap_tnode *lastfree;  /* any free position is before this position */
+	ktap_val_t *array;    /* Array part. */
+	ktap_node_t *node;    /* Hash part. */
+	ktap_node_t *freetop; /* any free position is before this position */
 
-	int with_stats;  /* for aggregation table: ptable */
-	ktap_stat_data *sd_arr;
-	ktap_stat_data *sd_rec;
+	uint32_t asize;		/* Size of array part (keys [0, asize-1]). */
+	uint32_t hmask;		/* log2 of size of `node' array */
 
-	ktap_tnode *sorted;  /* sorted table, with linked node list */
-	ktap_tnode *sort_head;
+	uint32_t hnum;		/* number of all nodes */
 
-	ktap_gcobject *gclist;
-} ktap_tab;
-
-#define lmod(s,size)	((int)((s) & ((size)-1)))
-
-/* parallel table */
-typedef struct ktap_ptab {
-	CommonHeader;
-	ktap_tab **tbl; /* percpu table */
-	ktap_tab *agg;
-} ktap_ptab;
-
-typedef struct ktap_stringtable {
-	ktap_gcobject **hash;
-	int nuse;
-	int size;
-} ktap_stringtable;
+	ktap_obj_t *gclist;
+} ktap_tab_t;
 
 #ifdef CONFIG_KTAP_FFI
 typedef int csymbol_id;
@@ -259,14 +231,14 @@ typedef struct csymbol csymbol;
 
 /* global ffi state maintained in each ktap vm instance */
 typedef struct ffi_state {
-	ktap_tab *ctable;
+	ktap_tab_t *ctable;
 	int csym_nr;
 	csymbol *csym_arr;
 } ffi_state;
 
 /* instance of csymbol */
 typedef struct ktap_cdata {
-	CommonHeader;
+	GCHeader;
 	csymbol_id id;
 	union {
 		cdata_number i;
@@ -276,7 +248,7 @@ typedef struct ktap_cdata {
 		} p;			/* pointer data */
 		void *rec;		/* struct member or union data */
 	} u;
-} ktap_cdata;
+} ktap_cdata_t;
 #endif
 
 typedef struct ktap_stats {
@@ -284,106 +256,106 @@ typedef struct ktap_stats {
 	int nr_mem_allocate;
 	int events_hits;
 	int events_missed;
-} ktap_stats;
+} ktap_stats_t;
 
 #define KTAP_STATS(ks)	this_cpu_ptr(G(ks)->stats)
 
-enum {
-	KTAP_PERCPU_DATA_STATE,
-	KTAP_PERCPU_DATA_STACK,
-	KTAP_PERCPU_DATA_BUFFER,
-	KTAP_PERCPU_DATA_BUFFER2,
-	KTAP_PERCPU_DATA_BTRACE,
 
-	KTAP_PERCPU_DATA_MAX
-};
+#define KTAP_RUNNING	0 /* normal running state */
+#define KTAP_TRACE_END	1 /* running in trace_end function */
+#define KTAP_EXIT	2 /* normal exit, set when call exit() */
+#define KTAP_ERROR	3 /* error state, called by kp_error */
 
 typedef struct ktap_global_state {
-	ktap_stringtable strt;  /* hash table for strings */
-	ktap_value registry;
-	unsigned int seed; /* randonized seed for hashes */
-
-	ktap_gcobject *allgc; /* list of all collectable objects */
-
-	ktap_upval uvhead; /* head of double-linked list of all open upvalues */
-
-	struct ktap_state *mainthread;
+	void *mempool;		/* string memory pool */
+	void *mp_freepos;	/* free position in memory pool */
+	int mp_size;		/* memory pool size */
 #ifdef __KERNEL__
-	/* global percpu data(like stack) */
-	void __percpu *pcpu_data[KTAP_PERCPU_DATA_MAX][PERF_NR_CONTEXTS];
+	arch_spinlock_t mp_lock;/* mempool lock */
+#endif
 
+	ktap_str_t **strhash;	/* String hash table (hash chain anchors). */
+	int strmask;		/* String hash mask (size of hash table-1). */
+	int strnum;		/* Number of strings in hash table. */
+#ifdef __KERNEL__
+	arch_spinlock_t str_lock; /* string operation lock */
+#endif
+
+	ktap_val_t registry;
+	ktap_tab_t *gtab;	/* global table contains cfunction and args */
+	ktap_obj_t *allgc; /* list of all collectable objects */
+	ktap_upval_t uvhead; /* head of list of all open upvalues */
+
+	struct ktap_state *mainthread; /*main state */
+	int state; /* status of ktapvm, KTAP_RUNNING, KTAP_TRACE_END, etc */
+#ifdef __KERNEL__
+	/* reserved global percpu data */
+	void __percpu *percpu_state[PERF_NR_CONTEXTS];
+	void __percpu *percpu_print_buffer[PERF_NR_CONTEXTS];
+	void __percpu *percpu_temp_buffer[PERF_NR_CONTEXTS];
+
+	/* for recursion tracing check */
 	int __percpu *recursion_context[PERF_NR_CONTEXTS];
 
-	arch_spinlock_t str_lock; /* string operation lock */
-
-	ktap_parm *parm;
+	ktap_option_t *parm; /* ktap options */
 	pid_t trace_pid;
 	struct task_struct *trace_task;
 	cpumask_var_t cpumask;
 	struct ring_buffer *buffer;
 	struct dentry *trace_pipe_dentry;
-	int nr_builtin_cfunction;
-	ktap_value *cfunction_tbl;
 	struct task_struct *task;
 	int trace_enabled;
-	struct list_head timers;
-	struct list_head probe_events_head;
-	int exit;
-	int wait_user;
-	ktap_closure *trace_end_closure;
-	struct ktap_stats __percpu *stats;
-	struct kmem_cache *pevent_cache;
+	int wait_user; /* flag to indicat waiting user consume content */
+
+	struct list_head timers; /* timer list */
+	struct ktap_stats __percpu *stats; /* memory allocation stats */
+	struct list_head events_head; /* probe event list */
+
+	ktap_func_t *trace_end_closure; /* trace_end closure */
 #ifdef CONFIG_KTAP_FFI
 	ffi_state  ffis;
 #endif
+
+	/* C function table for fast call */
+	int nr_builtin_cfunction;
+	ktap_cfunction gfunc_tbl[KP_MAX_CACHED_CFUNCTION];
 #endif
-	int error;
-} ktap_global_state;
+} ktap_global_state_t;
+
 
 typedef struct ktap_state {
-	CommonHeader;
-	ktap_global_state *g;
-	int stop;
-	StkId top;
-	ktap_callinfo *ci;
-	const unsigned long *oldpc;
-	StkId stack_last;
-	StkId stack;
-	ktap_gcobject *openupval;
-	ktap_callinfo baseci;
-
-	/* list of temp collectable objects, free when thread exit */
-	ktap_gcobject *gclist;
+	ktap_global_state_t *g;	/* global state */
+	int stop;		/* don't enter tracing handler if stop is 1 */
+	StkId top;		/* stack top */
+	StkId func;		/* execute light C function */
+	StkId stack_last;	/* last stack pointer */
+	StkId stack;		/* ktap stack, percpu pre-reserved */
+	ktap_upval_t *openupval;/* opened upvals list */
 
 #ifdef __KERNEL__
-	struct ktap_event *current_event;
+	/* current fired event which allocated on stack */
+	struct ktap_event_data *current_event;
 #endif
-} ktap_state;
+} ktap_state_t;
 
 #define G(ks)   (ks->g)
 
 typedef struct ktap_rawobj {
-	CommonHeader;
+	GCHeader;
 	void *v;
 } ktap_rawobj;
-
-typedef struct gcheader {
-	CommonHeader;
-} gcheader;
 
 /*
  * Union of all collectable objects
  */
-union ktap_gcobject {
-	gcheader gch;  /* common header */
-	struct ktap_string ts;
-	struct ktap_closure cl;
+union ktap_obj {
+	struct { GCHeader } gch;
+	struct ktap_str ts;
+	struct ktap_func fn;
 	struct ktap_tab h;
-	struct ktap_ptab ph;
-	struct ktap_proto p;
+	struct ktap_proto pt;
 	struct ktap_upval uv;
 	struct ktap_state th;  /* thread */
- 	struct ktap_btrace bt;  /* backtrace object */
 	struct ktap_rawobj rawobj;
 #ifdef CONFIG_KTAP_FFI
 	struct ktap_cdata cd;
@@ -392,165 +364,147 @@ union ktap_gcobject {
 
 #define gch(o)			(&(o)->gch)
 
-/* macros to convert a GCObject into a specific value */
+/* macros to convert a ktap_obj_t into a specific value */
 #define gco2ts(o)		(&((o)->ts))
 #define gco2uv(o)		(&((o)->uv))
-#define obj2gco(v)		((ktap_gcobject *)(v))
-#define check_exp(c, e)		(e)
-
+#define obj2gco(v)		((ktap_obj_t *)(v))
 
 /* predefined values in the registry */
-#define KTAP_RIDX_MAINTHREAD	1
-#define KTAP_RIDX_GLOBALS	2
+#define KTAP_RIDX_GLOBALS	1
 #define KTAP_RIDX_LAST		KTAP_RIDX_GLOBALS
 
-#define KTAP_TYPE_NIL		0
-#define KTAP_TYPE_BOOLEAN	1
-#define KTAP_TYPE_LIGHTUSERDATA	2
-#define KTAP_TYPE_NUMBER	3
-#define KTAP_TYPE_STRING	4
-#define KTAP_TYPE_SHRSTR	(KTAP_TYPE_STRING | (0 << 4))/* short strings */
-#define KTAP_TYPE_LNGSTR	(KTAP_TYPE_STRING | (1 << 4))/* long strings */
-#define KTAP_TYPE_TABLE		5
-#define KTAP_TYPE_FUNCTION	6
-#define KTAP_TYPE_CLOSURE	(KTAP_TYPE_FUNCTION | (0 << 4))  /* closure */
-#define KTAP_TYPE_CFUNCTION	(KTAP_TYPE_FUNCTION | (1 << 4))  /* light C function */
-#define KTAP_TYPE_THREAD	7
-#define KTAP_TYPE_PROTO		8
-#define KTAP_TYPE_UPVAL		9
-#define KTAP_TYPE_EVENT		10
-#define KTAP_TYPE_BTRACE	11
-#define KTAP_TYPE_PTABLE	12
-#define KTAP_TYPE_STATDATA	13
-#define KTAP_TYPE_CDATA		14
-#define KTAP_TYPE_RAW		15
-/*
- * type number is ok so far, but it may collide later between
- * 16+ and | (1 << 4), so be careful on this.
- */
+/* ktap object types */
+#define KTAP_TNIL		(~0u)
+#define KTAP_TFALSE		(~1u)
+#define KTAP_TTRUE		(~2u)
+#define KTAP_TNUM		(~3u)
+#define KTAP_TLIGHTUD		(~4u)
+#define KTAP_TSTR		(~5u)
+#define KTAP_TUPVAL		(~6u)
+#define KTAP_TTHREAD		(~7u)
+#define KTAP_TPROTO		(~8u)
+#define KTAP_TFUNC		(~9u)
+#define KTAP_TCFUNC		(~10u)
+#define KTAP_TCDATA		(~11u)
+#define KTAP_TTAB		(~12u)
+#define KTAP_TUDATA		(~13u)
 
-#define ttype(o)		((o->type) & 0x3F)
-#define settype(obj, t)		((obj)->type = (t))
+/* Specfic types */
+#define KTAP_TEVENTSTR		(~14u) /* argstr */
+#define KTAP_TKSTACK		(~15u) /* stack(), not intern to string yet */
+#define KTAP_TKIP		(~16u) /* kernel function ip addres */
+#define KTAP_TUIP		(~17u) /* userspace function ip addres */
 
-/* raw type tag of a TValue */
-#define rttype(o)		((o)->type)
+/* This is just the canonical number type used in some places. */
+#define KTAP_TNUMX		(~18u)
 
-/* tag with no variants (bits 0-3) */
-#define novariant(x)		((x) & 0x0F)
 
-/* type tag of a TValue with no variants (bits 0-3) */
-#define ttypenv(o)		(novariant(rttype(o)))
+#define itype(o)		((o)->type)
+#define setitype(o, t)		((o)->type = (t))
 
 #define val_(o)			((o)->val)
 #define gcvalue(o)		(val_(o).gc)
 
-#define bvalue(o)		(val_(o).b)
 #define nvalue(o)		(val_(o).n)
+#define boolvalue(o)		(KTAP_TFALSE - (o)->type)
 #define hvalue(o)		(&val_(o).gc->h)
 #define phvalue(o)		(&val_(o).gc->ph)
-#define clvalue(o)		(&val_(o).gc->cl)
+#define clvalue(o)		(&val_(o).gc->fn)
+#define ptvalue(o)		(&val_(o).gc->pt)
 
 #define getstr(ts)		(const char *)((ts) + 1)
-#define eqshrstr(a, b)		((a) == (b))
 #define rawtsvalue(o)		(&val_(o).gc->ts)
 #define svalue(o)		getstr(rawtsvalue(o))
 
 #define pvalue(o)		(&val_(o).p)
-#define sdvalue(o)		((ktap_stat_data *)val_(o).p)
 #define fvalue(o)		(val_(o).f)
-#define evalue(o)		(val_(o).p)
-#define btvalue(o)		(&val_(o).gc->bt)
+#ifdef CONFIG_KTAP_FFI
 #define cdvalue(o)		(&val_(o).gc->cd)
+#endif
 
-#define is_nil(o)		((o)->type == KTAP_TYPE_NIL)
-#define is_boolean(o)		((o)->type == KTAP_TYPE_BOOLEAN)
-#define is_false(o)		(is_nil(o) || (is_boolean(o) && bvalue(o) == 0))
-#define is_shrstring(o)		((o)->type == KTAP_TYPE_SHRSTR)
-#define is_string(o)		(((o)->type & 0x0F) == KTAP_TYPE_STRING)
-#define is_number(o)		((o)->type == KTAP_TYPE_NUMBER)
-#define is_table(o)		((o)->type == KTAP_TYPE_TABLE)
-#define is_ptable(o)		((o)->type == KTAP_TYPE_PTABLE)
-#define is_statdata(o)		((o)->type == KTAP_TYPE_STATDATA)
-#define is_event(o)		((o)->type == KTAP_TYPE_EVENT)
-#define is_btrace(o)		((o)->type == KTAP_TYPE_BTRACE)
-#define is_needclone(o)		is_btrace(o)
+#define is_nil(o)		(itype(o) == KTAP_TNIL)
+#define is_false(o)		(itype(o) == KTAP_TFALSE)
+#define is_true(o)		(itype(o) == KTAP_TTRUE)
+#define is_bool(o)		(is_false(o) || is_true(o))
+#define is_string(o)		(itype(o) == KTAP_TSTR)
+#define is_number(o)		(itype(o) == KTAP_TNUM)
+#define is_table(o)		(itype(o) == KTAP_TTAB)
+#define is_proto(o)		(itype(o) == KTAP_TPROTO)
+#define is_function(o)		(itype(o) == KTAP_TFUNC)
+#define is_cfunc(o)		(itype(o) == KTAP_TCFUNC)
+#define is_eventstr(o)		(itype(o) == KTAP_TEVENTSTR)
+#define is_kip(o)		(itype(o) == KTAP_TKIP)
+#define is_btrace(o)		(itype(o) == KTAP_TBTRACE)
 #ifdef CONFIG_KTAP_FFI
-#define is_cdata(o)		((o)->type == KTAP_TYPE_CDATA)
+#define is_cdata(o)		(itype(o) == KTAP_TCDATA)
 #endif
 
 
-#define set_nil(obj) \
-	{ ktap_value *io = (obj); io->val.n = 0; settype(io, KTAP_TYPE_NIL); }
+#define set_nil(o)		((o)->type = KTAP_TNIL)
+#define set_bool(o, x)		((o)->type = KTAP_TFALSE-(uint32_t)(x))
 
-#define set_boolean(obj, x) \
-	{ ktap_value *io = (obj); io->val.b = (x); settype(io, KTAP_TYPE_BOOLEAN); }
+static inline void set_number(ktap_val_t *o, ktap_number n)
+{
+	setitype(o, KTAP_TNUM);
+	o->val.n = n;
+}
 
-#define set_number(obj, x) \
-	{ ktap_value *io = (obj); io->val.n = (x); settype(io, KTAP_TYPE_NUMBER); }
+static inline void set_string(ktap_val_t *o, const ktap_str_t *str)
+{
+	setitype(o, KTAP_TSTR);
+	o->val.gc = (ktap_obj_t *)str;
+}
 
-#define set_statdata(obj, x) \
-	{ ktap_value *io = (obj); \
-	  io->val.p = (x); settype(io, KTAP_TYPE_STATDATA); }
+static inline void set_table(ktap_val_t *o, ktap_tab_t *tab)
+{
+	setitype(o, KTAP_TTAB);
+	o->val.gc = (ktap_obj_t *)tab;
+}
 
-#define set_string(obj, x) \
-	{ ktap_value *io = (obj); \
-	  ktap_string *x_ = (x); \
-	  io->val.gc = (ktap_gcobject *)x_; settype(io, x_->tt); }
+static inline void set_proto(ktap_val_t *o, ktap_proto_t *pt)
+{
+	setitype(o, KTAP_TPROTO);
+	o->val.gc = (ktap_obj_t *)pt;
+}
 
-#define set_closure(obj, x) \
-	{ ktap_value *io = (obj); \
-	  io->val.gc = (ktap_gcobject *)x; settype(io, KTAP_TYPE_CLOSURE); }
+static inline void set_kstack(ktap_val_t *o, uint16_t depth, uint16_t skip)
+{
+	setitype(o, KTAP_TKSTACK);
+	o->val.stack.depth = depth;
+	o->val.stack.skip = skip;
+}
 
-#define set_cfunction(obj, x) \
-	{ ktap_value *io = (obj); val_(io).f = (x); settype(io, KTAP_TYPE_CFUNCTION); }
+static inline void set_func(ktap_val_t *o, ktap_func_t *fn)
+{
+	setitype(o, KTAP_TFUNC);
+	o->val.gc = (ktap_obj_t *)fn;
+}
 
-#define set_table(obj, x) \
-	{ ktap_value *io = (obj); \
-	  val_(io).gc = (ktap_gcobject *)(x); settype(io, KTAP_TYPE_TABLE); }
+static inline void set_cfunc(ktap_val_t *o, ktap_cfunction fn)
+{
+	setitype(o, KTAP_TCFUNC);
+	o->val.f = fn;
+}
 
-#define set_ptable(obj, x) \
-	{ ktap_value *io = (obj); \
-	  val_(io).gc = (ktap_gcobject *)(x); settype(io, KTAP_TYPE_PTABLE); }
+static inline void set_eventstr(ktap_val_t *o)
+{
+	setitype(o, KTAP_TEVENTSTR);
+}
 
-#define set_thread(obj, x) \
-	{ ktap_value *io = (obj); \
-	  val_(io).gc = (ktap_gcobject *)(x); settype(io, KTAP_TYPE_THREAD); }
+static inline void set_ip(ktap_val_t *o, unsigned long addr)
+{
+	setitype(o, KTAP_TKIP);
+	o->val.n = addr;
+}
 
-#define set_event(obj, x) \
-	{ ktap_value *io = (obj); val_(io).p = (x); settype(io, KTAP_TYPE_EVENT); }
-
-#define set_btrace(obj, x) \
-	{ ktap_value *io = (obj); \
-	  val_(io).gc = (ktap_gcobject *)(x); settype(io, KTAP_TYPE_BTRACE); }
 
 #ifdef CONFIG_KTAP_FFI
-#define set_cdata(obj, x) \
-	{ ktap_value *io=(obj); \
-	  val_(io).gc = (ktap_gcobject *)(x); settype(io, KTAP_TYPE_CDATA); }
+#define set_cdata(o, x)		{ setitype(o, KTAP_TCDATA); (o)->val.gc = x; }
 #endif
 
-#define set_obj(obj1, obj2) \
-        { const ktap_value *io2 = (obj2); ktap_value *io1 = (obj1); \
-          io1->val = io2->val; io1->type = io2->type; }
+#define set_obj(o1, o2)		{ *(o1) = *(o2); }
 
-#define rawequalobj(t1, t2) \
-	(((t1)->type == (t2)->type) && kp_obj_equal(NULL, t1, t2))
-
-#define incr_top(ks) {ks->top++;}
-
-#define NUMADD(a, b)    ((a) + (b))
-#define NUMSUB(a, b)    ((a) - (b))
-#define NUMMUL(a, b)    ((a) * (b))
-#define NUMDIV(a, b)    ((a) / (b))
-#define NUMUNM(a)       (-(a))
-#define NUMEQ(a, b)     ((a) == (b))
-#define NUMLT(a, b)     ((a) < (b))
-#define NUMLE(a, b)     ((a) <= (b))
-#define NUMISNAN(a)     (!NUMEQ((a), (a)))
-
-/* todo: floor and pow in kernel */
-#define NUMMOD(a, b)    ((a) % (b))
-#define NUMPOW(a, b)    (pow(a, b))
+#define incr_top(ks)		{ks->top++;}
 
 /*
  * KTAP_QL describes how error messages quote program elements.
@@ -558,30 +512,6 @@ union ktap_gcobject {
  */
 #define KTAP_QL(x)      "'" x "'"
 #define KTAP_QS         KTAP_QL("%s")
-
-#define STRINGIFY(type) #type
-
-/*
- * make header for precompiled chunks
- * if you change the code below be sure to update load_header and FORMAT above
- * and KTAPC_HEADERSIZE in ktap_types.h
- */
-static inline void kp_header(u8 *h)
-{
-	int x = 1;
-
-	memcpy(h, KTAP_SIGNATURE, sizeof(KTAP_SIGNATURE) - sizeof(char));
-	h += sizeof(KTAP_SIGNATURE) - sizeof(char);
-	*h++ = (u8)VERSION;
-	*h++ = (u8)FORMAT;
-	*h++ = (u8)(*(char*)&x);                    /* endianness */
-	*h++ = (u8)(sizeof(int));
-	*h++ = (u8)(sizeof(size_t));
-	*h++ = (u8)(sizeof(ktap_instruction));
-	*h++ = (u8)(sizeof(ktap_number));
-	*h++ = (u8)(((ktap_number)0.5) == 0); /* is ktap_number integral? */
-	memcpy(h, KTAPC_TAIL, sizeof(KTAPC_TAIL) - sizeof(char));
-}
 
 #endif /* __KTAP_TYPES_H__ */
 

@@ -19,8 +19,6 @@
  * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include "symbol.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -34,8 +32,7 @@
 #include <libelf.h>
 
 #include "../include/ktap_types.h"
-#include "ktapc.h"
-#include "symbol.h"
+#include "kp_symbol.h"
 
 const char *dbg_link_name = ".gnu_debuglink";
 const char *dbg_bin_dir = "/usr/lib/debug";

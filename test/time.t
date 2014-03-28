@@ -14,7 +14,7 @@ __DATA__
 
 === TEST 1: gettimeofday_s
 --- src
-begin = gettimeofday_s()
+var begin = gettimeofday_s()
 printf("sec: %d\n", begin)
 printf("elapsed: %d\n", begin - gettimeofday_s())
 

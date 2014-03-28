@@ -162,26 +162,6 @@ Checks if it is in the context of interrupts.
 
 quits ktap programs, similar to the `exit` syscall.
 
-**pid ()**
-
-returns current process pid.
-
-**tid ()**
-
-returns the current thread id.
-
-**uid ()**
-
-returns the current process's uid.
-
-**execname ()**
-
-returns the current process executable's name in a string.
-
-**cpu ()**
-
-returns the current CPU id.
-
 **arch ()**
 
 returns machine architecture, like `x86`, `arm`, and etc.
@@ -194,36 +174,23 @@ returns Linux kernel version string, like `3.9` and etc.
 
 accepts a userspace address, reads the string data from userspace, and returns the ktap string value.
 
-**histogram (t)**
+**print_hist (t)**
 
 accepts a table and outputs the table histogram to the user.
 
-**curr_task_info (offset, fetch_bytes)**
-
-fetches the value in the field offset of `task_struct` structure. The argument `fetch_bytes`
-could be 4 or 8. If `fetch_bytes` is not given, default to 4.
-
-The user may need to get the field offset by other debugging tools like gdb, for example:
-
-    gdb vmlinux
-    (gdb)p &(((struct task_struct *)0).prio)
-
-**print_backtrace ()**
-
-prints the current task's kernel stack backtrace.
 
 ## Libraries
 
 ### Kdebug Library
 
-**kdebug.probe_by_id (eventdef_info, eventfun)**
+**kdebug.trace_by_id (eventdef_info, eventfun)**
 
 This function is the underlying interface for the higher level tracing primitives.
 
 Note that the `eventdef_info` argument is just a C pointer value pointing to a userspace memory block holding the real
 `eventdef_info` structure. The structure definition is as follows:
 
-    struct ktap_eventdef_info {
+    struct ktap_eventdesc {
 	int nr; /* the number to id */
 	int *id_arr; /* id array */
 	char *filter;
@@ -235,7 +202,7 @@ The second argument in above example is a ktap function object:
 
     function eventfun () { action }
 
-**kdebug.probe_end (endfunc)**
+**kdebug.trace_end (endfunc)**
 
 This function is used for invoking a function when tracing ends, it will wait
 until the user presses `CTRL-C` to stop tracing, then ktap will call the argument, the `endfunc` function. The
@@ -336,56 +303,76 @@ There are four types of `EVENTDEF`: tracepoints, kprobes, uprobes, SDT probes.
 
 **trace_end { ACTION }**
 
-## Tracing built-in variables
+## Tracing Built-in variables
 
-**argevent**
+**arg0..9**
 
-Event object. You can print it by `print(argevent)`, turning the event
-into a human readable string. The result is mostly the same as each entry in
-`/sys/kernel/debug/tracing/trace`
-
-**argname**
-
-Event name. Each event has a name associated with it.
-
-**arg1..9**
-
-Evaluates to argument 1 to 9 of the event object.
+Evaluates to argument 0 to 9 of the event object. If fewer than ten arguments are passed to the current probe, the remaining variables return nil.
 
 > ***Note*** of arg offset
 >
-> The arg offset(1..9) is determined by event format shown in debugfs.
+> The arg offset(0..9) is determined by event format shown in debugfs.
 >
 >     #cat /sys/kernel/debug/tracing/events/sched/sched_switch/format
 >     name: sched_switch
 >     ID: 268
 >     format:
->         field:char prev_comm[32];         <- arg1
->         field:pid_t prev_pid;             <- arg2
->         field:int prev_prio;              <- arg3
->         field:long prev_state;            <- arg4
->         field:char next_comm[32];         <- arg5
->         field:pid_t next_pid;             <- arg6
->         field:int next_prio;              <- arg7
+>         field:char prev_comm[32];         <- arg0
+>         field:pid_t prev_pid;             <- arg1
+>         field:int prev_prio;              <- arg2
+>         field:long prev_state;            <- arg3
+>         field:char next_comm[32];         <- arg4
+>         field:pid_t next_pid;             <- arg5
+>         field:int next_prio;              <- arg6
 >
-> As shown above, the tracepoint event `sched:sched_switch` takes 7 arguments, from `arg1` to
-> `arg7`.
+> As shown above, the tracepoint event `sched:sched_switch` takes 7 arguments, from `arg0` to `arg6`.
 >
-> Note that `arg1` of the syscall event is the syscall number, not the first argument
-> of the syscall function. Use `arg2` as the first argument of the syscall function.
+> For syscall event, `arg0` is the syscall number, not the first argument of the syscall function. Use `arg1` as the first argument of the syscall function.
 > For example:
 >
 >     SYSCALL_DEFINE3(read, unsigned int, fd, char __user *, buf, size_t, count)
->                                         <arg2>             <arg3>       <arg4>
+>                                         <arg1>             <arg2>       <arg3>
 >
-> This is similar to kprobe and uprobe, the `arg1` of kprobe/uprobe events
+> This is similar to kprobe and uprobe, the `arg0` of kprobe/uprobe events
 >  is always `_probe_ip`, not the first argument given by the user, for example:
 >
 >     # ktap -e 'trace probe:/lib64/libc.so.6:malloc size=%di'
 >
 >     # cat /sys/kernel/debug/tracing/events/ktap_uprobes_3796/malloc/format
->         field:unsigned long __probe_ip;   <- arg1
->         field:u64 size;                   <- arg2
+>         field:unsigned long __probe_ip;   <- arg0
+>         field:u64 size;                   <- arg1
+
+
+**cpu**
+
+returns the current CPU id.
+
+**pid**
+
+returns current process pid.
+
+**tid**
+
+returns the current thread id.
+
+**uid**
+
+returns the current process's uid.
+
+**execname**
+
+returns the current process executable's name in a string.
+
+**argstr**
+
+Event string representation. You can print it by `print(argstr)`, turning the
+event into a human readable string. The result is mostly the same as each
+entry in `/sys/kernel/debug/tracing/trace`
+
+**probename**
+
+Event name. Each event has a name associated with it.
+(Dtrace also have 'probename' keyword)
 
 ## Timer syntax
 
@@ -546,23 +533,25 @@ A: The current plan is to deliver stable ktapvm kernel modules, more ktap script
 
 # References
 
-* [Linux Performance Analysis and Tools][LPAT]
-* [DTrace Blog][dtraceblog]
-* [DTrace User Guide][dug]
-* [LWN: ktap -- yet another kernel tracer][lwn1]
-* [LWN: Ktap almost gets into 3.13][lwn2]
-* [staging: ktap: add to the kernel tree][ktap_commit]
-* [ktap introduction in LinuxCon Japan 2013][lcj](content is out of date)
-* [ktap Examples by Brendan Gregg][KEBG]
+* [Linux Performance Analysis and Tools][REF1]
+* [Dtrace Blog][REF2]
+* [Dtrace User Guide][REF3]
+* [LWN: ktap -- yet another kernel tracer][REF4]
+* [LWN: Ktap almost gets into 3.13][REF5]
+* [staging: ktap: add to the kernel tree][REF6]
+* [ktap introduction in LinuxCon Japan 2013][REFR7(content is out of date)
+* [ktap Examples by Brendan Gregg][REFR8
+* [What Linux can learn from Solaris performance, and vice-versa][REF9]
 
-[LPAT]: http://www.brendangregg.com/Slides/SCaLE_Linux_Performance2013.pdf
-[dtraceblog]: http://dtrace.org/blogs/
-[dug]: http://docs.huihoo.com/opensolaris/dtrace-user-guide/html/index.html
-[lwn1]: http://lwn.net/Articles/551314/
-[lwn2]: http://lwn.net/Articles/572788/
-[ktap_commit]: https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=c63a164271f81220ff4966d41218a9101f3d0ec4
-[lcj]: http://events.linuxfoundation.org/sites/events/files/lcjpcojp13_zhangwei.pdf
-[KEBG]: http://www.brendangregg.com/ktap.html
+[REF1]: http://www.brendangregg.com/Slides/SCaLE_Linux_Performance2013.pdf
+[REF2]: http://dtrace.org/blogs/
+[REF3]: http://docs.huihoo.com/opensolaris/dtrace-user-guide/html/index.html
+[REF4]: http://lwn.net/Articles/551314/
+[REF5]: http://lwn.net/Articles/572788/
+[REF6]: https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=c63a164271f81220ff4966d41218a9101f3d0ec4
+[REF7]: http://events.linuxfoundation.org/sites/events/files/lcjpcojp13_zhangwei.pdf
+[REF8]: http://www.brendangregg.com/ktap.html
+[REF9]: http://www.slideshare.net/brendangregg/what-linux-can-learn-from-solaris-performance-and-viceversa
 
 # History
 
@@ -598,11 +587,11 @@ For more release info, please look at RELEASES.txt in project root directory.
         var s = {}
 
         trace syscalls:sys_enter_* {
-                s[argname] += 1
+                s[probename] += 1
         }
 
         trace_end {
-                histogram(s)
+                print_hist(s)
         }
 6. kprobe tracing
 

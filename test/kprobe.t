@@ -49,3 +49,34 @@ tick-1s {
 --- out
 false
 --- err
+
+
+=== TEST 3: only can be called in mainthread
+--- opts: -q
+--- src
+
+trace probe:schedule {
+	trace *:* {
+	}
+}
+
+--- out
+error: only mainthread can create function
+--- err
+
+
+=== TEST 4: can not be called in trace_end context
+--- opts: -q
+--- src
+
+trace_end {
+	trace *:* {
+	}
+}
+
+--- out
+error: kdebug.trace_by_id only can be called in RUNNING state
+--- err
+
+
+

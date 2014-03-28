@@ -6,6 +6,6 @@
 #if you run this script in x86_32, change the libc path.
 
 trace sdt:/lib64/libc.so.6:* {
-	print(execname(), argevent)
+	print(execname, argstr)
 }
 

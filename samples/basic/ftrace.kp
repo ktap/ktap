@@ -1,6 +1,8 @@
 #!/usr/bin/env ktap
 
+#Description: output all mutex* function event
+
 trace ftrace:function /ip==mutex*/ {
-	print(cpu(), pid(), execname(), argevent)
+	print(cpu, pid, execname, argstr)
 }
 

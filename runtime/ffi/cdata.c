@@ -1,5 +1,5 @@
 /*
- * cdata.c - support functions for ktap_cdata
+ * cdata.c - support functions for ktap_cdata_t
  *
  * This file is part of ktap by Jovi Zhangwei
  *
@@ -24,19 +24,19 @@
 #include "../../include/ktap_ffi.h"
 #include "../kp_obj.h"
 
-ktap_cdata *kp_cdata_new(ktap_state *ks, csymbol_id id)
+ktap_cdata_t *kp_cdata_new(ktap_state_t *ks, csymbol_id id)
 {
-	ktap_cdata *cd;
+	ktap_cdata_t *cd;
 
-	cd = &kp_obj_newobject(ks, KTAP_TYPE_CDATA, sizeof(ktap_cdata), NULL)->cd;
+	cd = &kp_obj_newobject(ks, KTAP_TYPE_CDATA, sizeof(ktap_cdata_t), NULL)->cd;
 	cd_set_csym_id(cd, id);
 
 	return cd;
 }
 
-ktap_cdata *kp_cdata_new_number(ktap_state *ks, void *val, csymbol_id id)
+ktap_cdata_t *kp_cdata_new_number(ktap_state_t *ks, void *val, csymbol_id id)
 {
-	ktap_cdata *cd;
+	ktap_cdata_t *cd;
 
 	cd = kp_cdata_new(ks, id);
 	cd_int(cd) = (cdata_number)val;
@@ -46,10 +46,10 @@ ktap_cdata *kp_cdata_new_number(ktap_state *ks, void *val, csymbol_id id)
 
 /* argument nmemb here indicates the length of array that is pointed to,
  * -1 for unknown */
-ktap_cdata *kp_cdata_new_ptr(ktap_state *ks, void *addr,
+ktap_cdata_t *kp_cdata_new_ptr(ktap_state_t *ks, void *addr,
 			     int nmemb, csymbol_id id, int to_allocate)
 {
-	ktap_cdata *cd;
+	ktap_cdata_t *cd;
 	size_t memb_size;
 	csymbol_id deref_id;
 
@@ -69,9 +69,9 @@ ktap_cdata *kp_cdata_new_ptr(ktap_state *ks, void *addr,
 	return cd;
 }
 
-ktap_cdata *kp_cdata_new_record(ktap_state *ks, void *val, csymbol_id id)
+ktap_cdata_t *kp_cdata_new_record(ktap_state_t *ks, void *val, csymbol_id id)
 {
-	ktap_cdata *cd;
+	ktap_cdata_t *cd;
 	size_t size;
 
 	cd = kp_cdata_new(ks, id);
@@ -86,7 +86,7 @@ ktap_cdata *kp_cdata_new_record(ktap_state *ks, void *val, csymbol_id id)
 	return cd;
 }
 
-ktap_cdata *kp_cdata_new_by_id(ktap_state *ks, void *val, csymbol_id id)
+ktap_cdata_t *kp_cdata_new_by_id(ktap_state_t *ks, void *val, csymbol_id id)
 {
 	csymbol *cs = id_to_csym(ks, id);
 
@@ -118,7 +118,7 @@ ktap_cdata *kp_cdata_new_by_id(ktap_state *ks, void *val, csymbol_id id)
 	}
 }
 
-void kp_cdata_dump(ktap_state *ks, ktap_cdata *cd)
+void kp_cdata_dump(ktap_state_t *ks, ktap_cdata_t *cd)
 {
 	switch (cd_type(ks, cd)) {
 	case FFI_UINT8:	case FFI_INT8:
@@ -149,7 +149,7 @@ void kp_cdata_dump(ktap_state *ks, ktap_cdata *cd)
 
 /* Notice: Even if the types are matched, there may exist the lost of
  * data in the unpack process due to precision */
-int kp_cdata_type_match(ktap_state *ks, csymbol *cs, ktap_value *val)
+int kp_cdata_type_match(ktap_state_t *ks, csymbol *cs, ktap_val_t *val)
 {
 	ffi_type type;
 
@@ -186,10 +186,10 @@ error:
 	return -1;
 }
 
-static void kp_cdata_value(ktap_state *ks, ktap_value *val, void **out_addr,
+static void kp_cdata_value(ktap_state_t *ks, ktap_val_t *val, void **out_addr,
 			   size_t *out_size, void **temp)
 {
-	struct ktap_cdata *cd;
+	ktap_cdata_t *cd;
 	csymbol *cs;
 	ffi_type type;
 
@@ -247,7 +247,7 @@ static void kp_cdata_value(ktap_state *ks, ktap_value *val, void **out_addr,
 }
 
 /* Check whether or not type is matched before unpacking */
-void kp_cdata_unpack(ktap_state *ks, char *dst, csymbol *cs, ktap_value *val)
+void kp_cdata_unpack(ktap_state_t *ks, char *dst, csymbol *cs, ktap_val_t *val)
 {
 	size_t size = csym_size(ks, cs), val_size;
 	void *val_addr, *temp;
@@ -260,7 +260,7 @@ void kp_cdata_unpack(ktap_state *ks, char *dst, csymbol *cs, ktap_value *val)
 }
 
 /* Check whether or not type is matched before packing */
-void kp_cdata_pack(ktap_state *ks, ktap_value *val, char *src, csymbol *cs)
+void kp_cdata_pack(ktap_state_t *ks, ktap_val_t *val, char *src, csymbol *cs)
 {
 	size_t size = csym_size(ks, cs), val_size;
 	void *val_addr, *temp;
@@ -273,7 +273,7 @@ void kp_cdata_pack(ktap_state *ks, ktap_value *val, char *src, csymbol *cs)
 }
 
 /* Init its cdata type, but not its actual value */
-static void kp_cdata_init(ktap_state *ks, ktap_value *val, void *addr, int len,
+static void kp_cdata_init(ktap_state_t *ks, ktap_val_t *val, void *addr, int len,
 			  csymbol_id id)
 {
 	ffi_type type = csym_type(id_to_csym(ks, id));
@@ -303,8 +303,8 @@ static void kp_cdata_init(ktap_state *ks, ktap_value *val, void *addr, int len,
 	}
 }
 
-void kp_cdata_ptr_set(ktap_state *ks, ktap_cdata *cd,
-		      ktap_value *key, ktap_value *val)
+void kp_cdata_ptr_set(ktap_state_t *ks, ktap_cdata_t *cd,
+		      ktap_val_t *key, ktap_val_t *val)
 {
 	ktap_number idx;
 	csymbol *cs;
@@ -333,8 +333,8 @@ void kp_cdata_ptr_set(ktap_state *ks, ktap_cdata *cd,
 	kp_cdata_unpack(ks, addr, cs, val);
 }
 
-void kp_cdata_ptr_get(ktap_state *ks, ktap_cdata *cd,
-		      ktap_value *key, ktap_value *val)
+void kp_cdata_ptr_get(ktap_state_t *ks, ktap_cdata_t *cd,
+		      ktap_val_t *key, ktap_val_t *val)
 {
 	ktap_number idx;
 	csymbol *cs;
@@ -363,8 +363,8 @@ void kp_cdata_ptr_get(ktap_state *ks, ktap_cdata *cd,
 	kp_cdata_pack(ks, val, addr, cs);
 }
 
-void kp_cdata_record_set(ktap_state *ks, ktap_cdata *cd,
-			 ktap_value *key, ktap_value *val)
+void kp_cdata_record_set(ktap_state_t *ks, ktap_cdata_t *cd,
+			 ktap_val_t *key, ktap_val_t *val)
 {
 	const char *mb_name;
 	csymbol *cs, *mb_cs;
@@ -397,8 +397,8 @@ void kp_cdata_record_set(ktap_state *ks, ktap_cdata *cd,
 	kp_cdata_unpack(ks, addr, mb_cs, val);
 }
 
-void kp_cdata_record_get(ktap_state *ks, ktap_cdata *cd,
-			 ktap_value *key, ktap_value *val)
+void kp_cdata_record_get(ktap_state_t *ks, ktap_cdata_t *cd,
+			 ktap_val_t *key, ktap_val_t *val)
 {
 	const char *mb_name;
 	csymbol *cs, *mb_cs;

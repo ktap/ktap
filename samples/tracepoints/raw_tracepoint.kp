@@ -1,0 +1,15 @@
+#!/usr/bin/env ktap
+
+#This script use kdebug.tracepoint, not 'trace' keyword which use perf backend.
+#
+#The overhead of kdebug.tracepoint would be much little than normal perf
+#backend tracing.
+
+kdebug.tracepoint("sys_enter_open", function () {
+	printf("sys_enter_open: (%s) open file (%s)\n",
+		execname,  user_string(arg1))
+})
+
+kdebug.tracepoint("sys_exit_open", function () {
+	printf("sys_exit_open: return fd: (%d)\n", arg1)
+})

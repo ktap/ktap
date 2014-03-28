@@ -22,7 +22,8 @@ syn keyword ktapIdentifier var
 syn keyword ktapFunction function
 syn match   ktapBraces "[{}\[\]]"
 syn match   ktapParens "[()]"
-syn keyword ktapReserved argevent argname arg1 arg2 arg3 arg4 arg5 arg6 arg7 arg8 arg9
+syn keyword ktapReserved argstr probename arg0 arg1 arg2 arg3 arg4 arg5 arg6 arg7 arg8 arg9
+syn keyword ktapReserved cpu pid tid uid execname
 
 
 syn region ktapTraceDec start="\<trace\>"lc=5 end="{"me=s-1 contains=ktapString,ktapNumber
@@ -63,7 +64,7 @@ syn match ktapComment "#.*"
 syn match ktapSharpBang "^#!.*"
 
 
-syn keyword ktapFunc printf print
+syn keyword ktapFunc printf print print_hist stack
 syn keyword ktapFunc gettimeofday_us
 syn keyword ktapFunc pairs
 

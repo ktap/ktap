@@ -8,11 +8,11 @@
 var s = {}
 
 trace probe:/lib64/libc.so.6:* {
-	s[argname] += 1
+	s[probename] += 1
 }
 
 trace_end {
-	histogram(s)
+	print_hist(s)
 }
 
 # Example result:

@@ -25,11 +25,12 @@
 #include <string.h>
 #include <dirent.h>
 #include <fcntl.h>
+#include <ctype.h>
 
 #include "../include/ktap_types.h"
-#include "../include/ktap_opcodes.h"
-#include "ktapc.h"
-#include "symbol.h"
+#include "../include/ktap_bc.h"
+#include "kp_symbol.h"
+#include "kp_util.h"
 
 #define TRACING_EVENTS_DIR "/sys/kernel/debug/tracing/events"
 
@@ -276,8 +277,6 @@ write_kprobe_event(int fd, int ret_probe, const char *symbol,
 	return -1;
 }
 
-static unsigned long core_kernel_text_start;
-static unsigned long core_kernel_text_end;
 static unsigned long kprobes_text_start;
 static unsigned long kprobes_text_end;
 
@@ -289,18 +288,12 @@ static void init_kprobe_prohibited_area(void)
 		return;
 
 	once = 1;
-
-	core_kernel_text_start = find_kernel_symbol("_stext");
-	core_kernel_text_end   = find_kernel_symbol("_etext");
 	kprobes_text_start     = find_kernel_symbol("__kprobes_text_start");
 	kprobes_text_end       = find_kernel_symbol("__kprobes_text_end");
 }
 
 static int check_kprobe_addr_prohibited(unsigned long addr)
 {
-	if (addr <= core_kernel_text_start || addr >= core_kernel_text_end)
-		return -1;
-
 	if (addr >= kprobes_text_start && addr <= kprobes_text_end)
 		return -1;
 
@@ -507,7 +500,7 @@ static int uprobe_symbol_actor(const char *name, vaddr_t addr, void *arg)
 
 	verbose_printf("uprobe: binary: \"%s\" symbol \"%s\" "
 			"resolved to 0x%lx\n",
-			base->binary, base->symbol, addr);
+			base->binary, base->symbol, (unsigned long)addr);
 
 	ret = write_uprobe_event(base->fd, base->ret_probe, base->binary,
 				 name, addr, base->fetch_args);
@@ -707,11 +700,11 @@ static char *get_next_eventdef(char *str)
 	return separator + 1;
 }
 
-ktap_eventdef_info *ktapc_parse_events(const char *eventdef)
+ktap_eventdesc_t *kp_parse_events(const char *eventdef)
 {
 	char *str = strdup(eventdef);
 	char *sys, *event, *filter, *next;
-	ktap_eventdef_info *evdef_info;
+	ktap_eventdesc_t *evdef_info;
 	int ret;
 
 	idmap_init();

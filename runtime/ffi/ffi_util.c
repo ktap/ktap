@@ -24,7 +24,7 @@
 #include "../../include/ktap_ffi.h"
 #include "../ktap.h"
 
-static void init_csym_struct(ktap_state *ks, csymbol_struct *csst)
+static void init_csym_struct(ktap_state_t *ks, csymbol_struct *csst)
 {
 	int nr = csymst_mb_nr(csst);
 	size_t size = 0;
@@ -56,7 +56,7 @@ static void init_csym_struct(ktap_state *ks, csymbol_struct *csst)
 	csst->align = align;
 }
 
-static void init_csym_union(ktap_state *ks, csymbol_struct *csst)
+static void init_csym_union(ktap_state_t *ks, csymbol_struct *csst)
 {
 	int nr = csymst_mb_nr(csst);
 	size_t size = 0;
@@ -87,7 +87,7 @@ static void init_csym_union(ktap_state *ks, csymbol_struct *csst)
 }
 
 
-size_t csym_size(ktap_state *ks, csymbol *cs)
+size_t csym_size(ktap_state_t *ks, csymbol *cs)
 {
 	ffi_type type = csym_type(cs);
 	switch(type) {
@@ -104,7 +104,7 @@ size_t csym_size(ktap_state *ks, csymbol *cs)
 	}
 }
 
-size_t csym_align(ktap_state *ks, csymbol *cs)
+size_t csym_align(ktap_state_t *ks, csymbol *cs)
 {
 	ffi_type type = csym_type(cs);
 	switch(type) {
@@ -121,7 +121,7 @@ size_t csym_align(ktap_state *ks, csymbol *cs)
 	}
 }
 
-size_t csym_record_mb_offset_by_name(ktap_state *ks,
+size_t csym_record_mb_offset_by_name(ktap_state_t *ks,
 		csymbol *cs, const char *name)
 {
 	csymbol_struct *csst = csym_struct(cs);
@@ -169,7 +169,7 @@ size_t csym_record_mb_offset_by_name(ktap_state *ks,
 	return -1;
 }
 
-struct_member *csymst_mb_by_name(ktap_state *ks,
+struct_member *csymst_mb_by_name(ktap_state_t *ks,
 		csymbol_struct *csst, const char *name)
 {
 	int nr = csymst_mb_nr(csst);

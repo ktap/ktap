@@ -18,16 +18,20 @@ tick-3s {
 }
 
 while (1) {}
---- out
+
+--- out_like
+error: loop execute count exceed max limit(.*)
 --- err
 
 
 
 === TEST 2: dead loop killed by signal
 --- src
+
 while (1) {}
---- out
+
+--- out_like
+error: loop execute count exceed max limit(.*)
+
 --- err
---- expect_timeout
---- timeout: 1
 

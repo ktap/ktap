@@ -35,8 +35,9 @@
 #include <linux/errno.h>
 
 #include "../include/ktap_types.h"
-#include "ktapc.h"
-#include "symbol.h"
+#include "kp_lex.h"
+#include "kp_parse.h"
+#include "kp_symbol.h"
 #include "cparser.h"
 
 static void usage(const char *msg_fmt, ...)
@@ -59,6 +60,7 @@ static void usage(const char *msg_fmt, ...)
 "  -V             : show version\n"
 "  -v             : enable verbose mode\n"
 "  -q             : suppress start tracing message\n"
+"  -d             : dry run mode(register NULL callback to perf events)\n"
 "  -s             : simple event tracing\n"
 "  -b             : list byte codes\n"
 "  -le [glob]     : list pre-defined events in system\n"
@@ -74,10 +76,10 @@ static void usage(const char *msg_fmt, ...)
 
 #define handle_error(str) do { perror(str); exit(-1); } while(0)
 
-static struct ktap_parm uparm;
+ktap_option_t uparm;
 static int ktap_trunk_mem_size = 1024;
 
-static int ktapc_writer(const void* p, size_t sz, void* ud)
+static int kp_writer(const void* p, size_t sz, void* ud)
 {
 	if (uparm.trunk_len + sz > ktap_trunk_mem_size) {
 		int new_size = (uparm.trunk_len + sz) * 2;
@@ -141,7 +143,7 @@ static int run_ktapvm()
 	if (ktap_fd < 0)
 		handle_error("ioctl ktapvm failed");
 
-	ktapio_create(output_filename);
+	kp_create_reader(output_filename);
 
 	if (forks) {
 		uparm.trace_pid = fork_workload(ktap_fd);
@@ -164,6 +166,7 @@ static int run_ktapvm()
 
 int verbose;
 static int quiet;
+static int dry_run;
 static int dump_bytecode;
 static char oneline_src[1024];
 static int trace_pid = -1;
@@ -171,7 +174,7 @@ static int trace_cpu = -1;
 static int print_timestamp;
 
 #define SIMPLE_ONE_LINER_FMT	\
-	"trace %s { print(cpu(), tid(), execname(), argevent) }"
+	"trace %s { print(cpu(), tid(), execname(), argstr) }"
 
 static const char *script_file;
 static int script_args_start;
@@ -257,6 +260,9 @@ static void parse_option(int argc, char **argv)
 		case 'q':
 			quiet = 1;
 			break;
+		case 'd':
+			dry_run = 1;
+			break;
 		case 's':
 			sprintf(oneline_src, SIMPLE_ONE_LINER_FMT, next_arg);
 			i++;
@@ -322,18 +328,29 @@ static void parse_option(int argc, char **argv)
 	workload_argv = &argv[j + 1];
 }
 
+static ktap_proto_t *parse(const char *chunkname, const char *src)
+{
+	LexState ls;
+
+	ls.chunkarg = chunkname ? chunkname : "?";
+	kp_lex_init();
+	kp_buf_init(&ls.sb);
+	kp_lex_setup(&ls, src);
+	return kp_parse(&ls);
+}
+
 static void compile(const char *input)
 {
-	ktap_closure *cl;
+	ktap_proto_t *pt;
 	char *buff;
 	struct stat sb;
 	int fdin;
 
-	ktapc_init_stringtable();
+	kp_str_resize();
 
 	if (oneline_src[0] != '\0') {
 		ffi_cparser_init();
-		cl = ktapc_parser(oneline_src, input);
+		pt = parse(input, oneline_src);
 		goto dump;
 	}
 
@@ -351,7 +368,7 @@ static void compile(const char *input)
 		handle_error("mmap failed");
 
 	ffi_cparser_init();
-	cl = ktapc_parser(buff, input);
+	pt = parse(input, buff);
 
 	munmap(buff, sb.st_size);
 	close(fdin);
@@ -359,18 +376,18 @@ static void compile(const char *input)
  dump:
 	if (dump_bytecode) {
 #ifdef CONFIG_KTAP_FFI
-		ktapc_dump_csymbols();
+		kp_dump_csymbols();
 #endif
-		ktapc_dump_function(1, cl->p);
+		kp_dump_proto(pt);
 		exit(0);
 	}
 
-	/* ktapc output */
+	/* bcwrite */
 	uparm.trunk = malloc(ktap_trunk_mem_size);
 	if (!uparm.trunk)
 		handle_error("malloc failed");
 
-	ktapc_dump(cl->p, ktapc_writer, NULL, 0);
+	kp_bcwrite(pt, kp_writer, NULL, 0);
 	ffi_cparser_free();
 }
 
@@ -386,7 +403,7 @@ int main(int argc, char **argv)
 	parse_option(argc, argv);
 
 	if (oneline_src[0] != '\0')
-		script_file = "one-liner";
+		script_file = "(command line)";
 
 	compile(script_file);
 
@@ -425,6 +442,7 @@ int main(int argc, char **argv)
 	uparm.trace_cpu = trace_cpu;
 	uparm.print_timestamp = print_timestamp;
 	uparm.quiet = quiet;
+	uparm.dry_run = dry_run;
 
 	/* start running into kernel ktapvm */
 	ret = run_ktapvm();

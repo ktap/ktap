@@ -12,9 +12,52 @@ __DATA__
 if (1 > 2) {
 	print("failed")
 }
+
 if (200 < 100) {
 	print("failed")
 }
+
+if (1 == nil) {
+	print("failed")
+}
+
+if (1 != nil) {
+	print("1 != nil")
+}
+
+if (nil == 1) {
+	print("failed")
+}
+
+if (nil != 1) {
+	print("nil != 1")
+}
+
+if (1 == "test") {
+	print("failed")
+}
+
+if (1 != "test") {
+	print("1 != 'test'")
+}
+
+if ("test" == 1) {
+	print("failed")
+}
+
+if ("test" != 1) {
+	print("'test' != 1")
+}
+
+if ("1234" == "1") {
+	print("failed")
+}
+
+if ("1234" != "1") {
+	print("'1234' != '1'")
+}
+
+
 
 var a = 4
 var b = 5
@@ -55,6 +98,12 @@ if (-1 != 0xffffffffffffffff) {
 }
 
 --- out
+1 != nil
+nil != 1
+1 != 'test'
+'test' != 1
+'1234' != '1'
+
 --- err
 
 

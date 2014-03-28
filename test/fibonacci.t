@@ -26,7 +26,7 @@ print(fib(20))
 === TEST 2: tail recursive fibonacci
 --- src
 function fib(n) {
-	f = function (iter, res, next) {
+	function f(iter, res, next) {
 		if (iter == 0) {
 			return res;
 		}

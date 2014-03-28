@@ -5,9 +5,9 @@
  *
  * Copyright (C) 2012-2013 Jovi Zhangwei <jovi.zhangwei@gmail.com>.
  *
- * Copyright (C) 1994-2013 Lua.org, PUC-Rio.
- *  - The part of code in this file is copied from lua initially.
- *  - lua's MIT license is compatible with GPL.
+ * Adapted from luajit and lua interpreter.
+ * Copyright (C) 2005-2014 Mike Pall.
+ * Copyright (C) 1994-2008 Lua.org, PUC-Rio.
  *
  * ktap is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -29,47 +29,36 @@
 #include <linux/sched.h>
 #include <linux/uaccess.h>
 #include "../include/ktap_types.h"
-#include "../include/ktap_opcodes.h"
+#include "../include/ktap_bc.h"
 #include "../include/ktap_ffi.h"
 #include "ktap.h"
 #include "kp_obj.h"
 #include "kp_str.h"
+#include "kp_mempool.h"
 #include "kp_tab.h"
 #include "kp_transport.h"
 #include "kp_vm.h"
+#include "kp_events.h"
 
 #define KTAP_MIN_RESERVED_STACK_SIZE 20
 #define KTAP_STACK_SIZE		120 /* enlarge this value for big stack */
-#define KTAP_STACK_SIZE_BYTES	(KTAP_STACK_SIZE * sizeof(ktap_value))
+#define KTAP_STACK_SIZE_BYTES	(KTAP_STACK_SIZE * sizeof(ktap_val_t))
 
-#define CIST_KTAP	(1 << 0) /* call is running a ktap function */
-#define CIST_REENTRY	(1 << 2)
+#define KTAP_PERCPU_BUFFER_SIZE	(3 * PAGE_SIZE)
 
-#define isktapfunc(ci)	((ci)->callstatus & CIST_KTAP)
+static ktap_cfunction gfunc_get(ktap_state_t *ks, int idx);
+static int gfunc_getidx(ktap_global_state_t *g, ktap_cfunction cfunc);
 
-
-/* common helper function */
-long gettimeofday_ns(void)
-{
-	struct timespec now;
-
-	getnstimeofday(&now);
-	return now.tv_sec * NSEC_PER_SEC + now.tv_nsec;
-}
-
-
-static void ktap_concat(ktap_state *ks, int start, int end)
+static ktap_str_t *str_concat(ktap_state_t *ks, StkId top, int start, int end)
 {
 	int i, len = 0;
-	StkId top = ks->ci->u.l.base;
-	ktap_string *ts;
+	ktap_str_t *ts;
 	char *ptr, *buffer;
 
 	for (i = start; i <= end; i++) {
 		if (!is_string(top + i)) {
 			kp_error(ks, "cannot concat non-string\n");
-			set_nil(top + start);
-			return;
+			return NULL;
 		}
 
 		len += rawtsvalue(top + i)->len;
@@ -77,12 +66,12 @@ static void ktap_concat(ktap_state *ks, int start, int end)
 
 	if (len >= KTAP_PERCPU_BUFFER_SIZE) {
 		kp_error(ks, "Error: too long string concatenation\n");
-		return;
+		return NULL;
 	}
 
 	preempt_disable_notrace();
 
-	buffer = kp_percpu_data(ks, KTAP_PERCPU_DATA_BUFFER);
+	buffer = kp_this_cpu_print_buffer(ks);
 	ptr = buffer;
 
 	for (i = start; i <= end; i++) {
@@ -90,190 +79,137 @@ static void ktap_concat(ktap_state *ks, int start, int end)
 		strncpy(ptr, svalue(top + i), len);
 		ptr += len;
 	}
-	ts = kp_str_newlstr(ks, buffer, len);
-	set_string(top + start, ts);
+	ts = kp_str_new(ks, buffer, len);
 
 	preempt_enable_notrace();
+
+	return ts;
 }
 
-/* todo: compare l == r if both is tstring type? */
-static int lessthan(ktap_state *ks, const ktap_value *l, const ktap_value *r)
+static ktap_upval_t *findupval(ktap_state_t *ks, StkId slot)
 {
-	if (is_number(l) && is_number(r))
-		return NUMLT(nvalue(l), nvalue(r));
-	else if (is_string(l) && is_string(r))
-		return kp_str_cmp(rawtsvalue(l), rawtsvalue(r)) < 0;
+	ktap_global_state_t *g = G(ks);
+	ktap_upval_t **pp = &ks->openupval;
+	ktap_upval_t *p;
+	ktap_upval_t *uv;
 
-	return 0;
-}
-
-static int lessequal(ktap_state *ks, const ktap_value *l, const ktap_value *r)
-{
-	if (is_number(l) && is_number(r))
-		return NUMLE(nvalue(l), nvalue(r));
-	else if (is_string(l) && is_string(r))
-		return kp_str_cmp(rawtsvalue(l), rawtsvalue(r)) <= 0;
-
-	return 0;
-}
-
-static const ktap_value *ktap_tonumber(const ktap_value *obj, ktap_value *n)
-{
-	if (is_number(obj))
-		return obj;
-
-	return NULL;
-}
-
-static ktap_upval *findupval(ktap_state *ks, StkId level)
-{
-	ktap_global_state *g = G(ks);
-	ktap_gcobject **pp = &ks->openupval;
-	ktap_upval *p;
-	ktap_upval *uv;
-
-	while (*pp != NULL && (p = gco2uv(*pp))->v >= level) {
-		if (p->v == level) {  /* found a corresponding upvalue? */
+	while (*pp != NULL && (p = *pp)->v >= slot) {
+		if (p->v == slot) {  /* found a corresponding upvalue? */
 			return p;
 		}
-		pp = &p->next;
+		pp = (ktap_upval_t **)&p->nextgc;
 	}
 
 	/* not found: create a new one */
-	uv = &kp_obj_newobject(ks, KTAP_TYPE_UPVAL, sizeof(ktap_upval), pp)->uv;
-	uv->v = level;  /* current value lives in the stack */
-	uv->u.l.prev = &g->uvhead;  /* double link it in `uvhead' list */
-	uv->u.l.next = g->uvhead.u.l.next;
-	uv->u.l.next->u.l.prev = uv;
-	g->uvhead.u.l.next = uv;
+	uv = (ktap_upval_t *)kp_malloc(ks, sizeof(ktap_upval_t));
+	if (!uv)
+		return NULL;
+	uv->gct = ~KTAP_TUPVAL;
+	uv->closed = 0; /* still open */
+	uv->v = slot;  /* current value lives in the stack */
+	/* Insert into sorted list of open upvalues. */
+	uv->nextgc = (ktap_obj_t *)*pp;
+	*pp = uv;
+	uv->prev = &g->uvhead;  /* double link it in `uvhead' list */
+	uv->next = g->uvhead.next;
+	uv->next->prev = uv;
+	g->uvhead.next = uv;
 	return uv;
 }
 
-static void unlinkupval(ktap_upval *uv)
+static void unlinkupval(ktap_upval_t *uv)
 {
-	uv->u.l.next->u.l.prev = uv->u.l.prev;  /* remove from `uvhead' list */
-	uv->u.l.prev->u.l.next = uv->u.l.next;
+	uv->next->prev = uv->prev;  /* remove from `uvhead' list */
+	uv->prev->next = uv->next;
 }
 
-void kp_freeupval(ktap_state *ks, ktap_upval *uv)
+void kp_freeupval(ktap_state_t *ks, ktap_upval_t *uv)
 {
-	if (uv->v != &uv->u.value)  /* is it open? */
+	if (!uv->closed)  /* is it open? */
 		unlinkupval(uv);  /* remove from open list */
 	kp_free(ks, uv);  /* free upvalue */
 }
 
 /* close upvals */
-static void function_close(ktap_state *ks, StkId level)
+static void func_closeuv(ktap_state_t *ks, StkId level)
 {
-	ktap_upval *uv;
-	ktap_global_state *g = G(ks);
+	ktap_upval_t *uv;
+	ktap_global_state_t *g = G(ks);
 	while (ks->openupval != NULL &&
-		(uv = gco2uv(ks->openupval))->v >= level) {
-		ktap_gcobject *o = obj2gco(uv);
-		ks->openupval = uv->next;  /* remove from `open' list */
+		(uv = ks->openupval)->v >= level) {
+		ktap_obj_t *o = obj2gco(uv);
+		/* remove from `open' list */
+		ks->openupval = (ktap_upval_t *)uv->nextgc;
 		unlinkupval(uv);  /* remove upvalue from 'uvhead' list */
-		set_obj(&uv->u.value, uv->v);  /* move value to upvalue slot */
-		uv->v = &uv->u.value;  /* now current value lives here */
-		gch(o)->next = g->allgc;  /* link upvalue into 'allgc' list */
+		set_obj(&uv->tv, uv->v);  /* move value to upvalue slot */
+		uv->v = &uv->tv;  /* now current value lives here */
+		uv->closed = 1;
+		gch(o)->nextgc = g->allgc; /* link upvalue into 'allgc' list */
 		g->allgc = o;
 	}
 }
 
-/* create a new closure */
-static void pushclosure(ktap_state *ks, ktap_proto *p, ktap_upval **encup,
-			StkId base, StkId ra)
+#define SIZE_KTAP_FUNC(n) (sizeof(ktap_func_t) - sizeof(ktap_obj_t *) + \
+			   sizeof(ktap_obj_t *) * (n))
+static ktap_func_t *func_new_empty(ktap_state_t *ks, ktap_proto_t *pt)
 {
-	int nup = p->sizeupvalues;
-	ktap_upvaldesc *uv = p->upvalues;
-	int i;
-	ktap_closure *cl = kp_obj_newclosure(ks, nup);
+	ktap_func_t *fn;
 
-	cl->p = p;
-	set_closure(ra, cl);  /* anchor new closure in stack */
+	/* only mainthread can create new function */
+	if (ks != G(ks)->mainthread) {
+		kp_error(ks, "only mainthread can create function\n");
+		return NULL;
+	}
 
-	/* fill in its upvalues */
-	for (i = 0; i < nup; i++) {
-		if (uv[i].instack) {
-			/* upvalue refers to local variable? */
-			cl->upvals[i] = findupval(ks, base + uv[i].idx);
+	fn = (ktap_func_t *)kp_obj_new(ks, SIZE_KTAP_FUNC(pt->sizeuv));
+	if (!fn)
+		return NULL;
+	fn->gct = ~KTAP_TFUNC;
+	fn->nupvalues = 0; /* Set to zero until upvalues are initialized. */
+	fn->pc = proto_bc(pt);
+	fn->p = pt;
+
+	return fn;
+}
+
+static ktap_func_t *func_new(ktap_state_t *ks, ktap_proto_t *pt,
+			     ktap_func_t *parent, ktap_val_t *base)
+{
+	ktap_func_t *fn;
+	int nuv = pt->sizeuv, i;
+
+	fn = func_new_empty(ks, pt);
+	if (!fn)
+		return NULL;
+
+	fn->nupvalues = nuv;
+	for (i = 0; i < nuv; i++) {
+		uint32_t v = proto_uv(pt)[i];
+		ktap_upval_t *uv;
+
+		if (v & PROTO_UV_LOCAL) {
+			uv = findupval(ks, base + (v & 0xff));
+			if (!uv)
+				return NULL;
+			uv->immutable = ((v /PROTO_UV_IMMUTABLE) & 1);
 		} else {
-			/* get upvalue from enclosing function */
-			cl->upvals[i] = encup[uv[i].idx];
+			uv = parent->upvals[v];
 		}
+		fn->upvals[i] = uv;
 	}
-	//p->cache = ncl;  /* save it on cache for reuse */
+	return fn;
 }
 
-/* arg t and val may point to the same address */
-static void gettable(ktap_state *ks, const ktap_value *t, ktap_value *key,
-		     StkId val)
-{
-	if (is_table(t)) {
-		set_obj(val, kp_tab_get(hvalue(t), key));
-	} else if (is_ptable(t)) {
-		kp_ptab_get(ks, phvalue(t), key, val);
-#ifdef CONFIG_KTAP_FFI
-	} else if (is_cdata(t) && gcvalue(t) != NULL
-			&& cd_type(ks, cdvalue(t)) == FFI_PTR) {
-		kp_cdata_ptr_get(ks, cdvalue(t), key, val);
-	} else if (is_cdata(t) && gcvalue(t) != NULL
-			&& (cd_type(ks, cdvalue(t)) == FFI_STRUCT
-			|| cd_type(ks, cdvalue(t)) == FFI_UNION)) {
-		kp_cdata_record_get(ks, cdvalue(t), key, val);
-#endif
-	} else {
-		kp_error(ks, "get key from non-table\n");
-	}
-}
-
-static void settable(ktap_state *ks, const ktap_value *t, ktap_value *key,
-		     StkId val)
-{
-	if (is_table(t)) {
-		kp_tab_setvalue(ks, hvalue(t), key, val);
-	} else if (is_ptable(t)) {
-		kp_ptab_set(ks, phvalue(t), key, val);
-#ifdef CONFIG_KTAP_FFI
-	} else if (is_cdata(t) && gcvalue(t) != NULL
-			&& cd_type(ks, cdvalue(t)) == FFI_PTR) {
-		kp_cdata_ptr_set(ks, cdvalue(t), key, val);
-	} else if (is_cdata(t) && gcvalue(t) != NULL
-			&& (cd_type(ks, cdvalue(t)) == FFI_STRUCT
-			|| cd_type(ks, cdvalue(t)) == FFI_UNION)) {
-		kp_cdata_record_set(ks, cdvalue(t), key, val);
-#endif
-	} else {
-		kp_error(ks, "set key to non-table\n");
-	}
-}
-
-static void settable_incr(ktap_state *ks, const ktap_value *t, ktap_value *key,
-			  StkId val)
-{
-	if (unlikely(!is_table(t))) {
-		kp_error(ks, "use += operator for non-table\n");
-		return;
-	}
-
-	if (unlikely(!is_number(val))) {
-		kp_error(ks, "use non-number to += operator\n");
-		return;
-	}
-
-	kp_tab_atomic_inc(ks, hvalue(t), key, nvalue(val));
-}
-
-static inline int checkstack(ktap_state *ks, int n)
+static inline int checkstack(ktap_state_t *ks, int n)
 {
 	if (unlikely(ks->stack_last - ks->top <= n)) {
 		kp_error(ks, "stack overflow, please enlarge stack size\n");
 		return -1;
 	}
-
 	return 0;
 }
 
-static StkId adjust_varargs(ktap_state *ks, ktap_proto *p, int actual)
+static StkId adjust_varargs(ktap_state_t *ks, ktap_proto_t *p, int actual)
 {
 	int i;
 	int nfixargs = p->numparams;
@@ -291,813 +227,1121 @@ static StkId adjust_varargs(ktap_state *ks, ktap_proto *p, int actual)
 	return base;
 }
 
-static int poscall(ktap_state *ks, StkId first_result)
+static void poscall(ktap_state_t *ks, StkId func, StkId first_result,
+		   int wanted)
 {
-	ktap_callinfo *ci;
-	StkId res;
-	int wanted, i;
-
-	ci = ks->ci;
-
-	res = ci->func;
-	wanted = ci->nresults;
-
-	ks->ci = ci = ci->prev;
+	int i;
 
 	for (i = wanted; i != 0 && first_result < ks->top; i--)
-		set_obj(res++, first_result++);
+		set_obj(func++, first_result++);
 
 	while(i-- > 0)
-		set_nil(res++);
-
-	ks->top = res;
-
-	return (wanted - (-1));
+		set_nil(func++);
 }
 
-static ktap_callinfo *extend_ci(ktap_state *ks)
+void kp_vm_call_proto(ktap_state_t *ks, ktap_proto_t *pt)
 {
-	ktap_callinfo *ci;
+	ktap_func_t *fn;
 
-	ci = kp_malloc(ks, sizeof(ktap_callinfo));
-	ks->ci->next = ci;
-	ci->prev = ks->ci;
-	ci->next = NULL;
-
-	return ci;
-}
-
-static void free_ci(ktap_state *ks)
-{
-	ktap_callinfo *ci = ks->ci;
-	ktap_callinfo *next;
-
-	if (!ci)
+	fn = func_new_empty(ks, pt);
+	if (!fn)
 		return;
-
-	next = ci->next;
-	ci->next = NULL;
-	while ((ci = next) != NULL) {
-		next = ci->next;
-		kp_free(ks, ci);
-	}
+	set_func(ks->top++, fn);
+	kp_vm_call(ks, ks->top - 1, 0);
 }
 
-#define next_ci(ks) (ks->ci = ks->ci->next ? ks->ci->next : extend_ci(ks))
-#define savestack(ks, p)	((char *)(p) - (char *)ks->stack)
-#define restorestack(ks, n)	((ktap_value *)((char *)ks->stack + (n)))
-
-static int precall(ktap_state *ks, StkId func, int nresults)
+/*
+ * Hot loop detaction
+ *
+ * Check hot loop detaction in three cases:
+ * 1. jmp -x: this happens in 'while (expr) { ... }'
+ * 2. FORPREP-FORLOOP
+ * 3. TFORCALL-TFORLOOP
+ */ 
+static __always_inline int check_hot_loop(ktap_state_t *ks, int loop_count)
 {
-	ktap_cfunction f;
-	ktap_callinfo *ci;
-	ktap_proto *p;
-#ifdef CONFIG_KTAP_FFI
-	ktap_cdata *cd;
-	csymbol *cs;
-#endif
-	StkId base;
-	ptrdiff_t funcr = savestack(ks, func);
-	int n;
-
-	switch (ttype(func)) {
-	case KTAP_TYPE_CFUNCTION: /* light C function */
-		f = fvalue(func);
-
-		if (checkstack(ks, KTAP_MIN_RESERVED_STACK_SIZE))
-			return 1;
-
-		ci = next_ci(ks);
-		ci->nresults = nresults;
-		ci->func = restorestack(ks, funcr);
-		ci->top = ks->top + KTAP_MIN_RESERVED_STACK_SIZE;
-		ci->callstatus = 0;
-		n = (*f)(ks);
-		poscall(ks, ks->top - n);
-		return 1;
-	case KTAP_TYPE_CLOSURE:
-		p = clvalue(func)->p;
-
-		if (checkstack(ks, p->maxstacksize))
-			return 1;
-
-		func = restorestack(ks, funcr);
-		n = (int)(ks->top - func) - 1; /* number of real arguments */
-
-		/* complete missing arguments */
-		for (; n < p->numparams; n++)
-			set_nil(ks->top++);
-
-		base = (!p->is_vararg) ? func + 1 : adjust_varargs(ks, p, n);
-		ci = next_ci(ks);
-		ci->nresults = nresults;
-		ci->func = func;
-		ci->u.l.base = base;
-		ci->top = base + p->maxstacksize;
-		ci->u.l.savedpc = p->code; /* starting point */
-		ci->callstatus = CIST_KTAP;
-		ks->top = ci->top;
-		return 0;
-#ifdef CONFIG_KTAP_FFI
-	case KTAP_TYPE_CDATA:
-		cd = cdvalue(func);
-
-		if (checkstack(ks, KTAP_MIN_RESERVED_STACK_SIZE))
-			return 1;
-
-		if (cd_type(ks, cd) != FFI_FUNC)
-			kp_error(ks, "Value in cdata is not a c funcion\n");
-		cs = cd_csym(ks, cd);
-		kp_verbose_printf(ks, "calling ffi function [%s] with address %p\n",
-				csym_name(cs), csym_func_addr(cs));
-
-		ci = next_ci(ks);
-		ci->nresults = nresults;
-		ci->func = restorestack(ks, funcr);
-		ci->top = ks->top + KTAP_MIN_RESERVED_STACK_SIZE;
-		ci->callstatus = 0;
-
-		n = ffi_call(ks, csym_func(cs));
-		kp_verbose_printf(ks, "returned from ffi call...\n");
-		poscall(ks, ks->top - n);
-		return 1;
-#endif
-	default:
-		kp_error(ks, "attempt to call nil function\n");
+	if (unlikely(loop_count == kp_max_loop_count)) {
+		kp_error(ks, "loop execute count exceed max limit(%d)\n",
+			     kp_max_loop_count);
+		return -1;
 	}
 
 	return 0;
 }
 
-#define RA(i)   (base+GETARG_A(i))
-#define RB(i)   (base+GETARG_B(i))
-#define ISK(x)  ((x) & BITRK)
-#define RC(i)   base+GETARG_C(i)
-#define RKB(i) \
-        ISK(GETARG_B(i)) ? k+INDEXK(GETARG_B(i)) : base+GETARG_B(i)
-#define RKC(i)  \
-        ISK(GETARG_C(i)) ? k+INDEXK(GETARG_C(i)) : base+GETARG_C(i)
+#define dojump(i, e) { pc += (int)bc_d(i) - BCBIAS_J + e; }
+#define donextjump  { instr = *pc; dojump(instr, 1); }
 
-#define dojump(ci,i,e) { \
-	ci->u.l.savedpc += GETARG_sBx(i) + e; }
-#define donextjump(ci)  { instr = *ci->u.l.savedpc; dojump(ci, instr, 1); }
+#define NUMADD(a, b)    ((a) + (b))
+#define NUMSUB(a, b)    ((a) - (b))
+#define NUMMUL(a, b)    ((a) * (b))
+#define NUMDIV(a, b)    ((a) / (b))
+#define NUMUNM(a)       (-(a))
+#define NUMEQ(a, b)     ((a) == (b))
+#define NUMLT(a, b)     ((a) < (b))
+#define NUMLE(a, b)     ((a) <= (b))
+#define NUMMOD(a, b)    ((a) % (b))
 
-#define arith_op(ks, op) { \
-	ktap_value *rb = RKB(instr); \
-	ktap_value *rc = RKC(instr); \
+#define arith_VV(ks, op) { \
+	ktap_val_t *rb = RB; \
+	ktap_val_t *rc = RC; \
 	if (is_number(rb) && is_number(rc)) { \
 		ktap_number nb = nvalue(rb), nc = nvalue(rc); \
-		set_number(ra, op(nb, nc)); \
+		set_number(RA, op(nb, nc)); \
 	} else {	\
 		kp_puts(ks, "Error: Cannot make arith operation\n");	\
 		return;	\
 	} }
 
-static ktap_value *cfunction_cache_get(ktap_state *ks, int index);
+#define arith_VN(ks, op) { \
+	ktap_val_t *rb = RB; \
+	if (is_number(rb)) { \
+		ktap_number nb = nvalue(rb);\
+		ktap_number nc = nvalue((ktap_val_t *)kbase + bc_c(instr));\
+		set_number(RA, op(nb, nc)); \
+	} else {	\
+		kp_puts(ks, "Error: Cannot make arith operation\n");	\
+		return;	\
+	} }
 
-static void ktap_execute(ktap_state *ks)
+#define arith_NV(ks, op) { \
+	ktap_val_t *rb = RB; \
+	if (is_number(rb)) { \
+		ktap_number nb = nvalue(rb);\
+		ktap_number nc = nvalue((ktap_val_t *)kbase + bc_c(instr));\
+		set_number(RA, op(nc, nb)); \
+	} else {	\
+		kp_puts(ks, "Error: Cannot make arith operation\n");	\
+		return;	\
+	} }
+
+
+static const char * const bc_names[] = {
+#define BCNAME(name, ma, mb, mc, mt)       #name,
+	BCDEF(BCNAME)
+#undef BCNAME
+	NULL
+};
+
+
+/*
+ * ktap bytecode interpreter routine
+ *
+ *
+ * kp_vm_call only can be used for:
+ * 1). call ktap function, not light C function
+ * 2). accept fixed argument function
+ */
+void kp_vm_call(ktap_state_t *ks, StkId func, int nresults)
 {
-	int exec_count = 0;
-	ktap_callinfo *ci;
-	ktap_closure *cl;
-	ktap_value *k;
-	unsigned int instr, opcode;
+	int loop_count = 0;
+	ktap_func_t *fn;
+	ktap_proto_t *pt;
+	ktap_obj_t **kbase;
+	unsigned int instr, op;
+	const unsigned int *pc;
 	StkId base; /* stack pointer */
-	StkId ra; /* register pointer */
-	int res, nresults; /* temp varible */
+	int multres = 0; /* temp varible */
+	ktap_tab_t *gtab = G(ks)->gtab;
 
-	ci = ks->ci;
+	/* use computed goto for opcode dispatch */
 
- newframe:
-	cl = clvalue(ci->func);
-	k = cl->p->k;
-	base = ci->u.l.base;
+	static void *dispatch_table[] = {
+#define BCNAME(name, ma, mb, mc, mt)       &&DO_BC_##name,
+		BCDEF(BCNAME)
+#undef BCNAME
+	};
 
- mainloop:
+#define DISPATCH()				\
+	do {					\
+		instr = *(pc++);		\
+		op = bc_op(instr);		\
+		goto *dispatch_table[op];	\
+	} while (0)
+
+#define RA	(base + bc_a(instr))
+#define RB	(base + bc_b(instr))
+#define RC	(base + bc_c(instr))
+#define RD	(base + bc_d(instr))
+#define RKD	((ktap_val_t *)kbase + bc_d(instr))
+
+	/*TODO: fix argument number mismatch, example: sort cmp closure */
+
+	fn = clvalue(func);
+	pt = fn->p;
+	kbase = fn->p->k;
+	base = func + 1;
+	pc = proto_bc(pt) + 1;
+	ks->top = base + pt->framesize;
+	func->pcr = 0; /* no previous frame */
+
 	/* main loop of interpreter */
+	DISPATCH();
 
-	/* dead loop detaction */
-	if (exec_count++ == kp_max_exec_count) {
-		if (G(ks)->mainthread != ks) {
-			kp_error(ks, "non-mainthread executed instructions "
-				     "exceed max limit(%d)\n",
-					kp_max_exec_count);
+	while (1) {
+	DO_BC_ISLT: /* Jump if A < D */
+		if (!is_number(RA) || !is_number(RD)) {
+			kp_error(ks, "compare with non-number\n");
 			return;
 		}
 
-		cond_resched();
-
-		if (G(ks)->exit)
-			return;
-
-		if (signal_pending(current)) {
-			flush_signals(current);
-			return;
-		}
-		exec_count = 0;
-	}
-
-	instr = *(ci->u.l.savedpc++);
-	opcode = GET_OPCODE(instr);
-
-	/* ra is target register */
-	ra = RA(instr);
-
-	switch (opcode) {
-	case OP_MOVE:
-		set_obj(ra, base + GETARG_B(instr));
-		break;
-	case OP_LOADK:
-		set_obj(ra, k + GETARG_Bx(instr));
-		break;
-	case OP_LOADKX:
-		set_obj(ra, k + GETARG_Ax(*ci->u.l.savedpc++));
-		break;
-	case OP_LOADBOOL:
-		set_boolean(ra, GETARG_B(instr));
-		if (GETARG_C(instr))
-			ci->u.l.savedpc++;
-		break;
-	case OP_LOADNIL: {
-		int b = GETARG_B(instr);
-		do {
-			set_nil(ra++);
-		} while (b--);
-		break;
-		}
-	case OP_GETUPVAL: {
-		int b = GETARG_B(instr);
-		set_obj(ra, cl->upvals[b]->v);
-		break;
-		}
-	case OP_GETTABUP: {
-		int b = GETARG_B(instr);
-		gettable(ks, cl->upvals[b]->v, RKC(instr), ra);
-		base = ci->u.l.base;
-		break;
-		}
-	case OP_GETTABLE:
-		gettable(ks, RB(instr), RKC(instr), ra);
-		base = ci->u.l.base;
-		break;
-	case OP_SETTABUP: {
-		int a = GETARG_A(instr);
-		settable(ks, cl->upvals[a]->v, RKB(instr), RKC(instr));
-		base = ci->u.l.base;
-		break;
-		}
-	case OP_SETTABUP_INCR: {
-		int a = GETARG_A(instr);
-		settable_incr(ks, cl->upvals[a]->v, RKB(instr), RKC(instr));
-		base = ci->u.l.base;
-		break;
-		}
-	case OP_SETTABUP_AGGR: {
-		int a = GETARG_A(instr);
-		ktap_value *v = cl->upvals[a]->v;
-		if (!is_ptable(v)) {
-			kp_error(ks, "<<< must be operate on ptable\n");
+		if (nvalue(RA) >= nvalue(RD))
+			pc++;
+		else
+			donextjump;
+		DISPATCH();
+	DO_BC_ISGE: /* Jump if A >= D */
+		if (!is_number(RA) || !is_number(RD)) {
+			kp_error(ks, "compare with non-number\n");
 			return;
 		}
 
-		kp_ptab_set(ks, phvalue(v), RKB(instr), RKC(instr));
-		base = ci->u.l.base;
-		break;
-		}
-	case OP_SETUPVAL: {
-		ktap_upval *uv = cl->upvals[GETARG_B(instr)];
-		set_obj(uv->v, ra);
-		break;
-		}
-	case OP_SETTABLE:
-		settable(ks, ra, RKB(instr), RKC(instr));
-		base = ci->u.l.base;
-		break;
-	case OP_SETTABLE_INCR:
-		settable_incr(ks, ra, RKB(instr), RKC(instr));
-		base = ci->u.l.base;
-		break;
-	case OP_SETTABLE_AGGR:
-		if (!is_ptable(ra)) {
-			kp_error(ks, "<<< must be operate on ptable\n");
+		if (nvalue(RA) < nvalue(RD))
+			pc++;
+		else
+			donextjump;
+		DISPATCH();
+	DO_BC_ISLE: /* Jump if A <= D */
+		if (!is_number(RA) || !is_number(RD)) {
+			kp_error(ks, "compare with non-number\n");
 			return;
 		}
 
-		kp_ptab_set(ks, phvalue(ra), RKB(instr), RKC(instr));
-		base = ci->u.l.base;
-		break;
-	case OP_NEWTABLE: {
-		/* 
-		 * preallocate default narr and nrec,
-		 * ARG_B and ARG_C is not used
-		 * This would allocate more memory for some static table.
-		 */
-		ktap_tab *t = kp_tab_new(ks, 0, 0);
-		if (unlikely(!t))
+		if (nvalue(RA) > nvalue(RD))
+			pc++;
+		else
+			donextjump;
+		DISPATCH();
+	DO_BC_ISGT: /* Jump if A > D */
+		if (!is_number(RA) || !is_number(RD)) {
+			kp_error(ks, "compare with non-number\n");
 			return;
-		set_table(ra, t);
-		break;
 		}
-	case OP_SELF: {
-		StkId rb = RB(instr);
-		set_obj(ra+1, rb);
-		gettable(ks, rb, RKC(instr), ra);
-		base = ci->u.l.base;
-		break;
+
+		if (nvalue(RA) <= nvalue(RD))
+			pc++;
+		else
+			donextjump;
+		DISPATCH();
+	DO_BC_ISEQV: /* Jump if A = D */
+		if (!kp_obj_equal(RA, RD))
+			pc++;
+		else
+			donextjump;
+		DISPATCH();
+	DO_BC_ISNEV: /* Jump if A != D */
+		if (kp_obj_equal(RA, RD))
+			pc++;
+		else
+			donextjump;
+		DISPATCH();
+	DO_BC_ISEQS: { /* Jump if A = D */
+		int idx = ~bc_d(instr);
+
+		if (!is_string(RA) ||
+				rawtsvalue(RA) != (ktap_str_t *)kbase[idx])
+			pc++;
+		else
+			donextjump;
+		DISPATCH();
 		}
-	case OP_ADD:
-		arith_op(ks, NUMADD);
-		break;
-	case OP_SUB:
-		arith_op(ks, NUMSUB);
-		break;
-	case OP_MUL:
-		arith_op(ks, NUMMUL);
-		break;
-	case OP_DIV:
+	DO_BC_ISNES: { /* Jump if A != D */
+		int idx = ~bc_d(instr);
+
+		if (is_string(RA) &&
+			rawtsvalue(RA) == (ktap_str_t *)kbase[idx])
+			pc++;
+		else
+			donextjump;
+		DISPATCH();
+		}
+	DO_BC_ISEQN: /* Jump if A = D */
+		if (!is_number(RA) || nvalue(RA) !=  nvalue(RKD))
+			pc++;
+		else
+			donextjump;
+		DISPATCH();
+	DO_BC_ISNEN: /* Jump if A != D */
+		if (is_number(RA) && nvalue(RA) ==  nvalue(RKD))
+			pc++;
+		else
+			donextjump;
+		DISPATCH();
+	DO_BC_ISEQP: /* Jump if A = D */
+		if (itype(RA) != ~bc_d(instr))
+			pc++;
+		else
+			donextjump;
+		DISPATCH();
+	DO_BC_ISNEP: /* Jump if A != D */
+		if (itype(RA) == ~bc_d(instr))
+			pc++;
+		else
+			donextjump;
+		DISPATCH();
+	DO_BC_ISTC: /* Copy D to A and jump, if D is true */
+		if (itype(RD) == KTAP_TNIL || itype(RD) == KTAP_TFALSE)
+			pc++;
+		else {
+			set_obj(RA, RD);
+			donextjump;
+		}
+		DISPATCH();
+	DO_BC_ISFC: /* Copy D to A and jump, if D is false */
+		if (itype(RD) != KTAP_TNIL && itype(RD) != KTAP_TFALSE)
+			pc++;
+		else {
+			set_obj(RA, RD);
+			donextjump;
+		}
+		DISPATCH();
+	DO_BC_IST: /* Jump if D is true */
+		if (itype(RD) == KTAP_TNIL || itype(RD) == KTAP_TFALSE)
+			pc++;
+		else
+			donextjump;
+		DISPATCH();
+	DO_BC_ISF: /* Jump if D is false */
+		/* only nil and false are considered false,
+		 * all other values are true */
+		if (itype(RD) != KTAP_TNIL && itype(RD) != KTAP_TFALSE)
+			pc++;
+		else
+			donextjump;
+		DISPATCH();
+	DO_BC_ISTYPE: /* generated by genlibbc, not compiler; not used now */
+	DO_BC_ISNUM:
+		return;
+	DO_BC_MOV: /* Copy D to A */
+		set_obj(RA, RD);
+		DISPATCH();
+	DO_BC_NOT: /* Set A to boolean not of D */
+		if (itype(RD) == KTAP_TNIL || itype(RD) == KTAP_TFALSE)
+			setitype(RA, KTAP_TTRUE);
+		else
+			setitype(RA, KTAP_TFALSE);
+
+		DISPATCH();
+	DO_BC_UNM: /* Set A to -D (unary minus) */
+		if (!is_number(RD)) {
+			kp_error(ks, "use '-' operator on non-number\n");
+			return;
+		}
+
+		set_number(RA, -nvalue(RD));
+		DISPATCH();
+	DO_BC_ADDVN: /* A = B + C */
+		arith_VN(ks, NUMADD);
+		DISPATCH();
+	DO_BC_SUBVN: /* A = B - C */
+		arith_VN(ks, NUMSUB);
+		DISPATCH();
+	DO_BC_MULVN: /* A = B * C */
+		arith_VN(ks, NUMMUL);
+		DISPATCH();
+	DO_BC_DIVVN: /* A = B / C */
 		/* divide 0 checking */
-		if (!nvalue(RKC(instr))) {
+		if (!nvalue((ktap_val_t *)kbase + bc_c(instr))) {
 			kp_error(ks, "divide 0 arith operation\n");
 			return;
 		}
-		arith_op(ks, NUMDIV);
-		break;
-	case OP_MOD:
+		arith_VN(ks, NUMDIV);
+		DISPATCH();
+	DO_BC_MODVN: /* A = B % C */
 		/* divide 0 checking */
-		if (!nvalue(RKC(instr))) {
+		if (!nvalue((ktap_val_t *)kbase + bc_c(instr))) {
 			kp_error(ks, "mod 0 arith operation\n");
 			return;
 		}
-		arith_op(ks, NUMMOD);
-		break;
-	case OP_POW:
-		kp_error(ks, "ktap don't support pow arith in kernel\n");
-		return;
-	case OP_UNM: {
-		ktap_value *rb = RB(instr);
-		if (is_number(rb)) {
-			ktap_number nb = nvalue(rb);
-			set_number(ra, NUMUNM(nb));
-		}
-		break;
-		}
-	case OP_NOT:
-		res = is_false(RB(instr));
-		set_boolean(ra, res);
-		break;
-	case OP_LEN: {
-		int len = kp_obj_len(ks, RB(instr));
-		if (len < 0)
+		arith_VN(ks, NUMMOD);
+		DISPATCH();
+	DO_BC_ADDNV: /* A = C + B */
+		arith_NV(ks, NUMADD);
+		DISPATCH();
+	DO_BC_SUBNV: /* A = C - B */
+		arith_NV(ks, NUMSUB);
+		DISPATCH();
+	DO_BC_MULNV: /* A = C * B */
+		arith_NV(ks, NUMMUL);
+		DISPATCH();
+	DO_BC_DIVNV: /* A = C / B */
+		/* divide 0 checking */
+		if (!nvalue(RB)){
+			kp_error(ks, "divide 0 arith operation\n");
 			return;
-		set_number(ra, len);
-		break;
 		}
-	case OP_CONCAT: {
-		int b = GETARG_B(instr);
-		int c = GETARG_C(instr);
-		ktap_concat(ks, b, c);
-		break;
+		arith_NV(ks, NUMDIV);
+		DISPATCH();
+	DO_BC_MODNV: /* A = C % B */
+		/* divide 0 checking */
+		if (!nvalue(RB)){
+			kp_error(ks, "mod 0 arith operation\n");
+			return;
 		}
-	case OP_JMP:
-		dojump(ci, instr, 0);
-		break;
-	case OP_EQ: {
-		ktap_value *rb = RKB(instr);
-		ktap_value *rc = RKC(instr);
-		if ((int)rawequalobj(rb, rc) != GETARG_A(instr))
-			ci->u.l.savedpc++;
-		else
-			donextjump(ci);
+		arith_NV(ks, NUMMOD);
+		DISPATCH();
+	DO_BC_ADDVV: /* A = B + C */
+		arith_VV(ks, NUMADD);
+		DISPATCH();
+	DO_BC_SUBVV: /* A = B - C */
+		arith_VV(ks, NUMSUB);
+		DISPATCH();
+	DO_BC_MULVV: /* A = B * C */
+		arith_VV(ks, NUMMUL);
+		DISPATCH();
+	DO_BC_DIVVV: /* A = B / C */
+		arith_VV(ks, NUMDIV);
+		DISPATCH();
+	DO_BC_MODVV: /* A = B % C */
+		arith_VV(ks, NUMMOD);
+		DISPATCH();
+	DO_BC_POW: /* A = B ^ C, rejected */
+		return;
+	DO_BC_CAT: { /* A = B .. ~ .. C */
+		/* The CAT instruction concatenates all values in
+		 * variable slots B to C inclusive. */
+		ktap_str_t *ts = str_concat(ks, base, bc_b(instr),
+					    bc_c(instr));
+		if (!ts)
+			return;
+		
+		set_string(RA, ts);
+		DISPATCH();
+		}
+	DO_BC_KSTR: { /* Set A to string constant D */
+		int idx = ~bc_d(instr);
+		set_string(RA, (ktap_str_t *)kbase[idx]);
+		DISPATCH();
+		}
+	DO_BC_KCDATA: /* not used now */
+		DISPATCH();
+	DO_BC_KSHORT: /* Set A to 16 bit signed integer D */
+		set_number(RA, bc_d(instr));
+		DISPATCH();
+	DO_BC_KNUM: /* Set A to number constant D */
+		set_number(RA, nvalue(RKD));
+		DISPATCH();
+	DO_BC_KPRI: /* Set A to primitive D */
+		setitype(RA, ~bc_d(instr));
+		DISPATCH();
+	DO_BC_KNIL: { /* Set slots A to D to nil */
+		int i;
+		for (i = 0; i <= bc_d(instr) - bc_a(instr); i++) {
+			set_nil(RA + i);
+		}
+		DISPATCH();
+		}
+	DO_BC_UGET: /* Set A to upvalue D */
+		set_obj(RA, fn->upvals[bc_d(instr)]->v);
+		DISPATCH();
+	DO_BC_USETV: /* Set upvalue A to D */
+		set_obj(fn->upvals[bc_a(instr)]->v, RD);
+		DISPATCH();
+	DO_BC_UINCV: { /* upvalus[A] += D */
+		ktap_val_t *v = fn->upvals[bc_a(instr)]->v;
+		if (unlikely(!is_number(RD) || !is_number(v))) {
+			kp_error(ks, "use '+=' on non-number\n");
+			return;
+		}
+		set_number(v, nvalue(v) + nvalue(RD));
+		DISPATCH();
+		}
+	DO_BC_USETS: { /* Set upvalue A to string constant D */
+		int idx = ~bc_d(instr);
+		set_string(fn->upvals[bc_a(instr)]->v,
+				(ktap_str_t *)kbase[idx]);
+		DISPATCH();
+		}
+	DO_BC_USETN: /* Set upvalue A to number constant D */
+		set_number(fn->upvals[bc_a(instr)]->v, nvalue(RKD));
+		DISPATCH();
+	DO_BC_UINCN: { /* upvalus[A] += D */
+		ktap_val_t *v = fn->upvals[bc_a(instr)]->v;
+		if (unlikely(!is_number(v))) {
+			kp_error(ks, "use '+=' on non-number\n");
+			return;
+		}
+		set_number(v, nvalue(v) + nvalue(RKD));
+		DISPATCH();
+		}
+	DO_BC_USETP: /* Set upvalue A to primitive D */
+		setitype(fn->upvals[bc_a(instr)]->v, ~bc_d(instr));
+		DISPATCH();
+	DO_BC_UCLO: /* Close upvalues for slots . rbase and jump to target D */
+		if (ks->openupval != NULL)
+			func_closeuv(ks, RA);
+		dojump(instr, 0);
+		DISPATCH();
+	DO_BC_FNEW: {
+		/* Create new closure from prototype D and store it in A */
+		int idx = ~bc_d(instr);
+		ktap_func_t *subfn = func_new(ks, (ktap_proto_t *)kbase[idx],
+					      fn, base);
+		if (unlikely(!subfn))
+			return;
+		set_func(RA, subfn);
+		DISPATCH();
+		}
+	DO_BC_TNEW: { /* Set A to new table with size D */
+		/* 
+		 * preallocate default narr and nrec,
+		 * op_b and op_c is not used
+		 * This would allocate more memory for some static table.
+		 */
+		ktap_tab_t *t = kp_tab_new_ah(ks, 0, 0);
+		if (unlikely(!t))
+			return;
+		set_table(RA, t);
+		DISPATCH();
+		}
+	DO_BC_TDUP: { /* Set A to duplicated template table D */
+		int idx = ~bc_d(instr);
+		ktap_tab_t *t = kp_tab_dup(ks, (ktap_tab_t *)kbase[idx]);
+		if (!t)
+			return;
+		set_table(RA, t);
+		DISPATCH();
+		}
+	DO_BC_GGET: { /* A = _G[D] */
+		int idx = ~bc_d(instr);
+		kp_tab_getstr(gtab, (ktap_str_t *)kbase[idx], RA);
+		DISPATCH();
+		}
+	DO_BC_GSET: /* _G[D] = A, rejected. */
+	DO_BC_GINC: /* _G[D] += A, rejected. */
+		return;
+	DO_BC_TGETV: /* A = B[C] */
+		if (unlikely(!is_table(RB))) {
+			kp_error(ks, "get key from non-table\n");
+			return;
+		}
 
-		base = ci->u.l.base;
-		break;
-		}
-	case OP_LT: {
-		if (lessthan(ks, RKB(instr), RKC(instr)) != GETARG_A(instr)) {
-			ci->u.l.savedpc++;
-		} else
-			donextjump(ci);
-		base = ci->u.l.base;
-		break;
-		}
-	case OP_LE:
-		if (lessequal(ks, RKB(instr), RKC(instr)) != GETARG_A(instr))
-			ci->u.l.savedpc++;
-		else
-			donextjump(ci);
-		base = ci->u.l.base;
-		break;
-	case OP_TEST:
-		if (GETARG_C(instr) ? is_false(ra) : !is_false(ra))
-			ci->u.l.savedpc++;
-		else
-			donextjump(ci);
-		break;
-	case OP_TESTSET: {
-		ktap_value *rb = RB(instr);
-		if (GETARG_C(instr) ? is_false(rb) : !is_false(rb))
-			ci->u.l.savedpc++;
-		else {
-			set_obj(ra, rb);
-			donextjump(ci);
-		}
-		break;
-		}
-	case OP_CALL: {
-		int b = GETARG_B(instr);
-		int ret;
+		kp_tab_get(ks, hvalue(RB), RC, RA);
+		DISPATCH();
+	DO_BC_TGETS: { /* A = B[C] */
+		int idx = ~bc_c(instr);
 
-		nresults = GETARG_C(instr) - 1;
-
-		if (b != 0)
-			ks->top = ra + b;
-
-		ret = precall(ks, ra, nresults);
-		if (ret) { /* C function */
-			if (nresults >= 0)
-				ks->top = ci->top;
-			base = ci->u.l.base;
-			break;
-		} else { /* ktap function */
-			ci = ks->ci;
-			/* this flag is used for return time, see OP_RETURN */
-			ci->callstatus |= CIST_REENTRY;
-			goto newframe;
+		if (unlikely(!is_table(RB))) {
+			kp_error(ks, "get key from non-table\n");
+			return;
 		}
-		break;
+		kp_tab_getstr(hvalue(RB), (ktap_str_t *)kbase[idx], RA);
+		DISPATCH();
 		}
-	case OP_TAILCALL: {
-		int b = GETARG_B(instr);
+	DO_BC_TGETB: { /* A = B[C] */
+		/* 8 bit literal C operand as an unsigned integer
+		 * index (0..255)) */
+		uint8_t idx = bc_c(instr);
 
-		if (b != 0)
-			ks->top = ra+b;
-		if (precall(ks, ra, -1))  /* C function? */
-			base = ci->u.l.base;
-		else {
+		if (unlikely(!is_table(RB))) {
+			kp_error(ks, "set key to non-table\n");
+			return;
+		}
+		kp_tab_getint(hvalue(RB), idx, RA);
+		DISPATCH();
+		}
+	DO_BC_TGETR: /* generated by genlibbc, not compiler, not used */
+		return;
+	DO_BC_TSETV: /* B[C] = A */
+		if (unlikely(!is_table(RB))) {
+			kp_error(ks, "set key to non-table\n");
+			return;
+		}
+		kp_tab_set(ks, hvalue(RB), RC, RA);
+		DISPATCH();
+	DO_BC_TINCV: /* B[C] += A */
+		if (unlikely(!is_table(RB))) {
+			kp_error(ks, "set key to non-table\n");
+			return;
+		}
+		if (unlikely(!is_number(RA))) {
+			kp_error(ks, "use '+=' on non-number\n");
+			return;
+		}
+		kp_tab_incr(ks, hvalue(RB), RC, nvalue(RA));
+		DISPATCH();
+	DO_BC_TSETS: { /* B[C] = A */
+		int idx = ~bc_c(instr);
+
+		if (unlikely(!is_table(RB))) {
+			kp_error(ks, "set key to non-table\n");
+			return;
+		}
+		kp_tab_setstr(ks, hvalue(RB), (ktap_str_t *)kbase[idx], RA);
+		DISPATCH();
+		}
+	DO_BC_TINCS: { /* B[C] += A */
+		int idx = ~bc_c(instr);
+
+		if (unlikely(!is_table(RB))) {
+			kp_error(ks, "set key to non-table\n");
+			return;
+		}
+		if (unlikely(!is_number(RA))) {
+			kp_error(ks, "use '+=' on non-number\n");
+			return;
+		}
+		kp_tab_incrstr(ks, hvalue(RB), (ktap_str_t *)kbase[idx],
+				nvalue(RA));
+		DISPATCH();
+		}
+	DO_BC_TSETB: { /* B[C] = A */
+		/* 8 bit literal C operand as an unsigned integer
+		 * index (0..255)) */
+		uint8_t idx = bc_c(instr);
+
+		if (unlikely(!is_table(RB))) {
+			kp_error(ks, "set key to non-table\n");
+			return;
+		}
+		kp_tab_setint(ks, hvalue(RB), idx, RA);
+		DISPATCH();
+		}
+	DO_BC_TINCB: { /* B[C] = A */
+		uint8_t idx = bc_c(instr);
+
+		if (unlikely(!is_table(RB))) {
+			kp_error(ks, "set key to non-table\n");
+			return;
+		}
+		if (unlikely(!is_number(RA))) {
+			kp_error(ks, "use '+=' on non-number\n");
+			return;
+		}
+		kp_tab_incrint(ks, hvalue(RB), idx, nvalue(RA));
+		DISPATCH();
+		}
+	DO_BC_TSETM: /* don't support */
+		return;
+	DO_BC_TSETR: /* generated by genlibbc, not compiler, not used */
+		return;
+	DO_BC_CALLM:
+	DO_BC_CALL: { /* b: return_number + 1; c: argument + 1 */
+		int c = bc_c(instr);
+		int nresults = bc_b(instr) - 1;
+		StkId oldtop = ks->top;
+		StkId newfunc = RA;
+
+		if (op == BC_CALL && c != 0)
+			ks->top = RA + c;
+		else if (op == BC_CALLM)
+			ks->top = RA + c + multres;
+
+		if (itype(newfunc) == KTAP_TCFUNC) { /* light C function */
+			ktap_cfunction f = fvalue(newfunc);
+			int n;
+
+			if (unlikely(checkstack(ks,
+					KTAP_MIN_RESERVED_STACK_SIZE)))
+				return;
+
+			ks->func = newfunc;
+			n = (*f)(ks);
+			if (unlikely(n < 0)) /* error occured */
+				return;
+			poscall(ks, newfunc, ks->top - n, nresults);
+
+			ks->top = oldtop;
+			multres = n + 1; /* set to multres */
+			DISPATCH();
+		} else if (itype(newfunc) == KTAP_TFUNC) { /* ktap function */
+			int n;
+
+			func = newfunc;
+			pt = clvalue(func)->p;
+
+			if (unlikely(checkstack(ks, pt->framesize)))
+				return;
+
+			/* get number of real arguments */
+			n = (int)(ks->top - func) - 1;
+
+			/* complete missing arguments */
+			for (; n < pt->numparams; n++)
+				set_nil(ks->top++);
+
+			base = (!(pt->flags & PROTO_VARARG)) ? func + 1 :
+						adjust_varargs(ks, pt, n);
+
+			fn = clvalue(func);
+			pt = fn->p;
+			kbase = pt->k;
+			func->pcr = pc - 1; /* save pc */
+			ks->top = base + pt->framesize;
+			pc = proto_bc(pt) + 1; /* starting point */
+			DISPATCH();
+		} else {
+			kp_error(ks, "attempt to call nil function\n");
+			return;
+		}
+		}
+	DO_BC_CALLMT: /* don't support */
+		return;
+	DO_BC_CALLT: { /* Tailcall: return A(A+1, ..., A+D-1) */
+		StkId nfunc = RA;
+
+		if (itype(nfunc) == KTAP_TCFUNC) { /* light C function */
+			kp_error(ks, "don't support callt for C function");
+			return;
+		} else if (itype(nfunc) == KTAP_TFUNC) { /* ktap function */
 			int aux;
 
 			/*
 			 * tail call: put called frame (n) in place of
 			 * caller one (o)
 			 */
-			ktap_callinfo *nci = ks->ci;  /* called frame */
-			ktap_callinfo *oci = nci->prev;  /* caller frame */
-			StkId nfunc = nci->func;  /* called function */
-			StkId ofunc = oci->func;  /* caller function */
+			StkId ofunc = func; /* caller function */
 			/* last stack slot filled by 'precall' */
-			StkId lim = nci->u.l.base +
-				    clvalue(nfunc)->p->numparams;
+			StkId lim = nfunc + 1 + clvalue(nfunc)->p->numparams;
 
-			/* close all upvalues from previous call */
-			if (cl->p->sizep > 0)
-				function_close(ks, oci->u.l.base);
+			fn = clvalue(nfunc);
+			ofunc->val = nfunc->val;
 
 			/* move new frame into old one */
-			for (aux = 0; nfunc + aux < lim; aux++)
+			for (aux = 1; nfunc + aux < lim; aux++)
 				set_obj(ofunc + aux, nfunc + aux);
-			/* correct base */
-			oci->u.l.base = ofunc + (nci->u.l.base - nfunc);
-			/* correct top */
-			oci->top = ks->top = ofunc + (ks->top - nfunc);
-			oci->u.l.savedpc = nci->u.l.savedpc;
-			/* remove new frame */
-			ci = ks->ci = oci;
-			/* restart ktap_execute over new ktap function */
-			goto newframe;
-		}
-		break;
-		}
-	case OP_RETURN: {
-		int b = GETARG_B(instr);
-		if (b != 0)
-			ks->top = ra+b-1;
-		if (cl->p->sizep > 0)
-			function_close(ks, base);
-		b = poscall(ks, ra);
 
-		/* if it's called from external invocation, just return */
-		if (!(ci->callstatus & CIST_REENTRY))
-			return;
-
-		ci = ks->ci;
-		if (b)
-			ks->top = ci->top;
-		goto newframe;
-		}
-	case OP_FORLOOP: {
-		ktap_number step = nvalue(ra+2);
-		/* increment index */
-		ktap_number idx = NUMADD(nvalue(ra), step);
-		ktap_number limit = nvalue(ra+1);
-		if (NUMLT(0, step) ? NUMLE(idx, limit) : NUMLE(limit, idx)) {
-			ci->u.l.savedpc += GETARG_sBx(instr);  /* jump back */
-			set_number(ra, idx);  /* update internal index... */
-			set_number(ra+3, idx);  /* ...and external index */
-		}
-		break;
-		}
-	case OP_FORPREP: {
-		const ktap_value *init = ra;
-		const ktap_value *plimit = ra + 1;
-		const ktap_value *pstep = ra + 2;
-
-		if (!ktap_tonumber(init, ra)) {
-			kp_error(ks, KTAP_QL("for")
-				 " initial value must be a number\n");
-			return;
-		} else if (!ktap_tonumber(plimit, ra + 1)) {
-			kp_error(ks, KTAP_QL("for")
-				 " limit must be a number\n");
-			return;
-		} else if (!ktap_tonumber(pstep, ra + 2)) {
-			kp_error(ks, KTAP_QL("for") " step must be a number\n");
+			pt = fn->p;
+			kbase = pt->k;
+			ks->top = base + pt->framesize;
+			pc = proto_bc(pt) + 1; /* starting point */
+			DISPATCH();
+		} else {
+			kp_error(ks, "attempt to call nil function\n");
 			return;
 		}
-
-		set_number(ra, NUMSUB(nvalue(ra), nvalue(pstep)));
-		ci->u.l.savedpc += GETARG_sBx(instr);
-		break;
 		}
-	case OP_TFORCALL: {
-		StkId cb = ra + 3;  /* call base */
-		set_obj(cb + 2, ra + 2);
-		set_obj(cb + 1, ra + 1);
-		set_obj(cb, ra);
-		ks->top = cb + 3;  /* func. + 2 args (state and index) */
-		kp_call(ks, cb, GETARG_C(instr));
-		base = ci->u.l.base;
-		ks->top = ci->top;
-		instr = *(ci->u.l.savedpc++);  /* go to next instruction */
-		ra = RA(instr);
-		}
-		/*go through */
-	case OP_TFORLOOP:
-		if (!is_nil(ra + 1)) {  /* continue loop? */
-			set_obj(ra, ra + 1);  /* save control variable */
-			ci->u.l.savedpc += GETARG_sBx(instr);  /* jump back */
-		}
-		break;
-	case OP_SETLIST: {
-		int n = GETARG_B(instr);
-		int c = GETARG_C(instr);
-		int last;
-		ktap_tab *h;
-
-		if (n == 0)
-			n = (int)(ks->top - ra) - 1;
-		if (c == 0)
-			c = GETARG_Ax(*ci->u.l.savedpc++);
-
-		h = hvalue(ra);
-		last = ((c - 1) * LFIELDS_PER_FLUSH) + n;
-
-		for (; n > 0; n--) {
-			ktap_value *val = ra+n;
-			kp_tab_setint(ks, h, last--, val);
-		}
-		/* correct top (in case of previous open call) */
-		ks->top = ci->top;
-		break;
-		}
-	case OP_CLOSURE: {
-		/* need to use closure cache? (multithread contention issue)*/
-		ktap_proto *p = cl->p->p[GETARG_Bx(instr)];
-		pushclosure(ks, p, cl->upvals, base, ra);
-		break;
-		}
-	case OP_VARARG: {
-		int b = GETARG_B(instr) - 1;
-		int j;
-		int n = (int)(base - ci->func) - cl->p->numparams - 1;
-		if (b < 0) {  /* B == 0? */
-			b = n;  /* get all var. arguments */
-			if(checkstack(ks, n))
-				return;
-			/* previous call may change the stack */
-			ra = RA(instr);
-			ks->top = ra + n;
-		}
-		for (j = 0; j < b; j++) {
-			if (j < n) {
-				set_obj(ra + j, base - n + j);
-			} else
-				set_nil(ra + j);
-		}
-		break;
-		}
-	case OP_EXTRAARG:
+	DO_BC_ITERC: /* don't support it now */
 		return;
+	DO_BC_ITERN: /* Specialized ITERC, if iterator function A-3 is next()*/
+		/* detect hot loop */
+		if (unlikely(check_hot_loop(ks, loop_count++) < 0))
+			return;
 
-	case OP_EVENT: {
-		struct ktap_event *e = ks->current_event;
+		if (kp_tab_next(ks, hvalue(RA - 2), RA)) {
+			donextjump; /* Get jump target from ITERL */
+		} else {
+			pc++; /* jump to ITERL + 1 */
+		}
+		DISPATCH();
+	DO_BC_VARG: /* don't support */
+		return;
+	DO_BC_ISNEXT: /* Verify ITERN specialization and jump */
+		if (!is_cfunc(RA - 3) || !is_table(RA - 2) || !is_nil(RA - 1)
+			|| fvalue(RA - 3) != (ktap_cfunction)kp_tab_next) {
+			/* Despecialize bytecode if any of the checks fail. */
+			setbc_op(pc - 1, BC_JMP);
+			dojump(instr, 0);
+			setbc_op(pc, BC_ITERC);
+		} else {
+			dojump(instr, 0);
+			set_nil(RA); /* init control variable */
+		}
+		DISPATCH();
+	DO_BC_RETM: /* don't support return multiple values */
+	DO_BC_RET:
+		return;
+	DO_BC_RET0:
+		/* if it's called from external invocation, just return */
+		if (!func->pcr)
+			return;
 
-		if (unlikely(!e)) {
-			kp_error(ks, "invalid event context\n");
+		pc = func->pcr; /* restore PC */
+
+		multres = bc_d(instr);
+		set_nil(func);
+
+		base = func - bc_a(*pc);
+		func = base - 1;
+		fn = clvalue(func);
+		kbase = fn->p->k;
+		ks->top = base + pt->framesize;
+		pc++;
+
+		DISPATCH();
+	DO_BC_RET1:
+		/* if it's called from external invocation, just return */
+		if (!func->pcr)
+			return;
+
+		pc = func->pcr; /* restore PC */
+
+		multres = bc_d(instr);
+		set_obj(base - 1, RA); /* move result */
+
+		base = func - bc_a(*pc);
+		func = base - 1;
+		fn = clvalue(func);
+		kbase = fn->p->k;
+		ks->top = base + pt->framesize;
+		pc++;
+
+		DISPATCH();
+	DO_BC_FORI: { /* Numeric 'for' loop init */
+		ktap_number idx;
+		ktap_number limit;
+		ktap_number step;
+
+		if (unlikely(!is_number(RA) || !is_number(RA + 1) ||
+				!is_number(RA + 2))) {
+			kp_error(ks, KTAP_QL("for")
+				 " init/limit/step value must be a number\n");
 			return;
 		}
-		set_event(ra, e);
-		break;
+
+		idx = nvalue(RA);
+		limit = nvalue(RA + 1);
+		step = nvalue(RA + 2);
+
+		if (NUMLT(0, step) ? NUMLE(idx, limit) : NUMLE(limit, idx)) {
+			set_number(RA + 3, nvalue(RA));
+		} else {
+			dojump(instr, 0);
+		}
+		DISPATCH();
+		}
+	DO_BC_JFORI: /* not used */
+		return;
+	DO_BC_FORL: { /* Numeric 'for' loop */
+		ktap_number step = nvalue(RA + 2);
+		/* increment index */
+		ktap_number idx = NUMADD(nvalue(RA), step);
+		ktap_number limit = nvalue(RA + 1);
+		if (NUMLT(0, step) ? NUMLE(idx, limit) : NUMLE(limit, idx)) {
+			dojump(instr, 0); /* jump back */
+			set_number(RA, idx);  /* update internal index... */
+			set_number(RA + 3, idx);  /* ...and external index */
 		}
 
-	case OP_EVENTNAME: {
-		struct ktap_event *e = ks->current_event;
-
-		if (unlikely(!e)) {
-			kp_error(ks, "invalid event context\n");
+		if (unlikely(check_hot_loop(ks, loop_count++) < 0))
 			return;
+
+		DISPATCH();
 		}
-		set_string(ra, kp_str_new(ks, e->call->name));
-		break;
-		}
-	case OP_EVENTARG:
+	DO_BC_IFORL: /* not used */
+	DO_BC_JFORL:
+	DO_BC_ITERL:
+	DO_BC_IITERL:
+	DO_BC_JITERL:
+		return;
+	DO_BC_LOOP: /* Generic loop */
+		/* ktap use this bc to detect hot loop */
+		if (unlikely(check_hot_loop(ks, loop_count++) < 0))
+			return;
+		DISPATCH();
+	DO_BC_ILOOP: /* not used */
+	DO_BC_JLOOP:
+		return;
+	DO_BC_JMP: /* Jump */
+		dojump(instr, 0);
+		DISPATCH();
+	DO_BC_FUNCF: /* function header, not used */
+	DO_BC_IFUNCF:
+	DO_BC_JFUNCF:
+	DO_BC_FUNCV:
+	DO_BC_IFUNCV:
+	DO_BC_JFUNCV:
+	DO_BC_FUNCC:
+	DO_BC_FUNCCW:	
+		return;
+	DO_BC_VARGN: /* arg0 .. arg9*/
 		if (unlikely(!ks->current_event)) {
 			kp_error(ks, "invalid event context\n");
 			return;
 		}
 
-		kp_event_getarg(ks, ra, GETARG_B(instr));
-		break;
-	case OP_LOAD_GLOBAL: {
-		ktap_value *cfunc = cfunction_cache_get(ks, GETARG_C(instr));
-		set_obj(ra, cfunc);
+		kp_event_getarg(ks, RA, bc_d(instr));
+		DISPATCH();
+	DO_BC_VARGSTR: { /* argstr */
+		/*
+		 * If you pass argstr to print/printf function directly,
+		 * then no extra string generated, so don't worry string
+		 * poll size for below case:
+		 *     print(argstr)
+		 *
+		 * If you use argstr as table key like below, then it may
+		 * overflow your string pool size, so be care of on it.
+		 *     table[argstr] = V
+		 *
+		 * If you assign argstr to upval or table value like below,
+		 * it don't really write string, just write type KTAP_TEVENTSTR,
+		 * the value will be interpreted when value print out in valid
+		 * event context, if context mismatch, error will report.
+		 *     table[V] = argstr
+		 *     upval = argstr
+		 *
+		 * If you want to save real string of argstr, then use it like
+		 * below, again, be care of string pool size in this case.
+		 *     table[V] = stringof(argstr)
+		 *     upval = stringof(argstr)
+		 */
+		struct ktap_event_data *e = ks->current_event;
+
+		if (unlikely(!e)) {
+			kp_error(ks, "invalid event context\n");
+			return;
 		}
-		break;
 
-	case OP_EXIT:
-		return;
+		if (e->argstr) /* argstr been stringified */
+			set_string(RA, e->argstr);
+		else
+			set_eventstr(RA);
+		DISPATCH();
+		}
+	DO_BC_VPROBENAME: { /* probename */
+		struct ktap_event_data *e = ks->current_event;
+
+		if (unlikely(!e)) {
+			kp_error(ks, "invalid event context\n");
+			return;
+		}
+		set_string(RA, e->event->name);
+		DISPATCH();
+		}
+	DO_BC_VPID: /* pid */
+		set_number(RA, (int)current->pid);
+		DISPATCH();
+	DO_BC_VTID: /* tid */
+		set_number(RA, (int)task_pid_vnr(current));
+		DISPATCH();
+	DO_BC_VUID: { /* uid */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 5, 0)
+		uid_t uid = from_kuid_munged(current_user_ns(), current_uid());
+#else
+		uid_t uid = current_uid();
+#endif
+		set_number(RA, (int)uid);
+		DISPATCH();
+		}
+	DO_BC_VCPU: /* cpu */
+		set_number(RA, smp_processor_id());
+		DISPATCH();
+	DO_BC_VEXECNAME: { /* execname */
+		ktap_str_t *ts = kp_str_newz(ks, current->comm);
+		if (unlikely(!ts))
+			return;
+		set_string(RA, ts);
+		DISPATCH();
+		}
+	DO_BC_GFUNC: { /* Call built-in C function, patched by BC_GGET */
+		ktap_cfunction cfunc = gfunc_get(ks, bc_d(instr));
+		set_cfunc(RA, cfunc);
+		DISPATCH();
+		}
 	}
-
-	goto mainloop;
 }
-
-void kp_call(ktap_state *ks, StkId func, int nresults)
-{
-	if (!precall(ks, func, nresults))
-		ktap_execute(ks);
-}
-
-static int cfunction_cache_getindex(ktap_state *ks, ktap_value *fname);
 
 /*
- * This function must be called before all code loaded.
+ * Validate byte code and static analysis.
+ *
+ * TODO: more type checking before real running.
  */
-void kp_optimize_code(ktap_state *ks, int level, ktap_proto *f)
+int kp_vm_validate_code(ktap_state_t *ks, ktap_proto_t *pt, ktap_val_t *base)
 {
+	const unsigned int *pc = proto_bc(pt) + 1;
+	unsigned int instr, op;
+	ktap_obj_t **kbase = pt->k;
+	ktap_tab_t *gtab = G(ks)->gtab;
 	int i;
 
-	for (i = 0; i < f->sizecode; i++) {
-		int instr = f->code[i];
-		ktap_value *k = f->k;
+#define RA	(base + bc_a(instr))
+#define RB	(base + bc_b(instr))
+#define RC	(base + bc_c(instr))
+#define RD	(base + bc_d(instr))
 
-		if (GET_OPCODE(instr) == OP_GETTABUP) {
-			if ((GETARG_B(instr) == 0) && ISK(GETARG_C(instr))) {
-				ktap_value *field = k + INDEXK(GETARG_C(instr));
-				if (ttype(field) == KTAP_TYPE_STRING) {
-					int index = cfunction_cache_getindex(ks,
-									field);
-					if (index == -1)
-						break;
+	if (pt->framesize > KP_MAX_SLOTS) {
+		kp_error(ks, "exceed max frame size %d\n", pt->framesize);
+		return -1;
+	}
 
-					SET_OPCODE(instr, OP_LOAD_GLOBAL);
-					SETARG_C(instr, index);
-					f->code[i] = instr;
-					break;
+	if (base + pt->framesize > ks->stack_last) {
+		kp_error(ks, "stack overflow\n");
+		return -1;
+	}
+
+	for (i = 0; i < pt->sizebc - 1; i++) {
+		instr = *pc++;
+		op = bc_op(instr);
+
+
+		if (op >= BC__MAX) {
+			kp_error(ks, "unknown byte code %d\n", op);
+			return -1;
+		}
+
+		switch (op) {
+		case BC_FNEW: {
+			int idx = ~bc_d(instr);
+			ktap_proto_t *newpt = (ktap_proto_t *)kbase[idx];
+			if (kp_vm_validate_code(ks, newpt, RA + 1))
+				return -1;
+
+			break;
+			}
+		case BC_RETM: case BC_RET:
+			kp_error(ks, "don't support return multiple values\n");
+			return -1;
+		case BC_GSET: case BC_GINC: { /* _G[D] = A, _G[D] += A */
+			int idx = ~bc_d(instr);
+			ktap_str_t *ts = (ktap_str_t *)kbase[idx];
+			kp_error(ks, "cannot set global variable '%s'\n",
+					getstr(ts));
+			return -1;
+			}
+		case BC_GGET: {
+			int idx = ~bc_d(instr);
+			ktap_str_t *ts = (ktap_str_t *)kbase[idx];
+			ktap_val_t val;
+			kp_tab_getstr(gtab, ts, &val);
+			if (is_nil(&val)) {
+				kp_error(ks, "undefined global variable"
+						" '%s'\n", getstr(ts));
+				return -1;
+			} else if (is_cfunc(&val)) {
+				int idx = gfunc_getidx(G(ks), fvalue(&val));
+				if (idx >= 0) {
+					/* patch BC_GGET bytecode to BC_GFUNC */
+					setbc_op(pc - 1, BC_GFUNC);
+					setbc_d(pc - 1, idx);
 				}
 			}
+			break;
+			}
+		case BC_ITERC:
+			kp_error(ks, "ktap only support pairs iteraor\n");
+			return -1;
+		case BC_POW:
+			kp_error(ks, "ktap don't support pow arith\n");
+			return -1;
 		}
 	}
 
-	/* continue optimize sub functions */
-	for (i = 0; i < f->sizep; i++)
-		kp_optimize_code(ks, level + 1, f->p[i]);
+	return 0;
 }
 
-static ktap_value *cfunction_cache_get(ktap_state *ks, int index)
+/* return cfunction by idx */
+static ktap_cfunction gfunc_get(ktap_state_t *ks, int idx)
 {
-	return &G(ks)->cfunction_tbl[index];
+	return G(ks)->gfunc_tbl[idx];
 }
 
-static int cfunction_cache_getindex(ktap_state *ks, ktap_value *fname)
+/* get cfunction index, the index is for fast get cfunction in runtime */
+static int gfunc_getidx(ktap_global_state_t *g, ktap_cfunction cfunc)
 {
-	const ktap_value *gt = kp_tab_getint(hvalue(&G(ks)->registry),
-				KTAP_RIDX_GLOBALS);
-	const ktap_value *cfunc;
-	int nr, i;
-
-	nr = G(ks)->nr_builtin_cfunction;
-	cfunc = kp_tab_get(hvalue(gt), fname);
+	int nr = g->nr_builtin_cfunction;
+	ktap_cfunction *gfunc_tbl = g->gfunc_tbl;
+	int i;
 
 	for (i = 0; i < nr; i++) {
-		if (rawequalobj(&G(ks)->cfunction_tbl[i], cfunc))
+		if (gfunc_tbl[i] == cfunc)
 			return i;
 	}
 
 	return -1;
 }
 
-static void cfunction_cache_add(ktap_state *ks, ktap_value *func)
+static void gfunc_add(ktap_state_t *ks, ktap_cfunction cfunc)
 {
 	int nr = G(ks)->nr_builtin_cfunction;
-	set_obj(&G(ks)->cfunction_tbl[nr], func);
+
+	if (nr == KP_MAX_CACHED_CFUNCTION) {
+		kp_error(ks, "please enlarge KP_MAX_CACHED_CFUNCTION %d\n",
+				KP_MAX_CACHED_CFUNCTION);
+		return;
+	}
+	G(ks)->gfunc_tbl[nr] = cfunc;
 	G(ks)->nr_builtin_cfunction++;
 }
 
-static void exit_cfunction_cache(ktap_state *ks)
-{
-	kp_free(ks, G(ks)->cfunction_tbl);
-}
-
-static int init_cfunction_cache(ktap_state *ks)
-{
-	G(ks)->cfunction_tbl = kp_zalloc(ks, sizeof(ktap_value) * 128);
-	if (!G(ks)->cfunction_tbl)
-		return -ENOMEM;
-
-	return 0;
-}
-
 /* function for register library */
-int kp_register_lib(ktap_state *ks, const char *libname, const ktap_Reg *funcs)
+int kp_vm_register_lib(ktap_state_t *ks, const char *libname,
+		       const ktap_libfunc_t *funcs)
 {
-	const ktap_value *gt = kp_tab_getint(hvalue(&G(ks)->registry),
-					     KTAP_RIDX_GLOBALS);
-	ktap_tab *target_tbl;
+	ktap_tab_t *gtab = G(ks)->gtab;
+	ktap_tab_t *target_tbl;
 	int i;
 
 	/* lib is null when register baselib function */
 	if (libname == NULL)
-		target_tbl = hvalue(gt);
+		target_tbl = gtab;
 	else {
-		ktap_value key, val;
+		ktap_val_t key, val;
+		ktap_str_t *ts = kp_str_newz(ks, libname);
+		if (!ts)
+			return -ENOMEM;
 
 		/* calculate the function number contained by this library */
 		for (i = 0; funcs[i].name != NULL; i++) {
 		}
 
-		target_tbl = kp_tab_new(ks, 0, i + 1);
+		target_tbl = kp_tab_new_ah(ks, 0, i + 1);
 		if (!target_tbl)
-			return -1;
+			return -ENOMEM;
 
-		set_string(&key, kp_str_new(ks, libname));
+		set_string(&key, ts);
 		set_table(&val, target_tbl);
-		kp_tab_setvalue(ks, hvalue(gt), &key, &val);
+		kp_tab_set(ks, gtab, &key, &val);
 	}
 
+	/* TODO: be care of same function name issue, foo() and tbl.foo() */
 	for (i = 0; funcs[i].name != NULL; i++) {
-		ktap_value func_name, cl;
+		ktap_str_t *func_name = kp_str_newz(ks, funcs[i].name);
+		ktap_val_t fn;
 
-		set_string(&func_name, kp_str_new(ks, funcs[i].name));
-		set_cfunction(&cl, funcs[i].func);
-		kp_tab_setvalue(ks, target_tbl, &func_name, &cl);
+		if (unlikely(!func_name))
+			return -ENOMEM;
 
-		cfunction_cache_add(ks, &cl);
+		set_cfunc(&fn, funcs[i].func);
+		kp_tab_setstr(ks, target_tbl, func_name, &fn);
+
+		gfunc_add(ks, funcs[i].func);
 	}
 
 	return 0;
 }
 
-static int init_registry(ktap_state *ks)
+static int init_registry(ktap_state_t *ks)
 {
-	ktap_tab *registry = kp_tab_new(ks, 2, 0);
-	ktap_value global_tbl;
-	ktap_value mt;
-	ktap_tab *t;
+	ktap_tab_t *registry = kp_tab_new_ah(ks, 2, 0);
+	ktap_val_t gtbl;
+	ktap_tab_t *t;
 
 	if (!registry)
 		return -1;
 
 	set_table(&G(ks)->registry, registry);
-	set_thread(&mt, ks);
-	kp_tab_setint(ks, registry, KTAP_RIDX_MAINTHREAD, &mt);
 
 	/* assume there will have max 1024 global variables */
-	t = kp_tab_new(ks, 0, 1024);
+	t = kp_tab_new_ah(ks, 0, 1024);
 	if (!t)
 		return -1;
 
-	set_table(&global_tbl, t);
-	kp_tab_setint(ks, registry, KTAP_RIDX_GLOBALS, &global_tbl);
+	set_table(&gtbl, t);
+	kp_tab_setint(ks, registry, KTAP_RIDX_GLOBALS, &gtbl);
+	G(ks)->gtab = t;
 
 	return 0;
 }
 
-static int init_arguments(ktap_state *ks, int argc, char __user **user_argv)
+static int init_arguments(ktap_state_t *ks, int argc, char __user **user_argv)
 {
-	const ktap_value *gt = kp_tab_getint(hvalue(&G(ks)->registry),
-			   KTAP_RIDX_GLOBALS);
-	ktap_tab *global_tbl = hvalue(gt);
-	ktap_tab *arg_tbl = kp_tab_new(ks, argc, 1);
-	ktap_value arg_tblval;
-	ktap_value arg_tsval;
+	ktap_tab_t *gtbl = G(ks)->gtab;
+	ktap_tab_t *arg_tbl = kp_tab_new_ah(ks, argc, 1);
+	ktap_val_t arg_tblval;
+	ktap_val_t arg_tsval;
+	ktap_str_t *argts = kp_str_newz(ks, "arg");
 	char **argv;
 	int i, ret;
 
 	if (!arg_tbl)
 		return -1;
 
-	set_string(&arg_tsval, kp_str_new(ks, "arg"));
+	if (unlikely(!argts))
+		return -ENOMEM;
+
+	set_string(&arg_tsval, argts);
 	set_table(&arg_tblval, arg_tbl);
-	kp_tab_setvalue(ks, global_tbl, &arg_tsval, &arg_tblval);
+	kp_tab_set(ks, gtbl, &arg_tsval, &arg_tblval);
 
 	if (!argc)
 		return 0;
@@ -1117,7 +1361,7 @@ static int init_arguments(ktap_state *ks, int argc, char __user **user_argv)
 
 	ret = 0;
 	for (i = 0; i < argc; i++) {
-		ktap_value val;
+		ktap_val_t val;
 		char __user *ustr = argv[i];
 		char *kstr;
 		int len;
@@ -1136,6 +1380,7 @@ static int init_arguments(ktap_state *ks, int argc, char __user **user_argv)
 		}
 
 		if (strncpy_from_user(kstr, ustr, len) < 0) {
+			kfree(kstr);
 			ret = -EFAULT;
 			break;
 		}
@@ -1144,8 +1389,16 @@ static int init_arguments(ktap_state *ks, int argc, char __user **user_argv)
 
 		if (!kstrtoint(kstr, 10, &res)) {
 			set_number(&val, res);
-		} else
-			set_string(&val, kp_str_new(ks, kstr));
+		} else {
+			ktap_str_t *ts = kp_str_newz(ks, kstr);
+			if (unlikely(!ts)) {
+				kfree(kstr);
+				ret = -ENOMEM;
+				break;
+			}
+				
+			set_string(&val, ts);
+		}
 
 		kp_tab_setint(ks, arg_tbl, i, &val);
 
@@ -1156,111 +1409,112 @@ static int init_arguments(ktap_state *ks, int argc, char __user **user_argv)
 	return ret;
 }
 
-static void free_percpu_data(ktap_state *ks)
+static void free_preserved_data(ktap_state_t *ks)
 {
-	int i, j;
+	int cpu, i, j;
 
-	for (i = 0; i < KTAP_PERCPU_DATA_MAX; i++) {
-		for (j = 0; j < PERF_NR_CONTEXTS; j++)
-			free_percpu(G(ks)->pcpu_data[i][j]);
-	}
-
-	for (j = 0; j < PERF_NR_CONTEXTS; j++)
-		if (G(ks)->recursion_context[j])
-			free_percpu(G(ks)->recursion_context[j]);
-}
-
-static int init_percpu_data(ktap_state *ks)
-{
-	int data_size[KTAP_PERCPU_DATA_MAX] = {
-		sizeof(ktap_state), KTAP_STACK_SIZE_BYTES,
-		KTAP_PERCPU_BUFFER_SIZE, KTAP_PERCPU_BUFFER_SIZE,
-		sizeof(ktap_btrace) + (KTAP_MAX_STACK_ENTRIES *
-			sizeof(unsigned long))};
-	int i, j;
-
-	for (i = 0; i < KTAP_PERCPU_DATA_MAX; i++) {
+	/* free stack for each allocated ktap_state */
+	for_each_possible_cpu(cpu) {
 		for (j = 0; j < PERF_NR_CONTEXTS; j++) {
-			void __percpu *data = __alloc_percpu(data_size[i],
-							     __alignof__(char));
-			if (!data)
-				goto fail;
-			G(ks)->pcpu_data[i][j] = data;
+			void *percpu_state = G(ks)->percpu_state[j];
+			ktap_state_t *pks;
+
+			if (!percpu_state)
+				break;
+			pks = per_cpu_ptr(percpu_state, cpu);
+			if (!ks)
+				break;
+			kfree(pks->stack);
 		}
 	}
 
-	for (j = 0; j < PERF_NR_CONTEXTS; j++) {
-		G(ks)->recursion_context[j] = alloc_percpu(int);
-		if (!G(ks)->recursion_context[j])
+	/* free percpu ktap_state */
+	for (i = 0; i < PERF_NR_CONTEXTS; i++) {
+		if (G(ks)->percpu_state[i])
+			free_percpu(G(ks)->percpu_state[i]);
+	}
+
+	/* free percpu ktap print buffer */
+	for (i = 0; i < PERF_NR_CONTEXTS; i++) {
+		if (G(ks)->percpu_print_buffer[i])
+			free_percpu(G(ks)->percpu_print_buffer[i]);
+	}
+
+	/* free percpu ktap temp buffer */
+	for (i = 0; i < PERF_NR_CONTEXTS; i++) {
+		if (G(ks)->percpu_temp_buffer[i])
+			free_percpu(G(ks)->percpu_temp_buffer[i]);
+	}
+
+	/* free percpu ktap recursion context flag */
+	for (i = 0; i < PERF_NR_CONTEXTS; i++)
+		if (G(ks)->recursion_context[i])
+			free_percpu(G(ks)->recursion_context[i]);
+}
+
+#define ALLOC_PERCPU(size)  __alloc_percpu(size, __alignof__(char))
+static int init_preserved_data(ktap_state_t *ks)
+{
+	void __percpu *data;
+	int cpu, i, j;
+
+	/* init percpu ktap_state */
+	for (i = 0; i < PERF_NR_CONTEXTS; i++) {
+		data = ALLOC_PERCPU(sizeof(ktap_state_t));
+		if (!data)
 			goto fail;
+		G(ks)->percpu_state[i] = data;
+	}
+
+	/* init stack for each allocated ktap_state */
+	for_each_possible_cpu(cpu) {
+		for (j = 0; j < PERF_NR_CONTEXTS; j++) {
+			void *percpu_state = G(ks)->percpu_state[j];
+			ktap_state_t *pks;
+
+			if (!percpu_state)
+				break;
+			pks = per_cpu_ptr(percpu_state, cpu);
+			if (!ks)
+				break;
+			pks->stack = kzalloc(KTAP_STACK_SIZE_BYTES, GFP_KERNEL);
+			if (!pks->stack)
+				goto fail;
+
+			pks->stack_last = pks->stack + KTAP_STACK_SIZE;
+			G(pks) = G(ks);
+		}
+	}
+
+	/* init percpu ktap print buffer */
+	for (i = 0; i < PERF_NR_CONTEXTS; i++) {
+		data = ALLOC_PERCPU(KTAP_PERCPU_BUFFER_SIZE);
+		if (!data)
+			goto fail;
+		G(ks)->percpu_print_buffer[i] = data;
+	}
+
+	/* init percpu ktap temp buffer */
+	for (i = 0; i < PERF_NR_CONTEXTS; i++) {
+		data = ALLOC_PERCPU(KTAP_PERCPU_BUFFER_SIZE);
+		if (!data)
+			goto fail;
+		G(ks)->percpu_temp_buffer[i] = data;
+	}
+
+	/* init percpu ktap recursion context flag */
+	for (i = 0; i < PERF_NR_CONTEXTS; i++) {
+		data = alloc_percpu(int);
+		if (!data)
+			goto fail;
+		G(ks)->recursion_context[i] = data;
 	}
 
 	return 0;
 
  fail:
-	free_percpu_data(ks);
+	free_preserved_data(ks);
 	return -ENOMEM;
-}
-
-static void init_ktap_stack(ktap_state *ks)
-{
-	ktap_callinfo *ci;
-
-	/* init all stack vaule to nil */
-	memset(ks->stack, 0, KTAP_STACK_SIZE_BYTES);
-
-	ks->top = ks->stack;
-	ks->stack_last = ks->stack + KTAP_STACK_SIZE;
-
-	ci = &ks->baseci;
-	ci->callstatus = 0;
-	ci->func = ks->top;
-	ci->top = ks->top + KTAP_MIN_RESERVED_STACK_SIZE;
-	ks->ci = ci;
-}
-
-static void free_all_ci(ktap_state *ks)
-{
-	int cpu, j;
-
-	for_each_possible_cpu(cpu) {
-		for (j = 0; j < PERF_NR_CONTEXTS; j++) {
-			void *pcd = G(ks)->pcpu_data[KTAP_PERCPU_DATA_STATE][j];
-			ktap_state *ks;
-
-			if (!pcd)
-				break;
-
-			ks = per_cpu_ptr(pcd, cpu);
-			if (!ks)
-				break;
-
-			free_ci(ks);
-		}
-	}
-
-	free_ci(ks);
-}
-
-void kp_thread_exit(ktap_state *ks)
-{
-	/* free local allocation objects, like annotate strings */
-	if (ks->gclist)
-		kp_obj_free_gclist(ks, ks->gclist);
-	if (ks->openupval)
-		kp_obj_free_gclist(ks, ks->openupval);
-}
-
-ktap_state *kp_thread_new(ktap_state *mainthread)
-{
-	ktap_state *ks;
-
-	ks = kp_percpu_data(mainthread, KTAP_PERCPU_DATA_STATE);
-	ks->stack = kp_percpu_data(mainthread, KTAP_PERCPU_DATA_STACK);
-	G(ks) = G(mainthread);
-	ks->gclist = NULL;
-	init_ktap_stack(ks);
-	return ks;
 }
 
 /*
@@ -1277,7 +1531,7 @@ ktap_state *kp_thread_new(ktap_state *mainthread)
  * Also ktap mainthread must wait ktapio thread exit, otherwise ktapio
  * thread will oops when access ktap structure.
  */
-static void wait_user_completion(ktap_state *ks)
+static void wait_user_completion(ktap_state_t *ks)
 {
 	struct task_struct *tsk = G(ks)->task;
 	G(ks)->wait_user = 1;
@@ -1292,8 +1546,8 @@ static void wait_user_completion(ktap_state *ks)
 	}
 }
 
-static void sleep_loop(ktap_state *ks,
-			int (*actor)(ktap_state *ks, void *arg), void *arg)
+static void sleep_loop(ktap_state_t *ks,
+			int (*actor)(ktap_state_t *ks, void *arg), void *arg)
 {
 	while (!ks->stop) {
 		set_current_state(TASK_INTERRUPTIBLE);
@@ -1305,7 +1559,7 @@ static void sleep_loop(ktap_state *ks,
 	}
 }
 
-static int sl_wait_task_pause_actor(ktap_state *ks, void *arg)
+static int sl_wait_task_pause_actor(ktap_state_t *ks, void *arg)
 {
 	struct task_struct *task = (struct task_struct *)arg;
 
@@ -1315,7 +1569,7 @@ static int sl_wait_task_pause_actor(ktap_state *ks, void *arg)
 		return 0;
 }
 
-static int sl_wait_task_exit_actor(ktap_state *ks, void *arg)
+static int sl_wait_task_exit_actor(ktap_state_t *ks, void *arg)
 {
 	struct task_struct *task = (struct task_struct *)arg;
 
@@ -1334,14 +1588,15 @@ static int sl_wait_task_exit_actor(ktap_state *ks, void *arg)
 	return 0;
 }
 
-/* kp_wait: used for mainthread waiting for exit */
-static void kp_wait(ktap_state *ks)
+/* wait user interrupt, signal killed */
+static void wait_user_interrupt(ktap_state_t *ks)
 {
 	struct task_struct *task = G(ks)->trace_task;
 
-	if (G(ks)->exit)
+	if (G(ks)->state == KTAP_EXIT || G(ks)->state == KTAP_ERROR)
 		return;
 
+	/* let tracing goes now. */
 	ks->stop = 0;
 
 	if (G(ks)->parm->workload) {
@@ -1358,109 +1613,34 @@ static void kp_wait(ktap_state *ks)
 	sleep_loop(ks, sl_wait_task_exit_actor, task);
 }
 
-static unsigned int kp_stub_exit_instr;
-
-static inline void set_next_as_exit(ktap_state *ks)
-{
-	ktap_callinfo *ci;
-
-	ci = ks->ci;
-	if (!ci)
-		return;
-
-	ci->u.l.savedpc = &kp_stub_exit_instr;
-
-	/* See precall, ci changed to ci->prev after invoke C function */
-	if (ci->prev) {
-		ci = ci->prev;
-		ci->u.l.savedpc = &kp_stub_exit_instr;
-	}
-}
-
-/*
- * This function only tell ktapvm this thread want to exit,
- * let mainthread handle real exit work later.
- */
-void kp_prepare_to_exit(ktap_state *ks)
-{
-	set_next_as_exit(ks);
-
-	G(ks)->mainthread->stop = 1;
-	G(ks)->exit = 1;
-}
-
-void kp_init_exit_instruction(void)
-{
-	SET_OPCODE(kp_stub_exit_instr, OP_EXIT);
-}
-
-/*
- * Be careful in stats_cleanup, only can use kp_printf, since almost
- * all ktap resources already freed now.
- */
-static void exit_stats(ktap_state *ks)
-{
-	ktap_stats __percpu *stats = G(ks)->stats;
-	int mem_allocated = 0, nr_mem_allocate = 0;
-	int events_hits = 0, events_missed = 0;
-	int cpu;
-
-	for_each_possible_cpu(cpu) {
-		ktap_stats *per_stats = per_cpu_ptr(stats, cpu);
-		mem_allocated += per_stats->mem_allocated;
-		nr_mem_allocate += per_stats->nr_mem_allocate;
-		events_hits += per_stats->events_hits;
-		events_missed += per_stats->events_missed;
-	}
-
-	kp_verbose_printf(ks, "ktap stats:\n");
-	kp_verbose_printf(ks, "memory allocated size: %d\n", mem_allocated);
-	kp_verbose_printf(ks, "memory allocate num: %d\n", nr_mem_allocate);
-	kp_verbose_printf(ks, "events_hits: %d\n", events_hits);
-	kp_verbose_printf(ks, "events_missed: %d\n", events_missed);
-
-	if (stats)
-		free_percpu(stats);
-}
-
-static int init_stats(ktap_state *ks)
-{
-	ktap_stats __percpu *stats = alloc_percpu(ktap_stats);
-	if (!stats)
-		return -ENOMEM;
-
-	G(ks)->stats = stats;
-	return 0;
-}
-
 /*
  * ktap exit, free all resources.
  */
-void kp_final_exit(ktap_state *ks)
+void kp_vm_exit(ktap_state_t *ks)
 {
-	if (!list_empty(&G(ks)->probe_events_head) ||
+	if (!list_empty(&G(ks)->events_head) ||
 	    !list_empty(&G(ks)->timers))
-		kp_wait(ks);
+		wait_user_interrupt(ks);
 
 	kp_exit_timers(ks);
-	kp_probe_exit(ks);
+	kp_events_exit(ks);
 
 	/* free all resources got by ktap */
 #ifdef CONFIG_KTAP_FFI
 	ffi_free_symbols(ks);
 #endif
 	kp_str_freeall(ks);
+	kp_mempool_destroy(ks);
+
+	func_closeuv(ks, 0); /* close all open upvals, let below call free it */
 	kp_obj_freeall(ks);
-	exit_cfunction_cache(ks);
 
-	kp_thread_exit(ks);
+	kp_vm_exit_thread(ks);
 	kp_free(ks, ks->stack);
-	free_all_ci(ks);
 
-	free_percpu_data(ks);
+	free_preserved_data(ks);
 	free_cpumask_var(G(ks)->cpumask);
 
-	exit_stats(ks);
 	wait_user_completion(ks);
 
 	/* should invoke after wait_user_completion */
@@ -1468,37 +1648,37 @@ void kp_final_exit(ktap_state *ks)
 		put_task_struct(G(ks)->trace_task);
 
 	kp_transport_exit(ks);
-	kp_free(ks, ks);
+	kp_free(ks, ks); /* free self */
 }
 
 /*
  * ktap mainthread initization
  */
-ktap_state *kp_newstate(ktap_parm *parm, struct dentry *dir)
+ktap_state_t *kp_vm_new_state(ktap_option_t *parm, struct dentry *dir)
 {
-	ktap_state *ks;
+	ktap_state_t *ks;
+	ktap_global_state_t *g;
 	pid_t pid;
 	int cpu;
 
-	ks = kzalloc(sizeof(ktap_state) + sizeof(ktap_global_state),
+	ks = kzalloc(sizeof(ktap_state_t) + sizeof(ktap_global_state_t),
 		     GFP_KERNEL);
 	if (!ks)
 		return NULL;
 
-	G(ks) = (ktap_global_state *)(ks + 1);
-	G(ks)->mainthread = ks;
-	G(ks)->seed = 201236; /* todo: make more random in future */
-	G(ks)->task = current;
-	G(ks)->parm = parm;
-	G(ks)->str_lock = (arch_spinlock_t)__ARCH_SPIN_LOCK_UNLOCKED;
-	G(ks)->uvhead.u.l.prev = &G(ks)->uvhead;
-	G(ks)->uvhead.u.l.next = &G(ks)->uvhead;
-	G(ks)->exit = 0;
-	INIT_LIST_HEAD(&(G(ks)->timers));
-	INIT_LIST_HEAD(&(G(ks)->probe_events_head));
+	G(ks) = (ktap_global_state_t *)(ks + 1);
+	g = G(ks);
+	g->mainthread = ks;
+	g->task = current;
+	g->parm = parm;
+	g->str_lock = (arch_spinlock_t)__ARCH_SPIN_LOCK_UNLOCKED;
+	g->strmask = ~(int)0;
+	g->uvhead.prev = &g->uvhead;
+	g->uvhead.next = &g->uvhead;
+	g->state = KTAP_RUNNING;
+	INIT_LIST_HEAD(&(g->timers));
+	INIT_LIST_HEAD(&(g->events_head));
 
-	if (init_stats(ks))
-		goto out;
 	if (kp_transport_init(ks, dir))
 		goto out;
 
@@ -1506,7 +1686,8 @@ ktap_state *kp_newstate(ktap_parm *parm, struct dentry *dir)
 	if (!ks->stack)
 		goto out;
 
-	init_ktap_stack(ks);
+	ks->stack_last = ks->stack + KTAP_STACK_SIZE;
+	ks->top = ks->stack;
 
 	pid = (pid_t)parm->trace_pid;
 	if (pid != -1) {
@@ -1519,15 +1700,15 @@ ktap_state *kp_newstate(ktap_parm *parm, struct dentry *dir)
 			rcu_read_unlock();
 			goto out;
 		}
-		G(ks)->trace_task = task;
+		g->trace_task = task;
 		get_task_struct(task);
 		rcu_read_unlock();
 	}
 
-	if( !alloc_cpumask_var(&G(ks)->cpumask, GFP_KERNEL))
+	if( !alloc_cpumask_var(&g->cpumask, GFP_KERNEL))
 		goto out;
 
-	cpumask_copy(G(ks)->cpumask, cpu_online_mask);
+	cpumask_copy(g->cpumask, cpu_online_mask);
 
 	cpu = parm->trace_cpu;
 	if (cpu != -1) {
@@ -1536,49 +1717,51 @@ ktap_state *kp_newstate(ktap_parm *parm, struct dentry *dir)
 			goto out;
 		}
 
-		cpumask_clear(G(ks)->cpumask);
-		cpumask_set_cpu(cpu, G(ks)->cpumask);
+		cpumask_clear(g->cpumask);
+		cpumask_set_cpu(cpu, g->cpumask);
 	}
 
-	if (init_cfunction_cache(ks))
+	if (kp_mempool_init(ks, KP_MAX_MEMPOOL_SIZE))
 		goto out;
 
-	kp_strtab_resize(ks, 512); /* set inital string hashtable size */
+	if (kp_str_resize(ks, 1024 - 1)) /* set string hashtable size */
+		goto out;
 
 	if (init_registry(ks))
 		goto out;
 	if (init_arguments(ks, parm->argc, parm->argv))
 		goto out;
 
-	/* init library */
-	if (kp_init_baselib(ks))
+	/* init librarys */
+	if (kp_lib_init_base(ks))
 		goto out;
-	if (kp_init_kdebuglib(ks))
+	if (kp_lib_init_kdebug(ks))
 		goto out;
-	if (kp_init_timerlib(ks))
+	if (kp_lib_init_timer(ks))
 		goto out;
-	if (kp_init_ansilib(ks))
+	if (kp_lib_init_ansi(ks))
 		goto out;
 #ifdef CONFIG_KTAP_FFI
-	if (kp_init_ffilib(ks))
+	if (kp_lib_init_ffi(ks))
 		goto out;
 #endif
-	if (kp_init_tablelib(ks))
+	if (kp_lib_init_table(ks))
 		goto out;
 
-	if (kp_init_netlib(ks))
+	if (kp_lib_init_net(ks))
 		goto out;
 
-	if (init_percpu_data(ks))
+	if (init_preserved_data(ks))
 		goto out;
-	if (kp_probe_init(ks))
+
+	if (kp_events_init(ks))
 		goto out;
 
 	return ks;
 
  out:
-	G(ks)->exit = 1;
-	kp_final_exit(ks);
+	g->state = KTAP_ERROR;
+	kp_vm_exit(ks);
 	return NULL;
 }
 

@@ -10,7 +10,7 @@ __DATA__
 === TEST 1: zero divide
 --- src
 
-a = 1/0
+var a = 1/0
 #should not go here
 print("failed")
 

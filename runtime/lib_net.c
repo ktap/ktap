@@ -29,15 +29,14 @@
 /**
  * Return the source IP address for a given sock
  */
-static int kplib_ip_sock_saddr(ktap_state *ks)
+static int kplib_net_ip_sock_saddr(ktap_state_t *ks)
 {
 	struct inet_sock *isk;
 	int family;
 
-	kp_arg_check(ks, 1, KTAP_TYPE_NUMBER);
+	/* TODO: need to validate the address firstly */	
 
-	/* need to validate the address firstly */	
-	isk = (struct inet_sock *)nvalue(kp_arg(ks, 1));
+	isk = (struct inet_sock *)kp_arg_checknumber(ks, 1);
 	family = isk->sk.__sk_common.skc_family;
 
 	if (family == AF_INET) {
@@ -54,15 +53,14 @@ static int kplib_ip_sock_saddr(ktap_state *ks)
 /**
  * Return the destination IP address for a given sock
  */
-static int kplib_ip_sock_daddr(ktap_state *ks)
+static int kplib_net_ip_sock_daddr(ktap_state_t *ks)
 {
 	struct inet_sock *isk;
 	int family;
 
-	kp_arg_check(ks, 1, KTAP_TYPE_NUMBER);
+	/* TODO: need to validate the address firstly */	
 
-	/* need to validate the address firstly */	
-	isk = (struct inet_sock *)nvalue(kp_arg(ks, 1));
+	isk = (struct inet_sock *)kp_arg_checknumber(ks, 1);
 	family = isk->sk.__sk_common.skc_family;
 
 	if (family == AF_INET) {
@@ -80,28 +78,30 @@ static int kplib_ip_sock_daddr(ktap_state *ks)
 /**
  * Returns a string representation for an IP address
  */
-static int kplib_format_ip_addr(ktap_state *ks)
+static int kplib_net_format_ip_addr(ktap_state_t *ks)
 {
+	__be32 ip = (__be32)kp_arg_checknumber(ks, 1);
+	ktap_str_t *ts;
 	char ipstr[32];
-	__be32 ip;
 
-	kp_arg_check(ks, 1, KTAP_TYPE_NUMBER);
-	ip = (__be32)nvalue(kp_arg(ks, 1));
-	
 	snprintf(ipstr, 32, "%pI4", &ip);
-	set_string(ks->top, kp_str_new(ks, ipstr));
-	incr_top(ks);
-	return 1;
+	ts = kp_str_newz(ks, ipstr);
+	if (ts) {
+		set_string(ks->top, kp_str_newz(ks, ipstr));
+		incr_top(ks);
+		return 1;
+	} else
+		return -1;
 }
 
-static const ktap_Reg net_funcs[] = {
-	{"ip_sock_saddr", kplib_ip_sock_saddr},
-	{"ip_sock_daddr", kplib_ip_sock_daddr},
-	{"format_ip_addr", kplib_format_ip_addr},
+static const ktap_libfunc_t net_lib_funcs[] = {
+	{"ip_sock_saddr", kplib_net_ip_sock_saddr},
+	{"ip_sock_daddr", kplib_net_ip_sock_daddr},
+	{"format_ip_addr", kplib_net_format_ip_addr},
 	{NULL}
 };
 
-int kp_init_netlib(ktap_state *ks)
+int kp_lib_init_net(ktap_state_t *ks)
 {
-	return kp_register_lib(ks, "net", net_funcs); 
+	return kp_vm_register_lib(ks, "net", net_lib_funcs); 
 }
