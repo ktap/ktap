@@ -71,9 +71,7 @@ ktap's syntax is designed with the C language syntax in mind. This is for loweri
 
 * Variable declarations
 
-    The biggest syntax differences with C is that ktap is a dynamically-typed
-language, so you won't need add any variable type declaration, just
-use the variable.
+    The biggest syntax differences with C is that ktap is a dynamically-typed language, so you won't need add any variable type declaration, just use the variable.
 * Functions
 
     All functions in ktap should use keyword "function" declaration
@@ -129,9 +127,7 @@ How to use tables:
 
 **print (...)**
 
-Receives any number of arguments, and prints their values.
-print is not intended for formatted output, but only as a
-quick way to show values, typically for debugging.
+Receives any number of arguments, and prints their values. print is not intended for formatted output, but only as a quick way to show values, typically for debugging.
 
 For formatted output, use `printf` instead.
 
@@ -141,8 +137,7 @@ Similar to C's `printf`, for formatted string output.
 
 **pairs (t)**
 
-Returns three values: the next function, the table t, and nil,
-so that the construction
+Returns three values: the next function, the table t, and nil, so that the construction
 
     for (k, v in pairs(t)) { body }
 
@@ -187,8 +182,7 @@ accepts a table and outputs the table histogram to the user.
 
 This function is the underlying interface for the higher level tracing primitives.
 
-Note that the `eventdef_info` argument is just a C pointer value pointing to a userspace memory block holding the real
-`eventdef_info` structure. The structure definition is as follows:
+Note that the `eventdef_info` argument is just a C pointer value pointing to a userspace memory block holding the real `eventdef_info` structure. The structure definition is as follows:
 
     struct ktap_eventdesc {
 	int nr; /* the number to id */
@@ -204,9 +198,7 @@ The second argument in above example is a ktap function object:
 
 **kdebug.trace_end (endfunc)**
 
-This function is used for invoking a function when tracing ends, it will wait
-until the user presses `CTRL-C` to stop tracing, then ktap will call the argument, the `endfunc` function. The
-user could output tracing results in that function, or do other things.
+This function is used for invoking a function when tracing ends, it will wait until the user presses `CTRL-C` to stop tracing, then ktap will call the argument, the `endfunc` function. The user could output tracing results in that function, or do other things.
 
 User usually do not need to use the `kdebug` library directly and just use the `trace`/`trace_end` keywords provided by the language.
 
@@ -417,8 +409,9 @@ simple event tracing
 * ktap has a much shorter startup time than SystemTap (try the helloword script).
 * ktap has a smaller memory footprint than SystemTap
 * Some scripts show that ktap has a little lower overhead than SystemTap
-(we chose two scripts to compare, function profile, stack profile.
-this is not means all scripts in SystemTap have big overhead than ktap)
+(See more performance comparison between ktap and stap in test/benchmark/.
+ stap wins on number computation, and ktap wins on table operation;
+ Normally ktap have little memory consuming than stap)
 
 # FAQ
 
@@ -436,10 +429,7 @@ A: Using bytecode is a clean and lightweight solution,
    The bytecode-based design also makes execution safer than the native code
    generation approach.
 
-   It is already observed that SystemTap is not widely used in embedded Linux systems.
-   This is mainly caused by the problem of SystemTap's design decisions in its architecture design. It is a natural
-   design for Red Hat and IBM, because Red Hat/IBM is focusing on the server area,
-   not embedded area.
+   It is already observed that SystemTap is not widely used in embedded Linux systems. This is mainly caused by the problem of SystemTap's design decisions in its architecture design. It is a natural design for Red Hat and IBM, because Red Hat/IBM is focusing on the server area, not embedded area.
 
 **Q: What's the differences with SystemTap and DTrace?**
 
@@ -458,7 +448,7 @@ A: For SystemTap, the answer is already mentioned in the above question,
    It seems that DTrace for Linux only supports x86 architecture, doesn't work on
    PowerPC and ARM/MIPS. Obviously it's not suited for embedded Linux currently.
 
-   DTrace uses ctf as input for debuginfo handing, compared to vmlinux for
+   DTrace uses CTF as input for debuginfo handing, compared to vmlinux for
    SystemTap.
 
    On the license part, DTrace is released as CDDL, which is incompatible with
@@ -468,51 +458,26 @@ A: For SystemTap, the answer is already mentioned in the above question,
 
 A: It's hard to say which one is better than the other. Dynamically-typed
    languages bring efficiency and fast prototype production, but lose type
-   checking at the compile phase, and it's easy to make mistake in runtime. It also
-   needs many runtime checks. In contrast, statically-typed languages win on
-   programming safety and performance. Statically-typed languages would suit for
-   interoperation with the kernel, as the kernel is written mainly in C. Note that
-   SystemTap and DTrace both use statically-typed languages.
+   checking at the compile phase, and it's easy to make mistake in runtime. It also needs many runtime checks. In contrast, statically-typed languages win on programming safety and performance. Statically-typed languages would suit for interoperation with the kernel, as the kernel is written mainly in C. Note that SystemTap and DTrace both use statically-typed languages.
 
    ktap chooses a dynamically-typed language for its initial implementation.
 
 **Q: Why do we need ktap for event tracing? There is already a built-in ftrace**
 
 A: This is also a common question for all dynamic tracing tools, not only ktap.
-   ktap provides more flexibility than the built-in tracing infrastructure. Suppose
-   you need to print a global variable at a tracepoint hit, or you want to print
-   a backtrace. Furthermore, you want to store some info into an associative array, and
-   display it as a histogram when tracing ends. `ftrace` cannot handle all these requirements.
-   Overall, ktap provides you with great flexibility to script your own trace
-   needs.
+   ktap provides more flexibility than the built-in tracing infrastructure. Suppose you need to print a global variable at a tracepoint hit, or you want to print a backtrace. Furthermore, you want to store some info into an associative array, and display it as a histogram when tracing ends. `ftrace` cannot handle all these requirements. Overall, ktap provides you with great flexibility to script your own trace needs.
 
 **Q: How about the performance? Is ktap slow?**
 
-A: ktap is not slow. The bytecode is very high-level, based on Lua. The language's
-   virtual machine is register-based (compared to the stack-based JVM and CLR), with a small number of
-   instructions. The table data structure is heavily optimized in ktapvm.
-   ktap uses per-cpu allocation in many places, without the global locking scheme.
-   It is very fast when executing tracepoint callbacks.
-   Performance benchmarks show that the overhead of ktap runtime is nearly
-   10% (storing event name into associative array), compared to the full speed
-   running time without any tracepoints enabled.
+A: ktap is not slow. The bytecode is very high-level, based on Luajit. The language's virtual machine is register-based (compared to the stack-based JVM and CLR), with a small number of instructions. The table data structure is heavily optimized in ktapvm. ktap uses per-cpu allocation in many places, without the global locking scheme. It is very fast when executing tracepoint callbacks. Performance benchmarks show that the overhead of associative array operation is smaller than Systemtap.
 
-   ktap will keep optimizing unfailingly. Hopefully the overhead will
-   decrease to little more than 5%, or even less.
+   ktap will keep optimizing unfailingly.
 
 **Q: Why not port a higher-level language, like Python or Java, directly into the kernel?**
 
-A: I am serious on the size of VM and the memory footprint. The Python VM is too large
-   for embedding into the kernel, and Python has many advanced functionalities
-   which we do not really need.
+A: I am serious on the size of VM and the memory footprint. The Python VM is too large for embedding into the kernel, and Python has many advanced functionalities which we do not really need.
 
-   The number of bytecode opcodes of other higher level languages is also big. ktap only has 32
-   bytecode opcodes, whereas Python/Java/Erlang all have nearly two hundred opcodes.
-   There are also some problems when porting those languages into the kernel.
-   Kernel programming is very different from userspace programming,
-   like lack of floating-point numbers, handling sleeping code, deadloop is
-   not allowed in the kernel, multi-thread management, etc. So it is impossible
-   to port large language implementations over to the kernel environment with trivial efforts.
+   There are also some problems when porting those languages into the kernel. Kernel programming is very different from userspace programming, like lack of floating-point numbers, handling sleeping code, deadloop is not allowed in the kernel, multi-thread management, etc. So it is impossible to port large language implementations over to the kernel environment with trivial efforts.
 
 **Q: What is the status of ktap now?**
 
@@ -528,8 +493,7 @@ A: Patches welcome! Volunteers welcome!
 
 **Q: What's the plan for ktap? Is there a roadmap?**
 
-A: The current plan is to deliver stable ktapvm kernel modules, more ktap scripts,
-   and more bugfixes.
+A: The current plan is to deliver stable ktapvm kernel modules, more ktap scripts, and more bugfixes.
 
 # References
 
@@ -561,6 +525,7 @@ A: The current plan is to deliver stable ktapvm kernel modules, more ktap script
 * ktap released v0.1 at 2013.05.21
 * ktap released v0.2 at 2013.07.31
 * ktap released v0.3 at 2013.10.29
+* ktap released v0.4 at 2013.12.09
 
 For more release info, please look at RELEASES.txt in project root directory.
 
