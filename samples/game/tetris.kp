@@ -159,8 +159,8 @@ trace probe:kbd_event handle=%di event_type=%si event_code=%dx value=%cx {
 	#	%rsi	2 argument
 	#	%rdi	1 argument
  
-	var event_code = arg4
-	var value = arg5
+	var event_code = arg3
+	var value = arg4
  
 	if (value != 0) {
 		if ((event_code - 4) != 0) {
