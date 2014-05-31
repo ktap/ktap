@@ -542,6 +542,7 @@ A: The current plan is to deliver stable ktapvm kernel modules, more ktap script
 * [ktap introduction in LinuxCon Japan 2013][REFR7(content is out of date)
 * [ktap Examples by Brendan Gregg][REFR8
 * [What Linux can learn from Solaris performance, and vice-versa][REF9]
+* [Ktap or BPF?][REF10]
 
 [REF1]: http://www.brendangregg.com/Slides/SCaLE_Linux_Performance2013.pdf
 [REF2]: http://dtrace.org/blogs/
@@ -552,6 +553,7 @@ A: The current plan is to deliver stable ktapvm kernel modules, more ktap script
 [REF7]: http://events.linuxfoundation.org/sites/events/files/lcjpcojp13_zhangwei.pdf
 [REF8]: http://www.brendangregg.com/ktap.html
 [REF9]: http://www.slideshare.net/brendangregg/what-linux-can-learn-from-solaris-performance-and-viceversa
+[REF10]: http://lwn.net/Articles/595565/
 
 # History
 
@@ -568,19 +570,19 @@ For more release info, please look at RELEASES.txt in project root directory.
 
 1. simplest one-liner command to enable all tracepoints
 
-        ktap -e "trace *:* { print(argevent) }"
+        ktap -e "trace *:* { print(argstr) }"
 2. syscall tracing on target process
 
-        ktap -e "trace syscalls:* { print(argevent) }" -- ls
+        ktap -e "trace syscalls:* { print(argstr) }" -- ls
 3. ftrace(kernel newer than 3.3, and must compiled with CONFIG_FUNCTION_TRACER)
 
-        ktap -e "trace ftrace:function { print(argevent) }"
+        ktap -e "trace ftrace:function { print(argstr) }"
 
-        ktap -e "trace ftrace:function /ip==mutex*/ { print(argevent) }"
+        ktap -e "trace ftrace:function /ip==mutex*/ { print(argstr) }"
 4. simple syscall tracing
 
         trace syscalls:* {
-                print(cpu(), pid(), execname(), argevent)
+                print(cpu, pid, execname, argstr)
         }
 5. syscall tracing in histogram style
 
@@ -596,32 +598,32 @@ For more release info, please look at RELEASES.txt in project root directory.
 6. kprobe tracing
 
         trace probe:do_sys_open dfd=%di fname=%dx flags=%cx mode=+4($stack) {
-                print("entry:", execname(), argevent)
+                print("entry:", execname, argstr)
         }
 
         trace probe:do_sys_open%return fd=$retval {
-                print("exit:", execname(), argevent)
+                print("exit:", execname, argstr)
         }
 7. uprobe tracing
 
         trace probe:/lib/libc.so.6:malloc {
-                print("entry:", execname(), argevent)
+                print("entry:", execname, argstr)
         }
 
         trace probe:/lib/libc.so.6:malloc%return {
-                print("exit:", execname(), argevent)
+                print("exit:", execname, argstr)
         }
 8. stapsdt tracing (userspace static marker)
 
         trace sdt:/lib64/libc.so.6:lll_futex_wake {
-                print("lll_futex_wake", execname(), argevent)
+                print("lll_futex_wake", execname, argstr)
         }
 
         or:
 
         #trace all static mark in libc
         trace sdt:/lib64/libc.so.6:* {
-                print(execname(), argevent)
+                print(execname, argstr)
         }
 9. timer
 
@@ -632,7 +634,7 @@ For more release info, please look at RELEASES.txt in project root directory.
         profile-2s {
                 printf("time fired on every cpu\n");
         }
-10. FFI (Call kernel function from ktap script, need compile with FFI=1)
+10. FFI (Call kernel function from ktap script, need to compile with FFI=1)
 
         ffi.cdef[[
                 int printk(char *fmt, ...);
