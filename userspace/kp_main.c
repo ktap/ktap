@@ -428,6 +428,7 @@ int main(int argc, char **argv)
 		ktapvm_argv[new_index] = malloc(strlen(argv[i]) + 1);
 		if (!ktapvm_argv[new_index]) {
 			fprintf(stderr, "canno allocate memory\n");
+			free(ktapvm_argv);
 			return -1;
 		}
 		strcpy(ktapvm_argv[new_index], argv[i]);

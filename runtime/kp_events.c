@@ -554,8 +554,8 @@ static void init_syscall_event_fields(struct ktap_event *event, int is_enter)
 			break;
 		}
 #else
-#error "don't support syscall tracepoint event register access in this arch, "
-	"use 'trace syscalls:* {}' instead"
+#warning "don't support syscall tracepoint event register access in this arch, use 'trace syscalls:* {}' instead"
+		break;
 #endif
 	}
 
