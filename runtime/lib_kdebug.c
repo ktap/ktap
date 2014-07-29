@@ -141,6 +141,7 @@ static int kplib_kdebug_trace_end(ktap_state_t *ks)
 	return 0;
 }
 
+#if 0
 static int kplib_kdebug_tracepoint(ktap_state_t *ks)
 {
 	const char *event_name = kp_arg_checkstring(ks, 1);
@@ -161,6 +162,7 @@ static int kplib_kdebug_tracepoint(ktap_state_t *ks)
 
 	return kp_event_create_tracepoint(ks, event_name, fn);
 }
+#endif
 
 static int kplib_kdebug_kprobe(ktap_state_t *ks)
 {
@@ -186,7 +188,9 @@ static const ktap_libfunc_t kdebug_lib_funcs[] = {
 	{"trace_by_id", kplib_kdebug_trace_by_id},
 	{"trace_end", kplib_kdebug_trace_end},
 
+#if 0
 	{"tracepoint", kplib_kdebug_tracepoint},
+#endif
 	{"kprobe", kplib_kdebug_kprobe},
 	{NULL}
 };
