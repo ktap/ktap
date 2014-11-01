@@ -1,6 +1,8 @@
 #ifndef __KTAP_UTIL_H__
 #define __KTAP_UTIL_H__
 
+#include <stdarg.h>
+
 #include "../include/ktap_bc.h"
 #include "../include/ktap_err.h"
 
