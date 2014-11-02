@@ -5,6 +5,10 @@
 #include <linux/hardirq.h>
 #include <linux/trace_seq.h>
 
+#ifndef raw_cpu_ptr
+#define raw_cpu_ptr __this_cpu_ptr
+#endif
+
 /* for built-in library C function register */
 typedef struct ktap_libfunc {
         const char *name; /* function name */
@@ -52,7 +56,7 @@ static __always_inline int trace_get_context_bit(void)
 static __always_inline int get_recursion_context(ktap_state_t *ks)
 {
 	int rctx = trace_get_context_bit();
-	int *val = __this_cpu_ptr(G(ks)->recursion_context[rctx]);
+	int *val = raw_cpu_ptr(G(ks)->recursion_context[rctx]);
 
 	if (*val)
 		return -1;
@@ -63,7 +67,7 @@ static __always_inline int get_recursion_context(ktap_state_t *ks)
 
 static inline void put_recursion_context(ktap_state_t *ks, int rctx)
 {
-	int *val = __this_cpu_ptr(G(ks)->recursion_context[rctx]);
+	int *val = raw_cpu_ptr(G(ks)->recursion_context[rctx]);
 	*val = false;
 }
 
