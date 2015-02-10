@@ -74,7 +74,7 @@ const char *kp_event_tostr(ktap_state_t *ks)
 
 	if (ret != TRACE_TYPE_NO_CONSUME) {
 		struct trace_seq *s = &iter->seq;
-		int len = s->len >= PAGE_SIZE ? PAGE_SIZE - 1 : s->len;
+		int len = seq_buf_used(&s->seq) >= PAGE_SIZE ? PAGE_SIZE - 1 : seq_buf_used(&s->seq);
 
 		s->buffer[len] = '\0';
 		return &s->buffer[0];

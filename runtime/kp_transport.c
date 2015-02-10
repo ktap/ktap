@@ -64,19 +64,19 @@ ssize_t _trace_seq_to_user(struct trace_seq *s, char __user *ubuf, size_t cnt)
 	if (!cnt)
 		return 0;
 
-	if (s->len <= s->readpos)
+	if (seq_buf_used(&s->seq) <= s->seq.readpos)
 		return -EBUSY;
 
-	len = s->len - s->readpos;
+	len = seq_buf_used(&s->seq) - s->seq.readpos;
 	if (cnt > len)
 		cnt = len;
-	ret = copy_to_user(ubuf, s->buffer + s->readpos, cnt);
+	ret = copy_to_user(ubuf, s->buffer + s->seq.readpos, cnt);
 	if (ret == cnt)
 		return -EFAULT;
 
 	cnt -= ret;
 
-	s->readpos += cnt;
+	s->seq.readpos += cnt;
 	return cnt;
 }
 
@@ -87,13 +87,13 @@ int _trace_seq_puts(struct trace_seq *s, const char *str)
 	if (s->full)
 		return 0;
 
-	if (len > ((PAGE_SIZE - 1) - s->len)) {
+	if (len > ((PAGE_SIZE - 1) - s->seq.len)) {
 		s->full = 1;
 		return 0;
 	}
 
-	memcpy(s->buffer + s->len, str, len);
-	s->len += len;
+	memcpy(s->buffer + seq_buf_used(&s->seq), str, len);
+	s->seq.len += len;
 
 	return len;
 }
@@ -126,7 +126,7 @@ unsigned long long ns2usecs(cycle_t nsec)
 	return nsec;
 }
 
-static int trace_print_timestamp(struct trace_iterator *iter)
+static void trace_print_timestamp(struct trace_iterator *iter)
 {
 	struct trace_seq *s = &iter->seq;
 	unsigned long long t;
@@ -136,7 +136,7 @@ static int trace_print_timestamp(struct trace_iterator *iter)
 	usec_rem = do_div(t, USEC_PER_SEC);
 	secs = (unsigned long)t;
 
-	return trace_seq_printf(s, "%5lu.%06lu: ", secs, usec_rem);
+	trace_seq_printf(s, "%5lu.%06lu: ", secs, usec_rem);
 }
 
 /* todo: export kernel function ftrace_find_event in future, and make faster */
@@ -144,21 +144,19 @@ static struct trace_event *(*ftrace_find_event)(int type);
 
 static enum print_line_t print_trace_fmt(struct trace_iterator *iter)
 {
-	struct ktap_trace_iterator *ktap_iter = KTAP_TRACE_ITER(iter);
 	struct trace_entry *entry = iter->ent;
 	struct trace_event *ev;
 
 	ev = ftrace_find_event(entry->type);
 
-	if (ktap_iter->print_timestamp && !trace_print_timestamp(iter))
-		return TRACE_TYPE_PARTIAL_LINE;
+	trace_print_timestamp(iter);
 
 	if (ev) {
 		int ret = ev->funcs->trace(iter, 0, ev);
 
 		/* overwrite '\n' at the ending */
-		iter->seq.buffer[iter->seq.len - 1] = '\0';
-		iter->seq.len--;
+		iter->seq.buffer[iter->seq.seq.len - 1] = '\0';
+		iter->seq.seq.len--;
 		return ret;
 	}
 
@@ -186,8 +184,7 @@ static enum print_line_t print_trace_stack(struct trace_iterator *iter)
 			break;
 
 		sprint_symbol(str, p);
-		if (!trace_seq_printf(&iter->seq, " => %s\n", str))
-			return TRACE_TYPE_PARTIAL_LINE;
+		trace_seq_printf(&iter->seq, " => %s\n", str);
 	}
 
 	return TRACE_TYPE_HANDLED;
@@ -201,12 +198,10 @@ struct ktap_ftrace_entry {
 
 static enum print_line_t print_trace_fn(struct trace_iterator *iter)
 {
-	struct ktap_trace_iterator *ktap_iter = KTAP_TRACE_ITER(iter);
 	struct ktap_ftrace_entry *field = (struct ktap_ftrace_entry *)iter->ent;
 	char str[KSYM_SYMBOL_LEN];
 
-	if (ktap_iter->print_timestamp && !trace_print_timestamp(iter))
-		return TRACE_TYPE_PARTIAL_LINE;
+	trace_print_timestamp(iter);
 
 	sprint_symbol(str, field->ip);
 	if (!_trace_seq_puts(&iter->seq, str))
@@ -237,9 +232,7 @@ static enum print_line_t print_trace_line(struct trace_iterator *iter)
 	char *str = (char *)(entry + 1);
 
 	if (entry->type == TRACE_PRINT) {
-		if (!trace_seq_printf(&iter->seq, "%s", str))
-			return TRACE_TYPE_PARTIAL_LINE;
-
+		trace_seq_printf(&iter->seq, "%s", str);
 		return TRACE_TYPE_HANDLED;
 	}
 
@@ -398,18 +391,18 @@ waitagain:
 
 	while (trace_find_next_entry_inc(iter) != NULL) {
 		enum print_line_t ret;
-		int len = iter->seq.len;
+		int len = iter->seq.seq.len;
 
 		ret = print_trace_line(iter);
 		if (ret == TRACE_TYPE_PARTIAL_LINE) {
 			/* don't print partial lines */
-			iter->seq.len = len;
+			iter->seq.seq.len = len;
 			break;
 		}
 		if (ret != TRACE_TYPE_NO_CONSUME)
 			trace_consume(iter);
 
-		if (iter->seq.len >= cnt)
+		if (iter->seq.seq.len >= cnt)
 			break;
 
 		/*
@@ -423,7 +416,7 @@ waitagain:
 
 	/* Now copy what we have to the user */
 	sret = _trace_seq_to_user(&iter->seq, ubuf, cnt);
-	if (iter->seq.readpos >= iter->seq.len)
+	if (iter->seq.seq.readpos >= iter->seq.seq.len)
 		trace_seq_init(&iter->seq);
 
 	/*

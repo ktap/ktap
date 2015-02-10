@@ -73,10 +73,12 @@ static int find_load_address(Elf *elf, vaddr_t *load_address)
 		if (gelf_getphdr(elf, i, &phdr) == NULL)
 			return -1;
 
-		if (phdr.p_type != PT_LOAD || phdr.p_offset != 0)
+		if (phdr.p_type != PT_LOAD)
+			continue;
+		if (phdr.p_flags != (PF_X|PF_R))
 			continue;
 
-		*load_address = phdr.p_vaddr;
+		*load_address = phdr.p_vaddr-phdr.p_offset;
 		return 0;
 	}
 
