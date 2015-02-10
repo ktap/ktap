@@ -1748,9 +1748,6 @@ ktap_state_t *kp_vm_new_state(ktap_option_t *parm, struct dentry *dir)
 	if (kp_lib_init_table(ks))
 		goto out;
 
-	if (kp_lib_init_net(ks))
-		goto out;
-
 	if (init_preserved_data(ks))
 		goto out;
 

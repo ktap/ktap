@@ -28,7 +28,7 @@ KTAP_LIBS = -lpthread
 
 LIB_OBJS += $(RUNTIME)/lib_base.o $(RUNTIME)/lib_kdebug.o \
 		$(RUNTIME)/lib_timer.o $(RUNTIME)/lib_ansi.o \
-		$(RUNTIME)/lib_table.o $(RUNTIME)/lib_net.o
+		$(RUNTIME)/lib_table.o
 
 ifndef amalg
 ifdef FFI

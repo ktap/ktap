@@ -33,7 +33,6 @@
 #include "lib_kdebug.c"
 #include "lib_timer.c"
 #include "lib_table.c"
-#include "lib_net.c"
 
 #ifdef CONFIG_KTAP_FFI
 #include "ffi/ffi_call.c"
