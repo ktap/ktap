@@ -75,8 +75,8 @@ static int kplib_printf(ktap_state_t *ks)
 	if (kp_str_fmt(ks, seq))
 		goto out;
 
-	seq->buffer[seq->len] = '\0';
-	kp_transport_write(ks, seq->buffer, seq->len + 1);
+	seq->buffer[TRACE_SEQ_LEN(seq)] = '\0';
+	kp_transport_write(ks, seq->buffer, TRACE_SEQ_LEN(seq) + 1);
 
  out:
 	preempt_enable_notrace();

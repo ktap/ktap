@@ -64,19 +64,19 @@ ssize_t _trace_seq_to_user(struct trace_seq *s, char __user *ubuf, size_t cnt)
 	if (!cnt)
 		return 0;
 
-	if (s->len <= s->readpos)
+	if (TRACE_SEQ_LEN(s) <= TRACE_SEQ_READPOS(s))
 		return -EBUSY;
 
-	len = s->len - s->readpos;
+	len = TRACE_SEQ_LEN(s) - TRACE_SEQ_READPOS(s);
 	if (cnt > len)
 		cnt = len;
-	ret = copy_to_user(ubuf, s->buffer + s->readpos, cnt);
+	ret = copy_to_user(ubuf, s->buffer + TRACE_SEQ_READPOS(s), cnt);
 	if (ret == cnt)
 		return -EFAULT;
 
 	cnt -= ret;
 
-	s->readpos += cnt;
+	TRACE_SEQ_READPOS(s) += cnt;
 	return cnt;
 }
 
@@ -87,13 +87,13 @@ int _trace_seq_puts(struct trace_seq *s, const char *str)
 	if (s->full)
 		return 0;
 
-	if (len > ((PAGE_SIZE - 1) - s->len)) {
+	if (len > ((PAGE_SIZE - 1) - TRACE_SEQ_LEN(s))) {
 		s->full = 1;
 		return 0;
 	}
 
-	memcpy(s->buffer + s->len, str, len);
-	s->len += len;
+	memcpy(s->buffer + TRACE_SEQ_LEN(s), str, len);
+	TRACE_SEQ_LEN(s) += len;
 
 	return len;
 }
@@ -157,8 +157,8 @@ static enum print_line_t print_trace_fmt(struct trace_iterator *iter)
 		int ret = ev->funcs->trace(iter, 0, ev);
 
 		/* overwrite '\n' at the ending */
-		iter->seq.buffer[iter->seq.len - 1] = '\0';
-		iter->seq.len--;
+		iter->seq.buffer[TRACE_SEQ_LEN(&iter->seq) - 1] = '\0';
+		TRACE_SEQ_LEN(&iter->seq)--;
 		return ret;
 	}
 
@@ -398,18 +398,18 @@ waitagain:
 
 	while (trace_find_next_entry_inc(iter) != NULL) {
 		enum print_line_t ret;
-		int len = iter->seq.len;
+		int len = TRACE_SEQ_LEN(&iter->seq);
 
 		ret = print_trace_line(iter);
 		if (ret == TRACE_TYPE_PARTIAL_LINE) {
 			/* don't print partial lines */
-			iter->seq.len = len;
+			TRACE_SEQ_LEN(&iter->seq) = len;
 			break;
 		}
 		if (ret != TRACE_TYPE_NO_CONSUME)
 			trace_consume(iter);
 
-		if (iter->seq.len >= cnt)
+		if (TRACE_SEQ_LEN(&iter->seq) >= cnt)
 			break;
 
 		/*
@@ -423,7 +423,7 @@ waitagain:
 
 	/* Now copy what we have to the user */
 	sret = _trace_seq_to_user(&iter->seq, ubuf, cnt);
-	if (iter->seq.readpos >= iter->seq.len)
+	if (TRACE_SEQ_READPOS(&iter->seq) >= TRACE_SEQ_LEN(&iter->seq))
 		trace_seq_init(&iter->seq);
 
 	/*

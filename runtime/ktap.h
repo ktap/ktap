@@ -184,5 +184,13 @@ void __kp_bputs(ktap_state_t *ks, const char *str);
 #define err2msg(em)     (kp_err_allmsg+(int)(em))
 extern const char *kp_err_allmsg;
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 19, 0)
+#define TRACE_SEQ_LEN(s) ((s)->len)
+#define TRACE_SEQ_READPOS(s) ((s)->readpos)
+#else
+#define TRACE_SEQ_LEN(s) ((s)->seq.len) /** XXX: trace_seq_used() */
+#define TRACE_SEQ_READPOS(s) ((s)->seq.readpos)
+#endif
+
 #endif /* __KTAP_H__ */
 
