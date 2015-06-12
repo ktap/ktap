@@ -136,7 +136,7 @@ static int trace_print_timestamp(struct trace_iterator *iter)
 	usec_rem = do_div(t, USEC_PER_SEC);
 	secs = (unsigned long)t;
 
-	return trace_seq_printf(s, "%5lu.%06lu: ", secs, usec_rem);
+	return TRACE_SEQ_PRINTF(s, "%5lu.%06lu: ", secs, usec_rem);
 }
 
 /* todo: export kernel function ftrace_find_event in future, and make faster */
@@ -186,7 +186,7 @@ static enum print_line_t print_trace_stack(struct trace_iterator *iter)
 			break;
 
 		sprint_symbol(str, p);
-		if (!trace_seq_printf(&iter->seq, " => %s\n", str))
+		if (!TRACE_SEQ_PRINTF(&iter->seq, " => %s\n", str))
 			return TRACE_TYPE_PARTIAL_LINE;
 	}
 
@@ -237,7 +237,7 @@ static enum print_line_t print_trace_line(struct trace_iterator *iter)
 	char *str = (char *)(entry + 1);
 
 	if (entry->type == TRACE_PRINT) {
-		if (!trace_seq_printf(&iter->seq, "%s", str))
+		if (!TRACE_SEQ_PRINTF(&iter->seq, "%s", str))
 			return TRACE_TYPE_PARTIAL_LINE;
 
 		return TRACE_TYPE_HANDLED;
