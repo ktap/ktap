@@ -71,7 +71,7 @@ mod:
 modules_install:
 	$(MAKE) -C $(KERNEL_SRC) M=$(PWD) modules_install
 
-KTAPC_CFLAGS = -Wall -O2
+KTAPC_CFLAGS = -Wall -O2 $(CPPFLAGS)
 
 
 # try-cc
