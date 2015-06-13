@@ -162,7 +162,7 @@ KTAPOBJS += $(UDIR)/ffi/ctype.o
 endif
 
 ktap: $(KTAPOBJS) KTAP-CFLAGS
-	$(QUIET_LINK)$(CC) $(KTAPC_CFLAGS) -o $@ $(KTAPOBJS) $(KTAP_LIBS)
+	$(QUIET_LINK)$(CC) $(LDFLAGS) $(KTAPC_CFLAGS) -o $@ $(KTAPOBJS) $(KTAP_LIBS)
 
 KMISC := /lib/modules/$(KVERSION)/ktapvm/
 
