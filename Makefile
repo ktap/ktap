@@ -168,7 +168,7 @@ KMISC := /lib/modules/$(KVERSION)/ktapvm/
 
 install: mod ktap
 	make modules_install ktapvm.ko INSTALL_MOD_PATH=$(DESTDIR)
-	install -c ktap $(DESTDIR)/usr/bin/
+	install -D -t $(DESTDIR)/usr/bin/ ktap
 
 install_vim:
 	mkdir -p ~/.vim/ftdetect
