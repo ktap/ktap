@@ -97,3 +97,5 @@ x509.genkey
 #
 ktap
 KTAP-CFLAGS
+
+*.dwo

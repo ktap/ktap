@@ -174,7 +174,7 @@ static long ktapvm_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	int new_fd, err;
 	struct file *new_file;
 
-	new_fd = get_unused_fd();
+	new_fd = get_unused_fd_flags(0);
 	if (new_fd < 0)
 		return new_fd;
 
