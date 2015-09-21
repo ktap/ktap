@@ -372,7 +372,7 @@ entry in `/sys/kernel/debug/tracing/trace`
 **probename**
 
 Event name. Each event has a name associated with it.
-(Dtrace also have 'probename' keyword)
+(DTrace also have 'probename' keyword)
 
 ## Timer syntax
 
@@ -414,7 +414,7 @@ simple event tracing
 
 # Overhead/Performance
 
-* ktap has a much shorter startup time than SystemTap (try the helloword script).
+* ktap has a much shorter startup time than SystemTap (try the helloworld script).
 * ktap has a smaller memory footprint than SystemTap
 * Some scripts show that ktap has a little lower overhead than SystemTap
 (we chose two scripts to compare, function profile, stack profile.
@@ -534,8 +534,8 @@ A: The current plan is to deliver stable ktapvm kernel modules, more ktap script
 # References
 
 * [Linux Performance Analysis and Tools][REF1]
-* [Dtrace Blog][REF2]
-* [Dtrace User Guide][REF3]
+* [DTrace Blog][REF2]
+* [DTrace User Guide][REF3]
 * [LWN: ktap -- yet another kernel tracer][REF4]
 * [LWN: Ktap almost gets into 3.13][REF5]
 * [staging: ktap: add to the kernel tree][REF6]
