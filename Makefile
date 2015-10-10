@@ -105,7 +105,7 @@ ifdef NO_LIBELF
 	KTAPC_CFLAGS += -DNO_LIBELF
 else
 ifneq ($(call try-cc,$(SOURCE_LIBELF),$(FLAGS_LIBELF),libelf),y)
-    $(warning No libelf found, disables symbol resolving, please install elfutils-libelf-devel/libelf-dev);
+    $(warning No libelf found, disables symbol resolving, please install elfutils-libelf-devel);
     NO_LIBELF := 1
     KTAPC_CFLAGS += -DNO_LIBELF
 else
