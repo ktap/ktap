@@ -1,7 +1,7 @@
 #ifndef __KTAP_EVENTS_H__
 #define __KTAP_EVENTS_H__
 
-#include <linux/ftrace_event.h>
+#include "trace_events.h"
 #include <trace/syscall.h>
 #include <trace/events/syscalls.h>
 #include <linux/syscalls.h>

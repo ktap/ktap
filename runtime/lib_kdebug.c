@@ -23,7 +23,7 @@
 #include <linux/ctype.h>
 #include <linux/slab.h>
 #include <linux/version.h>
-#include <linux/ftrace_event.h>
+#include "trace_events.h"
 #include "../include/ktap_types.h"
 #include "ktap.h"
 #include "kp_obj.h"
