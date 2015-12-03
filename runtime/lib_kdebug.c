@@ -19,11 +19,17 @@
  * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include <linux/version.h>
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 2, 0)
+#include <linux/ftrace_event.h>
+#else
+#include <linux/trace_events.h>
+#endif
+
 #include <linux/module.h>
 #include <linux/ctype.h>
 #include <linux/slab.h>
 #include <linux/version.h>
-#include <linux/ftrace_event.h>
 #include "../include/ktap_types.h"
 #include "ktap.h"
 #include "kp_obj.h"

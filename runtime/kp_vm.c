@@ -23,8 +23,14 @@
  * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include <linux/slab.h>
+#include <linux/version.h>
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 2, 0)
 #include <linux/ftrace_event.h>
+#else
+#include <linux/trace_events.h>
+#endif
+
+#include <linux/slab.h>
 #include <linux/signal.h>
 #include <linux/sched.h>
 #include <linux/uaccess.h>
