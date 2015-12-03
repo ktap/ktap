@@ -410,13 +410,14 @@ int main(int argc, char **argv)
 	ktapvm_argv = (char **)malloc(sizeof(char *)*(script_args_end -
 					script_args_start + 1));
 	if (!ktapvm_argv) {
-		fprintf(stderr, "canno allocate ktapvm_argv\n");
+		fprintf(stderr, "cannot allocate ktapvm_argv\n");
 		return -1;
 	}
 
 	ktapvm_argv[0] = malloc(strlen(script_file) + 1);
 	if (!ktapvm_argv[0]) {
-		fprintf(stderr, "canno allocate memory\n");
+		fprintf(stderr, "cannot allocate memory\n");
+		free(ktapvm_argv);
 		return -1;
 	}
 	strcpy(ktapvm_argv[0], script_file);
@@ -427,7 +428,9 @@ int main(int argc, char **argv)
 	for (i = script_args_start; i < script_args_end; i++) {
 		ktapvm_argv[new_index] = malloc(strlen(argv[i]) + 1);
 		if (!ktapvm_argv[new_index]) {
-			fprintf(stderr, "canno allocate memory\n");
+			fprintf(stderr, "cannot allocate memory\n");
+			for (i = 0; i < new_index; i++)
+                                free(ktapvm_argv[i]);
 			free(ktapvm_argv);
 			return -1;
 		}
