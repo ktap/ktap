@@ -19,8 +19,14 @@
  * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include <linux/debugfs.h>
+#include <linux/version.h>
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 2, 0)
 #include <linux/ftrace_event.h>
+#else
+#include <linux/trace_events.h>
+#endif
+
+#include <linux/debugfs.h>
 #include <linux/stacktrace.h>
 #include <linux/clocksource.h>
 #include <asm/uaccess.h>
@@ -521,7 +527,7 @@ void kp_transport_event_write(ktap_state_t *ks, struct ktap_event_data *e)
 	int entry_size = e->data->raw->size;
 
 	event = ring_buffer_lock_reserve(buffer, entry_size +
-					 sizeof(struct ftrace_event_call *));
+					 sizeof(struct TRACE_EVENT_CALL_STRUCT *));
 	if (!event) {
 		KTAP_STATS(ks)->events_missed += 1;
 		return;

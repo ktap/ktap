@@ -198,5 +198,11 @@ extern const char *kp_err_allmsg;
 #define TRACE_SEQ_PRINTF(s, ...) ({ trace_seq_printf(s, __VA_ARGS__); !trace_seq_has_overflowed(s); })
 #endif
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 2, 0)
+#define TRACE_EVENT_CALL_STRUCT ftrace_event_call
+#else
+#define TRACE_EVENT_CALL_STRUCT trace_event_call
+#endif
+
 #endif /* __KTAP_H__ */
 

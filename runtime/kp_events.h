@@ -1,7 +1,13 @@
 #ifndef __KTAP_EVENTS_H__
 #define __KTAP_EVENTS_H__
 
+#include <linux/version.h>
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 2, 0)
 #include <linux/ftrace_event.h>
+#else
+#include <linux/trace_events.h>
+#endif
+
 #include <trace/syscall.h>
 #include <trace/events/syscalls.h>
 #include <linux/syscalls.h>
