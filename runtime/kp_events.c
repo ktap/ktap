@@ -35,7 +35,7 @@
 const char *kp_event_tostr(ktap_state_t *ks)
 {
 	struct ktap_event_data *e = ks->current_event;
-	struct ftrace_event_call *call;
+	trace_event_call *call;
 	struct trace_iterator *iter;
 	struct trace_event *ev;
 	enum print_line_t ret = TRACE_TYPE_NO_CONSUME;
@@ -116,7 +116,7 @@ struct ftrace_event_field {
 	int                     is_signed;
 };
 
-static struct list_head *get_fields(struct ftrace_event_call *event_call)
+static struct list_head *get_fields(trace_event_call *event_call)
 {
 	if (!event_call->class->get_fields)
 		return &event_call->class->fields;
@@ -178,7 +178,7 @@ void kp_event_getarg(ktap_state_t *ks, ktap_val_t *ra, int idx)
 /* init all fields of event, for quick arg1..arg9 access */
 static int init_event_fields(ktap_state_t *ks, struct ktap_event *event)
 {
-	struct ftrace_event_call *event_call = event->perf->tp_event; 
+	trace_event_call *event_call = event->perf->tp_event;
 	struct ktap_event_field *event_fields = &event->fields[0];
 	struct ftrace_event_field *field;
 	struct list_head *head;
@@ -518,7 +518,7 @@ static void dry_run_callback(void *data, struct pt_regs *regs, long id)
 
 static void init_syscall_event_fields(struct ktap_event *event, int is_enter)
 {
-	struct ftrace_event_call *event_call;
+	trace_event_call *event_call;
 	struct ktap_event_field *event_fields = &event->fields[0];
 	struct syscall_metadata *meta = syscalls_metadata[event->syscall_nr];
 	int idx = 0;

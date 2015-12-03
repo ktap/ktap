@@ -19,8 +19,8 @@
  * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include "trace_events.h"
 #include <linux/debugfs.h>
-#include <linux/ftrace_event.h>
 #include <linux/stacktrace.h>
 #include <linux/clocksource.h>
 #include <asm/uaccess.h>
