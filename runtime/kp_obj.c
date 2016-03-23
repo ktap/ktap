@@ -43,8 +43,13 @@ const char *kp_err_allmsg =
 ;
 
 /* memory allocation flag */
+#ifndef __GFP_WAIT
+#define KTAP_ALLOC_FLAGS ((GFP_KERNEL | __GFP_NORETRY | __GFP_NOWARN) \
+			 & ~__GFP_RECLAIM)
+#else
 #define KTAP_ALLOC_FLAGS ((GFP_KERNEL | __GFP_NORETRY | __GFP_NOWARN) \
 			 & ~__GFP_WAIT)
+#endif
 
 /*
  * TODO: It's not safe to call into facilities in the kernel at-large,
