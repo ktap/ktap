@@ -198,5 +198,9 @@ extern const char *kp_err_allmsg;
 #define TRACE_SEQ_PRINTF(s, ...) ({ trace_seq_printf(s, __VA_ARGS__); !trace_seq_has_overflowed(s); })
 #endif
 
+#ifndef __GFP_RECLAIM
+#define __GFP_RECLAIM __GFP_WAIT
+#endif
+
 #endif /* __KTAP_H__ */
 
