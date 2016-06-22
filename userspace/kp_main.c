@@ -228,6 +228,10 @@ static void parse_option(int argc, char **argv)
 
 		next_arg = argv[i + 1];
 
+		/* These flags require arguments. */
+		if (!next_arg && (argv[i][1] == 'o' || argv[i][1] == 'e' || argv[i][1] == 'p' || argv[i][1] == 'C' || argv[i][1] == 'l'))
+				usage("flag -%s requires an argument\n", argv[i][1]);
+
 		switch (argv[i][1]) {
 		case 'o':
 			output_filename = malloc(strlen(next_arg) + 1);
@@ -404,6 +408,9 @@ int main(int argc, char **argv)
 
 	if (oneline_src[0] != '\0')
 		script_file = "(command line)";
+
+	if (!script_file)
+		usage("");
 
 	compile(script_file);
 
