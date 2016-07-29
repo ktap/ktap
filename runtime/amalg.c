@@ -1,9 +1,8 @@
 /*
  * kp_amalg.c - ktapvm kernel module amalgamation.
  *
- * This file is part of ktap by Jovi Zhangwei.
+ * Copyright (C) 2012-2016, Huawei Technologies.
  *
- * Copyright (C) 2012-2013 Jovi Zhangwei <jovi.zhangwei@gmail.com>.
  *
  * ktap is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,

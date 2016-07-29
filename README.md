@@ -138,7 +138,7 @@ http://www.freelists.org/list/ktap
 
 ktap is licensed under GPL v2
 
-Copyright (C) 2012-2013, Jovi Zhangwei <jovi.zhangwei@gmail.com>.
+Copyright (C) 2012-2016, Huawei Technologies.
 All rights reserved.
 
 

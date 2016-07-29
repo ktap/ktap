@@ -1,9 +1,7 @@
 /*
  * util.c
  *
- * This file is part of ktap by Jovi Zhangwei.
- *
- * Copyright (C) 2012-2013 Jovi Zhangwei <jovi.zhangwei@gmail.com>.
+ * Copyright (C) 2012-2016, Huawei Technologies.
  *
  * Adapted from luajit and lua interpreter.
  * Copyright (C) 2005-2014 Mike Pall.
