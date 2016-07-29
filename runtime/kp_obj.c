@@ -42,9 +42,13 @@ const char *kp_err_allmsg =
 #include "../include/ktap_errmsg.h"
 ;
 
+#ifndef __GFP_RECLAIM
+#define __GFP_RECLAIM __GFP_WAIT
+#endif
+
 /* memory allocation flag */
 #define KTAP_ALLOC_FLAGS ((GFP_KERNEL | __GFP_NORETRY | __GFP_NOWARN) \
-			 & ~__GFP_WAIT)
+			 & ~__GFP_RECLAIM)
 
 /*
  * TODO: It's not safe to call into facilities in the kernel at-large,
