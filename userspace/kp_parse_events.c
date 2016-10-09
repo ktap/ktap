@@ -498,7 +498,14 @@ static int uprobe_symbol_actor(const char *name, vaddr_t addr, void *arg)
 
 	verbose_printf("uprobe: binary: \"%s\" symbol \"%s\" "
 			"resolved to 0x%lx\n",
-			base->binary, base->symbol, (unsigned long)addr);
+			base->binary, name, (unsigned long)addr);
+
+        if (!strcmp(name, "_start") && base->ret_probe) {
+		verbose_printf("uprobe: symbol: \"%s\" "
+				"ret_probe blacklisted\n",
+				name);
+		return 0;
+        }
 
 	ret = write_uprobe_event(base->fd, base->ret_probe, base->binary,
 				 name, addr, base->fetch_args);
