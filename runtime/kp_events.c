@@ -64,7 +64,7 @@ const char *kp_event_tostr(ktap_state_t *ks)
 	iter = kp_this_cpu_temp_buffer(ks);
 
 	trace_seq_init(&iter->seq);
-	iter->ent = e->data->raw->data;
+	iter->ent = TRACE_EVENT_RAW_DATA(e);
 
 	ev = &(call->event);
 	if (ev)
@@ -129,21 +129,21 @@ void kp_event_getarg(ktap_state_t *ks, ktap_val_t *ra, int idx)
 
 	switch (event_fields->type)  {
 	case KTAP_EVENT_FIELD_TYPE_INT: {
-		struct trace_entry *entry = e->data->raw->data;
+		struct trace_entry *entry = TRACE_EVENT_RAW_DATA(e);
 		void *value = (unsigned char *)entry + event_fields->offset;
 		int n = *(int *)value;
 		set_number(ra, n);
 		return;
 		}
 	case KTAP_EVENT_FIELD_TYPE_LONG: {
-		struct trace_entry *entry = e->data->raw->data;
+		struct trace_entry *entry = TRACE_EVENT_RAW_DATA(e);
 		void *value = (unsigned char *)entry + event_fields->offset;
 		long n = *(long *)value;
 		set_number(ra, n);
 		return;
 		}
 	case KTAP_EVENT_FIELD_TYPE_STRING: {
-		struct trace_entry *entry = e->data->raw->data;
+		struct trace_entry *entry = TRACE_EVENT_RAW_DATA(e);
 		ktap_str_t *ts;
 		void *value = (unsigned char *)entry + event_fields->offset;
 		ts = kp_str_newz(ks, (char *)value);

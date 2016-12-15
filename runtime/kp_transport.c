@@ -514,7 +514,7 @@ void kp_transport_event_write(ktap_state_t *ks, struct ktap_event_data *e)
 {
 	struct ring_buffer *buffer = G(ks)->buffer;
 	struct ring_buffer_event *event;
-	struct trace_entry *ev_entry = e->data->raw->data;
+	struct trace_entry *ev_entry = TRACE_EVENT_RAW_DATA(e);
 	struct trace_entry *entry;
 	int entry_size = e->data->raw->size;
 
