@@ -1365,7 +1365,7 @@ static int init_arguments(ktap_state_t *ks, int argc, char __user **user_argv)
 		int len;
 		int res;
 
-		len = strlen_user(ustr);
+		len = strnlen_user(ustr, INT_MAX);
 		if (len > 0x1000) {
 			ret = -EINVAL;
 			break;
