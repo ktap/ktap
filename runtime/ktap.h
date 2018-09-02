@@ -15,6 +15,8 @@ typedef struct ktap_libfunc {
         ktap_cfunction func; /* function pointer */
 } ktap_libfunc_t;
 
+typedef u64 cycle_t;
+
 long gettimeofday_ns(void); /* common helper function */
 int kp_lib_init_base(ktap_state_t *ks);
 int kp_lib_init_kdebug(ktap_state_t *ks);
