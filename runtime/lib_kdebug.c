@@ -68,7 +68,7 @@ static int kplib_kdebug_trace_by_id(ktap_state_t *ks)
 	if (eventsdesc.filter) {
 		int len;
 
-		len = strlen_user(eventsdesc.filter);
+		len = strnlen_user(eventsdesc.filter, INT_MAX);
 		if (len > 0x1000)
 			return -1;
 
